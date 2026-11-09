@@ -57,6 +57,8 @@ K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
+TEAM_CARRY = 1.0   # share of a team's record kept when a new season starts
+TEAM_WINDOW = 0    # if above 0, use only this many latest matches, equally weighted
 MAX_BAN_MATCHES = 4
 BURN_IN_GWS = 6
 
@@ -233,6 +235,31 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
     return out, recent
 
 
+def team_pre(keys: np.ndarray, x: np.ndarray, periods: np.ndarray) -> np.ndarray:
+    """A team's record before each row: decayed with a season reset factor, or a plain recent window."""
+    out = np.zeros(len(x))
+    if TEAM_WINDOW > 0:
+        hist: list[float] = []
+        prev = object()
+        for i, (k, v) in enumerate(zip(keys, x)):
+            if k != prev:
+                hist, prev = [], k
+            out[i] = sum(hist[-TEAM_WINDOW:])
+            hist.append(v)
+        return out
+    d = 0.5 ** (1 / HL_TEAM)
+    s, prev, prev_period = 0.0, object(), None
+    for i, (k, v, q) in enumerate(zip(keys, x, periods)):
+        if k != prev:
+            s, prev, prev_period = 0.0, k, q
+        if q != prev_period:
+            s *= TEAM_CARRY
+            prev_period = q
+        out[i] = s
+        s = s * d + v
+    return out
+
+
 def team_features(df: pd.DataFrame) -> pd.DataFrame:
     hist = df[~df["future"]]
     fx = (hist.groupby(["season", "fixture", "team", "opp", "tf"], as_index=False)
@@ -257,17 +284,18 @@ def team_features(df: pd.DataFrame) -> pd.DataFrame:
     prom = np.array([promoted(a, b) for a, b in zip(t["team"], t["tf"])])
 
     keys = t["team"].to_numpy()
-    sn = decayed_pre(keys, t["n"].to_numpy(float), HL_TEAM)
-    t["att_ratio"] = ((decayed_pre(keys, t["xg"].to_numpy(float), HL_TEAM)
+    periods = (t["tf"].to_numpy() // 100)
+    sn = team_pre(keys, t["n"].to_numpy(float), periods)
+    t["att_ratio"] = ((team_pre(keys, t["xg"].to_numpy(float), periods)
                        + K_TEAM * t["league"] * np.where(prom, PROMOTED_ATT, 1.0))
                       / (sn + K_TEAM)) / t["league"]
-    t["def_ratio"] = ((decayed_pre(keys, t["xga"].to_numpy(float), HL_TEAM)
+    t["def_ratio"] = ((team_pre(keys, t["xga"].to_numpy(float), periods)
                        + K_TEAM * t["league"] * np.where(prom, PROMOTED_DEF, 1.0))
                       / (sn + K_TEAM)) / t["league"]
-    t["att_g_ratio"] = ((decayed_pre(keys, t["gf"].to_numpy(float), HL_TEAM)
+    t["att_g_ratio"] = ((team_pre(keys, t["gf"].to_numpy(float), periods)
                          + K_TEAM_GOALS * t["league_g"] * np.where(prom, PROMOTED_ATT, 1.0))
                         / (sn + K_TEAM_GOALS)) / t["league_g"]
-    t["def_g_ratio"] = ((decayed_pre(keys, t["ga"].to_numpy(float), HL_TEAM)
+    t["def_g_ratio"] = ((team_pre(keys, t["ga"].to_numpy(float), periods)
                          + K_TEAM_GOALS * t["league_g"] * np.where(prom, PROMOTED_DEF, 1.0))
                         / (sn + K_TEAM_GOALS)) / t["league_g"]
     return t[["team", "tf", "att_ratio", "def_ratio", "att_g_ratio", "def_g_ratio"]]
@@ -714,40 +742,51 @@ def predict(data_dir: Path, seasons: list[str], horizon: int, out: Path, offline
     return wide
 
 
+MARKET_CS_GW11 = {"Man City": 43, "Arsenal": 38, "Brighton": 38, "Spurs": 38, "Bournemouth": 36, "Aston Villa": 34, "Liverpool": 34, "Chelsea": 33,
+                  "Brentford": 32, "Coventry City": 29, "Sunderland": 20, "Crystal Palace": 18, "Nott'm Forest": 18, "Everton": 17, "Leeds": 17,
+                  "Man Utd": 17, "Newcastle": 14, "Hull City": 13, "Ipswich Town": 13, "Fulham": 10}
+
+
 def tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> None:
-    """Compares how quickly older matches should fade, across goals, assists, DEFCON and total points."""
-    global HL_LONG
+    """Compares ways of rating teams, on last season's results and on this gameweek's clean sheet market."""
+    global HL_TEAM, TEAM_CARRY, TEAM_WINDOW
     def log_loss(prob: pd.Series, hit: pd.Series) -> float:
         p = prob.clip(1e-5, 1 - 1e-5)
         return float(-(hit * np.log(p) + (1 - hit) * np.log(1 - p)).mean())
-    rows, bruno = [], []
-    original = HL_LONG
-    for hl in (8, 15, 25, 40, 60):
-        HL_LONG = hl
-        print(f"--- half-life {hl} matches")
+    configs = [("half-life 12 (now)", 12, 1.0, 0), ("half-life 5", 5, 1.0, 0), ("half-life 8", 8, 1.0, 0), ("half-life 19", 19, 1.0, 0),
+               ("half-life 8, new season x0.5", 8, 0.5, 0), ("half-life 12, new season x0.5", 12, 0.5, 0), ("half-life 19, new season x0.5", 19, 0.5, 0),
+               ("half-life 12, new season x0.25", 12, 0.25, 0), ("last 10 matches", 12, 1.0, 10), ("last 19 matches", 12, 1.0, 19)]
+    rows = []
+    for label, hl, carry, window in configs:
+        HL_TEAM, TEAM_CARRY, TEAM_WINDOW = hl, carry, window
+        print(f"--- {label}")
         feat = build_features(load_history(data_dir, seasons))
         pred = walk_forward(feat, seasons[-1], step)
         regular = pred[pred["min_long"] >= 45].groupby(["GW", "pid"], as_index=False)[["total_points", "xpts"]].sum()
         played = pred[pred["minutes"] > 0]
         share = played["minutes"] / 90
-        known = pred[(pred["minutes"] >= 60) & pred["defensive_contribution"].notna() & (pred["position"] != "GK")]
-        rows.append({
-            "half_life": hl,
-            "RMSE_regulars": float(np.sqrt(((regular["total_points"] - regular["xpts"]) ** 2).mean())),
-            "logloss_goal": log_loss(1 - np.exp(-played["g90"] * share), (played["goals_scored"] >= 1).astype(float)),
-            "logloss_assist": log_loss(1 - np.exp(-played["a90"] * share), (played["assists"] >= 1).astype(float)),
-            "logloss_defcon": log_loss(known["p_defcon"], (known["defensive_contribution"] >= known["position"].map(DEFCON_THRESHOLD)).astype(float)),
-        })
+        fixtures = pred.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
+        row = {"config": label,
+               "RMSE_regulars": float(np.sqrt(((regular["total_points"] - regular["xpts"]) ** 2).mean())),
+               "logloss_cs": log_loss(fixtures["p_cs"], (fixtures["ga"] == 0).astype(float)),
+               "logloss_goal": log_loss(1 - np.exp(-played["g90"] * share), (played["goals_scored"] >= 1).astype(float)),
+               "logloss_assist": log_loss(1 - np.exp(-played["a90"] * share), (played["assists"] >= 1).astype(float))}
         res = predict_frame(data_dir, seasons, 1, offline)
-        b = res[res["name"].str.contains("Bruno") & res["name"].str.contains("Fernandes")]
-        if len(b):
-            r = b.iloc[0]
-            bruno.append({"half_life": hl, "goals_90": float(r["g90"]), "assists_90": float(r["a90"]), "opp": r["opp_short"]})
-    HL_LONG = original
-    print("\n=== Half-life comparison, lower is better ===")
+        teams = res.groupby("team", as_index=False)["p_cs"].first()
+        teams = teams[teams["team"].isin(MARKET_CS_GW11)]
+        if len(teams):
+            market = teams["team"].map(MARKET_CS_GW11).astype(float)
+            model = teams["p_cs"] * 100
+            row["market_MAE"] = float((model - market).abs().mean())
+            row["market_corr"] = float(model.corr(market))
+            lookup = dict(zip(teams["team"], model))
+            row["Liverpool_cs"] = lookup.get("Liverpool", np.nan)
+            row["ManUtd_cs"] = lookup.get("Man Utd", np.nan)
+            row["ManCity_cs"] = lookup.get("Man City", np.nan)
+        rows.append(row)
+    HL_TEAM, TEAM_CARRY, TEAM_WINDOW = 12, 1.0, 0
+    print("\n=== Team rating comparison, lower logloss and market_MAE are better ===")
     print(pd.DataFrame(rows).round(4).to_string(index=False))
-    print("\n=== Bruno Fernandes, next gameweek, per 90 ===")
-    print(pd.DataFrame(bruno).round(3).to_string(index=False))
 
 
 def main() -> None:
