@@ -789,9 +789,36 @@ def tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> None:
     print(pd.DataFrame(rows).round(4).to_string(index=False))
 
 
+def home_away(data_dir: Path, seasons: list[str]) -> None:
+    """Home advantage across all listed seasons: raw rates and the effect after controlling for team strength."""
+    feat = build_features(load_history(data_dir, seasons))
+    feat = feat[feat["minutes"].notna()]
+    fx = feat.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).agg(
+        home=("was_home", "first"), gf=("gf", "first"), ga=("ga", "first"), xg=("expected_goals", "sum"))
+    fx["cs"] = (fx["ga"] == 0).astype(float)
+    fx["win"] = (fx["gf"] > fx["ga"]).astype(float)
+    print("=== Team per match, by season (home=1) ===")
+    print(fx.groupby(["season", "home"])[["gf", "xg", "cs", "win"]].mean().round(3).to_string())
+    print("\n=== Team per match, all seasons ===")
+    print(fx.groupby("home")[["gf", "xg", "ga", "cs", "win"]].mean().round(3).to_string())
+    played = feat[feat["minutes"] > 0]
+    per90 = played.groupby("was_home")[["goals_scored", "assists", "bonus", "saves", "yellow_cards", "expected_goals", "expected_assists"]].sum().div(played.groupby("was_home")["minutes"].sum() / 90, axis=0)
+    print("\n=== Player rates per 90, all seasons (was_home=1) ===")
+    print(per90.round(4).to_string())
+    starters = feat[feat["minutes"] >= 60]
+    print("\n=== Points per match for players with 60+ minutes, by position ===")
+    print(starters.groupby(["position", "was_home"])["total_points"].mean().unstack().round(2).to_string())
+    model = XPointsModel().fit(feat)
+    ex = model.explain()
+    ex = ex[ex["feature"] == "was_home"].copy()
+    ex["home_vs_away_%"] = ((np.exp(ex["coef"]) - 1) * 100).round(1)
+    print("\n=== Model effect of playing at home, controlling for team and opponent strength ===")
+    print(ex.drop(columns="feature").to_string(index=False))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -809,6 +836,8 @@ def main() -> None:
         report(pred, a.data_dir / f"backtest_{season}.csv")
         print("\n=== Coefficients, trained on seasons before the test season ===")
         print(XPointsModel().fit(feat[feat["season"] != season]).explain().to_string(index=False))
+    elif a.command == "home-away":
+        home_away(a.data_dir, a.seasons)
     elif a.command == "tune":
         tune(a.data_dir, a.seasons, a.step, a.offline)
     elif a.command == "site":
