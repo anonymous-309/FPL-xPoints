@@ -29,6 +29,7 @@
   <label>Số vòng
     <select id="horizon"><option>3</option><option selected>5</option><option>8</option></select>
   </label>
+  <button id="reset" class="reset" type="button" hidden></button>
 </form>
 <main>
   <div id="empty" class="empty"><p>Bảng điểm sẽ hiện ở đây sau khi GitHub chạy xong.</p></div>
@@ -38,11 +39,12 @@
 </main>
 <aside id="detail" hidden aria-live="polite">
   <p id="detail-text"></p>
+  <label id="detail-min-row" hidden>Số phút mỗi trận trong vòng này <input id="detail-min" type="number" min="0" max="90" step="1" inputmode="numeric"></label>
   <button id="close" type="button" aria-label="Đóng">×</button>
 </aside>
 <footer>
   <p id="warnings"></p>
-  <p>S là sân nhà, K là sân khách. Bấm vào một ô để xem điểm đến từ đâu. Đây là dự đoán thống kê, nên chỉ để tham khảo. Không liên kết với Premier League.</p>
+  <p>S là sân nhà, K là sân khách. Bấm vào một ô để xem điểm đến từ đâu. Sửa ô xMin để tính lại điểm theo số phút bạn dự đoán, áp dụng cho mọi vòng; muốn sửa riêng một vòng thì bấm vào ô của vòng đó. Từ 60 phút trở lên được 2 điểm ra sân và tính sạch lưới, xóa ô để về số của máy. Đây là dự đoán thống kê, nên chỉ để tham khảo. Không liên kết với Premier League.</p>
 </footer>
 <script src="app.js"></script>
 </body>

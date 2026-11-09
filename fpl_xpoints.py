@@ -166,6 +166,23 @@ def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray
     return out
 
 
+def weighted_last5(keys: np.ndarray, values: np.ndarray, matches: np.ndarray) -> np.ndarray:
+    """Per-match average of the 5 latest earlier matches, weighted 5,4,3,2,1 from newest to oldest."""
+    weights = np.array([5.0, 4.0, 3.0, 2.0, 1.0])
+    out = np.full(len(values), np.nan)
+    hist: list[float] = []
+    prev = object()
+    for i, (k, v, n) in enumerate(zip(keys, values, matches)):
+        if k != prev:
+            hist, prev = [], k
+        if hist:
+            recent = np.array(hist[-5:][::-1])
+            out[i] = float(np.dot(recent, weights[:len(recent)]) / weights[:len(recent)].sum())
+        if n > 0:
+            hist.append(v / n)
+    return out
+
+
 def team_features(df: pd.DataFrame) -> pd.DataFrame:
     hist = df[~df["future"]]
     fx = (hist.groupby(["season", "fixture", "team", "opp", "tf"], as_index=False)
@@ -250,6 +267,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
                  / g["n"].transform(lambda s: s.shift(1).rolling(4, min_periods=1).sum()).replace(0, np.nan))
     p["ppg_all"] = g["pts"].transform(lambda s: s.shift(1).expanding().sum()) / g["n"].transform(lambda s: s.shift(1).expanding().sum()).replace(0, np.nan)
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
+    p["w5_min"] = weighted_last5(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float))
+    p["w5_start"] = weighted_last5(keys, p["st"].to_numpy(float), p["n"].to_numpy(float))
     p = p.drop(columns=stat)
     p["min_short"] = p["X_ms"] / p["X_ns"].replace(0, np.nan)
     p["min_long"] = p["X_ml"] / p["X_nl"].replace(0, np.nan)
@@ -294,7 +313,7 @@ GLMS = {
     "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
 }
-MIN_FEATS = ["min_short", "min_long", "min_last", "start_rate", "n_hist", "pos_code", "GW", "was_home", "l_team_def"]
+MIN_FEATS = ["w5_min", "w5_start", "min_short", "min_long", "min_last", "start_rate", "n_hist", "pos_code", "GW", "was_home", "l_team_def"]
 TEAM_FEATS = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "was_home"]
 SAVE_FEATS = ["l_sv", "l_opp_att", "gap_opp_att", "l_team_def", "gap_team_def", "was_home"]
 
@@ -347,13 +366,14 @@ class XPointsModel:
         pts_goal = lam["goals"] * pos.map(GOAL_PTS).to_numpy()
         pts_ast = lam["assists"] * 3
         pts_cs = p2 * pcs * pos.map(CS_PTS).to_numpy()
-        pts_conc = -1.0 * is_gkdef * n90 * (conc - (1 - np.exp(-2 * conc)) / 2) / 2  # E[floor(G/2)]
-        pts_save = np.zeros(len(df))
+        full_conc = -1.0 * is_gkdef * (conc - (1 - np.exp(-2 * conc)) / 2) / 2  # E[floor(G/2)] over 90
+        pts_conc = full_conc * n90
         gk = (pos == "GK").to_numpy()
+        full_save = np.zeros(len(df))
         if gk.any():
             mu = self.saves.predict(df.loc[gk, SAVE_FEATS])
-            # E[floor(S/3)] for a full 90, scaled by expected minutes
-            pts_save[gk] = sum(poisson.sf(3 * j - 1, mu) for j in range(1, 11)) * n90[gk]
+            full_save[gk] = sum(poisson.sf(3 * j - 1, mu) for j in range(1, 11))  # E[floor(S/3)] over 90
+        pts_save = full_save * n90
         pts_def = (~gk) * p2 * df["defcon_rate"].to_numpy() * DEFCON_PTS
         pts_card = -lam["yellow"] - 3 * self.red_rate * n90
         out = pd.DataFrame({
@@ -362,6 +382,12 @@ class XPointsModel:
             "pts_bonus": lam["bonus"], "pts_cs": pts_cs, "pts_conc": pts_conc, "pts_save": pts_save,
             "pts_defcon": pts_def, "pts_card": pts_card,
         }, index=df.index)
+        goal_pts, cs_pts = pos.map(GOAL_PTS).to_numpy(), pos.map(CS_PTS).to_numpy()
+        # Value of each component if he plays a full 90, so the site can rescale when xMin is edited.
+        out["full_goal"], out["full_assist"], out["full_bonus"] = rate90["goals"] * goal_pts, rate90["assists"] * 3, rate90["bonus"]
+        out["full_cs"], out["full_conceded"], out["full_saves"] = pcs * cs_pts, full_conc, full_save
+        out["full_defcon"] = (~gk) * df["defcon_rate"].to_numpy() * DEFCON_PTS
+        out["full_cards"] = -rate90["yellow"] - 3 * self.red_rate
         out["xpts"] = out[[c for c in out.columns if c.startswith("pts_")]].sum(axis=1)
         return out
 
@@ -406,10 +432,11 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     pred = pred.copy()
     pred["pred_pts4"] = pred["pts4"].fillna(pred["ppg_all"]).fillna(0.0)
     pred["pred_ppg"] = pred["ppg_all"].fillna(0.0)
+    pred["pred_w5"] = pred["w5_min"].fillna(0.0)
     models = {"Model": "xpts", "Trailing 4 GW": "pred_pts4", "Long-run PPG": "pred_ppg"}
     if pred["xP"].notna().any():
         models["FPL xP (may leak)"] = "xP"
-    agg = {c: "sum" for c in ["total_points", "minutes", "xpts", "pred_pts4", "pred_ppg", "xmin"]}
+    agg = {c: "sum" for c in ["total_points", "minutes", "xpts", "pred_pts4", "pred_ppg", "xmin", "pred_w5"]}
     if "xP" in models.get("FPL xP (may leak)", ""):
         agg["xP"] = "sum"
     agg |= {"name": "last", "team": "last", "position": "last", "min_long": "last"}
@@ -447,6 +474,12 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
         table = pd.DataFrame({"predicted": prob, "actual": hit}).groupby(groups, observed=True).agg(predicted=("predicted", "mean"), actual=("actual", "mean"), n=("actual", "size"))
         print(f"\n{title}")
         print(table.round(3).to_string())
+    print("\n=== Minutes, regulars ===")
+    minutes = {}
+    for label, col in [("Model", "xmin"), ("Weighted last 5 only", "pred_w5")]:
+        err = regular[col] - regular["minutes"]
+        minutes[label] = {"MAE": err.abs().mean(), "RMSE": float(np.sqrt((err ** 2).mean()))}
+    print(pd.DataFrame(minutes).T.round(2).to_string())
     print(f"\nMinutes MAE, regulars: {(regular['xmin'] - regular['minutes']).abs().mean():.1f}")
     print(f"Saved player-GW predictions: {out_csv}")
     return gw
@@ -530,9 +563,13 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "id": r["pid"], "name": r["web_name"], "fullName": r["name"], "team": r["team_short"], "position": r["position"],
             "price": float(r["value"]) / 10, "status": r["status"] if isinstance(r["status"], str) else "a",
             "news": r["news"] if isinstance(r["news"], str) else "", "byGw": {}})
-        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "lg": 0.0, "la": 0.0, "noCs": 1.0})
+        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "noCs": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
+        for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "defcon", "cards"):
+            g["full"][name] = round(g["full"].get(name, 0.0) + float(r[f"full_{name}"]), 3)
+        g["full"]["xg"] = round(g["full"].get("xg", 0.0) + float(r["g90"]), 3)
+        g["full"]["xa"] = round(g["full"].get("xa", 0.0) + float(r["a90"]), 3)
         g["lg"] += float(r["g90"])
         g["la"] += float(r["a90"])
         g["noCs"] *= 1 - float(r["p_cs"])

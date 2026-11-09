@@ -60,6 +60,14 @@ footer p { margin: 0; max-width: 90ch; }
 .pitch a { color: #fff; font-weight: 600; white-space: nowrap; }
 td.gw { cursor: pointer; }
 .links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 18px; }
+td.xmin { padding-inline: 6px; }
+.xmin-input { width: 58px; height: 32px; padding: 0 4px; text-align: right; font-weight: 650; background: var(--chalk); border: 1px solid var(--line); border-radius: 3px; font-variant-numeric: tabular-nums; }
+.xmin-input::placeholder { color: var(--muted); font-weight: 400; opacity: 1; }
+.reset { height: 34px; padding: 0 12px; background: none; border: 1px solid var(--turf); border-radius: 3px; color: var(--turf); cursor: pointer; }
+.reset[hidden] { display: none; }
+#detail-min-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
+#detail-min-row[hidden] { display: none; }
+#detail-min { width: 66px; height: 34px; padding: 0 6px; text-align: right; color: var(--ink); background: #fff; border: 0; border-radius: 3px; }
 td.prob { cursor: default; min-width: 86px; }
 td.opp { color: var(--muted); }
 footer a { color: inherit; }
