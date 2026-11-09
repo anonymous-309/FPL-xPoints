@@ -6,10 +6,10 @@
   // key, header, value at full colour, format ('pct', 'pct1' or number of decimals)
   const METRICS = [
     ['pScore', 'Ghi bàn', 0.6, 'pct'], ['xGoals', 'Số bàn', 0.9, 2], ['pAssist', 'Kiến tạo', 0.35, 'pct'], ['xAssists', 'Số kiến tạo', 0.45, 2],
-    ['pCs', 'Sạch lưới', 0.6, 'pct'], ['pDefcon', 'DEFCON', 0.7, 'pct'], ['pRed', 'Thẻ đỏ', 0.02, 'pct1'], ['pYellow', 'Thẻ vàng', 0.4, 'pct'], ['bonus', 'Bonus TB', 1.5, 2],
+    ['pCs', 'Sạch lưới', 0.6, 'pct'], ['xConceded', 'Bàn thua', 2.4, 2], ['pDefcon', 'DEFCON', 0.7, 'pct'], ['xSaves', 'Cản phá', 4.5, 1], ['pPenSave', 'Cản pen', 0.03, 'pct1'], ['pRed', 'Thẻ đỏ', 0.02, 'pct1'], ['pYellow', 'Thẻ vàng', 0.4, 'pct'], ['bonus', 'Bonus TB', 1.5, 2],
   ];
   const isChance = (fmt) => fmt === 'pct' || fmt === 'pct1';
-  const noDefcon = (p, key) => key === 'pDefcon' && p.position === 'GK';
+  const notApplicable = (p, key) => (key === 'pDefcon' && p.position === 'GK') || ((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK');
 
   function heat(cell, t) {
     const v = Math.max(0, Math.min(1, t));
@@ -32,7 +32,7 @@
   function row(p, d) {
     const name = el('td', { className: 'player', title: p.news || p.fullName }, el('b', { textContent: p.name }), el('span', { textContent: `${p.team} ${p.position}` }));
     const cells = METRICS.map(([key, , full, fmt]) => {
-      if (noDefcon(p, key)) return el('td', { className: 'none', textContent: '–' });
+      if (notApplicable(p, key)) return el('td', { className: 'none', textContent: '–' });
       const v = d[key];
       const text = fmt === 'pct' ? `${Math.round(v * 100)}%` : fmt === 'pct1' ? `${(v * 100).toFixed(1)}%` : v.toFixed(fmt);
       const c = el('td', { className: 'gw prob' }, el('strong', { textContent: text }));

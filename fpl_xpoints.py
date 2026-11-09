@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """FPL expected-points model.
 
-    xPts = appearance + xMin/90 * (goal_rate * goal_pts + assist_rate * 3 + bonus_rate)
-           + clean sheet - goals conceded + saves + DEFCON - cards
+    xPts = xMin/90 * (appearance + goals + assists + bonus + clean sheet
+                      - goals conceded + saves + penalty saves + DEFCON - cards)
 
 Goal/assist/bonus rates are Poisson GLMs on log-features: the player's long-run
 xG/xA per 90, recent form, finishing, own team attack, opponent defence and
@@ -47,9 +47,10 @@ GOAL_PTS = {"GK": 10, "DEF": 6, "MID": 5, "FWD": 4}
 CS_PTS = {"GK": 4, "DEF": 4, "MID": 1, "FWD": 0}
 DEFCON_THRESHOLD = {"DEF": 10, "MID": 12, "FWD": 12}
 DEFCON_PTS = 2
+PEN_SAVE_PTS = 5
 
 HL_LONG, HL_SHORT, HL_MIN_SHORT, HL_MIN_LONG, HL_TEAM = 25, 4, 2, 8, 12
-K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED = 5.0, 2.0, 15.0, 4.0, 8.0, 40.0
+K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0, 4.0, 8.0, 40.0, 60.0
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
@@ -61,7 +62,7 @@ NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "wa
           "team_h_score", "team_a_score", "value"]
 NUMERIC = ["element", "fixture", "minutes", "total_points", "goals_scored", "assists", "bonus",
            "bps", "saves", "yellow_cards", "red_cards", "expected_goals", "expected_assists",
-           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP"]
+           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved"]
 
 
 # ---------------------------------------------------------------- data access
@@ -246,16 +247,16 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "pid": df["pid"], "tf": df["tf"], "position": df["position"], "future": df["future"],
         "mins": mins, "n90": mins / 90, "g": df["goals_scored"], "a": df["assists"],
         "xg": df["expected_goals"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
-        "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "pts": df["total_points"],
+        "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "ps": df["penalties_saved"], "pts": df["total_points"],
         "st": started.where(obs, 0), "n": obs.astype(float),
         "dh": (can_defcon & (dc >= thr)).astype(float), "do": can_defcon.astype(float),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "pts", "st", "n", "dh", "do"]
+    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pts", "st", "n", "dh", "do"]
     roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
     n90 = p["n90"].to_numpy(float)
-    for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc"]:
+    for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps"]:
         p[f"L_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_LONG)
         p[f"S_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_SHORT)
     for c, hl, tag in [("mins", HL_MIN_SHORT, "ms"), ("n", HL_MIN_SHORT, "ns"), ("st", HL_MIN_SHORT, "ss"),
@@ -273,18 +274,18 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     p["min_long"] = p["X_ml"] / p["X_nl"].replace(0, np.nan)
     p["start_rate"] = p["X_ss"] / p["X_ns"].replace(0, np.nan)
 
-    pos = roll[~roll["future"]].groupby(["position", "tf"], as_index=False)[["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "dh", "do"]].sum()
+    pos = roll[~roll["future"]].groupby(["position", "tf"], as_index=False)[["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "dh", "do"]].sum()
     idx = pd.MultiIndex.from_product([POSITIONS, sorted(df["tf"].unique())], names=["position", "tf"])
     pos = pos.set_index(["position", "tf"]).reindex(idx, fill_value=0.0).sort_index()
     pos = pos.groupby("position").cumsum().groupby("position").shift(1).fillna(0.0)
-    for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc"]:
+    for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps"]:
         pos[f"p_{c}"] = (pos[c] / pos["n90"].replace(0, np.nan)).fillna(EPS)
     pos["p_dh"] = (pos["dh"] / pos["do"].replace(0, np.nan)).fillna(0.0)
     df = df.merge(p, on=["pid", "tf"], how="left")
     df = df.merge(pos[[c for c in pos.columns if c.startswith("p_")]].reset_index(), on=["position", "tf"], how="left")
 
-    for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc"]:
-        k = K_RED if c == "rc" else K_FINISH if c in ("g", "a") else K_PLAYER
+    for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps"]:
+        k = K_RED if c == "rc" else K_PEN if c == "ps" else K_FINISH if c in ("g", "a") else K_PLAYER
         df[f"r_{c}"] = (df[f"L_{c}"] + k * df[f"p_{c}"]) / (df["L_n90"] + k)
         df[f"f_{c}"] = (df[f"S_{c}"] + K_SHORT * df[f"r_{c}"]) / (df["S_n90"] + K_SHORT)
     df["defcon_rate"] = (df["X_dh"] + K_PLAYER * df["p_dh"]) / (df["X_do"] + K_PLAYER)
@@ -353,10 +354,10 @@ class XPointsModel:
         pcs = np.exp(-conc)
         is_gkdef = pos.isin(["GK", "DEF"]).to_numpy()
 
-        pts_app = p1 + 2 * p2
+        pts_app = 2 * n90
         pts_goal = lam["goals"] * pos.map(GOAL_PTS).to_numpy()
         pts_ast = lam["assists"] * 3
-        pts_cs = p2 * pcs * pos.map(CS_PTS).to_numpy()
+        pts_cs = n90 * pcs * pos.map(CS_PTS).to_numpy()
         full_conc = -1.0 * is_gkdef * (conc - (1 - np.exp(-2 * conc)) / 2) / 2  # E[floor(G/2)] over 90
         pts_conc = full_conc * n90
         gk = (pos == "GK").to_numpy()
@@ -365,18 +366,25 @@ class XPointsModel:
             mu = self.saves.predict(df.loc[gk, SAVE_FEATS])
             full_save[gk] = sum(poisson.sf(3 * j - 1, mu) for j in range(1, 11))  # E[floor(S/3)] over 90
         pts_save = full_save * n90
-        pts_def = (~gk) * p2 * df["defcon_rate"].to_numpy() * DEFCON_PTS
+        pts_def = (~gk) * n90 * df["defcon_rate"].to_numpy() * DEFCON_PTS
+        saves90 = np.zeros(len(df))
+        if gk.any():
+            saves90[gk] = mu
+        ps90 = gk * df["r_ps"].to_numpy(float)
+        full_pensave = ps90 * PEN_SAVE_PTS
+        pts_pensave = full_pensave * n90
         pts_card = -lam["yellow"] - 3 * red90 * n90
         out = pd.DataFrame({
             "xmin": xmin, "p_play": p1 + p2, "p_60": p2, "xg": lam["goals"], "xa": lam["assists"],
             "xbonus": lam["bonus"], "p_cs": pcs, "g90": rate90["goals"], "a90": rate90["assists"], "y90": rate90["yellow"], "r90": red90, "bonus90": rate90["bonus"], "pts_app": pts_app, "pts_goal": pts_goal, "pts_ast": pts_ast,
-            "pts_bonus": lam["bonus"], "pts_cs": pts_cs, "pts_conc": pts_conc, "pts_save": pts_save,
+            "pts_bonus": lam["bonus"], "pts_cs": pts_cs, "pts_conc": pts_conc, "pts_save": pts_save, "pts_pensave": pts_pensave, "saves90": saves90, "conc90": conc, "ps90": ps90,
             "pts_defcon": pts_def, "pts_card": pts_card,
         }, index=df.index)
         goal_pts, cs_pts = pos.map(GOAL_PTS).to_numpy(), pos.map(CS_PTS).to_numpy()
         # Value of each component if he plays a full 90, so the site can rescale when xMin is edited.
         out["full_goal"], out["full_assist"], out["full_bonus"] = rate90["goals"] * goal_pts, rate90["assists"] * 3, rate90["bonus"]
         out["full_cs"], out["full_conceded"], out["full_saves"] = pcs * cs_pts, full_conc, full_save
+        out["full_pensave"] = full_pensave
         out["full_defcon"] = (~gk) * df["defcon_rate"].to_numpy() * DEFCON_PTS
         out["full_cards"] = -rate90["yellow"] - 3 * red90
         out["p_defcon"] = (~gk) * df["defcon_rate"].to_numpy()
@@ -481,6 +489,13 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     for title, rate, actual in [("Yellow", "y90", "yellow_cards"), ("Red", "r90", "red_cards")]:
         prob = 1 - np.exp(-played[rate] * played["minutes"] / 90)
         print(f"{title}: predicted {prob.mean():.3%}, actual {(played[actual] >= 1).mean():.3%}, n={len(played)}")
+    gks = played[played["position"] == "GK"]
+    share = gks["minutes"] / 90
+    print(f"Saves per GK match: predicted {(gks['saves90'] * share).mean():.3f}, actual {gks['saves'].mean():.3f}, n={len(gks)}")
+    prob = 1 - np.exp(-gks["ps90"] * share)
+    print(f"Penalty save: predicted {prob.mean():.3%}, actual {(gks['penalties_saved'] >= 1).mean():.3%}")
+    teams = pred.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
+    print(f"Goals conceded per team match: predicted {teams['conc90'].mean():.3f}, actual {teams['ga'].mean():.3f}, n={len(teams)}")
     known = pred[(pred["minutes"] >= 60) & pred["defensive_contribution"].notna() & (pred["position"] != "GK")]
     if len(known):
         hit = (known["defensive_contribution"] >= known["position"].map(DEFCON_THRESHOLD)).astype(float)
@@ -560,7 +575,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
 
 
 PART_NAMES = {"pts_app": "app", "pts_goal": "goal", "pts_ast": "assist", "pts_bonus": "bonus", "pts_cs": "cs",
-              "pts_conc": "conceded", "pts_save": "saves", "pts_defcon": "defcon", "pts_card": "cards"}
+              "pts_conc": "conceded", "pts_save": "saves", "pts_pensave": "pensave", "pts_defcon": "defcon", "pts_card": "cards"}
 
 
 def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path, offline: bool) -> None:
@@ -572,10 +587,10 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "price": float(r["value"]) / 10, "status": r["status"] if isinstance(r["status"], str) else "a",
             "news": r["news"] if isinstance(r["news"], str) else "",
             "w5Min": None if pd.isna(r["w5_min"]) else round(float(r["w5_min"]), 1), "byGw": {}})
-        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "bonus": 0.0, "noCs": 1.0, "noDef": 1.0})
+        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "noCs": 1.0, "noDef": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
-        for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "defcon", "cards"):
+        for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "defcon", "cards"):
             g["full"][name] = round(g["full"].get(name, 0.0) + float(r[f"full_{name}"]), 3)
         g["full"]["xg"] = round(g["full"].get("xg", 0.0) + float(r["g90"]), 3)
         g["full"]["xa"] = round(g["full"].get("xa", 0.0) + float(r["a90"]), 3)
@@ -583,6 +598,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g["la"] += float(r["a90"])
         g["ly"] += float(r["y90"])
         g["lr"] += float(r["r90"])
+        g["lps"] += float(r["ps90"])
+        g["xSaves"] += float(r["saves90"])
+        g["xConceded"] += float(r["conc90"])
         g["bonus"] += float(r["bonus90"])
         g["noCs"] *= 1 - float(r["p_cs"])
         g["noDef"] *= 1 - float(r["p_defcon"])
@@ -599,6 +617,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             g["pDefcon"] = round(1 - g.pop("noDef"), 4)
             g["pYellow"] = round(1 - np.exp(-g.pop("ly")), 4)
             g["pRed"] = round(1 - np.exp(-g.pop("lr")), 5)
+            g["pPenSave"] = round(1 - np.exp(-g.pop("lps")), 5)
+            g["xSaves"], g["xConceded"] = round(g["xSaves"], 3), round(g["xConceded"], 3)
             g["bonus"] = round(g["bonus"], 3)
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}

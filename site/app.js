@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const STORE = 'xmin-overrides';
   const state = { data: null, pos: '', sort: 'total', dir: -1, overrides: loadOverrides(), detail: null };
-  const PARTS = { app: 'Ra sân', goal: 'Bàn thắng', assist: 'Kiến tạo', bonus: 'Bonus', cs: 'Sạch lưới', conceded: 'Bàn thua', saves: 'Cản phá', defcon: 'DEFCON', cards: 'Thẻ' };
+  const PARTS = { app: 'Ra sân', goal: 'Bàn thắng', assist: 'Kiến tạo', bonus: 'Bonus', cs: 'Sạch lưới', conceded: 'Bàn thua', saves: 'Cản phá', pensave: 'Cản penalty', defcon: 'DEFCON', cards: 'Thẻ' };
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   const f1 = (x) => x.toFixed(1);
 
@@ -26,8 +26,8 @@
     if (!d) return null;
     const x = overrideFor(p, g);
     if (x === null) return d;
-    const n = d.opp.length, r = x / 90, f = d.full, full = x >= 60;
-    const parts = { app: (x <= 0 ? 0 : full ? 2 : 1) * n, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: full ? f.cs : 0, conceded: f.conceded * r, saves: f.saves * r, defcon: full ? f.defcon : 0, cards: f.cards * r };
+    const n = d.opp.length, r = x / 90, f = d.full;
+    const parts = { app: 2 * n * r, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: f.cs * r, conceded: f.conceded * r, saves: f.saves * r, pensave: f.pensave * r, defcon: f.defcon * r, cards: f.cards * r };
     return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: x * n, xg: f.xg * r, xa: f.xa * r, edited: true };
   }
   const breakdownText = (d) => Object.entries(PARTS).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n') + `\nxG ${d.xg.toFixed(2)}, xA ${d.xa.toFixed(2)}`;
