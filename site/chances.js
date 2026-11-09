@@ -3,7 +3,13 @@
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   const state = { data: null, pos: '', sort: 'pScore', dir: -1 };
-  const METRICS = [['pScore', 'Ghi bàn', 0.6], ['pAssist', 'Kiến tạo', 0.35], ['pCs', 'Sạch lưới', 0.6]];
+  // key, header, value at full colour, format ('pct', 'pct1' or number of decimals)
+  const METRICS = [
+    ['pScore', 'Ghi bàn', 0.6, 'pct'], ['xGoals', 'Số bàn', 0.9, 2], ['pAssist', 'Kiến tạo', 0.35, 'pct'], ['xAssists', 'Số kiến tạo', 0.45, 2],
+    ['pCs', 'Sạch lưới', 0.6, 'pct'], ['pDefcon', 'DEFCON', 0.7, 'pct'], ['pRed', 'Thẻ đỏ', 0.02, 'pct1'], ['pYellow', 'Thẻ vàng', 0.4, 'pct'], ['bonus', 'Bonus TB', 1.5, 2],
+  ];
+  const isChance = (fmt) => fmt === 'pct' || fmt === 'pct1';
+  const noDefcon = (p, key) => key === 'pDefcon' && p.position === 'GK';
 
   function heat(cell, t) {
     const v = Math.max(0, Math.min(1, t));
@@ -25,9 +31,13 @@
 
   function row(p, d) {
     const name = el('td', { className: 'player', title: p.news || p.fullName }, el('b', { textContent: p.name }), el('span', { textContent: `${p.team} ${p.position}` }));
-    const cells = METRICS.map(([key, , full]) => {
-      const c = el('td', { className: 'gw prob' }, el('strong', { textContent: `${Math.round(d[key] * 100)}%` }), el('small', { textContent: (1 / Math.max(d[key], 0.001)).toFixed(2) }));
-      heat(c, d[key] / full);
+    const cells = METRICS.map(([key, , full, fmt]) => {
+      if (noDefcon(p, key)) return el('td', { className: 'none', textContent: '–' });
+      const v = d[key];
+      const text = fmt === 'pct' ? `${Math.round(v * 100)}%` : fmt === 'pct1' ? `${(v * 100).toFixed(1)}%` : v.toFixed(fmt);
+      const c = el('td', { className: 'gw prob' }, el('strong', { textContent: text }));
+      if (isChance(fmt)) c.append(el('small', { textContent: (1 / Math.max(v, 0.001)).toFixed(2) }));
+      heat(c, v / full);
       return c;
     });
     return el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), el('td', { className: 'opp', textContent: d.opp.join(', ') }), ...cells);
@@ -43,7 +53,7 @@
         && (!q || p.name.toLowerCase().includes(q) || p.fullName.toLowerCase().includes(q)))
       .sort((a, b) => { const x = value(a, a.byGw[gw]), y = value(b, b.byGw[gw]); return (x < y ? -1 : x > y ? 1 : 0) * state.dir; });
     $('table').tBodies[0].replaceChildren(...(list.length ? list.map((p) => row(p, p.byGw[gw]))
-      : [el('tr', {}, el('td', { colSpan: 6, className: 'none', textContent: 'Không có cầu thủ nào khớp bộ lọc. Hãy nới bộ lọc giá, đội hoặc vị trí.' }))]));
+      : [el('tr', {}, el('td', { colSpan: METRICS.length + 3, className: 'none', textContent: 'Không có cầu thủ nào khớp bộ lọc. Hãy nới bộ lọc giá, đội hoặc vị trí.' }))]));
   }
 
   $('filters').addEventListener('input', render);
