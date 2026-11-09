@@ -177,7 +177,7 @@ def ai_minute(history: list[float]) -> float:
     Weighted 5,4,3,2,1 from newest to oldest, except that:
     - isolated absences of a regular starter (suspension, a knock, one rest) are skipped;
     - two or more absences in a row right now are kept, because he may really be out;
-    - two recent matches of 70+ after a clearly lower one mean he is back: use those two matches;
+    - 2 to 5 straight matches of 70+ after a clearly lower one mean he is back: use only that streak;
     - minutes rising match after match to 60+ mean he is climbing back: use his normal full-match minutes.
     """
     if not history:
@@ -186,9 +186,10 @@ def ai_minute(history: list[float]) -> float:
     apps = [m for m in newest_first if m > 0]
     trailing_zeros = next((i for i, m in enumerate(newest_first) if m > 0), len(newest_first))
     if trailing_zeros == 0 and len(apps) >= 3:
-        back_in_team = min(apps[0], apps[1]) >= 70 and apps[2] <= min(apps[0], apps[1]) - 20
-        if back_in_team:
-            return float(min(90.0, (apps[0] + apps[1]) / 2))
+        streak = next((i for i, m in enumerate(apps) if m < 70), len(apps))
+        if 2 <= streak <= 5 and streak < len(apps) and apps[streak] <= min(apps[:streak]) - 20:
+            weights = np.array([5.0, 4.0, 3.0, 2.0, 1.0])[:streak]
+            return float(min(90.0, np.dot(apps[:streak], weights) / weights.sum()))
         run = apps[:4]
         climbing = apps[0] >= 60 and all(x >= y for x, y in zip(run, run[1:])) and apps[0] - apps[2] >= 20
         if climbing:
