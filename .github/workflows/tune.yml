@@ -1,0 +1,28 @@
+name: So sanh trong so mua
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/tune.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  tune:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: fpl_data/20*
+          key: fpl-history-v1
+      - run: python fpl_xpoints.py download
+      - run: python fpl_xpoints.py tune --step 6

@@ -652,9 +652,45 @@ def predict(data_dir: Path, seasons: list[str], horizon: int, out: Path, offline
     return wide
 
 
+def tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> None:
+    """Compares how quickly older matches should fade, across goals, assists, DEFCON and total points."""
+    global HL_LONG
+    def log_loss(prob: pd.Series, hit: pd.Series) -> float:
+        p = prob.clip(1e-5, 1 - 1e-5)
+        return float(-(hit * np.log(p) + (1 - hit) * np.log(1 - p)).mean())
+    rows, bruno = [], []
+    original = HL_LONG
+    for hl in (8, 15, 25, 40, 60):
+        HL_LONG = hl
+        print(f"--- half-life {hl} matches")
+        feat = build_features(load_history(data_dir, seasons))
+        pred = walk_forward(feat, seasons[-1], step)
+        regular = pred[pred["min_long"] >= 45].groupby(["GW", "pid"], as_index=False)[["total_points", "xpts"]].sum()
+        played = pred[pred["minutes"] > 0]
+        share = played["minutes"] / 90
+        known = pred[(pred["minutes"] >= 60) & pred["defensive_contribution"].notna() & (pred["position"] != "GK")]
+        rows.append({
+            "half_life": hl,
+            "RMSE_regulars": float(np.sqrt(((regular["total_points"] - regular["xpts"]) ** 2).mean())),
+            "logloss_goal": log_loss(1 - np.exp(-played["g90"] * share), (played["goals_scored"] >= 1).astype(float)),
+            "logloss_assist": log_loss(1 - np.exp(-played["a90"] * share), (played["assists"] >= 1).astype(float)),
+            "logloss_defcon": log_loss(known["p_defcon"], (known["defensive_contribution"] >= known["position"].map(DEFCON_THRESHOLD)).astype(float)),
+        })
+        res = predict_frame(data_dir, seasons, 1, offline)
+        b = res[res["name"].str.contains("Bruno") & res["name"].str.contains("Fernandes")]
+        if len(b):
+            r = b.iloc[0]
+            bruno.append({"half_life": hl, "goals_90": float(r["g90"]), "assists_90": float(r["a90"]), "opp": r["opp_short"]})
+    HL_LONG = original
+    print("\n=== Half-life comparison, lower is better ===")
+    print(pd.DataFrame(rows).round(4).to_string(index=False))
+    print("\n=== Bruno Fernandes, next gameweek, per 90 ===")
+    print(pd.DataFrame(bruno).round(3).to_string(index=False))
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -672,6 +708,8 @@ def main() -> None:
         report(pred, a.data_dir / f"backtest_{season}.csv")
         print("\n=== Coefficients, trained on seasons before the test season ===")
         print(XPointsModel().fit(feat[feat["season"] != season]).explain().to_string(index=False))
+    elif a.command == "tune":
+        tune(a.data_dir, a.seasons, a.step, a.offline)
     elif a.command == "site":
         export_site(a.data_dir, a.seasons, 8, a.out, a.offline)
     else:
