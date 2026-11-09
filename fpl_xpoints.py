@@ -6,7 +6,8 @@
 
 Goal/assist/bonus rates are Poisson GLMs on log-features: the player's long-run
 xG/xA per 90, recent form, finishing, own team attack, opponent defence and
-home/away. xMin comes from a separate classifier (0 / 1-59 / 60+ minutes).
+home/away. xMin is the player's last-5-match minutes, weighted 5,4,3,2,1 from
+newest to oldest, scaled down by FPL's injury/suspension flag.
 Every feature uses only gameweeks before the one being predicted.
 
 Usage:
@@ -31,7 +32,6 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import poisson
-from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import PoissonRegressor
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -268,7 +268,6 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     p["ppg_all"] = g["pts"].transform(lambda s: s.shift(1).expanding().sum()) / g["n"].transform(lambda s: s.shift(1).expanding().sum()).replace(0, np.nan)
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
     p["w5_min"] = weighted_last5(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float))
-    p["w5_start"] = weighted_last5(keys, p["st"].to_numpy(float), p["n"].to_numpy(float))
     p = p.drop(columns=stat)
     p["min_short"] = p["X_ms"] / p["X_ns"].replace(0, np.nan)
     p["min_long"] = p["X_ml"] / p["X_nl"].replace(0, np.nan)
@@ -313,7 +312,6 @@ GLMS = {
     "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
 }
-MIN_FEATS = ["w5_min", "w5_start", "min_short", "min_long", "min_last", "start_rate", "n_hist", "pos_code", "GW", "was_home", "l_team_def"]
 TEAM_FEATS = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "was_home"]
 SAVE_FEATS = ["l_sv", "l_opp_att", "gap_opp_att", "l_team_def", "gap_team_def", "was_home"]
 
@@ -333,11 +331,6 @@ class XPointsModel:
         train = train[~train["future"] & train["minutes"].notna()]
         # the first GWs of the data have no position priors or player history yet
         train = train[train["t"] >= train["t"].min() + BURN_IN_GWS]
-        y = np.select([train["minutes"] <= 0, train["minutes"] < 60], [0, 1], default=2)
-        self.minutes = HistGradientBoostingClassifier(max_iter=120, learning_rate=0.08, max_depth=4, random_state=7).fit(train[MIN_FEATS], y)
-        t2 = train.assign(bucket=y)
-        self.m_sub = t2[t2["bucket"] == 1].groupby("position")["minutes"].mean().reindex(POSITIONS).fillna(30.0)
-        self.m_full = t2[t2["bucket"] == 2].groupby("position")["minutes"].mean().reindex(POSITIONS).fillna(89.0)
         self.rates = {k: _fit_rate(train, tgt, f) for k, (tgt, f) in GLMS.items()}
         gk = train[train["position"] == "GK"]
         self.saves = _fit_rate(gk, "saves", SAVE_FEATS)
@@ -348,13 +341,12 @@ class XPointsModel:
         return self
 
     def predict(self, df: pd.DataFrame, availability: pd.Series | None = None) -> pd.DataFrame:
-        classes = list(self.minutes.classes_)
-        proba = self.minutes.predict_proba(df[MIN_FEATS])
-        cols = {c: proba[:, classes.index(c)] if c in classes else np.zeros(len(df)) for c in (0, 1, 2)}
+        # xMin = weighted last-5 minutes, reduced by the FPL availability flag. FPL thresholds apply to that figure.
         avail = np.ones(len(df)) if availability is None else availability.fillna(1.0).to_numpy()
-        p1, p2 = cols[1] * avail, cols[2] * avail
+        xmin = np.clip(df["w5_min"].fillna(0.0).to_numpy(float) * avail, 0, 90)
+        p2 = (xmin >= 60).astype(float)
+        p1 = ((xmin > 0) & (xmin < 60)).astype(float)
         pos = df["position"]
-        xmin = p1 * pos.map(self.m_sub).to_numpy() + p2 * pos.map(self.m_full).to_numpy()
         n90 = xmin / 90
         rate90 = {k: self.rates[k].predict(df[f]) for k, (_, f) in GLMS.items()}
         lam = {k: rate90[k] * n90 for k in rate90}
@@ -481,7 +473,7 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     print(by_recent.round(2).to_string())
     print("\n=== Minutes, regulars ===")
     minutes = {}
-    for label, col in [("Model", "xmin"), ("Weighted last 5 only", "pred_w5")]:
+    for label, col in [("xMin", "xmin")]:
         err = regular[col] - regular["minutes"]
         minutes[label] = {"MAE": err.abs().mean(), "RMSE": float(np.sqrt((err ** 2).mean()))}
     print(pd.DataFrame(minutes).T.round(2).to_string())
