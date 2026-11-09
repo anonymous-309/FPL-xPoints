@@ -54,6 +54,7 @@ K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
+MAX_BAN_MATCHES = 4
 BURN_IN_GWS = 6
 
 NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "was_home",
@@ -192,19 +193,32 @@ def ai_minute(history: list[float]) -> float:
     return float(np.dot(window, weights) / weights.sum())
 
 
-def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray) -> tuple[np.ndarray, list[str]]:
-    """AI Minute before each row of each key, plus the latest minutes as text for diagnostics."""
+def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np.ndarray) -> tuple[np.ndarray, list[str]]:
+    """AI Minute before each row of each key, plus the latest minutes as text for diagnostics.
+
+    A match with a red card and the suspension straight after it say nothing about his role, so they are left out.
+    """
     out = np.full(len(mins), np.nan)
     recent: list[str] = []
     hist: list[float] = []
+    raw: list[float] = []
+    ban_left = 0
     prev = object()
-    for i, (k, v, n) in enumerate(zip(keys, mins, matches)):
+    for i, (k, v, n, r) in enumerate(zip(keys, mins, matches, reds)):
         if k != prev:
-            hist, prev = [], k
+            hist, raw, ban_left, prev = [], [], 0, k
         out[i] = ai_minute(hist)
-        recent.append(",".join(str(int(round(m))) for m in hist[-8:]))
+        recent.append(",".join(str(int(round(m))) for m in raw[-8:]))
         if n > 0:
-            hist.append(float(v) / n)
+            minutes = float(v) / n
+            raw.append(minutes)
+            if r > 0:
+                ban_left = MAX_BAN_MATCHES
+            elif ban_left > 0 and minutes == 0:
+                ban_left -= 1
+            else:
+                ban_left = 0
+                hist.append(minutes)
     return out, recent
 
 
@@ -292,7 +306,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
                  / g["n"].transform(lambda s: s.shift(1).rolling(4, min_periods=1).sum()).replace(0, np.nan))
     p["ppg_all"] = g["pts"].transform(lambda s: s.shift(1).expanding().sum()) / g["n"].transform(lambda s: s.shift(1).expanding().sum()).replace(0, np.nan)
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
-    p["w5_min"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float))
+    p["w5_min"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float))
     p = p.drop(columns=stat)
     p["min_short"] = p["X_ms"] / p["X_ns"].replace(0, np.nan)
     p["min_long"] = p["X_ml"] / p["X_nl"].replace(0, np.nan)
