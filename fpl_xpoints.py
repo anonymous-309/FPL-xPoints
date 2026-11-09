@@ -688,6 +688,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         m = res[(res["pid"] == p["id"]) & (res["GW"] == int(first))].iloc[0]
         print(f'  minutes: xMin {m["xmin"]:.1f}, P(play) {m["p_play"]:.3f}, P(60+) {m["p_60"]:.3f}, last-5 {m["w5_min"]:.1f}, long-run {m["min_long"]:.1f}, '
               f'availability {m["avail"]:.2f}, status {m["status"]}, news "{m["news"]}"')
+    teams = res[res["GW"] == int(first)].groupby(["team", "opp"], as_index=False)[["p_cs", "conc90"]].first().sort_values("p_cs", ascending=False)
+    for _, t in teams.iterrows():
+        print(f'Clean sheet GW{first}: {t["team"]} vs {t["opp"]}: {t["p_cs"]:.1%}, expected conceded {t["conc90"]:.2f}')
     for name in ("Osula", "Haaland", "Bruno", "Saka", "Neto"):
         rows = res[res["name"].str.contains(name) & (res["GW"] == int(first))]
         for _, m in rows.head(3).iterrows():
