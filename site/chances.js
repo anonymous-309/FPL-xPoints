@@ -6,7 +6,7 @@
   // key, header, value at full colour, format ('pct', 'pct1' or number of decimals)
   const METRICS = [
     ['pScore', 'Ghi bàn', 0.6, 'pct'], ['xGoals', 'Số bàn', 0.9, 2], ['pAssist', 'Kiến tạo', 0.35, 'pct'], ['xAssists', 'Số kiến tạo', 0.45, 2],
-    ['pCs', 'Sạch lưới', 0.6, 'pct'], ['xConceded', 'Bàn thua', 2.4, 2], ['pDefcon', 'DEFCON', 0.7, 'pct'], ['xSaves', 'Cản phá', 4.5, 1], ['pPenSave', 'Cản pen', 0.03, 'pct1'], ['pRed', 'Thẻ đỏ', 0.02, 'pct1'], ['pYellow', 'Thẻ vàng', 0.4, 'pct'], ['bonus', 'Bonus', 1.5, 2],
+    ['pCs', 'Sạch lưới', 0.6, 'pct'], ['xConceded', 'Bàn thua', 2.4, 2], ['pDefcon', 'DEFCON', 0.7, 'pct'], ['xSaves', 'Cản phá', 4.5, 1], ['pPenSave', 'Cản pen', 0.03, 'pct1'], ['pPenMiss', 'Hỏng pen', 0.03, 'pct1'], ['pOwnGoal', 'Phản lưới', 0.03, 'pct1'], ['pRed', 'Thẻ đỏ', 0.02, 'pct1'], ['pYellow', 'Thẻ vàng', 0.4, 'pct'], ['bonus', 'Bonus', 1.5, 2],
   ];
   const isChance = (fmt) => fmt === 'pct' || fmt === 'pct1';
   const notApplicable = (p, key) => (key === 'pDefcon' && p.position === 'GK') || ((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK');
