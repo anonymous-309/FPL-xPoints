@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cơ hội ghi bàn FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Cơ hội ghi bàn</h1>
+    <p id="status" role="status">Đang tải dữ liệu</p>
+  </div>
+  <nav class="links"><a href="index.html">Bảng xPoints</a><a href="backtest.txt">Độ chính xác</a></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <div class="seg" role="group" aria-label="Vị trí">
+    <button type="button" data-pos="" aria-pressed="true">Tất cả</button>
+    <button type="button" data-pos="GK" aria-pressed="false">GK</button>
+    <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
+    <button type="button" data-pos="MID" aria-pressed="false">MID</button>
+    <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+  </div>
+  <label>Vòng <select id="gw"></select></label>
+  <label>Tìm cầu thủ <input id="search" type="search"></label>
+  <label>Đội <select id="team"><option value="">Tất cả</option></select></label>
+  <label>Giá tối đa <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
+</form>
+<main>
+  <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Cơ hội của từng cầu thủ">
+    <table id="table"><thead></thead><tbody></tbody></table>
+  </div>
+</main>
+<footer>
+  <p>Tính với giả định cầu thủ đá đủ 90 phút mỗi trận, chưa trừ khả năng dự bị hay vắng mặt. Số nhỏ là odds hòa vốn (decimal): odds nhà cái cao hơn số này thì có lợi so với mô hình. Sạch lưới tính theo đội. Vòng có 2 trận là cơ hội trong cả vòng.</p>
+</footer>
+<script src="chances.js"></script>
+</body>
+</html>

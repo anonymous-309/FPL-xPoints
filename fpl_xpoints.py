@@ -328,7 +328,8 @@ class XPointsModel:
         pos = df["position"]
         xmin = p1 * pos.map(self.m_sub).to_numpy() + p2 * pos.map(self.m_full).to_numpy()
         n90 = xmin / 90
-        lam = {k: self.rates[k].predict(df[f]) * n90 for k, (_, f) in GLMS.items()}
+        rate90 = {k: self.rates[k].predict(df[f]) for k, (_, f) in GLMS.items()}
+        lam = {k: rate90[k] * n90 for k in rate90}
         conc = self.conceded.predict(df[TEAM_FEATS])
         pcs = np.exp(-conc)
         is_gkdef = pos.isin(["GK", "DEF"]).to_numpy()
@@ -348,7 +349,7 @@ class XPointsModel:
         pts_card = -lam["yellow"] - 3 * self.red_rate * n90
         out = pd.DataFrame({
             "xmin": xmin, "p_play": p1 + p2, "p_60": p2, "xg": lam["goals"], "xa": lam["assists"],
-            "xbonus": lam["bonus"], "p_cs": pcs, "pts_app": pts_app, "pts_goal": pts_goal, "pts_ast": pts_ast,
+            "xbonus": lam["bonus"], "p_cs": pcs, "g90": rate90["goals"], "a90": rate90["assists"], "pts_app": pts_app, "pts_goal": pts_goal, "pts_ast": pts_ast,
             "pts_bonus": lam["bonus"], "pts_cs": pts_cs, "pts_conc": pts_conc, "pts_save": pts_save,
             "pts_defcon": pts_def, "pts_card": pts_card,
         }, index=df.index)
@@ -511,17 +512,31 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "id": r["pid"], "name": r["web_name"], "fullName": r["name"], "team": r["team_short"], "position": r["position"],
             "price": float(r["value"]) / 10, "status": r["status"] if isinstance(r["status"], str) else "a",
             "news": r["news"] if isinstance(r["news"], str) else "", "byGw": {}})
-        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}})
+        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "lg": 0.0, "la": 0.0, "noCs": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
+        g["lg"] += float(r["g90"])
+        g["la"] += float(r["a90"])
+        g["noCs"] *= 1 - float(r["p_cs"])
         g["opp"].append(f'{r["opp_short"]} ({"S" if r["was_home"] else "K"})')
         for col, name in PART_NAMES.items():
             g["parts"][name] = round(g["parts"].get(name, 0.0) + float(r[col]), 3)
+    # Chance of at least one goal/assist/clean sheet in the gameweek if he plays every minute.
+    for p in players.values():
+        for g in p["byGw"].values():
+            g["pScore"] = round(1 - np.exp(-g.pop("lg")), 4)
+            g["pAssist"] = round(1 - np.exp(-g.pop("la")), 4)
+            g["pCs"] = round(1 - g.pop("noCs"), 4)
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     source = Path(__file__).resolve().parent / "site"
     shutil.copytree(source, out_dir, dirs_exist_ok=True)
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
+    first = str(payload["gws"][0])
+    top = sorted((p for p in players.values() if first in p["byGw"]), key=lambda p: -p["byGw"][first]["pScore"])[:5]
+    for p in top:
+        g = p["byGw"][first]
+        print(f'GW{first} {p["name"]} {g["opp"]}: score {g["pScore"]:.1%}, assist {g["pAssist"]:.1%}, clean sheet {g["pCs"]:.1%}')
     print(f"Site written to {out_dir}: {len(players)} players, GW{payload['gws'][0]}-{payload['gws'][-1]}")
 
 

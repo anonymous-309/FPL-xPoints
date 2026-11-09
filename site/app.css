@@ -59,6 +59,9 @@ footer p { margin: 0; max-width: 90ch; }
 #warnings { color: var(--warn); }
 .pitch a { color: #fff; font-weight: 600; white-space: nowrap; }
 td.gw { cursor: pointer; }
+.links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px 18px; }
+td.prob { cursor: default; min-width: 86px; }
+td.opp { color: var(--muted); }
 footer a { color: inherit; }
 #detail { position: fixed; left: 12px; right: 12px; bottom: 12px; z-index: 5; max-width: 420px; margin-left: auto; padding: 14px 44px 14px 16px; background: var(--ink); color: #fff; border-radius: 4px; box-shadow: 0 8px 28px rgba(0,0,0,.35); }
 #detail[hidden] { display: none; }
