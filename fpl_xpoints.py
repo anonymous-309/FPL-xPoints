@@ -551,8 +551,6 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
     short = {t["id"]: t.get("short_name", t["name"]) for t in boot["teams"]}
     pos = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
     fix = {f["id"]: f for f in fixtures}
-    done = [e["id"] for e in boot["events"] if e.get("finished")]
-    last_done = max(done) if done else 0
     upcoming = [e["id"] for e in boot["events"] if e.get("is_next")] or [e["id"] for e in boot["events"] if not e.get("finished")]
     if not upcoming:
         raise SystemExit("No upcoming gameweek.")
@@ -565,9 +563,10 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
         name = f'{p.get("first_name", "")} {p.get("second_name", "")}'.strip() or p["web_name"]
         base = {"name": name, "position": pos[p["element_type"]], "element": p["id"], "code": p["code"], "season": CURRENT_SEASON}
         for row in _api(f"element-summary/{p['id']}/", cache, offline)["history"]:
-            if row["round"] > last_done or row["fixture"] not in fix:
+            f = fix.get(row["fixture"])
+            # Use every match that has been played: FPL marks a whole gameweek finished only some time later.
+            if f is None or not (f.get("finished") or f.get("finished_provisional")):
                 continue
-            f = fix[row["fixture"]]
             hist.append(row | base | {"GW": row["round"], "team": teams[f["team_h"] if row["was_home"] else f["team_a"]], "opponent_team": row["opponent_team"], "future": False})
         c = p.get("chance_of_playing_next_round")
         for f in fixtures:
