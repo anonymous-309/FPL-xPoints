@@ -1,0 +1,48 @@
+name: Cap nhat xPoints
+
+on:
+  schedule:
+    - cron: "17 3,15 * * *"   # 10:17 and 22:17 Vietnam time
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: fpl_data/20*
+          key: fpl-history-v1
+      - name: Download past seasons
+        run: python fpl_xpoints.py download
+      - name: Build the points table
+        run: python fpl_xpoints.py site --out _site
+      - name: Measure accuracy on last season
+        continue-on-error: true
+        run: python fpl_xpoints.py backtest 2>&1 | tee _site/backtest.txt
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

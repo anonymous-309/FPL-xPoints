@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>xPoints cho FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>xPoints</h1>
+    <p id="status" role="status">Đang tải bảng điểm</p>
+  </div>
+  <a href="backtest.txt">Độ chính xác</a>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <div class="seg" role="group" aria-label="Vị trí">
+    <button type="button" data-pos="" aria-pressed="true">Tất cả</button>
+    <button type="button" data-pos="GK" aria-pressed="false">GK</button>
+    <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
+    <button type="button" data-pos="MID" aria-pressed="false">MID</button>
+    <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+  </div>
+  <label>Tìm cầu thủ <input id="search" type="search"></label>
+  <label>Đội <select id="team"><option value="">Tất cả</option></select></label>
+  <label>Giá tối đa <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
+  <label>Số vòng
+    <select id="horizon"><option>3</option><option selected>5</option><option>8</option></select>
+  </label>
+</form>
+<main>
+  <div id="empty" class="empty"><p>Bảng điểm sẽ hiện ở đây sau khi GitHub chạy xong.</p></div>
+  <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Bảng điểm dự kiến">
+    <table id="table"><thead></thead><tbody></tbody></table>
+  </div>
+</main>
+<aside id="detail" hidden aria-live="polite">
+  <p id="detail-text"></p>
+  <button id="close" type="button" aria-label="Đóng">×</button>
+</aside>
+<footer>
+  <p id="warnings"></p>
+  <p>S là sân nhà, K là sân khách. Bấm vào một ô để xem điểm đến từ đâu. Đây là dự đoán thống kê, nên chỉ để tham khảo. Không liên kết với Premier League.</p>
+</footer>
+<script src="app.js"></script>
+</body>
+</html>
