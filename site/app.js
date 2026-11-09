@@ -87,7 +87,7 @@
   }
 
   function header(gws) {
-    const columns = [['name', 'Cầu thủ'], ['price', 'Giá'], ['w5', 'Minutes'], ['xmin', 'xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Tổng']];
+    const columns = [['name', 'Cầu thủ'], ['price', 'Giá'], ['w5', 'AI Minute'], ['xmin', 'xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Tổng']];
     $('table').tHead.replaceChildren(el('tr', {}, ...columns.map(([key, label]) => {
       const th = el('th', { scope: 'col' }, el('button', { type: 'button', textContent: label, onclick: () => {
         if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' ? 1 : -1; }

@@ -6,8 +6,8 @@
 
 Goal/assist/bonus rates are Poisson GLMs on log-features: the player's long-run
 xG/xA per 90, recent form, finishing, own team attack, opponent defence and
-home/away. xMin is the player's last-5-match minutes, weighted 5,4,3,2,1 from
-newest to oldest, scaled down by FPL's injury/suspension flag.
+home/away. xMin is AI Minute (see ai_minute), scaled down by FPL's injury or
+suspension flag.
 Every feature uses only gameweeks before the one being predicted.
 
 Usage:
@@ -167,21 +167,45 @@ def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray
     return out
 
 
-def weighted_last5(keys: np.ndarray, values: np.ndarray, matches: np.ndarray) -> np.ndarray:
-    """Per-match average of the 5 latest earlier matches, weighted 5,4,3,2,1 from newest to oldest."""
-    weights = np.array([5.0, 4.0, 3.0, 2.0, 1.0])
-    out = np.full(len(values), np.nan)
+def ai_minute(history: list[float]) -> float:
+    """Expected minutes from a player's per-match minutes, oldest first (0 means he did not play).
+
+    Weighted 5,4,3,2,1 from newest to oldest, except that:
+    - isolated absences of a regular starter (suspension, a knock, one rest) are skipped;
+    - two or more absences in a row right now are kept, because he may really be out;
+    - a player whose minutes are climbing back to 60+ is given his normal full-match minutes.
+    """
+    if not history:
+        return np.nan
+    newest_first = history[::-1]
+    apps = [m for m in newest_first if m > 0]
+    trailing_zeros = next((i for i, m in enumerate(newest_first) if m > 0), len(newest_first))
+    if trailing_zeros == 0 and len(apps) >= 3 and apps[0] >= 60 and apps[0] >= apps[1] >= apps[2] and apps[0] - apps[2] >= 20:
+        full_matches = [m for m in apps[:15] if m >= 60]
+        return float(min(90.0, max(apps[0], np.mean(full_matches))))
+    last5 = newest_first[:5]
+    played_last_two = len(newest_first) >= 2 and newest_first[0] > 0 and newest_first[1] > 0
+    regular = bool(apps) and float(np.median(apps[:10])) >= 60
+    skip_zeros = trailing_zeros < 2 and regular and (last5.count(0.0) <= 1 or played_last_two)
+    window = [m for m in newest_first[:10] if not (skip_zeros and m == 0)][:5]
+    weights = np.array([5.0, 4.0, 3.0, 2.0, 1.0])[:len(window)]
+    return float(np.dot(window, weights) / weights.sum())
+
+
+def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray) -> tuple[np.ndarray, list[str]]:
+    """AI Minute before each row of each key, plus the latest minutes as text for diagnostics."""
+    out = np.full(len(mins), np.nan)
+    recent: list[str] = []
     hist: list[float] = []
     prev = object()
-    for i, (k, v, n) in enumerate(zip(keys, values, matches)):
+    for i, (k, v, n) in enumerate(zip(keys, mins, matches)):
         if k != prev:
             hist, prev = [], k
-        if hist:
-            recent = np.array(hist[-5:][::-1])
-            out[i] = float(np.dot(recent, weights[:len(recent)]) / weights[:len(recent)].sum())
+        out[i] = ai_minute(hist)
+        recent.append(",".join(str(int(round(m))) for m in hist[-8:]))
         if n > 0:
-            hist.append(v / n)
-    return out
+            hist.append(float(v) / n)
+    return out, recent
 
 
 def team_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -268,7 +292,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
                  / g["n"].transform(lambda s: s.shift(1).rolling(4, min_periods=1).sum()).replace(0, np.nan))
     p["ppg_all"] = g["pts"].transform(lambda s: s.shift(1).expanding().sum()) / g["n"].transform(lambda s: s.shift(1).expanding().sum()).replace(0, np.nan)
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
-    p["w5_min"] = weighted_last5(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float))
+    p["w5_min"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float))
     p = p.drop(columns=stat)
     p["min_short"] = p["X_ms"] / p["X_ns"].replace(0, np.nan)
     p["min_long"] = p["X_ml"] / p["X_nl"].replace(0, np.nan)
@@ -633,6 +657,10 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         m = res[(res["pid"] == p["id"]) & (res["GW"] == int(first))].iloc[0]
         print(f'  minutes: xMin {m["xmin"]:.1f}, P(play) {m["p_play"]:.3f}, P(60+) {m["p_60"]:.3f}, last-5 {m["w5_min"]:.1f}, long-run {m["min_long"]:.1f}, '
               f'availability {m["avail"]:.2f}, status {m["status"]}, news "{m["news"]}"')
+    for name in ("Osula", "Haaland", "Bruno", "Saka"):
+        rows = res[res["name"].str.contains(name) & (res["GW"] == int(first))]
+        for _, m in rows.head(1).iterrows():
+            print(f'AI Minute {m["web_name"]}: {m["w5_min"]:.1f}, xMin {m["xmin"]:.1f}, last matches oldest to newest [{m["recent_mins"]}], status {m["status"]}, news "{m["news"]}"')
     print(f"Site written to {out_dir}: {len(players)} players, GW{payload['gws'][0]}-{payload['gws'][-1]}")
 
 
