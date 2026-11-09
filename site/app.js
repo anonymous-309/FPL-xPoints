@@ -78,7 +78,7 @@
     const team = $('team').value;
     const max = parseFloat($('price').value);
     const value = {
-      name: (p) => p.name.toLowerCase(), price: (p) => p.price, xmin: (p) => nextXmin(p, gws), total: (p) => total(p, gws),
+      name: (p) => p.name.toLowerCase(), price: (p) => p.price, w5: (p) => (p.w5Min === null ? -1 : p.w5Min), xmin: (p) => nextXmin(p, gws), total: (p) => total(p, gws),
     }[state.sort] || ((p) => (p.byGw[state.sort] ? view(p, state.sort).xpts : -99));
     return state.data.players
       .filter((p) => (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
@@ -87,7 +87,7 @@
   }
 
   function header(gws) {
-    const columns = [['name', 'Cầu thủ'], ['price', 'Giá'], ['xmin', 'xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Tổng']];
+    const columns = [['name', 'Cầu thủ'], ['price', 'Giá'], ['w5', 'Minutes'], ['xmin', 'xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Tổng']];
     $('table').tHead.replaceChildren(el('tr', {}, ...columns.map(([key, label]) => {
       const th = el('th', { scope: 'col' }, el('button', { type: 'button', textContent: label, onclick: () => {
         if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' ? 1 : -1; }
@@ -119,7 +119,7 @@
       placeholder: first ? String(Math.round(first.xmin / first.opp.length)) : '',
     });
     input.setAttribute('aria-label', `Số phút mỗi trận của ${p.name}`);
-    const tr = el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), el('td', { className: 'xmin' }, input), ...cells, el('td', { className: 'total', textContent: f1(total(p, gws)) }));
+    const tr = el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), el('td', { textContent: p.w5Min === null ? '–' : Math.round(p.w5Min) }), el('td', { className: 'xmin' }, input), ...cells, el('td', { className: 'total', textContent: f1(total(p, gws)) }));
     tr.dataset.pid = p.id;
     return tr;
   }
@@ -131,7 +131,7 @@
     header(gws);
     const list = filtered(gws);
     const body = list.length ? list.map((p) => row(p, gws))
-      : [el('tr', {}, el('td', { colSpan: gws.length + 4, className: 'none', textContent: 'Không có cầu thủ nào khớp bộ lọc. Hãy nới bộ lọc giá, đội hoặc vị trí.' }))];
+      : [el('tr', {}, el('td', { colSpan: gws.length + 5, className: 'none', textContent: 'Không có cầu thủ nào khớp bộ lọc. Hãy nới bộ lọc giá, đội hoặc vị trí.' }))];
     $('table').tBodies[0].replaceChildren(...body);
   }
 

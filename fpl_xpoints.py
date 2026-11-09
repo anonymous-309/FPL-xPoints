@@ -474,6 +474,11 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
         table = pd.DataFrame({"predicted": prob, "actual": hit}).groupby(groups, observed=True).agg(predicted=("predicted", "mean"), actual=("actual", "mean"), n=("actual", "size"))
         print(f"\n{title}")
         print(table.round(3).to_string())
+    print("\n=== Minutes by weighted last-5 average: predicted vs actual, per match ===")
+    groups = pd.cut(pred["w5_min"], [-1, 30, 60, 75, 85, 88, 91])
+    by_recent = pred.assign(actual_60=(pred["minutes"] >= 60).astype(float)).groupby(groups, observed=True).agg(
+        xmin=("xmin", "mean"), actual_min=("minutes", "mean"), p60=("p_60", "mean"), actual_60=("actual_60", "mean"), n=("xmin", "size"))
+    print(by_recent.round(2).to_string())
     print("\n=== Minutes, regulars ===")
     minutes = {}
     for label, col in [("Model", "xmin"), ("Weighted last 5 only", "pred_w5")]:
@@ -562,7 +567,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         p = players.setdefault(r["pid"], {
             "id": r["pid"], "name": r["web_name"], "fullName": r["name"], "team": r["team_short"], "position": r["position"],
             "price": float(r["value"]) / 10, "status": r["status"] if isinstance(r["status"], str) else "a",
-            "news": r["news"] if isinstance(r["news"], str) else "", "byGw": {}})
+            "news": r["news"] if isinstance(r["news"], str) else "",
+            "w5Min": None if pd.isna(r["w5_min"]) else round(float(r["w5_min"]), 1), "byGw": {}})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "noCs": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
@@ -573,7 +579,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g["lg"] += float(r["g90"])
         g["la"] += float(r["a90"])
         g["noCs"] *= 1 - float(r["p_cs"])
-        g["opp"].append(f'{r["opp_short"]} ({"S" if r["was_home"] else "K"})')
+        g["opp"].append(str(r["opp_short"]).upper() if r["was_home"] else str(r["opp_short"]).lower())
         for col, name in PART_NAMES.items():
             g["parts"][name] = round(g["parts"].get(name, 0.0) + float(r[col]), 3)
     # Chance of at least one goal/assist/clean sheet in the gameweek if he plays every minute.
@@ -592,6 +598,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     for p in top:
         g = p["byGw"][first]
         print(f'GW{first} {p["name"]} {g["opp"]}: score {g["pScore"]:.1%}, assist {g["pAssist"]:.1%}, clean sheet {g["pCs"]:.1%}')
+        m = res[(res["pid"] == p["id"]) & (res["GW"] == int(first))].iloc[0]
+        print(f'  minutes: xMin {m["xmin"]:.1f}, P(play) {m["p_play"]:.3f}, P(60+) {m["p_60"]:.3f}, last-5 {m["w5_min"]:.1f}, long-run {m["min_long"]:.1f}, '
+              f'availability {m["avail"]:.2f}, status {m["status"]}, news "{m["news"]}"')
     print(f"Site written to {out_dir}: {len(players)} players, GW{payload['gws'][0]}-{payload['gws'][-1]}")
 
 
