@@ -49,7 +49,7 @@ DEFCON_THRESHOLD = {"DEF": 10, "MID": 12, "FWD": 12}
 DEFCON_PTS = 2
 
 HL_LONG, HL_SHORT, HL_MIN_SHORT, HL_MIN_LONG, HL_TEAM = 25, 4, 2, 8, 12
-K_PLAYER, K_SHORT, K_FINISH, K_TEAM = 5.0, 2.0, 15.0, 4.0
+K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS = 5.0, 2.0, 15.0, 4.0, 8.0
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
@@ -169,16 +169,19 @@ def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray
 def team_features(df: pd.DataFrame) -> pd.DataFrame:
     hist = df[~df["future"]]
     fx = (hist.groupby(["season", "fixture", "team", "opp", "tf"], as_index=False)
-          .agg(xg=("expected_goals", "sum")))
-    against = fx[["season", "fixture", "team", "xg"]].rename(columns={"team": "opp", "xg": "xga"})
+          .agg(xg=("expected_goals", "sum"), gf=("gf", "first")))
+    fx["gf"] = fx["gf"].fillna(0.0)
+    against = fx[["season", "fixture", "team", "xg", "gf"]].rename(columns={"team": "opp", "xg": "xga", "gf": "ga"})
     fx = fx.merge(against, on=["season", "fixture", "opp"], how="left")
-    t = fx.groupby(["team", "tf"], as_index=False).agg(n=("xg", "size"), xg=("xg", "sum"), xga=("xga", "sum"))
+    t = fx.groupby(["team", "tf"], as_index=False).agg(n=("xg", "size"), xg=("xg", "sum"), xga=("xga", "sum"), gf=("gf", "sum"), ga=("ga", "sum"))
     pairs = pd.concat([df[["team", "tf"]], df[["opp", "tf"]].rename(columns={"opp": "team"})]).drop_duplicates()
     t = pairs.merge(t, on=["team", "tf"], how="left").fillna(0.0).sort_values(["team", "tf"])
 
-    by_t = t.groupby("tf")[["n", "xg"]].sum().sort_index().cumsum().shift(1).fillna(0.0)
+    by_t = t.groupby("tf")[["n", "xg", "gf"]].sum().sort_index().cumsum().shift(1).fillna(0.0)
     lg = (by_t["xg"] / by_t["n"].replace(0, np.nan)).fillna(LEAGUE_XG_FALLBACK)
+    lg_goals = (by_t["gf"] / by_t["n"].replace(0, np.nan)).fillna(LEAGUE_XG_FALLBACK)
     t["league"] = t["tf"].map(lg).replace(0, LEAGUE_XG_FALLBACK)
+    t["league_g"] = t["tf"].map(lg_goals).replace(0, LEAGUE_XG_FALLBACK)
 
     seen = {i: set(g) for i, g in df.groupby("season_idx")["team"]}
     def promoted(team: str, tf: int) -> bool:
@@ -194,7 +197,13 @@ def team_features(df: pd.DataFrame) -> pd.DataFrame:
     t["def_ratio"] = ((decayed_pre(keys, t["xga"].to_numpy(float), HL_TEAM)
                        + K_TEAM * t["league"] * np.where(prom, PROMOTED_DEF, 1.0))
                       / (sn + K_TEAM)) / t["league"]
-    return t[["team", "tf", "att_ratio", "def_ratio"]]
+    t["att_g_ratio"] = ((decayed_pre(keys, t["gf"].to_numpy(float), HL_TEAM)
+                         + K_TEAM_GOALS * t["league_g"] * np.where(prom, PROMOTED_ATT, 1.0))
+                        / (sn + K_TEAM_GOALS)) / t["league_g"]
+    t["def_g_ratio"] = ((decayed_pre(keys, t["ga"].to_numpy(float), HL_TEAM)
+                         + K_TEAM_GOALS * t["league_g"] * np.where(prom, PROMOTED_DEF, 1.0))
+                        / (sn + K_TEAM_GOALS)) / t["league_g"]
+    return t[["team", "tf", "att_ratio", "def_ratio", "att_g_ratio", "def_g_ratio"]]
 
 
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -203,8 +212,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     df["tf"] = np.where(df["future"], last_hist + 1, df["t"])  # future GWs all see the same history
 
     ratings = team_features(df)
-    df = df.merge(ratings.rename(columns={"att_ratio": "team_att", "def_ratio": "team_def"}), on=["team", "tf"], how="left")
-    df = df.merge(ratings.rename(columns={"team": "opp", "att_ratio": "opp_att", "def_ratio": "opp_def"}), on=["opp", "tf"], how="left")
+    df = df.merge(ratings.rename(columns={"att_ratio": "team_att", "def_ratio": "team_def", "att_g_ratio": "team_att_g", "def_g_ratio": "team_def_g"}), on=["team", "tf"], how="left")
+    df = df.merge(ratings.rename(columns={"team": "opp", "att_ratio": "opp_att", "def_ratio": "opp_def", "att_g_ratio": "opp_att_g", "def_g_ratio": "opp_def_g"}), on=["opp", "tf"], how="left")
 
     obs = ~df["future"]
     mins = df["minutes"].where(obs, 0).fillna(0)
@@ -268,9 +277,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     df["finish"], df["creat"] = ln(df["r_g"]) - ln(df["r_xg"]), ln(df["r_a"]) - ln(df["r_xa"])
     df["l_bon"], df["l_bps"], df["form_bps"] = ln(df["r_bon"]), ln(df["r_bps"]), ln(df["f_bps"]) - ln(df["r_bps"])
     df["l_sv"], df["l_yc"] = ln(df["r_sv"]), ln(df["r_yc"])
-    df["l_price"] = np.log(df["value"].clip(lower=35) / 50)
     for c in ["team_att", "team_def", "opp_att", "opp_def"]:
         df[f"l_{c}"] = ln(df[c].fillna(1.0))
+        df[f"gap_{c}"] = ln(df[f"{c}_g"].fillna(1.0)) - df[f"l_{c}"]  # real goals relative to xG
     for pos_name in POSITIONS[1:]:
         df[f"is_{pos_name}"] = (df["position"] == pos_name).astype(int)
     df["pos_code"] = df["position"].map({p: i for i, p in enumerate(POSITIONS)})
@@ -280,14 +289,14 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------- model
 PDUM = ["is_DEF", "is_MID", "is_FWD"]
 GLMS = {
-    "goals": ("goals_scored", ["l_xg", "form_xg", "finish", "l_team_att", "l_opp_def", "was_home", "l_price"] + PDUM),
-    "assists": ("assists", ["l_xa", "form_xa", "creat", "l_team_att", "l_opp_def", "was_home", "l_price"] + PDUM),
-    "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "l_team_att", "l_opp_def", "l_opp_att", "was_home", "l_price"] + PDUM),
+    "goals": ("goals_scored", ["l_xg", "form_xg", "finish", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
+    "assists": ("assists", ["l_xa", "form_xa", "creat", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
+    "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
 }
-MIN_FEATS = ["min_short", "min_long", "min_last", "start_rate", "n_hist", "value", "pos_code", "GW", "was_home", "l_team_def"]
-TEAM_FEATS = ["l_team_def", "l_opp_att", "was_home"]
-SAVE_FEATS = ["l_sv", "l_opp_att", "l_team_def", "was_home"]
+MIN_FEATS = ["min_short", "min_long", "min_last", "start_rate", "n_hist", "pos_code", "GW", "was_home", "l_team_def"]
+TEAM_FEATS = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "was_home"]
+SAVE_FEATS = ["l_sv", "l_opp_att", "gap_opp_att", "l_team_def", "gap_team_def", "was_home"]
 
 
 def _glm():
@@ -429,6 +438,15 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     bins = pd.qcut(regular["xpts"], 10, duplicates="drop")
     cal = regular.groupby(bins, observed=True).agg(predicted=("xpts", "mean"), actual=("total_points", "mean"), n=("xpts", "size"))
     print(cal.round(2).to_string(index=False))
+    print("\n=== Chance to score / assist: predicted vs actual (players who played) ===")
+    played = pred[pred["minutes"] > 0]
+    for title, rate, actual in [("Goals", "g90", "goals_scored"), ("Assists", "a90", "assists")]:
+        prob = 1 - np.exp(-played[rate] * played["minutes"] / 90)
+        hit = (played[actual] >= 1).astype(float)
+        groups = pd.cut(prob, [0, .03, .06, .1, .15, .2, .3, .4, .5, 1], include_lowest=True)
+        table = pd.DataFrame({"predicted": prob, "actual": hit}).groupby(groups, observed=True).agg(predicted=("predicted", "mean"), actual=("actual", "mean"), n=("actual", "size"))
+        print(f"\n{title}")
+        print(table.round(3).to_string())
     print(f"\nMinutes MAE, regulars: {(regular['xmin'] - regular['minutes']).abs().mean():.1f}")
     print(f"Saved player-GW predictions: {out_csv}")
     return gw
