@@ -8,10 +8,17 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
-          for u in \
-            https://www.transfermarkt.com/romeo-lavia/verletzungen/spieler/593366 \
-            https://www.transfermarkt.co.uk/premier-league/verletztespieler/wettbewerb/GB1 \
-            https://www.premierinjuries.com/injury-table.php ; do
-            code=$(curl -s -A "$UA" -H "Accept-Language: en" -o page.html -w "%{http_code}" "$u")
-            echo "$u -> HTTP $code, $(wc -c < page.html) bytes, title: $(grep -o '<title>[^<]*' page.html | head -1)"
-          done
+          curl -s -A "$UA" -o p.html https://www.premierinjuries.com/injury-table.php
+          python3 - <<'PY'
+          import re, html
+          s = open("p.html", encoding="utf-8", errors="replace").read()
+          i = s.find("<table")
+          print("TABLES", s.count("<table"), "ROWS", s.count("<tr"))
+          print("LINKS", sorted(set(re.findall(r'href="([^"]*(?:player|injur)[^"]*)"', s)))[:15])
+          seg = s[i:i+6000]
+          print("RAW", re.sub(r"\s+", " ", seg)[:3500])
+          rows = re.findall(r"<tr[^>]*>(.*?)</tr>", s, re.S)
+          for r in rows[:45]:
+              cells = [re.sub(r"\s+", " ", html.unescape(re.sub(r"<[^>]+>", " ", c))).strip() for c in re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", r, re.S)]
+              print("ROW", cells)
+          PY
