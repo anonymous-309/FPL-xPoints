@@ -1,0 +1,38 @@
+name: Probe set pieces
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/probe.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Columns and samples
+        run: |
+          B=https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data
+          for s in 2023-24 2024-25 2025-26; do
+            curl -sSf $B/$s/players_raw.csv -o raw.csv
+            python3 - "$s" <<'P'
+          import csv, sys
+          r = list(csv.DictReader(open("raw.csv", encoding="utf-8", errors="replace")))
+          cols = [c for c in r[0] if "order" in c or "pen" in c or "text" in c]
+          print(sys.argv[1], cols)
+          for x in r:
+              if x.get("penalties_order") in ("1", "2") and x.get("web_name") in ("Gross", "Palmer", "Salah", "Saka", "Haaland", "B.Fernandes", "Mbeumo", "Wood"):
+                  print(" ", x["web_name"], x["team"], {c: x.get(c) for c in cols})
+          P
+          done
+      - name: Current season set pieces
+        run: |
+          curl -sSf -A "fpl-xpoints/1.0" https://fantasy.premierleague.com/api/bootstrap-static/ -o boot.json
+          python3 - <<'P'
+          import json
+          b = json.load(open("boot.json"))
+          teams = {t["id"]: t["short_name"] for t in b["teams"]}
+          for e in b["elements"]:
+              if e.get("penalties_order") in (1, 2) or e["web_name"] in ("Gross",):
+                  print(teams[e["team"]], e["web_name"], "pen", e.get("penalties_order"), "fk", e.get("direct_freekicks_order"), "corner", e.get("corners_and_indirect_freekicks_order"), "|", e.get("penalties_text"))
+          P
