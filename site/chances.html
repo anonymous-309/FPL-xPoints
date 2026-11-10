@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,31 +10,31 @@
 <header class="pitch">
   <div class="brand">
     <h1>Chance</h1>
-    <p id="status" role="status">Đang tải dữ liệu</p>
+    <p id="status" role="status">Loading data</p>
   </div>
-  <nav class="links"><a href="index.html">Bảng xPoints</a><a href="backtest.txt">Độ chính xác</a></nav>
+  <nav class="links"><a href="index.html">xPoints</a><a href="backtest.txt">Accuracy</a></nav>
 </header>
 <div id="error" class="error" role="alert" hidden></div>
 <form id="filters" class="filters" autocomplete="off">
-  <div class="seg" role="group" aria-label="Vị trí">
-    <button type="button" data-pos="" aria-pressed="true">Tất cả</button>
+  <div class="seg" role="group" aria-label="Position">
+    <button type="button" data-pos="" aria-pressed="true">All</button>
     <button type="button" data-pos="GK" aria-pressed="false">GK</button>
     <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
     <button type="button" data-pos="MID" aria-pressed="false">MID</button>
     <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
   </div>
-  <label>Vòng <select id="gw"></select></label>
-  <label>Tìm cầu thủ <input id="search" type="search"></label>
-  <label>Đội <select id="team"><option value="">Tất cả</option></select></label>
-  <label>Giá tối đa <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
+  <label>Gameweek <select id="gw"></select></label>
+  <label>Search player <input id="search" type="search"></label>
+  <label>Team <select id="team"><option value="">All</option></select></label>
+  <label>Max price <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
 </form>
 <main>
-  <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Cơ hội của từng cầu thủ">
+  <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Chances for each player">
     <table id="table"><thead></thead><tbody></tbody></table>
   </div>
 </main>
 <footer>
-  <p>Đối thủ viết hoa là đá sân nhà, viết thường là đá sân khách. Tính với giả định cầu thủ đá đủ 90 phút mỗi trận, chưa trừ khả năng dự bị hay vắng mặt. Ghi bàn và kiến tạo là cơ hội có ít nhất 1 lần; kiến tạo tính theo chuẩn FPL. Số bàn, số kiến tạo và Bonus là số trung bình dự kiến. Sạch lưới và Bàn thua tính theo đội. Cản phá là số pha trung bình, Cản pen là cơ hội cản được penalty, hai cột này chỉ tính thủ môn. Vòng có 2 trận là cả vòng.</p>
+  <p>Opponents in capitals are home matches, lower case are away. Appearance 1+ and 60+ are the chance he plays at least 1 or 60 minutes, from his recent matches and FPL flags. Every other column assumes he plays the full 90 minutes of each match. Percentages are the chance of at least one; assists follow FPL rules. xGoals, xAssists, Conceded, Saves and Bonus are expected numbers. Clean sheet and Conceded are for the team. Saves and Pen save are for goalkeepers only. A double gameweek covers both matches.</p>
 </footer>
 <script src="chances.js"></script>
 </body>

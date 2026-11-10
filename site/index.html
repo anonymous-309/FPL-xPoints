@@ -1,50 +1,50 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>xPoints cho FPL</title>
+<title>FPL xPoints</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header class="pitch">
   <div class="brand">
     <h1>xPoints</h1>
-    <p id="status" role="status">Đang tải bảng điểm</p>
+    <p id="status" role="status">Loading points</p>
   </div>
-  <nav class="links"><a href="chances.html">Chance</a><a href="backtest.txt">Độ chính xác</a></nav>
+  <nav class="links"><a href="chances.html">Chance</a><a href="backtest.txt">Accuracy</a></nav>
 </header>
 <div id="error" class="error" role="alert" hidden></div>
 <form id="filters" class="filters" autocomplete="off">
-  <div class="seg" role="group" aria-label="Vị trí">
-    <button type="button" data-pos="" aria-pressed="true">Tất cả</button>
+  <div class="seg" role="group" aria-label="Position">
+    <button type="button" data-pos="" aria-pressed="true">All</button>
     <button type="button" data-pos="GK" aria-pressed="false">GK</button>
     <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
     <button type="button" data-pos="MID" aria-pressed="false">MID</button>
     <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
   </div>
-  <label>Tìm cầu thủ <input id="search" type="search"></label>
-  <label>Đội <select id="team"><option value="">Tất cả</option></select></label>
-  <label>Giá tối đa <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
-  <label>Số vòng
+  <label>Search player <input id="search" type="search"></label>
+  <label>Team <select id="team"><option value="">All</option></select></label>
+  <label>Max price <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
+  <label>Gameweeks
     <select id="horizon"><option>3</option><option selected>5</option><option>8</option></select>
   </label>
   <button id="reset" class="reset" type="button" hidden></button>
 </form>
 <main>
-  <div id="empty" class="empty"><p>Bảng điểm sẽ hiện ở đây sau khi GitHub chạy xong.</p></div>
-  <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Bảng điểm dự kiến">
+  <div id="empty" class="empty"><p>Points appear here once the GitHub update has run.</p></div>
+  <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Expected points">
     <table id="table"><thead></thead><tbody></tbody></table>
   </div>
 </main>
 <aside id="detail" hidden aria-live="polite">
   <p id="detail-text"></p>
-  <label id="detail-min-row" hidden>Số phút mỗi trận trong vòng này <input id="detail-min" type="number" min="0" max="90" step="1" inputmode="numeric"></label>
-  <button id="close" type="button" aria-label="Đóng">×</button>
+  <label id="detail-min-row" hidden>Minutes per match this gameweek <input id="detail-min" type="number" min="0" max="90" step="1" inputmode="numeric"></label>
+  <button id="close" type="button" aria-label="Close">×</button>
 </aside>
 <footer>
   <p id="warnings"></p>
-  <p>Đối thủ viết hoa là đá sân nhà, viết thường là đá sân khách. AI Minute là số phút dự kiến từ các trận gần nhất, trận càng mới càng nặng, đã bỏ các trận vắng lẻ và nhận biết cầu thủ đang trở lại sau chấn thương. xMin bằng AI Minute, được giảm nếu FPL gắn cờ chấn thương hoặc thẻ. Bấm vào một ô để xem điểm đến từ đâu. Sửa ô xMin để tính lại điểm theo số phút bạn dự đoán, áp dụng cho mọi vòng; muốn sửa riêng một vòng thì bấm vào ô của vòng đó. Mọi thành phần điểm được nhân theo xMin/90; xóa ô để về số của máy. Đây là dự đoán thống kê, nên chỉ để tham khảo. Không liên kết với Premier League.</p>
+  <p>Opponents in capitals are home matches, lower case are away. AI Minute is expected minutes from recent matches, with newer matches weighted more; it skips one-off absences and red-card bans, and spots players returning from injury. xMin is AI Minute, reduced when FPL flags an injury or suspension. Select a cell to see where the points come from. Edit xMin to recalculate with your own minutes for every gameweek, or select a gameweek cell to change just that one. Every points component is scaled by xMin/90; clear the box to go back to the model figure. These are statistical estimates, for reference only. Not affiliated with the Premier League.</p>
 </footer>
 <script src="app.js"></script>
 </body>

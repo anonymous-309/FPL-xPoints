@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const STORE = 'xmin-overrides';
   const state = { data: null, pos: '', sort: 'total', dir: -1, overrides: loadOverrides(), detail: null };
-  const PARTS = { app: 'Ra sân', goal: 'Bàn thắng', assist: 'Kiến tạo', bonus: 'Bonus', cs: 'Sạch lưới', conceded: 'Bàn thua', saves: 'Cản phá', pensave: 'Cản penalty', penmiss: 'Hỏng penalty', own: 'Phản lưới', defcon: 'DEFCON', cards: 'Thẻ' };
+  const PARTS = { app: 'Appearance', goal: 'Goals', assist: 'Assists', bonus: 'Bonus', cs: 'Clean sheet', conceded: 'Goals conceded', saves: 'Saves', pensave: 'Penalty saves', penmiss: 'Penalty misses', own: 'Own goals', defcon: 'DefCon', cards: 'Cards' };
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   const f1 = (x) => x.toFixed(1);
 
@@ -39,7 +39,7 @@
   function updateReset() {
     const n = Object.keys(state.overrides).length;
     $('reset').hidden = n === 0;
-    $('reset').textContent = `Khôi phục xMin mặc định (${n})`;
+    $('reset').textContent = `Reset xMin (${n})`;
   }
   function openText(text) {
     state.detail = null;
@@ -50,7 +50,7 @@
   function openGw(p, g) {
     state.detail = { id: p.id, g };
     const d = view(p, g);
-    $('detail-text').textContent = `${p.name}, GW${g} gặp ${d.opp.join(', ')}\nDự kiến ${f1(d.xpts)} điểm, ${Math.round(d.xmin)} phút\n${breakdownText(d)}`;
+    $('detail-text').textContent = `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${f1(d.xpts)} points, ${Math.round(d.xmin)} minutes\n${breakdownText(d)}`;
     const o = state.overrides[p.id];
     $('detail-min').value = o && o.gw && o.gw[g] !== undefined ? o.gw[g] : '';
     $('detail-min').placeholder = Math.round(d.xmin / d.opp.length);
@@ -87,7 +87,7 @@
   }
 
   function header(gws) {
-    const columns = [['name', 'Cầu thủ'], ['price', 'Giá'], ['w5', 'AI Minute'], ['xmin', 'xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Tổng']];
+    const columns = [['name', 'Player'], ['price', 'Price'], ['w5', 'AI Minute'], ['xmin', 'xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total']];
     $('table').tHead.replaceChildren(el('tr', {}, ...columns.map(([key, label]) => {
       const th = el('th', { scope: 'col' }, el('button', { type: 'button', textContent: label, onclick: () => {
         if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' ? 1 : -1; }
@@ -102,10 +102,10 @@
     const meta = el('span', { textContent: `${p.team} ${p.position}` });
     const name = el('td', { className: 'player', title: p.news || p.fullName }, el('b', { textContent: p.name }), meta);
     if (p.news) name.dataset.news = `${p.name}: ${p.news}`;
-    if (p.status && p.status !== 'a') meta.append(' ', el('span', { className: 'flag', textContent: 'Có tin vắng' }));
+    if (p.status && p.status !== 'a') meta.append(' ', el('span', { className: 'flag', textContent: 'Flagged' }));
     const cells = gws.map((g) => {
       const d = view(p, g);
-      if (!d) return el('td', { className: 'none', textContent: 'Không đá' });
+      if (!d) return el('td', { className: 'none', textContent: 'Blank' });
       const c = el('td', { className: 'gw', title: breakdownText(d), tabIndex: 0 }, el('strong', { textContent: f1(d.xpts) }), el('small', { textContent: d.opp.join(', ') }));
       c.dataset.gw = g;
       heat(c, d.xpts / Math.max(1, d.opp.length) * (d.opp.length > 1 ? 1.25 : 1));
@@ -118,7 +118,7 @@
       value: saved === undefined ? '' : saved,
       placeholder: first ? String(Math.round(first.xmin / first.opp.length)) : '',
     });
-    input.setAttribute('aria-label', `Số phút mỗi trận của ${p.name}`);
+    input.setAttribute('aria-label', `Minutes per match for ${p.name}`);
     const tr = el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), el('td', { textContent: p.w5Min === null ? '–' : Math.round(p.w5Min) }), el('td', { className: 'xmin' }, input), ...cells, el('td', { className: 'total', textContent: f1(total(p, gws)) }));
     tr.dataset.pid = p.id;
     return tr;
@@ -131,7 +131,7 @@
     header(gws);
     const list = filtered(gws);
     const body = list.length ? list.map((p) => row(p, gws))
-      : [el('tr', {}, el('td', { colSpan: gws.length + 5, className: 'none', textContent: 'Không có cầu thủ nào khớp bộ lọc. Hãy nới bộ lọc giá, đội hoặc vị trí.' }))];
+      : [el('tr', {}, el('td', { colSpan: gws.length + 5, className: 'none', textContent: 'No players match these filters. Widen the price, team or position.' }))];
     $('table').tBodies[0].replaceChildren(...body);
   }
 
@@ -139,11 +139,11 @@
     state.data = data;
     $('empty').hidden = true;
     $('wrap').hidden = false;
-    const when = new Date(data.updatedAt).toLocaleString('vi-VN', { dateStyle: 'short', timeStyle: 'short' });
-    $('status').textContent = `Từ GW${data.gws[0]}, cập nhật lúc ${when}`;
+    const when = new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
+    $('status').textContent = `From GW${data.gws[0]}, updated ${when}`;
     $('warnings').textContent = data.warnings.join(' ');
     const current = $('team').value;
-    $('team').replaceChildren(el('option', { value: '', textContent: 'Tất cả' }), ...[...new Set(data.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
+    $('team').replaceChildren(el('option', { value: '', textContent: 'All' }), ...[...new Set(data.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
     $('team').value = current;
     updateReset();
     render();
@@ -197,8 +197,8 @@
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(show)
     .catch(() => {
-      $('error').textContent = 'Chưa đọc được bảng điểm. Mở tab Actions trên GitHub để xem lần chạy gần nhất có lỗi không, rồi tải lại trang.';
+      $('error').textContent = 'Could not load the points. Check the latest run in the GitHub Actions tab, then reload this page.';
       $('error').hidden = false;
-      $('status').textContent = 'Chưa có dữ liệu';
+      $('status').textContent = 'No data yet';
     });
 })();

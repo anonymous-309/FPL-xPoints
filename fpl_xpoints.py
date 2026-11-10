@@ -173,17 +173,18 @@ def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray
     return out
 
 
-def ai_minute(history: list[float]) -> float:
-    """Expected minutes from a player's per-match minutes, oldest first (0 means he did not play).
+def ai_minute_detail(history: list[float]) -> tuple[float, float, float]:
+    """Expected minutes and the chance of 1+ and 60+ minutes, from per-match minutes, oldest first (0 = did not play).
 
     Weighted 5,4,3,2,1 from newest to oldest, except that:
     - isolated absences of a regular starter (suspension, a knock, one rest) are skipped;
     - two or more absences in a row right now are kept, because he may really be out;
     - 2 to 5 straight matches of 70+ after a clearly lower one mean he is back: use only that streak;
     - minutes rising match after match to 60+ mean he is climbing back: use his normal full-match minutes.
+    The chances are the weighted share of the same matches with 1+ and 60+ minutes.
     """
     if not history:
-        return np.nan
+        return np.nan, np.nan, np.nan
     newest_first = history[::-1]
     apps = [m for m in newest_first if m > 0]
     trailing_zeros = next((i for i, m in enumerate(newest_first) if m > 0), len(newest_first))
@@ -191,27 +192,33 @@ def ai_minute(history: list[float]) -> float:
         streak = next((i for i, m in enumerate(apps) if m < 70), len(apps))
         if 2 <= streak <= 5 and streak < len(apps) and apps[streak] <= min(apps[:streak]) - 20:
             weights = np.array([5.0, 4.0, 3.0, 2.0, 1.0])[:streak]
-            return float(min(90.0, np.dot(apps[:streak], weights) / weights.sum()))
+            return float(min(90.0, np.dot(apps[:streak], weights) / weights.sum())), 1.0, 1.0
         run = apps[:4]
         climbing = apps[0] >= 60 and all(x >= y for x, y in zip(run, run[1:])) and apps[0] - apps[2] >= 20
         if climbing:
             full_matches = [m for m in apps[:15] if m >= 60]
-            return float(min(90.0, max(apps[0], np.mean(full_matches))))
+            return float(min(90.0, max(apps[0], np.mean(full_matches)))), 1.0, 1.0
     last5 = newest_first[:5]
     played_last_two = len(newest_first) >= 2 and newest_first[0] > 0 and newest_first[1] > 0
     regular = bool(apps) and float(np.median(apps[:10])) >= 60
     skip_zeros = trailing_zeros < 2 and regular and (last5.count(0.0) <= 1 or played_last_two)
-    window = [m for m in newest_first[:10] if not (skip_zeros and m == 0)][:5]
+    window = np.array([m for m in newest_first[:10] if not (skip_zeros and m == 0)][:5])
     weights = np.array([5.0, 4.0, 3.0, 2.0, 1.0])[:len(window)]
-    return float(np.dot(window, weights) / weights.sum())
+    total = weights.sum()
+    return (float(np.dot(window, weights) / total), float(np.dot(window > 0, weights) / total),
+            float(np.dot(window >= 60, weights) / total))
 
 
-def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np.ndarray) -> tuple[np.ndarray, list[str]]:
-    """AI Minute before each row of each key, plus the latest minutes as text for diagnostics.
+def ai_minute(history: list[float]) -> float:
+    return ai_minute_detail(history)[0]
+
+
+def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np.ndarray) -> tuple[np.ndarray, np.ndarray, np.ndarray, list[str]]:
+    """AI Minute and the chance of 1+ and 60+ minutes before each row of each key, plus the latest minutes as text.
 
     A match with a red card and the suspension straight after it say nothing about his role, so they are left out.
     """
-    out = np.full(len(mins), np.nan)
+    out = np.full((len(mins), 3), np.nan)
     recent: list[str] = []
     hist: list[float] = []
     raw: list[float] = []
@@ -220,7 +227,7 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
     for i, (k, v, n, r) in enumerate(zip(keys, mins, matches, reds)):
         if k != prev:
             hist, raw, ban_left, prev = [], [], 0, k
-        out[i] = ai_minute(hist)
+        out[i] = ai_minute_detail(hist)
         recent.append(",".join(str(int(round(m))) for m in raw[-8:]))
         if n > 0:
             minutes = float(v) / n
@@ -232,7 +239,7 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
             else:
                 ban_left = 0
                 hist.append(minutes)
-    return out, recent
+    return out[:, 0], out[:, 1], out[:, 2], recent
 
 
 def team_pre(keys: np.ndarray, x: np.ndarray, periods: np.ndarray) -> np.ndarray:
@@ -345,7 +352,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
                  / g["n"].transform(lambda s: s.shift(1).rolling(4, min_periods=1).sum()).replace(0, np.nan))
     p["ppg_all"] = g["pts"].transform(lambda s: s.shift(1).expanding().sum()) / g["n"].transform(lambda s: s.shift(1).expanding().sum()).replace(0, np.nan)
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
-    p["w5_min"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float))
+    p["w5_min"], p["w5_p1"], p["w5_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float))
     p = p.drop(columns=stat)
     p["min_short"] = p["X_ms"] / p["X_ns"].replace(0, np.nan)
     p["min_long"] = p["X_ml"] / p["X_nl"].replace(0, np.nan)
@@ -420,8 +427,8 @@ class XPointsModel:
         # xMin = weighted last-5 minutes, reduced by the FPL availability flag. FPL thresholds apply to that figure.
         avail = np.ones(len(df)) if availability is None else availability.fillna(1.0).to_numpy()
         xmin = np.clip(df["w5_min"].fillna(0.0).to_numpy(float) * avail, 0, 90)
-        p2 = (xmin >= 60).astype(float)
-        p1 = ((xmin > 0) & (xmin < 60)).astype(float)
+        p_play = np.clip(df["w5_p1"].fillna(0.0).to_numpy(float) * avail, 0, 1)
+        p_60 = np.clip(df["w5_p60"].fillna(0.0).to_numpy(float) * avail, 0, 1)
         pos = df["position"]
         n90 = xmin / 90
         rate90 = {k: self.rates[k].predict(df[f]) for k, (_, f) in GLMS.items()}
@@ -455,7 +462,7 @@ class XPointsModel:
         pts_penmiss, pts_own = full_penmiss * n90, full_own * n90
         pts_card = -lam["yellow"] - 3 * red90 * n90
         out = pd.DataFrame({
-            "xmin": xmin, "p_play": p1 + p2, "p_60": p2, "xg": lam["goals"], "xa": lam["assists"],
+            "xmin": xmin, "p_play": p_play, "p_60": p_60, "xg": lam["goals"], "xa": lam["assists"],
             "xbonus": lam["bonus"], "p_cs": pcs, "g90": rate90["goals"], "a90": rate90["assists"], "y90": rate90["yellow"], "r90": red90, "bonus90": rate90["bonus"], "pts_app": pts_app, "pts_goal": pts_goal, "pts_ast": pts_ast,
             "pts_bonus": lam["bonus"], "pts_cs": pts_cs, "pts_conc": pts_conc, "pts_save": pts_save, "pts_pensave": pts_pensave, "pts_penmiss": pts_penmiss, "pts_own": pts_own, "pm90": pm90, "og90": og90, "saves90": saves90, "conc90": conc, "ps90": ps90,
             "pts_defcon": pts_def, "pts_card": pts_card,
@@ -666,7 +673,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "price": float(r["value"]) / 10, "status": r["status"] if isinstance(r["status"], str) else "a",
             "news": r["news"] if isinstance(r["news"], str) else "",
             "w5Min": None if pd.isna(r["w5_min"]) else round(float(r["w5_min"]), 1), "byGw": {}})
-        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "noCs": 1.0, "noDef": 1.0})
+        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
         for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "penmiss", "own", "defcon", "cards"):
@@ -685,6 +692,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g["bonus"] += float(r["bonus90"])
         g["noCs"] *= 1 - float(r["p_cs"])
         g["noDef"] *= 1 - float(r["p_defcon"])
+        g["noApp"] *= 1 - float(r["p_play"])
+        g["no60"] *= 1 - float(r["p_60"])
         g["opp"].append(str(r["opp_short"]).upper() if r["was_home"] else str(r["opp_short"]).lower())
         for col, name in PART_NAMES.items():
             g["parts"][name] = round(g["parts"].get(name, 0.0) + float(r[col]), 3)
@@ -696,6 +705,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             g["pAssist"] = round(1 - np.exp(-g.pop("la")), 4)
             g["pCs"] = round(1 - g.pop("noCs"), 4)
             g["pDefcon"] = round(1 - g.pop("noDef"), 4)
+            g["pApp1"] = round(1 - g.pop("noApp"), 4)
+            g["pApp60"] = round(1 - g.pop("no60"), 4)
             g["pYellow"] = round(1 - np.exp(-g.pop("ly")), 4)
             g["pRed"] = round(1 - np.exp(-g.pop("lr")), 5)
             g["pPenSave"] = round(1 - np.exp(-g.pop("lps")), 5)
