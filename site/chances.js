@@ -36,7 +36,6 @@
       const v = d[key];
       const text = fmt === 'pct' ? `${Math.round(v * 100)}%` : fmt === 'pct1' ? `${(v * 100).toFixed(1)}%` : v.toFixed(fmt);
       const c = el('td', { className: 'gw prob' }, el('strong', { textContent: text }));
-      if (isChance(fmt)) c.append(el('small', { textContent: (1 / Math.max(v, 0.001)).toFixed(2) }));
       heat(c, v / full);
       return c;
     });
