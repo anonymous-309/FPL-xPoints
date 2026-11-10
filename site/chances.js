@@ -2,7 +2,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
-  const state = { data: null, pos: '', sort: 'pScore', dir: -1 };
+  const state = { data: null, pos: '', sort: 'pScore', dir: -1, hideOut: true };
   // key, header, value at full colour, format ('pct', 'pct1' or number of decimals)
   const METRICS = [
     ['pApp1', 'Appearance 1+', 1, 'pct'], ['pApp60', 'Appearance 60+', 1, 'pct'],
@@ -51,7 +51,7 @@
     const gw = $('gw').value, q = $('search').value.trim().toLowerCase(), team = $('team').value, max = parseFloat($('price').value);
     const value = (p, d) => (state.sort === 'name' ? p.name.toLowerCase() : state.sort === 'price' ? p.price : state.sort === 'opp' ? d.opp.join() : d[state.sort]);
     const list = state.data.players
-      .filter((p) => p.byGw[gw] && (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
+      .filter((p) => p.byGw[gw] && !(state.hideOut && Math.round(p.byGw[gw].pApp1 * 100) === 0 && Math.round(p.byGw[gw].pApp60 * 100) === 0) && (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
         && (!q || p.name.toLowerCase().includes(q) || p.fullName.toLowerCase().includes(q)))
       .sort((a, b) => { const x = value(a, a.byGw[gw]), y = value(b, b.byGw[gw]); return (x < y ? -1 : x > y ? 1 : 0) * state.dir; });
     $('table').tBodies[0].replaceChildren(...(list.length ? list.map((p) => row(p, p.byGw[gw]))
@@ -59,6 +59,11 @@
   }
 
   $('filters').addEventListener('input', render);
+  $('hide-out').addEventListener('click', () => {
+    state.hideOut = !state.hideOut;
+    $('hide-out').setAttribute('aria-pressed', String(state.hideOut));
+    render();
+  });
   $('filters').addEventListener('submit', (e) => e.preventDefault());
   document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
     state.pos = b.dataset.pos;

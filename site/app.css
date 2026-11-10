@@ -65,6 +65,8 @@ td.xmin { padding-inline: 6px; }
 .xmin-input::placeholder { color: var(--muted); font-weight: 400; opacity: 1; }
 .reset { height: 34px; padding: 0 12px; background: none; border: 1px solid var(--turf); border-radius: 3px; color: var(--turf); cursor: pointer; }
 .reset[hidden] { display: none; }
+.toggle { height: 34px; padding: 0 12px; background: var(--paper); border: 1px solid var(--line); border-radius: 3px; cursor: pointer; }
+.toggle[aria-pressed="true"] { background: var(--turf); border-color: var(--turf); color: #fff; }
 #detail-min-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; }
 #detail-min-row[hidden] { display: none; }
 #detail-min { width: 66px; height: 34px; padding: 0 6px; text-align: right; color: var(--ink); background: #fff; border: 0; border-radius: 3px; }
