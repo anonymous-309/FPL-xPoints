@@ -8,13 +8,15 @@ jobs:
     steps:
       - run: |
           UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
-          for path in newsroom/epl/players newsroom/epl/players/zzz-not-a-player newsroom/epl/players/joao-pedro-junqueira-de-jesus newsroom/epl/players/erling-haaland newsroom/epl/players/william-osula; do
-            curl -s -A "$UA" -o p.html -w "$path HTTP %{http_code} size %{size_download}\n" "https://www.premierinjuries.com/$path"
-            python3 -c "
-          import re,sys
-          s=open('p.html',encoding='utf-8',errors='replace').read()
-          t=re.search(r'<title>([^<]*)',s); print('  title:', t.group(1) if t else None, '| rows', s.count('<tr'), '| player links', len(set(re.findall(r'/newsroom/epl/players/[a-z0-9-]+', s))))
-          print('  sample links', sorted(set(re.findall(r'/newsroom/epl/(?:teams|players)/[a-z0-9-]+', s)))[:8])
-          "
-          done
-          curl -s -A "$UA" https://www.premierinjuries.com/robots.txt | head -20
+          curl -s -A "$UA" -o table.html https://www.premierinjuries.com/injury-table.php
+          curl -s -A "$UA" -o lavia.html https://www.premierinjuries.com/newsroom/epl/players/romeo-lavia
+          python3 - <<'PY'
+          import re, base64, gzip
+          t = open("table.html", encoding="utf-8", errors="replace").read()
+          i = t.find("<table"); j = t.find("</table>", i)
+          l = open("lavia.html", encoding="utf-8", errors="replace").read()
+          k = l.find("<table"); m = l.find("</table>", k)
+          blob = base64.b64encode(gzip.compress((t[i:j+8] + "\n=====SPLIT=====\n" + l[k:m+8]).encode())).decode()
+          for n in range(0, len(blob), 3000):
+              print("B64", blob[n:n+3000])
+          PY
