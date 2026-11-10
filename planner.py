@@ -34,16 +34,17 @@ POS = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
 
 
 def free_transfers(history: dict, log: list[str] | None = None) -> int:
-    """Free transfers for the next gameweek: 1 after GW1, +1 a gameweek up to 5; transfers use them,
-    a wildcard or free hit keeps them. log, if given, gets one line per gameweek."""
+    """Free transfers for the next gameweek: 1 after GW1, +1 a gameweek up to 5, less the transfers made.
+    A wildcard or free hit week keeps the saved ones but adds none. log, if given, gets one line per gameweek."""
     chips = {c["event"]: c["name"] for c in history.get("chips", [])}
     ft = 1
     for e in history["current"]:
         if e["event"] == 1:
             continue
         chip = chips.get(e["event"])
-        used = 0 if chip in ("wildcard", "freehit") else e["event_transfers"]
-        before, ft = ft, min(MAX_FT, max(ft - used, 0) + 1)
+        before = ft
+        if chip not in ("wildcard", "freehit"):
+            ft = min(MAX_FT, max(ft - e["event_transfers"], 0) + 1)
         if log is not None:
             log.append(f'GW{e["event"]}: {before} FT, {e["event_transfers"]} transfers{" (" + chip + ")" if chip else ""}, cost {e.get("event_transfers_cost", 0)} -> {ft} FT next')
     return ft
