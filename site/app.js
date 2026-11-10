@@ -31,7 +31,8 @@
     const parts = { app: (plays + full) * n, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: f.cs * r, conceded: f.conceded * r, saves: f.saves * r, pensave: f.pensave * r, penmiss: f.penmiss * r, own: f.own * r, defcon: f.defcon * r, cards: f.cards * r };
     return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: x * n, xg: f.xg * r, xa: f.xa * r, pApp1: x > 0 ? 1 : 0, pApp60: x >= 60 ? 1 : 0, edited: true };
   }
-  const breakdownText = (d) => Object.entries(PARTS).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n') + `\nxG ${d.xg.toFixed(2)}, xA ${d.xa.toFixed(2)}`;
+  // Points per component, leaving out the ones that are zero for this player.
+  const breakdownText = (d) => Object.entries(PARTS).filter(([k]) => Math.abs(d.parts[k]) >= 0.005).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n');
   const pct = (v) => `${Math.round(v * 100)}%`;
   // Chances for the minutes in Adjusted Min; the Chance page shows the same figures for a full 90.
   function chanceText(p, d) {
@@ -122,7 +123,7 @@
     const cells = gws.map((g) => {
       const d = view(p, g);
       if (!d) return el('td', { className: 'none', textContent: 'Blank' });
-      const c = el('td', { className: 'gw', title: chanceText(p, d), tabIndex: 0 }, el('strong', { textContent: f1(d.xpts) }), el('small', { textContent: d.opp.join(', ') }));
+      const c = el('td', { className: 'gw', title: `Chances\n${chanceText(p, d)}\n\nPoints\n${breakdownText(d)}`, tabIndex: 0 }, el('strong', { textContent: f1(d.xpts) }), el('small', { textContent: d.opp.join(', ') }));
       c.dataset.gw = g;
       heat(c, d.xpts / Math.max(1, d.opp.length) * (d.opp.length > 1 ? 1.25 : 1));
       return c;
