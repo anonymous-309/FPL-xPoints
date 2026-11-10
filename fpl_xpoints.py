@@ -71,7 +71,9 @@ HISTORY_MATCHES = 38  # every decayed record uses only each player's or team's l
 PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
-GOAL_MODES = {"learned": (None, None, None), "equal": (1 / 3, 1 / 3, 1 / 3), "g50": (0.5, 0.25, 0.25), "xg40": (0.3, 0.4, 0.3)}  # goals, xG, xGOT
+# goals, xG, xGOT weights, and how many average xG each player's record is padded with (smaller = closer to a plain average)
+GOAL_MODES = {"learned": (None, None, None, None), "equal": (1 / 3, 1 / 3, 1 / 3, 15.0), "g50": (0.5, 0.25, 0.25, 15.0), "xg40": (0.3, 0.4, 0.3, 15.0),
+              "g50_k5": (0.5, 0.25, 0.25, 5.0), "g50_k2": (0.5, 0.25, 0.25, 2.0), "equal_k5": (1 / 3, 1 / 3, 1 / 3, 5.0), "equal_k2": (1 / 3, 1 / 3, 1 / 3, 2.0)}
 CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "mix30": (0.3, False), "venue70": (0.7, True)}
 MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
@@ -559,9 +561,11 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     df["finish_goals"] = np.log((df["F_g"] + K_FINISH_XG) / (df["F_xg"] + K_FINISH_XG))
     df["finish_xgot"] = np.log((df["F_xgot"] + K_XGOT) / (df["F_xgk"] + K_XGOT))
     # Fixed-weight blends of a player's goals, xG and xGOT rates (log scale); the xG weight is what is left over.
-    for mode, (w_goals, w_xg, w_xgot) in GOAL_MODES.items():
+    for mode, (w_goals, w_xg, w_xgot, k) in GOAL_MODES.items():
         if mode != "learned":
-            df[f"blend_{mode}"] = df["l_xg"] + w_goals * df["finish_goals"] + w_xgot * df["finish_xgot"]
+            fg = np.log((df["F_g"] + k) / (df["F_xg"] + k))
+            fo = np.log((df["F_xgot"] + k) / (df["F_xgk"] + k))
+            df[f"blend_{mode}"] = df["l_xg"] + w_goals * fg + w_xgot * fo
     df["l_bon"], df["l_bps"], df["form_bps"] = ln(df["r_bon"]), ln(df["r_bps"]), ln(df["f_bps"]) - ln(df["r_bps"])
     df["l_sv"], df["l_yc"] = ln(df["r_sv"]), ln(df["r_yc"])
     for c in ["team_att", "team_def", "opp_att", "opp_def"]:
