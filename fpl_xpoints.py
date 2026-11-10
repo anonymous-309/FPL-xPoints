@@ -301,24 +301,28 @@ def ai_minute_on_return(history: list[float]) -> tuple[float, float, float]:
     return ai_minute_detail(history[:end]) if end else (np.nan, np.nan, np.nan)
 
 
-def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np.ndarray) -> tuple[np.ndarray, ...]:
+def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np.ndarray, banned: np.ndarray | None = None) -> tuple[np.ndarray, ...]:
     """AI Minute and the chance of 1+ and 60+ minutes before each row of each key, the same three figures for a
     player returning from an absence (ai_minute_on_return), and the latest minutes as text.
 
-    A match with a red card and the suspension straight after it say nothing about his role, so they are left out.
+    A match with a red card and the suspension straight after it say nothing about his role, so they are left out,
+    and so are matches he missed through a yellow-card ban (banned: how many of the row's matches, see yellow_bans).
     """
     out = np.full((len(mins), 6), np.nan)
+    banned = np.zeros(len(mins)) if banned is None else banned
     recent: list[str] = []
     hist: list[float] = []
     raw: list[float] = []
     ban_left = 0
     prev = object()
-    for i, (k, v, n, r) in enumerate(zip(keys, mins, matches, reds)):
+    for i, (k, v, n, r, b) in enumerate(zip(keys, mins, matches, reds, banned)):
         if k != prev:
             hist, raw, ban_left, prev = [], [], 0, k
         out[i] = ai_minute_detail(hist) + ai_minute_on_return(hist)
-        recent.append(",".join(str(int(round(m))) for m in raw[-8:]))
-        if n > 0:
+        recent.append(",".join("ban" if m < 0 else str(int(round(m))) for m in raw[-8:]))
+        if n > 0 and b >= n:
+            raw.append(-1.0)  # shown as "ban" in the log
+        elif n > 0:
             minutes = float(v) / n
             raw.append(minutes)
             if r > 0:
@@ -420,6 +424,33 @@ def venue_ratings(df: pd.DataFrame, fx: pd.DataFrame, overall: pd.DataFrame) -> 
     return v[["team", "home", "tf", "att_gv", "def_gv"]]
 
 
+YELLOW_BANS = [(5, 19, 1), (10, 32, 2), (15, 38, 3)]  # Premier League: yellows reached by gameweek -> matches banned
+
+
+def yellow_bans(df: pd.DataFrame) -> pd.DataFrame:
+    """Flags matches a player missed through a yellow-card ban ("yellow_ban").
+
+    Counts his Premier League yellows through each season; reaching 5 by GW19, 10 by GW32 or 15 means a ban of
+    1, 2 or 3 matches, served in the team's next matches. Only the zero-minute ones among them are flagged."""
+    df = df.copy()
+    df["yellow_ban"] = False
+    obs = df[~df["future"] & df["minutes"].notna()].sort_values(["pid", "season", "kickoff_time", "fixture"])
+    for _, g in obs.groupby(["pid", "season"], sort=False):
+        total, owed = 0, 0
+        for i, y, mins, gw in zip(g.index, g["yellow_cards"].fillna(0), g["minutes"], g["GW"]):
+            if owed > 0:
+                if mins == 0:
+                    df.at[i, "yellow_ban"] = True
+                owed -= 1
+                continue
+            before, total = total, total + int(y)
+            for count, by_gw, matches in YELLOW_BANS:
+                if before < count <= total and gw <= by_gw:
+                    owed = matches
+    print(f"Matches missed through a yellow-card ban: {int(df['yellow_ban'].sum())}")
+    return df
+
+
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     last_hist = df.loc[~df["future"], "t"].max()
@@ -471,9 +502,10 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
         "box": df["core_box"].fillna(0), "boxn90": (mins / 90).where(df["has_core"].fillna(False).astype(bool), 0),
         "st": started.where(obs, 0), "n": obs.astype(float),
+        "ban": (df["yellow_ban"].fillna(False).astype(bool) & obs).astype(float) if "yellow_ban" in df else pd.Series(0.0, index=df.index),
         "dh": (can_defcon & (dc >= thr)).astype(float), "do": can_defcon.astype(float),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do"]
+    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban"]
     roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
@@ -492,7 +524,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
     for c in ["g", "xg", "xgot", "xgk"]:
         p[f"F_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_FINISH)
-    p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float))
+    p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     for c in ["n90", "xg", "xa", "box", "boxn90"]:
         p[f"R_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_ROLE)
     p = p.drop(columns=stat)
@@ -700,7 +732,7 @@ class XPointsModel:
 # ---------------------------------------------------------------- backtest
 def load_history(data_dir: Path, seasons: list[str]) -> pd.DataFrame:
     raw = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
-    return clean(add_core(raw, data_dir, seasons), seasons)
+    return yellow_bans(clean(add_core(raw, data_dir, seasons), seasons))
 
 
 def walk_forward(feat: pd.DataFrame, season: str, step: int, min_train_seasons: int = 1) -> pd.DataFrame:
@@ -945,7 +977,8 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
         n = len(g) + 1  # one extra row with no match gives the figures after all of them
         mins = np.append(g["minutes"].to_numpy(float), 0.0)
         reds = np.append(g["red_cards"].fillna(0).to_numpy(float), 0.0)
-        out = ai_minutes(np.array([pid] * n), mins, np.append(np.ones(n - 1), 0.0), reds)
+        bans = np.append(g["yellow_ban"].fillna(False).astype(float).to_numpy(), 0.0) if "yellow_ban" in g else None
+        out = ai_minutes(np.array([pid] * n), mins, np.append(np.ones(n - 1), 0.0), reds, bans)
         rows = target["pid"] == pid
         target.loc[rows, "w5_min"], target.loc[rows, "w5_p1"], target.loc[rows, "w5_p60"] = out[0][-1], out[1][-1], out[2][-1]
         target.loc[rows, "recent_mins"] = out[-1][-1] + " (before the knock)"
@@ -972,7 +1005,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     cache = data_dir / "api_cache"
     hist, fut, first = live_frames(cache, offline, horizon)
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
-    df = clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON])
+    df = yellow_bans(clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON]))
     feat = build_features(df)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
