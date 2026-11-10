@@ -122,3 +122,5 @@ td.gw.edited { box-shadow: inset 0 0 0 2px var(--flag); }
 .minutes td.fut.edited .xmin-input { border-color: var(--flag); box-shadow: inset 0 0 0 1px var(--flag); }
 .minutes td.note { text-align: left; color: var(--warn); font-size: 12.5px; min-width: 160px; white-space: normal; }
 .minutes .xmin-input { width: 64px; }
+td.xmin-ro { font-weight: 650; color: var(--muted); }
+td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); }
