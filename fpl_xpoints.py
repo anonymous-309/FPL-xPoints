@@ -886,6 +886,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])
+    for t in payload["setPieces"]["teams"]:
+        print(f'Set pieces {t["team"]} ({t["penRate"]:.3f} pens/match): ' + "; ".join(f'{p["order"]}.{p["name"]} {p["adjMin"]:.0f}m {p["share"]:.0%}' for p in t["pens"])
+              + " | FK " + ", ".join(x["name"] for x in t["fk"][:2]) + " | corners " + ", ".join(x["name"] for x in t["corners"][:2]))
     source = Path(__file__).resolve().parent / "site"
     shutil.copytree(source, out_dir, dirs_exist_ok=True)
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
