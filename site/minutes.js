@@ -33,7 +33,19 @@
       ['note', 'Injury / ban'],
     ];
   }
+  // Same order as the xPoints page (saved there each time it sorts), else total xPts over these gameweeks.
+  function xpointsOrder() {
+    let ids = null;
+    try { ids = JSON.parse(localStorage.getItem('xpoints-order')); } catch (e) { ids = null; }
+    if (Array.isArray(ids) && ids.length) {
+      const rank = new Map(ids.map((id, i) => [id, i]));
+      return (p) => (rank.has(p.id) ? rank.get(p.id) : ids.length);
+    }
+    const gws = futureGws();
+    return (p) => -gws.reduce((a, g) => { const d = XMin.view(state.overrides, p, g); return a + (d ? d.xpts : 0); }, 0);
+  }
   function sortValue(key) {
+    if (key === 'order') return xpointsOrder();
     if (key === 'name') return (p) => p.name.toLowerCase();
     if (key === 'usual') return (p) => p.minUsual;
     if (key === 'adjust') return (p) => { const o = state.overrides[p.id]; return o && o.all !== undefined ? o.all : -1; };
@@ -92,8 +104,9 @@
 
   function render() {
     if (!state.data) return;
-    if (!state.sort || !columns().some(([k]) => k === state.sort)) { state.sort = `f${futureGws()[0]}`; state.dir = -1; }
+    if (!state.sort || (state.sort !== 'order' && !columns().some(([k]) => k === state.sort))) { state.sort = 'order'; state.dir = 1; }
     header();
+    $('order').setAttribute('aria-pressed', String(state.sort === 'order'));
     const q = $('search').value.trim().toLowerCase(), team = $('team').value, max = parseFloat($('price').value);
     const value = sortValue(state.sort);
     const list = state.data.players
@@ -123,6 +136,7 @@
     document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     render();
   }));
+  $('order').addEventListener('click', () => { state.sort = 'order'; state.dir = 1; render(); });
   $('flagged').addEventListener('click', () => {
     state.flagged = !state.flagged;
     $('flagged').setAttribute('aria-pressed', String(state.flagged));
