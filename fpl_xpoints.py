@@ -69,6 +69,8 @@ SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_
 HL_FINISH, K_XGOT, K_FINISH_XG = 60, 8.0, 15.0  # finishing is a long-run trait: slow decay, shrunk by xG volume
 PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
+K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
+CS_MODES = {"learned": None, "goals": (1.0, False), "mix70": (0.7, False), "mix50": (0.5, False), "venue70": (0.7, True)}
 MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
 
@@ -394,7 +396,27 @@ def team_features(df: pd.DataFrame) -> pd.DataFrame:
     t["def_g_ratio"] = ((team_pre(keys, t["ga"].to_numpy(float), periods)
                          + K_TEAM_GOALS * t["league_g"] * np.where(prom, PROMOTED_DEF, 1.0))
                         / (sn + K_TEAM_GOALS)) / t["league_g"]
-    return t[["team", "tf", "att_ratio", "def_ratio", "att_g_ratio", "def_g_ratio"]]
+    out = t[["team", "tf", "att_ratio", "def_ratio", "att_g_ratio", "def_g_ratio", "league_g"]]
+    return out, venue_ratings(df, fx, out)
+
+
+def venue_ratings(df: pd.DataFrame, fx: pd.DataFrame, overall: pd.DataFrame) -> pd.DataFrame:
+    """Each team's goals scored and conceded at home and away, shrunk toward its overall goal record."""
+    home = df.drop_duplicates(["season", "fixture", "team"])[["season", "fixture", "team", "was_home"]]
+    v = fx.merge(home, on=["season", "fixture", "team"], how="left").rename(columns={"was_home": "home"})
+    v = v.groupby(["team", "home", "tf"], as_index=False).agg(n=("gf", "size"), gf=("gf", "sum"), ga=("ga", "sum"))
+    sides = pd.concat([df[["team", "was_home", "tf"]].rename(columns={"was_home": "home"}),
+                       df[["opp", "was_home", "tf"]].rename(columns={"opp": "team"}).assign(home=lambda x: 1 - x["was_home"]).drop(columns="was_home")])
+    sides = sides.drop_duplicates()
+    v = sides.merge(v, on=["team", "home", "tf"], how="left").fillna(0.0).sort_values(["team", "home", "tf"])
+    v = v.merge(overall[["team", "tf", "att_g_ratio", "def_g_ratio", "league_g"]], on=["team", "tf"], how="left")
+    keys = (v["team"].astype(str) + "|" + v["home"].astype(int).astype(str)).to_numpy()
+    periods = v["tf"].to_numpy() // 100
+    sn = team_pre(keys, v["n"].to_numpy(float), periods)
+    lg = v["league_g"].fillna(LEAGUE_XG_FALLBACK)
+    v["att_gv"] = (team_pre(keys, v["gf"].to_numpy(float), periods) + K_VENUE * lg * v["att_g_ratio"].fillna(1.0)) / (sn + K_VENUE) / lg
+    v["def_gv"] = (team_pre(keys, v["ga"].to_numpy(float), periods) + K_VENUE * lg * v["def_g_ratio"].fillna(1.0)) / (sn + K_VENUE) / lg
+    return v[["team", "home", "tf", "att_gv", "def_gv"]]
 
 
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
@@ -402,9 +424,14 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     last_hist = df.loc[~df["future"], "t"].max()
     df["tf"] = np.where(df["future"], last_hist + 1, df["t"])  # future GWs all see the same history
 
-    ratings = team_features(df)
+    ratings, venue = team_features(df)
+    ratings = ratings.drop(columns="league_g")
     df = df.merge(ratings.rename(columns={"att_ratio": "team_att", "def_ratio": "team_def", "att_g_ratio": "team_att_g", "def_g_ratio": "team_def_g"}), on=["team", "tf"], how="left")
     df = df.merge(ratings.rename(columns={"team": "opp", "att_ratio": "opp_att", "def_ratio": "opp_def", "att_g_ratio": "opp_att_g", "def_g_ratio": "opp_def_g"}), on=["opp", "tf"], how="left")
+    df["home_i"] = df["was_home"].astype(int)
+    df = df.merge(venue[["team", "home", "tf", "def_gv"]].rename(columns={"home": "home_i", "def_gv": "team_def_gv"}), on=["team", "home_i", "tf"], how="left")
+    df["opp_home_i"] = 1 - df["home_i"]
+    df = df.merge(venue[["team", "home", "tf", "att_gv"]].rename(columns={"team": "opp", "home": "opp_home_i", "att_gv": "opp_att_gv"}), on=["opp", "opp_home_i", "tf"], how="left")
 
     obs = ~df["future"]
     mins = df["minutes"].where(obs, 0).fillna(0)
@@ -527,6 +554,15 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     for c in ["team_att", "team_def", "opp_att", "opp_def"]:
         df[f"l_{c}"] = ln(df[c].fillna(1.0))
         df[f"gap_{c}"] = ln(df[f"{c}_g"].fillna(1.0)) - df[f"l_{c}"]  # real goals relative to xG
+    # Clean sheet inputs: real goals and xG blended with fixed weights, optionally from the venue-specific goal record.
+    for mode, cfg in CS_MODES.items():
+        if cfg is None:
+            continue
+        w, venue_only = cfg
+        dg = df["team_def_gv"] if venue_only else df["team_def_g"]
+        ag = df["opp_att_gv"] if venue_only else df["opp_att_g"]
+        df[f"cs_def_{mode}"] = w * ln(dg.fillna(1.0)) + (1 - w) * df["l_team_def"]
+        df[f"cs_att_{mode}"] = w * ln(ag.fillna(1.0)) + (1 - w) * df["l_opp_att"]
     for pos_name in POSITIONS[1:]:
         df[f"is_{pos_name}"] = (df["role"] == pos_name).astype(int)  # how he plays; points still follow the FPL position
     df["pos_code"] = df["position"].map({p: i for i, p in enumerate(POSITIONS)})
@@ -541,7 +577,8 @@ GLMS = {
     "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
 }
-TEAM_FEATS = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "was_home"]
+TEAM_FEATS_LEARNED = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "was_home"]
+TEAM_FEATS = TEAM_FEATS_LEARNED
 SAVE_FEATS = ["l_sv", "l_opp_att", "gap_opp_att", "l_team_def", "gap_team_def", "was_home"]
 
 
@@ -1028,6 +1065,45 @@ def tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> None:
     print(pd.DataFrame(rows).round(4).to_string(index=False))
 
 
+def cs_tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> None:
+    """Compares clean sheet inputs on last season's results and on this gameweek's clean sheet market."""
+    global TEAM_FEATS
+    def log_loss(prob: pd.Series, hit: pd.Series) -> float:
+        p = prob.clip(1e-5, 1 - 1e-5)
+        return float(-(hit * np.log(p) + (1 - hit) * np.log(1 - p)).mean())
+    feat = build_features(load_history(data_dir, seasons))
+    rows = []
+    for mode in CS_MODES:
+        TEAM_FEATS = TEAM_FEATS_LEARNED if CS_MODES[mode] is None else [f"cs_def_{mode}", f"cs_att_{mode}", "was_home"]
+        print(f"--- {mode}")
+        pred = walk_forward(feat, seasons[-1], step)
+        fx = pred.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
+        hit = (fx["ga"] == 0).astype(float)
+        top = fx["p_cs"] >= fx["p_cs"].quantile(0.8)
+        row = {"mode": mode, "logloss_cs": log_loss(fx["p_cs"], hit), "pred_cs": fx["p_cs"].mean(), "actual_cs": hit.mean(),
+               "top20%_pred": fx.loc[top, "p_cs"].mean(), "top20%_actual": hit[top].mean()}
+        model = XPointsModel().fit(feat[feat["season"] != seasons[-1]])
+        ex = model.explain()
+        row["coefs"] = ", ".join(f'{f}={c}' for f, c in zip(ex.loc[ex["target"] == "conceded", "feature"], ex.loc[ex["target"] == "conceded", "coef"]))
+        res = predict_frame(data_dir, seasons, 1, offline)
+        teams = res.groupby("team", as_index=False)["p_cs"].first()
+        teams = teams[teams["team"].isin(MARKET_CS_GW11)]
+        market = teams["team"].map(MARKET_CS_GW11).astype(float)
+        model_cs = teams["p_cs"] * 100
+        row["market_MAE"] = float((model_cs - market).abs().mean())
+        row["market_corr"] = float(model_cs.corr(market))
+        row["market_bias_top5"] = float((model_cs - market)[market.rank(ascending=False) <= 5].mean())
+        lookup = dict(zip(teams["team"], model_cs.round(1)))
+        row["MCI/LIV/AVL/HUL/NEW"] = "/".join(str(lookup.get(t)) for t in ("Man City", "Liverpool", "Aston Villa", "Hull City", "Newcastle"))
+        rows.append(row)
+    TEAM_FEATS = TEAM_FEATS_LEARNED
+    out = pd.DataFrame(rows)
+    print("\n=== Clean sheet inputs, lower logloss and market_MAE are better ===")
+    print(out.drop(columns="coefs").round(4).to_string(index=False))
+    for _, r in out.iterrows():
+        print(f'{r["mode"]}: {r["coefs"]}')
+
+
 def home_away(data_dir: Path, seasons: list[str]) -> None:
     """Home advantage across all listed seasons: raw rates and the effect after controlling for team strength."""
     feat = build_features(load_history(data_dir, seasons))
@@ -1057,7 +1133,7 @@ def home_away(data_dir: Path, seasons: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -1076,6 +1152,8 @@ def main() -> None:
         report(pred, a.data_dir / f"backtest_{season}.csv")
         print("\n=== Coefficients, trained on seasons before the test season ===")
         print(XPointsModel().fit(feat[feat["season"] != season]).explain().to_string(index=False))
+    elif a.command == "cs-tune":
+        cs_tune(a.data_dir, a.seasons, a.step, a.offline)
     elif a.command == "home-away":
         home_away(a.data_dir, a.seasons)
     elif a.command == "tune":
