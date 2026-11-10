@@ -276,33 +276,12 @@ def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray
 def ai_minute_detail(history: list[float]) -> tuple[float, float, float]:
     """Expected minutes and the chance of 1+ and 60+ minutes, from per-match minutes, oldest first (0 = did not play).
 
-    Weighted 5,4,3,2,1 from newest to oldest, except that:
-    - isolated absences of a regular starter (suspension, a knock, one rest) are skipped;
-    - two or more absences in a row right now are kept, because he may really be out;
-    - 2 to 5 straight matches of 70+ after a clearly lower one mean he is back: use only that streak;
-    - minutes rising match after match to 60+ mean he is climbing back: use his normal full-match minutes.
+    The last 5 matches weighted 5, 4, 3, 2, 1 from newest to oldest; fewer matches use the first weights.
     The chances are the weighted share of the same matches with 1+ and 60+ minutes.
     """
     if not history:
         return np.nan, np.nan, np.nan
-    newest_first = history[::-1]
-    apps = [m for m in newest_first if m > 0]
-    trailing_zeros = next((i for i, m in enumerate(newest_first) if m > 0), len(newest_first))
-    if trailing_zeros == 0 and len(apps) >= 3:
-        streak = next((i for i, m in enumerate(apps) if m < 70), len(apps))
-        if 2 <= streak <= 5 and streak < len(apps) and apps[streak] <= min(apps[:streak]) - 20:
-            weights = MINUTE_WEIGHTS[:streak]
-            return float(min(90.0, np.dot(apps[:streak], weights) / weights.sum())), 1.0, 1.0
-        run = apps[:4]
-        climbing = apps[0] >= 60 and all(x >= y for x, y in zip(run, run[1:])) and apps[0] - apps[2] >= 20
-        if climbing:
-            full_matches = [m for m in apps[:15] if m >= 60]
-            return float(min(90.0, max(apps[0], np.mean(full_matches)))), 1.0, 1.0
-    last5 = newest_first[:5]
-    played_last_two = len(newest_first) >= 2 and newest_first[0] > 0 and newest_first[1] > 0
-    regular = bool(apps) and float(np.median(apps[:10])) >= 60
-    skip_zeros = trailing_zeros < 2 and regular and (last5.count(0.0) <= 1 or played_last_two)
-    window = np.array([m for m in newest_first[:10] if not (skip_zeros and m == 0)][:5])
+    window = np.array(history[::-1][:5], dtype=float)
     weights = MINUTE_WEIGHTS[:len(window)]
     total = weights.sum()
     return (float(np.dot(window, weights) / total), float(np.dot(window > 0, weights) / total),
@@ -874,7 +853,7 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
       the matches before the absence.
     - Injured or unavailable with no return date: 0 in every gameweek.
     - Suspended with no date, or a red card in his last match before FPL has flagged it: out for one match.
-    - Doubtful (25/50/75%): FPL's chance in the next gameweek, fading back to full over the following 4.
+    - Doubtful (25/50/75%): xMin times FPL's chance in the next gameweek, full after that.
     """
     status = status or "a"
     n = len(fixtures)
@@ -895,8 +874,8 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
         return out, True, f"{why}: out 1 match, back GW{back(1)}" if n > 1 else f"{why}: out 1 match", back(1)
     if status == "d":
         c = 1.0 if chance is None else chance / 100
-        out = [c + (1 - c) * min(1.0, (gw - first) / 4) for gw, _ in fixtures]
-        return out, False, f"Doubtful {round(c * 100)}%", None
+        out = [c if gw == first else 1.0 for gw, _ in fixtures]  # FPL's chance is for the next gameweek
+        return out, False, f"Doubtful {round(c * 100)}% for GW{first}", None
     return [1.0] * n, False, "", None
 
 
