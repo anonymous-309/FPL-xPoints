@@ -27,6 +27,7 @@ import re
 import shutil
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -41,6 +42,7 @@ HIST_SEASONS = ["2023-24", "2024-25", "2025-26"]
 CURRENT_SEASON = "2026-27"
 RAW = "https://raw.githubusercontent.com/vaastav/Fantasy-Premier-League/master/data"
 API = "https://fantasy.premierleague.com/api"
+CORE = "https://raw.githubusercontent.com/olbauday/FPL-Core-Insights/main/data"  # match stats incl. xGOT, from 2024-25
 UA = {"User-Agent": "fpl-xpoints/1.0 (personal script)"}
 
 POSITIONS = ["GK", "DEF", "MID", "FWD"]
@@ -60,6 +62,12 @@ EPS = 1e-3
 TEAM_CARRY = 1.0   # share of a team's record kept when a new season starts
 TEAM_WINDOW = 0    # if above 0, use only this many latest matches, equally weighted
 MAX_BAN_MATCHES = 4
+HIST_PEN_SHARE = {1: 0.85, 2: 0.12, 3: 0.03}  # share of team penalties by FPL order, used for past seasons
+PEN_TAKE_ON_PITCH = 0.95  # chance the listed taker steps up when he is on the pitch
+PEN_CONVERSION, PEN_XG = 0.78, 0.76
+SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_order", "corners_and_indirect_freekicks_order": "corner_order"}
+HL_FINISH, K_XGOT, K_FINISH_XG = 60, 8.0, 15.0  # finishing is a long-run trait: slow decay, shrunk by xG volume
+PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
 MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
 
@@ -69,7 +77,7 @@ NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "wa
           "team_h_score", "team_a_score", "value"]
 NUMERIC = ["element", "fixture", "minutes", "total_points", "goals_scored", "assists", "bonus",
            "bps", "saves", "yellow_cards", "red_cards", "expected_goals", "expected_assists",
-           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals"]
+           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots"]
 
 
 # ---------------------------------------------------------------- data access
@@ -98,6 +106,82 @@ def download(data_dir: Path, seasons: list[str]) -> None:
         print(f"{s}: {got} gameweek files")
 
 
+def _core_season(season: str) -> str:
+    start, end = season.split("-")
+    return f"{start}-{start[:2]}{end}"
+
+
+def download_core(data_dir: Path, seasons: list[str]) -> None:
+    """Per-match player stats from FPL Core Insights (xGOT, penalties). The current season is refreshed every run."""
+    for s in seasons:
+        if s < "2024-25":
+            continue
+        out = data_dir / s / "core"
+        out.mkdir(parents=True, exist_ok=True)
+        if s != CURRENT_SEASON and (out / "players.csv").exists() and len(list(out.glob("pms_gw*.csv"))) >= 38:
+            print(f"{s}: Core Insights already downloaded")
+            continue
+        cs = _core_season(s)
+        old_layout = s == "2024-25"
+        players = f"{CORE}/{cs}/players/players.csv" if old_layout else f"{CORE}/{cs}/players.csv"
+        (out / "players.csv").write_bytes(_get(urllib.parse.quote(players, safe=":/")))
+        got = 0
+        for gw in range(1, 39):
+            path = f"{CORE}/{cs}/playermatchstats/GW{gw}/playermatchstats.csv" if old_layout else f"{CORE}/{cs}/By Tournament/Premier League/GW{gw}/playermatchstats.csv"
+            try:
+                (out / f"pms_gw{gw}.csv").write_bytes(_get(urllib.parse.quote(path, safe=":/")))
+                got += 1
+            except urllib.error.HTTPError:
+                pass
+            time.sleep(0.03)
+        print(f"{s}: Core Insights {got} gameweek files")
+
+
+def load_core(data_dir: Path, season: str) -> pd.DataFrame:
+    folder = data_dir / season / "core"
+    if not (folder / "players.csv").exists():
+        return pd.DataFrame()
+    codes = _read_csv(folder / "players.csv")[["player_id", "player_code"]].drop_duplicates("player_id")
+    frames = []
+    for f in folder.glob("pms_gw*.csv"):
+        d = _read_csv(f)
+        if "xgot" not in d or d.empty:
+            continue
+        d["GW"] = int(re.findall(r"\d+", f.stem)[0])
+        frames.append(d)
+    if not frames:
+        return pd.DataFrame()
+    d = pd.concat(frames, ignore_index=True)
+    for c in ["minutes_played", "xgot", "penalties_scored", "penalties_missed", "total_shots", "shots_on_target"]:
+        d[c] = pd.to_numeric(d.get(c), errors="coerce")
+    d = d[d["minutes_played"].fillna(0) > 0].merge(codes, on="player_id", how="inner")
+    g = d.groupby(["GW", "player_code"], as_index=False).agg(core_xgot=("xgot", "sum"), core_pen_scored=("penalties_scored", "sum"),
+                                                          core_pen_missed=("penalties_missed", "sum"), core_shots=("total_shots", "sum"))
+    return g.rename(columns={"player_code": "code"}).assign(season=season)
+
+
+def add_core(df: pd.DataFrame, data_dir: Path, seasons: list[str]) -> pd.DataFrame:
+    core = [load_core(data_dir, s) for s in seasons]
+    core = [c for c in core if len(c)]
+    df = df.copy()
+    df["code"] = pd.to_numeric(df["code"], errors="coerce")
+    if not core:
+        for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots"]:
+            df[col] = np.nan
+        df["has_core"] = False
+        return df
+    c = pd.concat(core, ignore_index=True)
+    c["code"] = pd.to_numeric(c["code"], errors="coerce")
+    df = df.merge(c, on=["season", "GW", "code"], how="left")
+    # a double gameweek is one Core Insights row per match but one per gameweek here: split by minutes
+    mins = pd.to_numeric(df["minutes"], errors="coerce").fillna(0)
+    share = mins / mins.groupby([df["season"], df["GW"], df["code"]]).transform("sum").replace(0, np.nan)
+    for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots"]:
+        df[col] = df[col] * share.fillna(0)
+    df["has_core"] = df["core_xgot"].notna() & (mins > 0)
+    return df
+
+
 def _read_csv(path: Path) -> pd.DataFrame:
     try:
         return pd.read_csv(path, encoding="utf-8", low_memory=False)
@@ -119,7 +203,9 @@ def load_season(data_dir: Path, season: str) -> pd.DataFrame:
     df["element"] = pd.to_numeric(df["element"], errors="coerce")
     raw = data_dir / season / "players_raw.csv"
     if raw.exists():
-        ids = _read_csv(raw)[["id", "code"]].rename(columns={"id": "element"})
+        raw_df = _read_csv(raw)
+        keep = ["id", "code"] + [c for c in SET_PIECE_COLS if c in raw_df]
+        ids = raw_df[keep].rename(columns={"id": "element", **SET_PIECE_COLS})
         df = df.merge(ids, on="element", how="left")
     else:
         df["code"] = np.nan
@@ -320,6 +406,26 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
     obs = ~df["future"]
     mins = df["minutes"].where(obs, 0).fillna(0)
+    # Penalties: rate players on non-penalty xG and goals. Core Insights counts penalties from 2024-25; before that,
+    # each match's penalties are estimated from the season's FPL penalty order.
+    known = df["has_core"].fillna(False).astype(bool) & obs if "has_core" in df else pd.Series(False, index=df.index)
+    teams_matches = df.loc[known].drop_duplicates(["season", "fixture", "team"]).shape[0]
+    taken = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)).where(known, 0)
+    if teams_matches > 100:
+        rate = taken.sum() / teams_matches
+    else:
+        teams_matches = df.loc[obs].drop_duplicates(["season", "fixture", "team"]).shape[0]
+        rate = df.loc[obs, "penalties_missed"].fillna(0).sum() / (1 - PEN_CONVERSION) / max(teams_matches, 1)
+    df["league_pen_rate"] = float(np.clip(rate, 0.08, 0.2))
+    df["pen_share_hist"] = pd.to_numeric(df["pen_order"], errors="coerce").map(HIST_PEN_SHARE).fillna(0.0)
+    expected_pens = df["pen_share_hist"] * df["league_pen_rate"] * mins / 90
+    pens_taken = taken.where(known, expected_pens)
+    pen_goals = df["core_pen_scored"].fillna(0).where(known, expected_pens * PEN_CONVERSION)
+    df["np_xg"] = (df["expected_goals"] - pens_taken * PEN_XG).clip(lower=0)
+    df["np_goals"] = (df["goals_scored"] - pen_goals).clip(lower=0)
+    pen_xgot = df["core_pen_scored"].fillna(0) * PEN_XGOT_SCORED + df["core_pen_missed"].fillna(0) * PEN_XGOT_MISSED
+    df["np_xgot"] = (df["core_xgot"] - pen_xgot).clip(lower=0).where(known, 0.0)
+    df["np_xg_known"] = df["np_xg"].where(known, 0.0)
     dc = df["defensive_contribution"]
     thr = df["position"].map(DEFCON_THRESHOLD)
     can_defcon = obs & dc.notna() & thr.notna() & (mins >= 60)
@@ -330,13 +436,13 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
     roll = pd.DataFrame({
         "pid": df["pid"], "tf": df["tf"], "position": df["position"], "future": df["future"],
-        "mins": mins, "n90": mins / 90, "g": df["goals_scored"], "a": df["assists"],
-        "xg": df["expected_goals"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
-        "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
+        "mins": mins, "n90": mins / 90, "g": df["np_goals"], "a": df["assists"],
+        "xg": df["np_xg"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
+        "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
         "st": started.where(obs, 0), "n": obs.astype(float),
         "dh": (can_defcon & (dc >= thr)).astype(float), "do": can_defcon.astype(float),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "pts", "st", "n", "dh", "do"]
+    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "st", "n", "dh", "do"]
     roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
@@ -353,6 +459,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
                  / g["n"].transform(lambda s: s.shift(1).rolling(4, min_periods=1).sum()).replace(0, np.nan))
     p["ppg_all"] = g["pts"].transform(lambda s: s.shift(1).expanding().sum()) / g["n"].transform(lambda s: s.shift(1).expanding().sum()).replace(0, np.nan)
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
+    for c in ["g", "xg", "xgot", "xgk"]:
+        p[f"F_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_FINISH)
     p["w5_min"], p["w5_p1"], p["w5_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float))
     p = p.drop(columns=stat)
     p["min_short"] = p["X_ms"] / p["X_ns"].replace(0, np.nan)
@@ -379,6 +487,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     df["l_xg"], df["l_xa"] = ln(df["r_xg"]), ln(df["r_xa"])
     df["form_xg"], df["form_xa"] = ln(df["f_xg"]) - ln(df["r_xg"]), ln(df["f_xa"]) - ln(df["r_xa"])
     df["finish"], df["creat"] = ln(df["r_g"]) - ln(df["r_xg"]), ln(df["r_a"]) - ln(df["r_xa"])
+    # Long-run finishing over several seasons: non-penalty goals and xGOT against non-penalty xG, shrunk by xG volume.
+    df["finish_goals"] = np.log((df["F_g"] + K_FINISH_XG) / (df["F_xg"] + K_FINISH_XG))
+    df["finish_xgot"] = np.log((df["F_xgot"] + K_XGOT) / (df["F_xgk"] + K_XGOT))
     df["l_bon"], df["l_bps"], df["form_bps"] = ln(df["r_bon"]), ln(df["r_bps"]), ln(df["f_bps"]) - ln(df["r_bps"])
     df["l_sv"], df["l_yc"] = ln(df["r_sv"]), ln(df["r_yc"])
     for c in ["team_att", "team_def", "opp_att", "opp_def"]:
@@ -393,7 +504,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------- model
 PDUM = ["is_DEF", "is_MID", "is_FWD"]
 GLMS = {
-    "goals": ("goals_scored", ["l_xg", "form_xg", "finish", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
+    "goals": ("np_goals", ["l_xg", "form_xg", "finish", "finish_goals", "finish_xgot", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
     "assists": ("assists", ["l_xa", "form_xa", "creat", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
     "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
@@ -433,6 +544,12 @@ class XPointsModel:
         pos = df["position"]
         n90 = xmin / 90
         rate90 = {k: self.rates[k].predict(df[f]) for k, (_, f) in GLMS.items()}
+        # Penalties on top of open-play goals: his share of team penalties while on the pitch x team penalties per match.
+        pen_cond = df["pen_cond"].to_numpy(float) if "pen_cond" in df else df["pen_share_hist"].fillna(0).to_numpy(float)
+        pen_cond = np.nan_to_num(pen_cond)
+        team_pens = df["league_pen_rate"].to_numpy(float) * df["team_att"].fillna(1.0).to_numpy(float)
+        pen90 = pen_cond * team_pens  # penalties he takes in a full 90
+        rate90["goals"] = rate90["goals"] + pen90 * PEN_CONVERSION
         lam = {k: rate90[k] * n90 for k in rate90}
         red90 = df["r_rc"].to_numpy(float)
         conc = self.conceded.predict(df[TEAM_FEATS])
@@ -458,13 +575,13 @@ class XPointsModel:
         ps90 = gk * df["r_ps"].to_numpy(float)
         full_pensave = ps90 * PEN_SAVE_PTS
         pts_pensave = full_pensave * n90
-        pm90, og90 = df["r_pm"].to_numpy(float), df["r_og"].to_numpy(float)
+        pm90, og90 = pen90 * (1 - PEN_CONVERSION), df["r_og"].to_numpy(float)
         full_penmiss, full_own = pm90 * PEN_MISS_PTS, og90 * OWN_GOAL_PTS
         pts_penmiss, pts_own = full_penmiss * n90, full_own * n90
         pts_card = -lam["yellow"] - 3 * red90 * n90
         out = pd.DataFrame({
             "xmin": xmin, "p_play": p_play, "p_60": p_60, "xg": lam["goals"], "xa": lam["assists"],
-            "xbonus": lam["bonus"], "p_cs": pcs, "g90": rate90["goals"], "a90": rate90["assists"], "y90": rate90["yellow"], "r90": red90, "bonus90": rate90["bonus"], "pts_app": pts_app, "pts_goal": pts_goal, "pts_ast": pts_ast,
+            "xbonus": lam["bonus"], "p_cs": pcs, "g90": rate90["goals"], "a90": rate90["assists"], "y90": rate90["yellow"], "r90": red90, "bonus90": rate90["bonus"], "pen90": pen90, "pen_cond_used": pen_cond, "team_pens": team_pens, "pts_app": pts_app, "pts_goal": pts_goal, "pts_ast": pts_ast,
             "pts_bonus": lam["bonus"], "pts_cs": pts_cs, "pts_conc": pts_conc, "pts_save": pts_save, "pts_pensave": pts_pensave, "pts_penmiss": pts_penmiss, "pts_own": pts_own, "pm90": pm90, "og90": og90, "saves90": saves90, "conc90": conc, "ps90": ps90,
             "pts_defcon": pts_def, "pts_card": pts_card,
         }, index=df.index)
@@ -490,7 +607,8 @@ class XPointsModel:
 
 # ---------------------------------------------------------------- backtest
 def load_history(data_dir: Path, seasons: list[str]) -> pd.DataFrame:
-    return clean(pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True), seasons)
+    raw = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
+    return clean(add_core(raw, data_dir, seasons), seasons)
 
 
 def walk_forward(feat: pd.DataFrame, season: str, step: int, min_train_seasons: int = 1) -> pd.DataFrame:
@@ -625,7 +743,8 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
         if pos.get(p["element_type"]) is None:
             continue
         name = f'{p.get("first_name", "")} {p.get("second_name", "")}'.strip() or p["web_name"]
-        base = {"name": name, "position": pos[p["element_type"]], "element": p["id"], "code": p["code"], "season": CURRENT_SEASON}
+        base = {"name": name, "position": pos[p["element_type"]], "element": p["id"], "code": p["code"], "season": CURRENT_SEASON,
+                **{new: p.get(old) for old, new in SET_PIECE_COLS.items()}}
         for row in _api(f"element-summary/{p['id']}/", cache, offline)["history"]:
             f = fix.get(row["fixture"])
             # Use every match that has been played: FPL marks a whole gameweek finished only some time later.
@@ -646,18 +765,36 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
                     avail = 0.0
                 fut.append(base | {"GW": f["event"], "fixture": f["id"], "team": teams[team_id], "opponent_team": f["team_a"] if home else f["team_h"],
                                     "was_home": home, "kickoff_time": f.get("kickoff_time"), "value": p["now_cost"], "minutes": np.nan, "future": True,
-                                    "avail": avail, "team_short": short[team_id], "opp_short": short[f["team_a"] if home else f["team_h"]], "web_name": p["web_name"], "status": p.get("status"), "news": p.get("news", "")})
+                                    "avail": avail, "team_short": short[team_id], "opp_short": short[f["team_a"] if home else f["team_h"]], "web_name": p["web_name"], "status": p.get("status"), "news": p.get("news", ""),
+                                    "pen_text": p.get("penalties_text") or "", "fk_text": p.get("direct_freekicks_text") or "", "corner_text": p.get("corners_and_indirect_freekicks_text") or ""})
     return pd.DataFrame(hist), pd.DataFrame(fut), first
+
+
+def penalty_shares(target: pd.DataFrame) -> np.ndarray:
+    """Share of his team's penalties a player takes while on the pitch, per future match.
+
+    The FPL number 1 takes them when on the pitch; each next taker gets the ones left while those above him are off."""
+    out = np.zeros(len(target))
+    on_pitch = (target["w5_min"].fillna(0) * target["avail"].fillna(1)).clip(0, 90) / 90
+    order = pd.to_numeric(target["pen_order"], errors="coerce")
+    frame = pd.DataFrame({"fixture": target["fixture"].to_numpy(), "team": target["team"].to_numpy(), "order": order.to_numpy(), "m": on_pitch.to_numpy()})
+    for _, g in frame[frame["order"].notna()].groupby(["fixture", "team"]):
+        left = 1.0
+        for i in g.sort_values("order").index:
+            out[i] = PEN_TAKE_ON_PITCH * left
+            left *= 1 - g.at[i, "m"]
+    return out
 
 
 def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: bool, with_history: bool = False):
     cache = data_dir / "api_cache"
     hist, fut, first = live_frames(cache, offline, horizon)
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
-    df = clean(pd.concat([old, hist, fut], ignore_index=True), seasons + [CURRENT_SEASON])
+    df = clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON])
     feat = build_features(df)
     model = XPointsModel().fit(feat)
-    target = feat[feat["future"]]
+    target = feat[feat["future"]].copy()
+    target["pen_cond"] = penalty_shares(target)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res
 
@@ -738,12 +875,12 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     for _, t in teams.iterrows():
         print(f'Clean sheet GW{first}: {t["team"]} vs {t["opp"]}: {t["p_cs"]:.1%}, expected conceded {t["conc90"]:.2f}')
     hist_rows = res  # future rows carry the features built from all earlier matches
-    for name in ("Rogers", "Haaland", "Semenyo", "Palmer"):
+    for name in ("Rogers", "Haaland", "Semenyo", "Palmer", "Groß", "Salah", "B.Fernandes"):
         rows = hist_rows[hist_rows["web_name"].astype(str).str.contains(name) & (hist_rows["GW"] == int(first))]
         for _, m in rows.head(2).iterrows():
             print(f'Finishing {m["web_name"]} v {m["opp_short"]}: weighted 90s {m["L_n90"]:.1f}, weighted goals {m["L_g"]:.1f}, weighted xG {m["L_xg"]:.2f}, '
                   f'shrunk goals/90 {m["r_g"]:.3f}, shrunk xG/90 {m["r_xg"]:.3f}, raw goals/90 {m["L_g"] / max(m["L_n90"], 1e-9):.3f}, raw xG/90 {m["L_xg"] / max(m["L_n90"], 1e-9):.3f}, '
-                  f'finish {m["finish"]:.3f}, form {m["form_xg"]:.3f}, team att {m["team_att"]:.2f}, opp def {m["opp_def"]:.2f}, home {m["was_home"]}, '
+                  f'finish {m["finish"]:.3f}, finish_goals {m["finish_goals"]:.3f}, finish_xgot {m["finish_xgot"]:.3f}, long-run npG {m["F_g"]:.1f}, npxG {m["F_xg"]:.1f}, npxGOT {m["F_xgot"]:.1f} on npxG {m["F_xgk"]:.1f}, pen share {m["pen_cond_used"]:.2f}, form {m["form_xg"]:.3f}, team att {m["team_att"]:.2f}, opp def {m["opp_def"]:.2f}, home {m["was_home"]}, '
                   f'model goals/90 {m["g90"]:.3f}, score 1+ at 90 {1 - np.exp(-m["g90"]):.1%}')
     season = df[(df["season"] == CURRENT_SEASON) & ~df["future"] & df["name"].astype(str).str.contains("Rogers")]
     for pid, g in season.groupby("pid"):
@@ -861,6 +998,7 @@ def main() -> None:
     a = ap.parse_args()
     if a.command == "download":
         download(a.data_dir, a.seasons)
+        download_core(a.data_dir, a.seasons + [CURRENT_SEASON])
     elif a.command == "backtest":
         feat = build_features(load_history(a.data_dir, a.seasons))
         season = a.test_season or a.seasons[-1]
