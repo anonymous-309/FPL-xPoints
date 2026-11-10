@@ -124,3 +124,18 @@ td.gw.edited { box-shadow: inset 0 0 0 2px var(--flag); }
 .minutes .xmin-input { width: 64px; }
 td.xmin-ro { font-weight: 650; color: var(--muted); }
 td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); }
+.planner { max-width: 760px; }
+.planner section { background: var(--card, #fff); border: 1px solid var(--line, #dfe5dc); border-radius: 4px; padding: 12px 14px; margin: 0 0 12px; }
+.planner h2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px; margin: 0 0 8px; font-size: 18px; }
+.planner h2 .total { margin-left: auto; font-size: 16px; }
+.planner .meta { color: var(--muted); font-size: 13px; font-weight: 400; }
+.planner ul { list-style: none; margin: 0; padding: 0; }
+.planner .moves li { padding: 4px 0; font-weight: 600; }
+.planner .outp { color: var(--warn); }
+.planner .inp { color: var(--turf); }
+.planner .xi li { display: grid; grid-template-columns: 42px 1fr auto; column-gap: 8px; padding: 3px 0; border-top: 1px solid var(--line, #eef1ec); }
+.planner .xi .meta { grid-column: 2; }
+.planner .xi .pts { grid-column: 3; grid-row: 1 / span 2; align-self: center; font-weight: 650; }
+.planner .pos { grid-row: 1 / span 2; align-self: center; color: var(--muted); font-size: 12px; font-weight: 650; }
+.planner .bench { margin: 8px 0 0; }
+.planner .summary p { margin: 0 0 6px; }

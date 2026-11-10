@@ -40,6 +40,9 @@ jobs:
         run: python fpl_xpoints.py download
       - name: Build the points table
         run: python fpl_xpoints.py site --out _site
+      - name: Plan transfers for the teams in planner_ids.txt
+        continue-on-error: true
+        run: python planner.py --site _site --ids planner_ids.txt
       - name: Measure accuracy on last season
         continue-on-error: true
         run: python fpl_xpoints.py backtest 2>&1 | tee _site/backtest.txt
