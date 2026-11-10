@@ -589,7 +589,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 # ---------------------------------------------------------------- model
 PDUM = ["is_DEF", "is_MID", "is_FWD"]
 GLMS = {
-    "goals": ("np_goals", ["l_xg", "form_xg", "finish", "finish_goals", "finish_xgot", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
+    # Goals: one blend of the player's goals 50%, xG 25%, xGOT 25% (log scale, padded with 15 average xG), then form, team, opponent and venue.
+    "goals": ("np_goals", ["blend_g50", "form_xg", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
     "assists": ("assists", ["l_xa", "form_xa", "creat", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
     "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
@@ -1157,10 +1158,11 @@ def goal_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, mode
         return float(-(hit * np.log(p) + (1 - hit) * np.log(1 - p)).mean())
     feat = build_features(load_history(data_dir, seasons))
     learned = GLMS["goals"]
+    learned_feats = ("np_goals", ["l_xg", "form_xg", "finish", "finish_goals", "finish_xgot", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM)
     rest = ["form_xg", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM
     rows, names = [], ["Haaland", "Rogers", "Semenyo", "Salah", "Bruno G.", "Saka", "Isak", "Palmer"]
     for mode in (modes or list(GOAL_MODES)):
-        GLMS["goals"] = learned if mode == "learned" else ("np_goals", [f"blend_{mode}"] + rest)
+        GLMS["goals"] = learned_feats if mode == "learned" else ("np_goals", [f"blend_{mode}"] + rest)
         print(f"--- {mode}")
         pred = walk_forward(feat, seasons[-1], step)
         played = pred[pred["minutes"] > 0]
