@@ -9,8 +9,12 @@
   // Points for a gameweek, rescaled to the minutes set on the Minutes page.
   const view = (p, g) => XMin.view(state.overrides, p, g);
   const minutesText = (p, g) => XMin.join(XMin.minutes(state.overrides, p, g).mins);
-  // Minutes in the first gameweek shown (read-only here; edited on the Minutes page).
-  const nextMins = (p, gws) => { const m = XMin.minutes(state.overrides, p, gws[0]); return m ? m.mins.reduce((a, b) => a + b, 0) : -1; };
+  // Average minutes per match over the gameweeks shown, blanks left out (read-only here; edited on the Minutes page).
+  function avgMins(p, gws) {
+    const all = gws.map((g) => XMin.minutes(state.overrides, p, g)).filter(Boolean);
+    const mins = all.flatMap((m) => m.mins);
+    return { avg: mins.length ? mins.reduce((a, b) => a + b, 0) / mins.length : null, edited: all.some((m) => m.source !== 'model') };
+  }
   // Points per component, leaving out the ones that are zero for this player.
   const breakdownText = (d) => Object.entries(PARTS).filter(([k]) => Math.abs(d.parts[k]) >= 0.005).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n');
   const pct = (v) => `${Math.round(v * 100)}%`;
@@ -57,7 +61,7 @@
     const team = $('team').value;
     const max = parseFloat($('price').value);
     const value = {
-      name: (p) => p.name.toLowerCase(), price: (p) => p.price, xmin: (p) => nextMins(p, gws), total: (p) => total(p, gws),
+      name: (p) => p.name.toLowerCase(), price: (p) => p.price, xmin: (p) => { const a = avgMins(p, gws).avg; return a === null ? -1 : a; }, total: (p) => total(p, gws),
     }[state.sort] || ((p) => (p.byGw[state.sort] ? view(p, state.sort).xpts : -99));
     return state.data.players
       .filter((p) => (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
@@ -66,7 +70,7 @@
   }
 
   function header(gws) {
-    const columns = [['name', 'Player'], ['price', 'Price'], ['xmin', `xMin GW${gws[0]}`], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total']];
+    const columns = [['name', 'Player'], ['price', 'Price'], ['xmin', 'Avg xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total']];
     $('table').tHead.replaceChildren(el('tr', {}, ...columns.map(([key, label]) => {
       const th = el('th', { scope: 'col' }, el('button', { type: 'button', textContent: label, onclick: () => {
         if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' ? 1 : -1; }
@@ -91,8 +95,8 @@
       heat(c, d.xpts / Math.max(1, d.opp.length) * (d.opp.length > 1 ? 1.25 : 1));
       return c;
     });
-    const m = XMin.minutes(state.overrides, p, gws[0]);
-    const xmin = m ? el('td', { className: m.source === 'model' ? 'xmin-ro' : 'xmin-ro edited', textContent: minutesText(p, gws[0]), title: m.source === 'model' ? 'Edit on the Minutes page' : 'Your minutes, set on the Minutes page' })
+    const a = avgMins(p, gws);
+    const xmin = a.avg !== null ? el('td', { className: a.edited ? 'xmin-ro edited' : 'xmin-ro', textContent: Math.round(a.avg), title: `Average minutes per match, GW${gws[0]}-${gws[gws.length - 1]}${a.edited ? ', with your minutes' : ''}. Edit on the Minutes page.` })
       : el('td', { className: 'none', textContent: '–' });
     const tr = el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), xmin, ...cells, el('td', { className: 'total', textContent: f1(total(p, gws)) }));
     tr.dataset.pid = p.id;
