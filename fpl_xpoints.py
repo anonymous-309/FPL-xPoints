@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """FPL expected-points model.
 
-    xPts = xMin/90 * (appearance + goals + assists + bonus + clean sheet
-                      - goals conceded + saves + penalty saves + DEFCON
-                      - cards - penalty misses - own goals)
+    xPts = P(1+ min) + P(60+ min) + P(60+ min) * clean sheet
+           + xMin/90 * (goals + assists + bonus - goals conceded + saves + penalty saves
+                        + DEFCON - cards - penalty misses - own goals)
 
 Goal/assist/bonus rates are Poisson GLMs on log-features: the player's long-run
 xG/xA per 90, recent form, finishing, own team attack, opponent defence and
@@ -439,10 +439,10 @@ class XPointsModel:
         pcs = np.exp(-conc)
         is_gkdef = pos.isin(["GK", "DEF"]).to_numpy()
 
-        pts_app = 2 * n90
+        pts_app = p_play + p_60  # FPL: 1 point for 1+ minutes, another for 60+
         pts_goal = lam["goals"] * pos.map(GOAL_PTS).to_numpy()
         pts_ast = lam["assists"] * 3
-        pts_cs = n90 * pcs * pos.map(CS_PTS).to_numpy()
+        pts_cs = p_60 * pcs * pos.map(CS_PTS).to_numpy()  # clean sheets count only after 60 minutes
         full_conc = -1.0 * is_gkdef * (conc - (1 - np.exp(-2 * conc)) / 2) / 2  # E[floor(G/2)] over 90
         pts_conc = full_conc * n90
         gk = (pos == "GK").to_numpy()

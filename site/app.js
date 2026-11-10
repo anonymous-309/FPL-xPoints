@@ -27,7 +27,8 @@
     const x = overrideFor(p, g);
     if (x === null) return d;
     const n = d.opp.length, r = x / 90, f = d.full;
-    const parts = { app: 2 * n * r, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: f.cs * r, conceded: f.conceded * r, saves: f.saves * r, pensave: f.pensave * r, penmiss: f.penmiss * r, own: f.own * r, defcon: f.defcon * r, cards: f.cards * r };
+    const plays = x > 0 ? 1 : 0, full = x >= 60 ? 1 : 0;
+    const parts = { app: (plays + full) * n, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: f.cs * full, conceded: f.conceded * r, saves: f.saves * r, pensave: f.pensave * r, penmiss: f.penmiss * r, own: f.own * r, defcon: f.defcon * r, cards: f.cards * r };
     return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: x * n, xg: f.xg * r, xa: f.xa * r, edited: true };
   }
   const breakdownText = (d) => Object.entries(PARTS).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n') + `\nxG ${d.xg.toFixed(2)}, xA ${d.xa.toFixed(2)}`;
@@ -39,7 +40,7 @@
   function updateReset() {
     const n = Object.keys(state.overrides).length;
     $('reset').hidden = n === 0;
-    $('reset').textContent = `Reset xMin (${n})`;
+    $('reset').textContent = `Reset Adjusted Min (${n})`;
   }
   function openText(text) {
     state.detail = null;
@@ -87,7 +88,7 @@
   }
 
   function header(gws) {
-    const columns = [['name', 'Player'], ['price', 'Price'], ['w5', 'AI Minute'], ['xmin', 'xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total']];
+    const columns = [['name', 'Player'], ['price', 'Price'], ['w5', 'xMin'], ['xmin', 'Adjusted Min'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total']];
     $('table').tHead.replaceChildren(el('tr', {}, ...columns.map(([key, label]) => {
       const th = el('th', { scope: 'col' }, el('button', { type: 'button', textContent: label, onclick: () => {
         if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' ? 1 : -1; }
