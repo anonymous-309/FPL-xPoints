@@ -984,6 +984,14 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     for _, t in teams.iterrows():
         print(f'Clean sheet GW{first}: {t["team"]} vs {t["opp"]}: {t["p_cs"]:.1%}, expected conceded {t["conc90"]:.2f}')
     hist_rows = res  # future rows carry the features built from all earlier matches
+    hull = res[res["team"].astype(str).str.contains("Hull")].drop_duplicates(["GW", "fixture"]).sort_values("GW")
+    for _, r in hull.iterrows():
+        print(f'Hull GW{int(r["GW"])} v {r["opp_short"]} {"H" if r["was_home"] else "A"}: CS {r["p_cs"]:.1%}, conceded {r["conc90"]:.2f} | Hull def xGC ratio {r["team_def"]:.2f}, goals-conceded ratio {r["team_def_g"]:.2f} | '
+              f'opp att xG ratio {r["opp_att"]:.2f}, goals ratio {r["opp_att_g"]:.2f}')
+    hs = df[df["team"].astype(str).str.contains("Hull") & ~df["future"]].drop_duplicates(["season", "fixture"])
+    print(f'Hull history rows by season: {hs.groupby("season").size().to_dict()}, goals conceded {hs.groupby("season")["ga"].sum().to_dict()}')
+    xgc = df[df["opp"].astype(str).str.contains("Hull") & ~df["future"]].groupby(["season", "fixture"])["expected_goals"].sum()
+    print(f'Hull xG conceded by season: {xgc.groupby(level=0).sum().round(1).to_dict()}')
     for name in ("De Cuyper", "Rogers", "Haaland", "Groß"):
         rows = hist_rows[hist_rows["web_name"].astype(str).str.contains(name) & (hist_rows["GW"] == int(first))]
         for _, m in rows.head(2).iterrows():
