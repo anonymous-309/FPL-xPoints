@@ -28,7 +28,7 @@
     if (x === null) return d;
     const n = d.opp.length, r = x / 90, f = d.full;
     const plays = x > 0 ? 1 : 0, full = x >= 60 ? 1 : 0;
-    const parts = { app: (plays + full) * n, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: f.cs * full, conceded: f.conceded * r, saves: f.saves * r, pensave: f.pensave * r, penmiss: f.penmiss * r, own: f.own * r, defcon: f.defcon * r, cards: f.cards * r };
+    const parts = { app: (plays + full) * n, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: f.cs * r, conceded: f.conceded * r, saves: f.saves * r, pensave: f.pensave * r, penmiss: f.penmiss * r, own: f.own * r, defcon: f.defcon * r, cards: f.cards * r };
     return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: x * n, xg: f.xg * r, xa: f.xa * r, edited: true };
   }
   const breakdownText = (d) => Object.entries(PARTS).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n') + `\nxG ${d.xg.toFixed(2)}, xA ${d.xa.toFixed(2)}`;
