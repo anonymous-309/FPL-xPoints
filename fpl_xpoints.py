@@ -71,6 +71,7 @@ HISTORY_MATCHES = 38  # every decayed record uses only each player's or team's l
 PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
+GOAL_MODES = {"learned": (None, None, None), "equal": (1 / 3, 1 / 3, 1 / 3), "g50": (0.5, 0.25, 0.25), "xg40": (0.3, 0.4, 0.3)}  # goals, xG, xGOT
 CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "mix30": (0.3, False), "venue70": (0.7, True)}
 MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
@@ -557,6 +558,10 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     # Long-run finishing over several seasons: non-penalty goals and xGOT against non-penalty xG, shrunk by xG volume.
     df["finish_goals"] = np.log((df["F_g"] + K_FINISH_XG) / (df["F_xg"] + K_FINISH_XG))
     df["finish_xgot"] = np.log((df["F_xgot"] + K_XGOT) / (df["F_xgk"] + K_XGOT))
+    # Fixed-weight blends of a player's goals, xG and xGOT rates (log scale); the xG weight is what is left over.
+    for mode, (w_goals, w_xg, w_xgot) in GOAL_MODES.items():
+        if mode != "learned":
+            df[f"blend_{mode}"] = df["l_xg"] + w_goals * df["finish_goals"] + w_xgot * df["finish_xgot"]
     df["l_bon"], df["l_bps"], df["form_bps"] = ln(df["r_bon"]), ln(df["r_bps"]), ln(df["f_bps"]) - ln(df["r_bps"])
     df["l_sv"], df["l_yc"] = ln(df["r_sv"]), ln(df["r_yc"])
     for c in ["team_att", "team_def", "opp_att", "opp_def"]:
@@ -1128,6 +1133,53 @@ def cs_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, modes:
         print(f'{r["mode"]}: {r["coefs"]}')
 
 
+def goal_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, modes: list[str] | None = None) -> None:
+    """Compares the learned goal model with fixed goals/xG/xGOT weights on last season's results."""
+    def log_loss(prob: pd.Series, hit: pd.Series) -> float:
+        p = prob.clip(1e-5, 1 - 1e-5)
+        return float(-(hit * np.log(p) + (1 - hit) * np.log(1 - p)).mean())
+    feat = build_features(load_history(data_dir, seasons))
+    learned = GLMS["goals"]
+    rest = ["form_xg", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM
+    rows, names = [], ["Haaland", "Rogers", "Semenyo", "Salah", "Bruno G.", "Saka", "Isak", "Palmer"]
+    for mode in (modes or list(GOAL_MODES)):
+        GLMS["goals"] = learned if mode == "learned" else ("np_goals", [f"blend_{mode}"] + rest)
+        print(f"--- {mode}")
+        pred = walk_forward(feat, seasons[-1], step)
+        played = pred[pred["minutes"] > 0]
+        share = played["minutes"] / 90
+        lam = (played["g90"] + played["pen90"] * PEN_CONVERSION) * share
+        hit = (played["goals_scored"] >= 1).astype(float)
+        prob = 1 - np.exp(-lam)
+        top = prob >= prob.quantile(0.95)
+        gw = pred.groupby(["GW", "pid"], as_index=False).agg(total_points=("total_points", "sum"), xpts=("xpts", "sum"), min_long=("min_long", "last"))
+        regular = gw[gw["min_long"] >= 45]
+        y = played["goals_scored"]
+        dev = 2 * (np.where(y > 0, y * np.log(np.maximum(y, 1e-9) / lam.clip(lower=1e-9)), 0) - (y - lam)).mean()
+        row = {"mode": mode, "logloss_score1+": log_loss(prob, hit), "goal_deviance": float(dev),
+               "pred_goals": float(lam.sum()), "actual_goals": float(y.sum()),
+               "top5%_pred": float(prob[top].mean()), "top5%_actual": float(hit[top].mean()),
+               "RMSE_regulars": float(np.sqrt(((regular["total_points"] - regular["xpts"]) ** 2).mean())),
+               "captain": float(gw.loc[gw.groupby("GW")["xpts"].idxmax(), "total_points"].mean()),
+               "top10": float(gw.sort_values("xpts", ascending=False).groupby("GW").head(10)["total_points"].mean())}
+        ex = XPointsModel().fit(feat[feat["season"] != seasons[-1]]).explain()
+        g = ex[ex["target"] == "goals"]
+        row["coefs"] = ", ".join(f"{f}={c}" for f, c in zip(g["feature"], g["coef"]))
+        res = predict_frame(data_dir, seasons, 1, offline)
+        res = res.groupby("web_name", as_index=False).agg(g90=("g90", "first"), pen90=("pen90", "first"))
+        look = dict(zip(res["web_name"], 1 - np.exp(-(res["g90"] + res["pen90"] * PEN_CONVERSION))))
+        row["score90"] = ", ".join(f"{n} {look[n]:.0%}" for n in names if n in look)
+        rows.append(row)
+    GLMS["goals"] = learned
+    out = pd.DataFrame(rows)
+    print("\n=== Chance to score: lower logloss, deviance and RMSE are better; higher captain/top10 are better ===")
+    print(out.drop(columns=["coefs", "score90"]).round(4).to_string(index=False))
+    for _, r in out.iterrows():
+        print(f'{r["mode"]} next GW score 1+ at 90 min: {r["score90"]}')
+    for _, r in out.iterrows():
+        print(f'{r["mode"]} coefs: {r["coefs"]}')
+
+
 def home_away(data_dir: Path, seasons: list[str]) -> None:
     """Home advantage across all listed seasons: raw rates and the effect after controlling for team strength."""
     feat = build_features(load_history(data_dir, seasons))
@@ -1157,7 +1209,7 @@ def home_away(data_dir: Path, seasons: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -1177,6 +1229,8 @@ def main() -> None:
         report(pred, a.data_dir / f"backtest_{season}.csv")
         print("\n=== Coefficients, trained on seasons before the test season ===")
         print(XPointsModel().fit(feat[feat["season"] != season]).explain().to_string(index=False))
+    elif a.command == "goal-tune":
+        goal_tune(a.data_dir, a.seasons, a.step, a.offline, a.modes)
     elif a.command == "cs-tune":
         cs_tune(a.data_dir, a.seasons, a.step, a.offline, a.modes)
     elif a.command == "home-away":

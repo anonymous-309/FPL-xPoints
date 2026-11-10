@@ -25,4 +25,4 @@ jobs:
           path: fpl_data/20*
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
-      - run: python fpl_xpoints.py cs-tune --step 6 --modes mix30 mix50
+      - run: python fpl_xpoints.py goal-tune --step 6 --modes learned equal g50 xg40
