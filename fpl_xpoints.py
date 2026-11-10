@@ -68,6 +68,7 @@ PEN_CONVERSION, PEN_XG = 0.78, 0.76
 SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_order", "corners_and_indirect_freekicks_order": "corner_order"}
 HL_FINISH, K_XGOT, K_FINISH_XG = 60, 8.0, 15.0  # finishing is a long-run trait: slow decay, shrunk by xG volume
 PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
+HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
 
@@ -77,7 +78,7 @@ NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "wa
           "team_h_score", "team_a_score", "value"]
 NUMERIC = ["element", "fixture", "minutes", "total_points", "goals_scored", "assists", "bonus",
            "bps", "saves", "yellow_cards", "red_cards", "expected_goals", "expected_assists",
-           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots"]
+           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box"]
 
 
 # ---------------------------------------------------------------- data access
@@ -152,11 +153,12 @@ def load_core(data_dir: Path, season: str) -> pd.DataFrame:
     if not frames:
         return pd.DataFrame()
     d = pd.concat(frames, ignore_index=True)
-    for c in ["minutes_played", "xgot", "penalties_scored", "penalties_missed", "total_shots", "shots_on_target"]:
+    for c in ["minutes_played", "xgot", "penalties_scored", "penalties_missed", "total_shots", "shots_on_target", "touches_opposition_box"]:
         d[c] = pd.to_numeric(d.get(c), errors="coerce")
     d = d[d["minutes_played"].fillna(0) > 0].merge(codes, on="player_id", how="inner")
     g = d.groupby(["GW", "player_code"], as_index=False).agg(core_xgot=("xgot", "sum"), core_pen_scored=("penalties_scored", "sum"),
-                                                          core_pen_missed=("penalties_missed", "sum"), core_shots=("total_shots", "sum"))
+                                                          core_pen_missed=("penalties_missed", "sum"), core_shots=("total_shots", "sum"),
+                                                          core_box=("touches_opposition_box", "sum"))
     return g.rename(columns={"player_code": "code"}).assign(season=season)
 
 
@@ -166,7 +168,7 @@ def add_core(df: pd.DataFrame, data_dir: Path, seasons: list[str]) -> pd.DataFra
     df = df.copy()
     df["code"] = pd.to_numeric(df["code"], errors="coerce")
     if not core:
-        for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots"]:
+        for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box"]:
             df[col] = np.nan
         df["has_core"] = False
         return df
@@ -176,7 +178,7 @@ def add_core(df: pd.DataFrame, data_dir: Path, seasons: list[str]) -> pd.DataFra
     # a double gameweek is one Core Insights row per match but one per gameweek here: split by minutes
     mins = pd.to_numeric(df["minutes"], errors="coerce").fillna(0)
     share = mins / mins.groupby([df["season"], df["GW"], df["code"]]).transform("sum").replace(0, np.nan)
-    for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots"]:
+    for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box"]:
         df[col] = df[col] * share.fillna(0)
     df["has_core"] = df["core_xgot"].notna() & (mins > 0)
     return df
@@ -439,10 +441,11 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "mins": mins, "n90": mins / 90, "g": df["np_goals"], "a": df["assists"],
         "xg": df["np_xg"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
         "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
+        "box": df["core_box"].fillna(0), "boxn90": (mins / 90).where(df["has_core"].fillna(False).astype(bool), 0),
         "st": started.where(obs, 0), "n": obs.astype(float),
         "dh": (can_defcon & (dc >= thr)).astype(float), "do": can_defcon.astype(float),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "st", "n", "dh", "do"]
+    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do"]
     roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
@@ -462,20 +465,49 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     for c in ["g", "xg", "xgot", "xgk"]:
         p[f"F_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_FINISH)
     p["w5_min"], p["w5_p1"], p["w5_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float))
+    for c in ["n90", "xg", "xa", "box", "boxn90"]:
+        p[f"R_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_ROLE)
     p = p.drop(columns=stat)
     p["min_short"] = p["X_ms"] / p["X_ns"].replace(0, np.nan)
     p["min_long"] = p["X_ml"] / p["X_nl"].replace(0, np.nan)
     p["start_rate"] = p["X_ss"] / p["X_ns"].replace(0, np.nan)
 
-    pos = roll[~roll["future"]].groupby(["position", "tf"], as_index=False)[["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "dh", "do"]].sum()
-    idx = pd.MultiIndex.from_product([POSITIONS, sorted(df["tf"].unique())], names=["position", "tf"])
-    pos = pos.set_index(["position", "tf"]).reindex(idx, fill_value=0.0).sort_index()
-    pos = pos.groupby("position").cumsum().groupby("position").shift(1).fillna(0.0)
-    for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
-        pos[f"p_{c}"] = (pos[c] / pos["n90"].replace(0, np.nan)).fillna(EPS)
-    pos["p_dh"] = (pos["dh"] / pos["do"].replace(0, np.nan)).fillna(0.0)
+    # Playing role: a player listed in one position but playing a more attacking one (out of position, OOP).
+    # Uses recent touches in the opposition box and non-penalty xG + xA per 90, against the medians of each position.
+    prow = roll.groupby(["pid", "tf"], as_index=False).agg(position=("position", "first"))
+    p = p.merge(prow, on=["pid", "tf"], how="left")
+    p["role_box90"] = p["R_box"] / p["R_boxn90"].where(p["R_boxn90"] >= ROLE_MIN_90S)
+    p["role_xgi90"] = (p["R_xg"] + p["R_xa"]) / p["R_n90"].where(p["R_n90"] >= ROLE_MIN_90S)
+    known = p[p["role_box90"].notna() & p["role_xgi90"].notna()]
+    med = known.groupby("position")[["role_box90", "role_xgi90"]].median()
+    p["role"] = p["position"]
+    for listed, played in (("DEF", "MID"), ("MID", "FWD")):
+        if played in med.index:
+            up = (p["position"] == listed) & (p["role_box90"] >= med.at[played, "role_box90"]) & (p["role_xgi90"] >= med.at[played, "role_xgi90"])
+            p.loc[up, "role"] = played
+    for played in ("MID", "FWD"):
+        for c in ("role_box90", "role_xgi90"):
+            p[f"med_{c}_{played}"] = med.at[played, c] if played in med.index else np.nan
+    p = p.drop(columns="position")
+    roll = roll.merge(p[["pid", "tf", "role"]], on=["pid", "tf"], how="left")
+    roll["role"] = roll["role"].fillna(roll["position"])
+
+    def priors(group: str) -> pd.DataFrame:
+        cols = ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "dh", "do"]
+        t = roll[~roll["future"]].groupby([group, "tf"], as_index=False)[cols].sum()
+        idx = pd.MultiIndex.from_product([POSITIONS, sorted(df["tf"].unique())], names=[group, "tf"])
+        t = t.set_index([group, "tf"]).reindex(idx, fill_value=0.0).sort_index()
+        t = t.groupby(group).cumsum().groupby(group).shift(1).fillna(0.0)
+        for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
+            t[f"p_{c}"] = (t[c] / t["n90"].replace(0, np.nan)).fillna(EPS)
+        t["p_dh"] = (t["dh"] / t["do"].replace(0, np.nan)).fillna(0.0)
+        return t[[c for c in t.columns if c.startswith("p_")]].reset_index()
+
     df = df.merge(p, on=["pid", "tf"], how="left")
-    df = df.merge(pos[[c for c in pos.columns if c.startswith("p_")]].reset_index(), on=["position", "tf"], how="left")
+    df["role"] = df["role"].fillna(df["position"])
+    by_role = priors("role").drop(columns="p_dh").rename(columns={"role": "role"})
+    by_position = priors("position")[["position", "tf", "p_dh"]]  # DefCon thresholds follow the FPL position
+    df = df.merge(by_role, on=["role", "tf"], how="left").merge(by_position, on=["position", "tf"], how="left")
 
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         k = K_RED if c == "rc" else K_PEN if c in ("ps", "pm", "og") else K_FINISH if c in ("g", "a") else K_PLAYER
@@ -496,7 +528,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         df[f"l_{c}"] = ln(df[c].fillna(1.0))
         df[f"gap_{c}"] = ln(df[f"{c}_g"].fillna(1.0)) - df[f"l_{c}"]  # real goals relative to xG
     for pos_name in POSITIONS[1:]:
-        df[f"is_{pos_name}"] = (df["position"] == pos_name).astype(int)
+        df[f"is_{pos_name}"] = (df["role"] == pos_name).astype(int)  # how he plays; points still follow the FPL position
     df["pos_code"] = df["position"].map({p: i for i, p in enumerate(POSITIONS)})
     return df
 
@@ -841,7 +873,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "id": r["pid"], "name": r["web_name"], "fullName": r["name"], "team": r["team_short"], "position": r["position"],
             "price": float(r["value"]) / 10, "status": r["status"] if isinstance(r["status"], str) else "a",
             "news": r["news"] if isinstance(r["news"], str) else "",
-            "w5Min": None if pd.isna(r["w5_min"]) else round(float(r["w5_min"]), 1), "byGw": {}})
+            "w5Min": None if pd.isna(r["w5_min"]) else round(float(r["w5_min"]), 1),
+            "role": r["role"], "box90": None if pd.isna(r["role_box90"]) else round(float(r["role_box90"]), 2),
+            "xgi90": None if pd.isna(r["role_xgi90"]) else round(float(r["role_xgi90"]), 3), "byGw": {}})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
@@ -886,6 +920,13 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])
+    first_rows = res[res["GW"] == payload["gws"][0]]
+    payload["roleMedians"] = {pos: {"box90": round(float(first_rows[f"med_role_box90_{pos}"].iloc[0]), 2), "xgi90": round(float(first_rows[f"med_role_xgi90_{pos}"].iloc[0]), 3)}
+                              for pos in ("MID", "FWD") if len(first_rows) and pd.notna(first_rows[f"med_role_box90_{pos}"].iloc[0])}
+    oop = first_rows[first_rows["role"] != first_rows["position"]].drop_duplicates("pid")
+    print(f"Out of position: {len(oop)} players, medians {payload['roleMedians']}")
+    for _, r in oop.sort_values("role_xgi90", ascending=False).head(15).iterrows():
+        print(f'  OOP {r["web_name"]} ({r["team_short"]}) {r["position"]} plays as {r["role"]}: box touches/90 {r["role_box90"]:.1f}, npxGI/90 {r["role_xgi90"]:.2f}, goals/90 {r["g90"]:.3f}')
     for t in payload["setPieces"]["teams"]:
         print(f'Set pieces {t["team"]} ({t["penRate"]:.3f} pens/match): ' + "; ".join(f'{p["order"]}.{p["name"]} {p["adjMin"]:.0f}m {p["share"]:.0%}' for p in t["pens"])
               + " | FK " + ", ".join(x["name"] for x in t["fk"][:2]) + " | corners " + ", ".join(x["name"] for x in t["corners"][:2]))
@@ -904,7 +945,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     for _, t in teams.iterrows():
         print(f'Clean sheet GW{first}: {t["team"]} vs {t["opp"]}: {t["p_cs"]:.1%}, expected conceded {t["conc90"]:.2f}')
     hist_rows = res  # future rows carry the features built from all earlier matches
-    for name in ("Rogers", "Haaland", "Semenyo", "Palmer", "Groß", "Salah", "B.Fernandes"):
+    for name in ("De Cuyper", "Rogers", "Haaland", "Groß"):
         rows = hist_rows[hist_rows["web_name"].astype(str).str.contains(name) & (hist_rows["GW"] == int(first))]
         for _, m in rows.head(2).iterrows():
             print(f'Finishing {m["web_name"]} v {m["opp_short"]}: weighted 90s {m["L_n90"]:.1f}, weighted goals {m["L_g"]:.1f}, weighted xG {m["L_xg"]:.2f}, '

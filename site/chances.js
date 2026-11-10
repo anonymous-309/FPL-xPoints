@@ -34,6 +34,7 @@
 
   function row(p, d) {
     const name = el('td', { className: 'player', title: p.news || p.fullName }, el('b', { textContent: p.name }), el('span', { textContent: `${p.team} ${p.position}` }));
+    if (p.role && p.role !== p.position) name.querySelector('b').append(' ', el('span', { className: 'oop', textContent: `OOP ${p.role}`, title: `Listed as ${p.position} but plays as ${p.role}` }));
     const cells = METRICS.map(([key, , full, fmt]) => {
       if (notApplicable(p, key)) return el('td', { className: 'none', textContent: '–' });
       const v = d[key];
