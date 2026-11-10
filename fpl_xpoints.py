@@ -578,7 +578,9 @@ GLMS = {
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
 }
 TEAM_FEATS_LEARNED = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "was_home"]
-TEAM_FEATS = TEAM_FEATS_LEARNED
+# Clean sheets and goals conceded: real goals weighted 70%, xG 30%, with one home/away factor for all teams.
+TEAM_FEATS_DEFAULT = ["cs_def_mix70", "cs_att_mix70", "was_home"]
+TEAM_FEATS = TEAM_FEATS_DEFAULT
 SAVE_FEATS = ["l_sv", "l_opp_att", "gap_opp_att", "l_team_def", "gap_team_def", "was_home"]
 
 
@@ -1096,7 +1098,7 @@ def cs_tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> Non
         lookup = dict(zip(teams["team"], model_cs.round(1)))
         row["MCI/LIV/AVL/HUL/NEW"] = "/".join(str(lookup.get(t)) for t in ("Man City", "Liverpool", "Aston Villa", "Hull City", "Newcastle"))
         rows.append(row)
-    TEAM_FEATS = TEAM_FEATS_LEARNED
+    TEAM_FEATS = TEAM_FEATS_DEFAULT
     out = pd.DataFrame(rows)
     print("\n=== Clean sheet inputs, lower logloss and market_MAE are better ===")
     print(out.drop(columns="coefs").round(4).to_string(index=False))
