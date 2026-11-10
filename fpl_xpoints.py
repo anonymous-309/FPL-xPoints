@@ -803,6 +803,31 @@ PART_NAMES = {"pts_app": "app", "pts_goal": "goal", "pts_ast": "assist", "pts_bo
               "pts_conc": "conceded", "pts_save": "saves", "pts_pensave": "pensave", "pts_penmiss": "penmiss", "pts_own": "own", "pts_defcon": "defcon", "pts_card": "cards"}
 
 
+def set_piece_table(res: pd.DataFrame, gw: int) -> dict:
+    """Set piece takers per team for one gameweek, with each penalty taker's share of team penalties."""
+    rows = res[res["GW"] == gw].sort_values("fixture").drop_duplicates(["pid"])
+    num = lambda v: None if pd.isna(v) else int(v)
+    teams = []
+    for team, g in rows.groupby("team_short"):
+        g = g.copy()
+        for c in ("pen_order", "fk_order", "corner_order"):
+            g[c] = pd.to_numeric(g[c], errors="coerce")
+        pens = g[g["pen_order"].notna()].sort_values("pen_order")
+        def takers(col: str) -> list:
+            t = g[g[col].notna()].sort_values(col)
+            return [{"name": r["web_name"], "order": num(r[col]), "adjMin": round(float(r["xmin"]), 1)} for _, r in t.iterrows()]
+        notes = sorted({str(t) for c in ("pen_text", "fk_text", "corner_text") for t in g.get(c, pd.Series(dtype=str)).dropna() if str(t).strip()})
+        teams.append({
+            "team": team, "name": str(g["team"].iloc[0]), "opp": [str(g["opp_short"].iloc[0]).upper() if g["was_home"].iloc[0] else str(g["opp_short"].iloc[0]).lower()],
+            "penRate": round(float(g["team_pens"].iloc[0]), 3),
+            "pens": [{"name": r["web_name"], "order": num(r["pen_order"]), "adjMin": round(float(r["xmin"]), 1),
+                      "share": round(float(r["pen_cond_used"] * r["xmin"] / 90), 3),
+                      "xPenGoals": round(float(r["pen_cond_used"] * r["xmin"] / 90 * r["team_pens"] * PEN_CONVERSION), 3)} for _, r in pens.iterrows()],
+            "fk": takers("fk_order"), "corners": takers("corner_order"), "notes": notes,
+        })
+    return {"gw": int(gw), "teams": teams}
+
+
 def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path, offline: bool) -> None:
     res, df = predict_frame(data_dir, seasons, horizon, offline, with_history=True)
     # FPL marks players who have left the club (or are out on loan) as unavailable: drop them from the site.
@@ -860,6 +885,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             g["bonus"] = round(g["bonus"], 3)
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
+    payload["setPieces"] = set_piece_table(res, payload["gws"][0])
     source = Path(__file__).resolve().parent / "site"
     shutil.copytree(source, out_dir, dirs_exist_ok=True)
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")

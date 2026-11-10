@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FPL Set Pieces</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Set pieces</h1>
+    <p id="status" role="status">Loading data</p>
+  </div>
+  <nav class="links"><a href="index.html">xPoints</a><a href="chances.html">Chance</a><a href="backtest.txt">Accuracy</a></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <label>Search player or team <input id="search" type="search"></label>
+  <label>Sort teams <select id="sort"><option value="team">By name</option><option value="pens">By penalties per match</option></select></label>
+</form>
+<main><div id="grid" class="sp-grid"></div></main>
+<footer>
+  <p>Takers and order come from FPL. Pen share is the share of the team's penalties a player is expected to take next gameweek: the number 1 takes 95% of those awarded while he is on the pitch, and each next taker gets the ones left while those above him are off, using Adjusted Min. For example, a number 1 on for 60 minutes gets 63%, and a number 2 who plays all 90 gets 32%. xPen goals is his expected penalty goals in the match. Penalties per match is the team's expected penalties, from the league rate and the team's attack.</p>
+</footer>
+<script src="setpieces.js"></script>
+</body>
+</html>
