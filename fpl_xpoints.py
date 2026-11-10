@@ -650,7 +650,7 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
     return pd.DataFrame(hist), pd.DataFrame(fut), first
 
 
-def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: bool) -> pd.DataFrame:
+def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: bool, with_history: bool = False):
     cache = data_dir / "api_cache"
     hist, fut, first = live_frames(cache, offline, horizon)
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
@@ -658,7 +658,8 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     feat = build_features(df)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]]
-    return pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
+    res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
+    return (res, df) if with_history else res
 
 
 PART_NAMES = {"pts_app": "app", "pts_goal": "goal", "pts_ast": "assist", "pts_bonus": "bonus", "pts_cs": "cs",
@@ -666,7 +667,7 @@ PART_NAMES = {"pts_app": "app", "pts_goal": "goal", "pts_ast": "assist", "pts_bo
 
 
 def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path, offline: bool) -> None:
-    res = predict_frame(data_dir, seasons, horizon, offline)
+    res, df = predict_frame(data_dir, seasons, horizon, offline, with_history=True)
     # FPL marks players who have left the club (or are out on loan) as unavailable: drop them from the site.
     gone = res["status"] == "u"
     left = res.loc[gone].drop_duplicates("pid")
@@ -736,6 +737,20 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     teams = res[res["GW"] == int(first)].groupby(["team", "opp"], as_index=False)[["p_cs", "conc90"]].first().sort_values("p_cs", ascending=False)
     for _, t in teams.iterrows():
         print(f'Clean sheet GW{first}: {t["team"]} vs {t["opp"]}: {t["p_cs"]:.1%}, expected conceded {t["conc90"]:.2f}')
+    hist_rows = res  # future rows carry the features built from all earlier matches
+    for name in ("Rogers", "Haaland", "Semenyo", "Palmer"):
+        rows = hist_rows[hist_rows["web_name"].astype(str).str.contains(name) & (hist_rows["GW"] == int(first))]
+        for _, m in rows.head(2).iterrows():
+            print(f'Finishing {m["web_name"]} v {m["opp_short"]}: weighted 90s {m["L_n90"]:.1f}, weighted goals {m["L_g"]:.1f}, weighted xG {m["L_xg"]:.2f}, '
+                  f'shrunk goals/90 {m["r_g"]:.3f}, shrunk xG/90 {m["r_xg"]:.3f}, raw goals/90 {m["L_g"] / max(m["L_n90"], 1e-9):.3f}, raw xG/90 {m["L_xg"] / max(m["L_n90"], 1e-9):.3f}, '
+                  f'finish {m["finish"]:.3f}, form {m["form_xg"]:.3f}, team att {m["team_att"]:.2f}, opp def {m["opp_def"]:.2f}, home {m["was_home"]}, '
+                  f'model goals/90 {m["g90"]:.3f}, score 1+ at 90 {1 - np.exp(-m["g90"]):.1%}')
+    season = df[(df["season"] == CURRENT_SEASON) & ~df["future"] & df["name"].astype(str).str.contains("Rogers")]
+    for pid, g in season.groupby("pid"):
+        print(f'Rogers {CURRENT_SEASON}: minutes {g["minutes"].sum():.0f}, goals {g["goals_scored"].sum():.0f}, xG {g["expected_goals"].sum():.2f}, assists {g["assists"].sum():.0f}, xA {g["expected_assists"].sum():.2f}')
+    old = df[(df["season"] != CURRENT_SEASON) & ~df["future"] & df["name"].astype(str).str.contains("Rogers")]
+    for (season_name, pid), g in old.groupby(["season", "pid"]):
+        print(f'Rogers {season_name}: minutes {g["minutes"].sum():.0f}, goals {g["goals_scored"].sum():.0f}, xG {g["expected_goals"].sum():.2f}')
     for name in ("Osula", "Haaland", "Bruno", "Saka", "Neto"):
         rows = res[res["name"].str.contains(name) & (res["GW"] == int(first))]
         for _, m in rows.head(3).iterrows():
