@@ -909,6 +909,11 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             hist.append(row | base | {"GW": row["round"], "team": teams[f["team_h"] if row["was_home"] else f["team_a"]], "opponent_team": row["opponent_team"], "future": False})
         last = max(played, key=lambda r: r.get("kickoff_time") or "", default=None)
         red_last = bool(last and float(last.get("red_cards") or 0) > 0)
+        # Doubtful: the match he got hurt in (the last one before FPL flagged him) and any since are left out of xMin.
+        flag_cut = None
+        if p.get("status") == "d" and p.get("news_added"):
+            before = [r["kickoff_time"] for r in played if r.get("kickoff_time") and r["kickoff_time"] <= p["news_added"]]
+            flag_cut = max(before) if before else None
         mine = []
         for f in sorted((f for f in fixtures if f.get("event") in gws and not f.get("finished") and p["team"] in (f["team_h"], f["team_a"])),
                         key=lambda f: (f["event"], f.get("kickoff_time") or "")):
@@ -921,10 +926,30 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             team_id = p["team"]
             fut.append(base | {"GW": f["event"], "fixture": f["id"], "team": teams[team_id], "opponent_team": f["team_a"] if home else f["team_h"],
                                 "was_home": home, "kickoff_time": f.get("kickoff_time"), "value": p["now_cost"], "minutes": np.nan, "future": True,
-                                "avail": avail, "from_return": from_return, "min_note": note, "return_gw": back_gw,
+                                "avail": avail, "from_return": from_return, "min_note": note, "return_gw": back_gw, "flag_cut": flag_cut,
                                 "team_short": short[team_id], "opp_short": short[f["team_a"] if home else f["team_h"]], "web_name": p["web_name"], "status": p.get("status"), "news": p.get("news", ""),
                                 "pen_text": p.get("penalties_text") or "", "fk_text": p.get("direct_freekicks_text") or "", "corner_text": p.get("corners_and_indirect_freekicks_text") or ""})
     return pd.DataFrame(hist), pd.DataFrame(fut), first
+
+
+def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
+    """For a player flagged doubtful, xMin from the 5 matches before the one he got hurt in (see flag_cut)."""
+    if "flag_cut" not in target:
+        return target
+    target = target.copy()
+    obs = df[~df["future"] & df["minutes"].notna()]
+    for pid, cut in target.loc[target["flag_cut"].notna(), ["pid", "flag_cut"]].drop_duplicates("pid").itertuples(index=False):
+        g = obs[(obs["pid"] == pid) & (obs["kickoff_time"] < pd.Timestamp(cut))].sort_values(["kickoff_time", "fixture"])
+        if g.empty:
+            continue
+        n = len(g) + 1  # one extra row with no match gives the figures after all of them
+        mins = np.append(g["minutes"].to_numpy(float), 0.0)
+        reds = np.append(g["red_cards"].fillna(0).to_numpy(float), 0.0)
+        out = ai_minutes(np.array([pid] * n), mins, np.append(np.ones(n - 1), 0.0), reds)
+        rows = target["pid"] == pid
+        target.loc[rows, "w5_min"], target.loc[rows, "w5_p1"], target.loc[rows, "w5_p60"] = out[0][-1], out[1][-1], out[2][-1]
+        target.loc[rows, "recent_mins"] = out[-1][-1] + " (before the knock)"
+    return target
 
 
 def penalty_shares(target: pd.DataFrame) -> np.ndarray:
@@ -951,6 +976,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     feat = build_features(df)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
+    target = doubtful_minutes(target, df)
     target["pen_cond"] = penalty_shares(target)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res

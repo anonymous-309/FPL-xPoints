@@ -41,7 +41,7 @@
 <footer>
   <p><b>Adjust min</b> sets one figure for every upcoming gameweek; injuries and bans still apply on top of it (a gameweek he is out stays 0). Type in a gameweek box to set just that one, which also overrides an injury or ban. Clear a box to go back to the model. Your minutes are saved in this browser and used on the xPoints page. Double gameweeks show minutes per match, for example 0+84.</p>
   <p><b>Played gameweeks</b> show the minutes he actually played. <b>xMin</b> for upcoming gameweeks is his last 5 matches weighted 5, 4, 3, 2, 1 from newest to oldest.
-  Then: a player with a return date in the FPL news (injury, or a ban for a red card or yellow cards) gets 0 until that date and the same formula on the matches before the absence once back. A red card in his last match that FPL has not flagged yet counts as a 1-match ban. Injured with no return date: 0 in every gameweek. Flagged 25/50/75%: xMin times that chance in the next gameweek, full after that. Not affiliated with the Premier League.</p>
+  Then: a player with a return date in the FPL news (injury, or a ban for a red card or yellow cards) gets 0 until that date and the same formula on the matches before the absence once back. A red card in his last match that FPL has not flagged yet counts as a 1-match ban. Injured with no return date: 0 in every gameweek. Flagged doubtful (25/50/75%): the match he got hurt in (the last before FPL flagged him) and any since are left out, so xMin uses the 5 matches before; then xMin times that chance in the next gameweek, full after that. Not affiliated with the Premier League.</p>
 </footer>
 <script src="minutes-core.js"></script>
 <script src="minutes.js"></script>
