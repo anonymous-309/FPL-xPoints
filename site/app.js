@@ -29,24 +29,23 @@
     const n = d.opp.length, r = x / 90, f = d.full;
     const plays = x > 0 ? 1 : 0, full = x >= 60 ? 1 : 0;
     const parts = { app: (plays + full) * n, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: f.cs * r, conceded: f.conceded * r, saves: f.saves * r, pensave: f.pensave * r, penmiss: f.penmiss * r, own: f.own * r, defcon: f.defcon * r, cards: f.cards * r };
-    return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: x * n, xg: f.xg * r, xa: f.xa * r, pApp1: x > 0 ? 1 : 0, pApp60: x >= 60 ? 1 : 0, edited: true };
+    return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: x * n, xg: f.xg * r, xa: f.xa * r, edited: true };
   }
   // Points per component, leaving out the ones that are zero for this player.
   const breakdownText = (d) => Object.entries(PARTS).filter(([k]) => Math.abs(d.parts[k]) >= 0.005).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n');
   const pct = (v) => `${Math.round(v * 100)}%`;
-  // Chances for the minutes in Adjusted Min; the Chance page shows the same figures for a full 90.
-  function chanceText(p, d) {
-    const share = Math.min(1, d.xmin / (90 * d.opp.length));
-    const scaled = (prob) => 1 - Math.pow(1 - Math.min(prob, 0.9999), share);
-    const lines = [
-      `Appearance 1+: ${pct(d.pApp1)}`, `Appearance 60+: ${pct(d.pApp60)}`,
-      `Score 1+: ${pct(1 - Math.exp(-d.xg))} (xG ${d.xg.toFixed(2)})`, `Assist 1+: ${pct(1 - Math.exp(-d.xa))} (xA ${d.xa.toFixed(2)})`,
-      `Clean sheet: ${pct(d.pCs)}`,
-    ];
-    if (p.position !== 'GK') lines.push(`DefCon: ${pct(d.pDefcon * share)}`);
-    if (p.position === 'GK') lines.push(`Saves: ${(d.xSaves * share).toFixed(1)}`);
-    lines.push(`Yellow card: ${pct(scaled(d.pYellow))}`, `Bonus: ${(d.bonus * share).toFixed(2)}`);
-    return lines.join('\n');
+  // The same figures as the Chance page: everything except appearances assumes a full 90 minutes.
+  const CHANCES = [
+    ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'], ['pScore', 'Score 1+', 'pct'], ['xGoals', 'xGoals', 2],
+    ['pAssist', 'Assist 1+', 'pct'], ['xAssists', 'xAssists', 2], ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2],
+    ['pDefcon', 'DefCon', 'pct'], ['xSaves', 'Saves', 1], ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'],
+    ['pOwnGoal', 'Own goal', 'pct1'], ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['bonus', 'Bonus', 2],
+  ];
+  function chanceText(p, g) {
+    const d = p.byGw[g];
+    return CHANCES.filter(([key]) => !(key === 'pDefcon' && p.position === 'GK') && !((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK'))
+      .map(([key, label, fmt]) => `${label}: ${fmt === 'pct' ? `${Math.round(d[key] * 100)}%` : fmt === 'pct1' ? `${(d[key] * 100).toFixed(1)}%` : d[key].toFixed(fmt)}`)
+      .join('\n');
   }
   const findPlayer = (id) => state.data.players.find((p) => p.id === id);
   function refreshRow(p) {
@@ -67,7 +66,7 @@
   function openGw(p, g) {
     state.detail = { id: p.id, g };
     const d = view(p, g);
-    $('detail-text').textContent = `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${f1(d.xpts)} points, ${Math.round(d.xmin)} minutes\n\nChances\n${chanceText(p, d)}\n\nPoints\n${breakdownText(d)}`;
+    $('detail-text').textContent = `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${f1(d.xpts)} points, ${Math.round(d.xmin)} minutes\n\nChance 90min\n${chanceText(p, g)}\n\nPoints\n${breakdownText(d)}`;
     const o = state.overrides[p.id];
     $('detail-min').value = o && o.gw && o.gw[g] !== undefined ? o.gw[g] : '';
     $('detail-min').placeholder = Math.round(d.xmin / d.opp.length);
@@ -123,7 +122,7 @@
     const cells = gws.map((g) => {
       const d = view(p, g);
       if (!d) return el('td', { className: 'none', textContent: 'Blank' });
-      const c = el('td', { className: 'gw', title: `Chances\n${chanceText(p, d)}\n\nPoints\n${breakdownText(d)}`, tabIndex: 0 }, el('strong', { textContent: f1(d.xpts) }), el('small', { textContent: d.opp.join(', ') }));
+      const c = el('td', { className: 'gw', title: `Chance 90min\n${chanceText(p, g)}\n\nPoints\n${breakdownText(d)}`, tabIndex: 0 }, el('strong', { textContent: f1(d.xpts) }), el('small', { textContent: d.opp.join(', ') }));
       c.dataset.gw = g;
       heat(c, d.xpts / Math.max(1, d.opp.length) * (d.opp.length > 1 ? 1.25 : 1));
       return c;
