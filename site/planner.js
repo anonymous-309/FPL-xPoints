@@ -37,6 +37,7 @@
     const summary = el('section', { className: 'summary' },
       el('p', {}, el('b', { textContent: `${f1(plan.planXpts)} xPts` }), ` over GW${plan.gws[0]}-${plan.gws[plan.gws.length - 1]} with these transfers, `,
         el('b', { textContent: `${gain >= 0 ? '+' : ''}${f1(gain)}` }), ` on keeping your squad (${f1(plan.holdXpts)}). Bank £${plan.bank.toFixed(1)}, ${plan.ft} free transfer${plan.ft === 1 ? '' : 's'} now.`),
+      plan.madeAlready && plan.madeAlready.length ? el('p', { className: 'meta', textContent: `Already made for GW${plan.lastGw + 1}: ${plan.madeAlready.join(', ')} (counted in your squad and free transfers).` }) : '',
       plan.gap > 0.005 ? el('p', { className: 'meta', textContent: `The search stopped at its time limit; the best possible plan is at most ${(plan.gap * 100).toFixed(1)}% better.` }) : '',
       el('details', {}, el('summary', { textContent: 'Your squad now' }),
         el('ul', { className: 'xi' }, ...plan.current.map((p) => el('li', {}, el('span', { className: 'pos', textContent: p.position }), el('b', { textContent: p.name }),

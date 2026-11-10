@@ -33,16 +33,19 @@ XI = {"GK": (1, 1), "DEF": (3, 5), "MID": (2, 5), "FWD": (1, 3)}
 POS = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
 
 
-def free_transfers(history: dict) -> int:
+def free_transfers(history: dict, log: list[str] | None = None) -> int:
     """Free transfers for the next gameweek: 1 after GW1, +1 a gameweek up to 5; transfers use them,
-    a wildcard or free hit keeps them."""
+    a wildcard or free hit keeps them. log, if given, gets one line per gameweek."""
     chips = {c["event"]: c["name"] for c in history.get("chips", [])}
     ft = 1
     for e in history["current"]:
         if e["event"] == 1:
             continue
-        used = 0 if chips.get(e["event"]) in ("wildcard", "freehit") else e["event_transfers"]
-        ft = min(MAX_FT, max(ft - used, 0) + 1)
+        chip = chips.get(e["event"])
+        used = 0 if chip in ("wildcard", "freehit") else e["event_transfers"]
+        before, ft = ft, min(MAX_FT, max(ft - used, 0) + 1)
+        if log is not None:
+            log.append(f'GW{e["event"]}: {before} FT, {e["event_transfers"]} transfers{" (" + chip + ")" if chip else ""}, cost {e.get("event_transfers_cost", 0)} -> {ft} FT next')
     return ft
 
 
@@ -73,10 +76,28 @@ def load_team(entry: int, cache: Path) -> dict:
     picks = _api(f"entry/{entry}/event/{pick_gw}/picks/", cache, False)
     squad = [p["element"] for p in picks["picks"]]
     transfers = _api(f"entry/{entry}/transfers/", cache, False)
+    log: list[str] = []
+    ft = free_transfers(history, log)
+    bank = played[-1]["bank"] / 10
+    # Transfers already made for the coming gameweek: FPL lists them straight away, the picks only after the deadline.
+    pending = [t for t in sorted(transfers, key=lambda t: t["time"]) if t["event"] > last]
+    selling = selling_prices(squad, elements, transfers)
+    made = []
+    for t in pending:
+        if t["element_out"] in squad:
+            squad[squad.index(t["element_out"])] = t["element_in"]
+            selling.pop(t["element_out"], None)
+            selling[t["element_in"]] = t["element_in_cost"] / 10
+            bank += (t["element_out_cost"] - t["element_in_cost"]) / 10
+            made.append(f'{elements[t["element_out"]]["web_name"]} -> {elements[t["element_in"]]["web_name"]}')
+    if pending:
+        ft = max(ft - len(pending), 0)
+        log.append(f"Already made for GW{last + 1}: {', '.join(made)}; {ft} FT left")
+    print(f"Team {entry} free transfers:\n  " + "\n  ".join(log))
     return {
         "entry": entry, "name": info.get("name", ""), "manager": f'{info.get("player_first_name", "")} {info.get("player_last_name", "")}'.strip(),
-        "lastGw": last, "bank": played[-1]["bank"] / 10, "ft": free_transfers(history),
-        "squad": squad, "selling": selling_prices(squad, elements, transfers),
+        "lastGw": last, "bank": round(bank, 1), "ft": ft, "madeAlready": made,
+        "squad": squad, "selling": selling,
         "codes": {e: elements[e]["code"] for e in squad}, "elements": elements,
         "chipsUsed": sorted({c["name"] for c in history.get("chips", [])}),
     }
@@ -226,7 +247,7 @@ def plan(team: dict, data: dict, horizon: int = HORIZON, time_limit: float = 240
         best = best_xi(sq, pos, xp[:, t])
         hold += sum(xp[i, t] for i in best) + max(xp[i, t] for i in best)
     return {"entry": team["entry"], "name": team["name"], "manager": team["manager"], "lastGw": team["lastGw"],
-            "bank": team["bank"], "ft": team["ft"], "chipsUsed": team["chipsUsed"], "gws": gws,
+            "bank": team["bank"], "ft": team["ft"], "madeAlready": team.get("madeAlready", []), "chipsUsed": team["chipsUsed"], "gws": gws,
             "current": [player(idx[pid]) | {"sell": sell_price.get(pid)} for pid in sorted(owned_pids, key=lambda pid: (order[by_pid[pid]["position"]], -sum(pts(by_pid[pid]))))],
             "weeks": weeks, "planXpts": round(total, 1), "holdXpts": round(hold, 1),
             "status": res.message, "gap": None if res.mip_gap is None else round(float(res.mip_gap), 4)}
