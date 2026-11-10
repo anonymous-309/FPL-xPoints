@@ -70,7 +70,7 @@ HL_FINISH, K_XGOT, K_FINISH_XG = 60, 8.0, 15.0  # finishing is a long-run trait:
 PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
-CS_MODES = {"learned": None, "goals": (1.0, False), "mix70": (0.7, False), "mix50": (0.5, False), "venue70": (0.7, True)}
+CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "venue70": (0.7, True)}
 MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
 
@@ -1067,7 +1067,7 @@ def tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> None:
     print(pd.DataFrame(rows).round(4).to_string(index=False))
 
 
-def cs_tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> None:
+def cs_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, modes: list[str] | None = None) -> None:
     """Compares clean sheet inputs on last season's results and on this gameweek's clean sheet market."""
     global TEAM_FEATS
     def log_loss(prob: pd.Series, hit: pd.Series) -> float:
@@ -1075,7 +1075,7 @@ def cs_tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> Non
         return float(-(hit * np.log(p) + (1 - hit) * np.log(1 - p)).mean())
     feat = build_features(load_history(data_dir, seasons))
     rows = []
-    for mode in CS_MODES:
+    for mode in (modes or list(CS_MODES)):
         TEAM_FEATS = TEAM_FEATS_LEARNED if CS_MODES[mode] is None else [f"cs_def_{mode}", f"cs_att_{mode}", "was_home"]
         print(f"--- {mode}")
         pred = walk_forward(feat, seasons[-1], step)
@@ -1141,6 +1141,7 @@ def main() -> None:
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
     ap.add_argument("--step", type=int, default=4, help="refit every N gameweeks")
     ap.add_argument("--horizon", type=int, default=5)
+    ap.add_argument("--modes", nargs="+", default=None, help="clean sheet inputs to compare in cs-tune")
     ap.add_argument("--out", type=Path, default=Path("_site"), help="output folder for the site command")
     ap.add_argument("--offline", action="store_true", help="use cached API responses only")
     a = ap.parse_args()
@@ -1155,7 +1156,7 @@ def main() -> None:
         print("\n=== Coefficients, trained on seasons before the test season ===")
         print(XPointsModel().fit(feat[feat["season"] != season]).explain().to_string(index=False))
     elif a.command == "cs-tune":
-        cs_tune(a.data_dir, a.seasons, a.step, a.offline)
+        cs_tune(a.data_dir, a.seasons, a.step, a.offline, a.modes)
     elif a.command == "home-away":
         home_away(a.data_dir, a.seasons)
     elif a.command == "tune":
