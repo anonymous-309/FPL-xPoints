@@ -60,6 +60,7 @@ EPS = 1e-3
 TEAM_CARRY = 1.0   # share of a team's record kept when a new season starts
 TEAM_WINDOW = 0    # if above 0, use only this many latest matches, equally weighted
 MAX_BAN_MATCHES = 4
+MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
 
 NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "was_home",
@@ -176,7 +177,7 @@ def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray
 def ai_minute_detail(history: list[float]) -> tuple[float, float, float]:
     """Expected minutes and the chance of 1+ and 60+ minutes, from per-match minutes, oldest first (0 = did not play).
 
-    Weighted 5,4,3,2,1 from newest to oldest, except that:
+    Weighted 10,9,8,7,6 from newest to oldest, except that:
     - isolated absences of a regular starter (suspension, a knock, one rest) are skipped;
     - two or more absences in a row right now are kept, because he may really be out;
     - 2 to 5 straight matches of 70+ after a clearly lower one mean he is back: use only that streak;
@@ -191,7 +192,7 @@ def ai_minute_detail(history: list[float]) -> tuple[float, float, float]:
     if trailing_zeros == 0 and len(apps) >= 3:
         streak = next((i for i, m in enumerate(apps) if m < 70), len(apps))
         if 2 <= streak <= 5 and streak < len(apps) and apps[streak] <= min(apps[:streak]) - 20:
-            weights = np.array([5.0, 4.0, 3.0, 2.0, 1.0])[:streak]
+            weights = MINUTE_WEIGHTS[:streak]
             return float(min(90.0, np.dot(apps[:streak], weights) / weights.sum())), 1.0, 1.0
         run = apps[:4]
         climbing = apps[0] >= 60 and all(x >= y for x, y in zip(run, run[1:])) and apps[0] - apps[2] >= 20
@@ -203,7 +204,7 @@ def ai_minute_detail(history: list[float]) -> tuple[float, float, float]:
     regular = bool(apps) and float(np.median(apps[:10])) >= 60
     skip_zeros = trailing_zeros < 2 and regular and (last5.count(0.0) <= 1 or played_last_two)
     window = np.array([m for m in newest_first[:10] if not (skip_zeros and m == 0)][:5])
-    weights = np.array([5.0, 4.0, 3.0, 2.0, 1.0])[:len(window)]
+    weights = MINUTE_WEIGHTS[:len(window)]
     total = weights.sum()
     return (float(np.dot(window, weights) / total), float(np.dot(window > 0, weights) / total),
             float(np.dot(window >= 60, weights) / total))
