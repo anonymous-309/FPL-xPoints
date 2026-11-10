@@ -667,6 +667,11 @@ PART_NAMES = {"pts_app": "app", "pts_goal": "goal", "pts_ast": "assist", "pts_bo
 
 def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path, offline: bool) -> None:
     res = predict_frame(data_dir, seasons, horizon, offline)
+    # FPL marks players who have left the club (or are out on loan) as unavailable: drop them from the site.
+    gone = res["status"] == "u"
+    left = res.loc[gone].drop_duplicates("pid")
+    print(f"Removed {len(left)} unavailable players, e.g. " + ", ".join(f'{n} ({str(w)[:40]})' for n, w in zip(left["web_name"].head(8), left["news"].head(8))))
+    res = res[~gone]
     players: dict[str, dict] = {}
     for r in res.sort_values(["GW", "fixture"]).to_dict("records"):
         p = players.setdefault(r["pid"], {
