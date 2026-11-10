@@ -70,7 +70,7 @@ HL_FINISH, K_XGOT, K_FINISH_XG = 60, 8.0, 15.0  # finishing is a long-run trait:
 PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
-CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "venue70": (0.7, True)}
+CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "mix30": (0.3, False), "venue70": (0.7, True)}
 MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
 
