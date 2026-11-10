@@ -213,8 +213,9 @@ def plan(team: dict, data: dict, horizon: int = HORIZON, time_limit: float = 240
         total += pts_t
         weeks.append({
             "gw": gws[t], "freeTransfers": ft_now, "hits": hits, "bank": round(float(z[v(t, "bank")]), 1),
-            "out": [player(i, t) | {"sell": float(sell[i])} for i in range(n) if z[v(t, "s", i)] > 0.5],
-            "in": [player(i, t) for i in range(n) if z[v(t, "b", i)] > 0.5],
+            # sorted by position so each player out lines up with the one bought for his place
+            "out": [player(i, t) | {"sell": float(sell[i])} for i in sorted((i for i in range(n) if z[v(t, "s", i)] > 0.5), key=lambda i: (order[pos[i]], -xp[i, t]))],
+            "in": [player(i, t) for i in sorted((i for i in range(n) if z[v(t, "b", i)] > 0.5), key=lambda i: (order[pos[i]], -xp[i, t]))],
             "xi": [player(i, t) for i in sorted(xi, key=lambda i: (order[pos[i]], -xp[i, t]))],
             "bench": [player(i, t) for i in bench], "captain": P[cap], "xpts": round(pts_t, 2),
         })
