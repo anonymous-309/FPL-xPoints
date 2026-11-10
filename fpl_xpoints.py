@@ -988,6 +988,12 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     for _, r in hull.iterrows():
         print(f'Hull GW{int(r["GW"])} v {r["opp_short"]} {"H" if r["was_home"] else "A"}: CS {r["p_cs"]:.1%}, conceded {r["conc90"]:.2f} | Hull def xGC ratio {r["team_def"]:.2f}, goals-conceded ratio {r["team_def_g"]:.2f} | '
               f'opp att xG ratio {r["opp_att"]:.2f}, goals ratio {r["opp_att_g"]:.2f}')
+    for _, r in res[res["web_name"].astype(str).str.contains("Kinsk")].sort_values("GW").iterrows():
+        print(f'Kinsky GW{int(r["GW"])} v {r["opp_short"]} {"H" if r["was_home"] else "A"}: xpts {r["xpts"]:.2f}, Adjusted Min {r["xmin"]:.0f}, xMin {r["w5_min"]:.1f}, '
+              f'last matches [{r["recent_mins"]}], status {r["status"]}, CS {r["p_cs"]:.1%}, conceded {r["conc90"]:.2f}, saves90 {r["saves90"]:.2f}, '
+              f'pts app {r["pts_app"]:.2f} cs {r["pts_cs"]:.2f} conc {r["pts_conc"]:.2f} saves {r["pts_save"]:.2f} bonus {r["pts_bonus"]:.2f}')
+    gks = res[(res["position"] == "GK") & (res["GW"] == res["GW"].min()) & (res["xmin"] > 60)].sort_values("xpts", ascending=False)
+    print("GK ranking next GW: " + "; ".join(f'{r["web_name"]} {r["xpts"]:.2f}' for _, r in gks.head(12).iterrows()))
     hs = df[df["team"].astype(str).str.contains("Hull") & ~df["future"]].drop_duplicates(["season", "fixture"])
     print(f'Hull history rows by season: {hs.groupby("season").size().to_dict()}, goals conceded {hs.groupby("season")["ga"].sum().to_dict()}')
     xgc = df[df["opp"].astype(str).str.contains("Hull") & ~df["future"]].groupby(["season", "fixture"])["expected_goals"].sum()
