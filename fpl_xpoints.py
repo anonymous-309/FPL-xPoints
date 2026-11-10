@@ -481,7 +481,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     known = p[p["role_box90"].notna() & p["role_xgi90"].notna()]
     med = known.groupby("position")[["role_box90", "role_xgi90"]].median()
     p["role"] = p["position"]
-    for listed, played in (("DEF", "MID"), ("MID", "FWD")):
+    for listed, played in (("DEF", "MID"),):  # only defenders playing in midfield or attack
         if played in med.index:
             up = (p["position"] == listed) & (p["role_box90"] >= med.at[played, "role_box90"]) & (p["role_xgi90"] >= med.at[played, "role_xgi90"])
             p.loc[up, "role"] = played
