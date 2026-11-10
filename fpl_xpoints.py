@@ -1093,6 +1093,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
               + " | FK " + ", ".join(x["name"] for x in t["fk"][:2]) + " | corners " + ", ".join(x["name"] for x in t["corners"][:2]))
     source = Path(__file__).resolve().parent / "site"
     shutil.copytree(source, out_dir, dirs_exist_ok=True)
+    # Stamp script and style links with this build, so browsers fetch the new files instead of a cached copy.
+    for page in out_dir.glob("*.html"):
+        page.write_text(re.sub(r'((?:src|href)="[\w.-]+\.(?:js|css))"', rf'\1?v={payload["updatedAt"]}"', page.read_text(encoding="utf-8")), encoding="utf-8")
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     first = str(payload["gws"][0])
     top = sorted((p for p in players.values() if first in p["byGw"]), key=lambda p: -p["byGw"][first]["pScore"])[:5]
