@@ -66,7 +66,8 @@ HIST_PEN_SHARE = {1: 0.85, 2: 0.12, 3: 0.03}  # share of team penalties by FPL o
 PEN_TAKE_ON_PITCH = 0.95  # chance the listed taker steps up when he is on the pitch
 PEN_CONVERSION, PEN_XG = 0.78, 0.76
 SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_order", "corners_and_indirect_freekicks_order": "corner_order"}
-HL_FINISH, K_XGOT, K_FINISH_XG = 60, 8.0, 15.0  # finishing is a long-run trait: slow decay, shrunk by xG volume
+HL_FINISH, K_XGOT, K_FINISH_XG = 12, 8.0, 15.0  # finishing: same half-life as the rest, shrunk by xG volume
+HISTORY_MATCHES = 38  # every decayed record uses only each player's or team's latest 38 matches
 PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
@@ -254,13 +255,17 @@ def add_teams(df: pd.DataFrame) -> pd.DataFrame:
 def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray:
     """Exponentially decayed sum of *earlier* rows of each key; the current row is excluded."""
     d = 0.5 ** (1 / half_life)
+    tail = d ** HISTORY_MATCHES
     out = np.zeros(len(x))
-    s, prev = 0.0, object()
+    s, prev, hist = 0.0, object(), []
     for i, (k, v) in enumerate(zip(keys, x)):
         if k != prev:
-            s, prev = 0.0, k
+            s, prev, hist = 0.0, k, []
         out[i] = s
+        hist.append(v)
         s = s * d + v
+        if len(hist) > HISTORY_MATCHES:
+            s -= hist[-HISTORY_MATCHES - 1] * tail
     return out
 
 
@@ -346,15 +351,18 @@ def team_pre(keys: np.ndarray, x: np.ndarray, periods: np.ndarray) -> np.ndarray
             hist.append(v)
         return out
     d = 0.5 ** (1 / HL_TEAM)
-    s, prev, prev_period = 0.0, object(), None
+    s, prev, prev_period, hist = 0.0, object(), None, []
     for i, (k, v, q) in enumerate(zip(keys, x, periods)):
         if k != prev:
-            s, prev, prev_period = 0.0, k, q
+            s, prev, prev_period, hist = 0.0, k, q, []
         if q != prev_period:
             s *= TEAM_CARRY
+            hist = [h * TEAM_CARRY for h in hist]
             prev_period = q
         out[i] = s
-        s = s * d + v
+        hist.append(v)
+        hist = hist[-HISTORY_MATCHES:]
+        s = sum(h * d ** j for j, h in enumerate(reversed(hist)))
     return out
 
 
