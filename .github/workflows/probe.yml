@@ -1,0 +1,17 @@
+name: Probe injury sources
+on:
+  push:
+    branches: [probe-injury-sources]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
+          for u in \
+            https://www.transfermarkt.com/romeo-lavia/verletzungen/spieler/593366 \
+            https://www.transfermarkt.co.uk/premier-league/verletztespieler/wettbewerb/GB1 \
+            https://www.premierinjuries.com/injury-table.php ; do
+            code=$(curl -s -A "$UA" -H "Accept-Language: en" -o page.html -w "%{http_code}" "$u")
+            echo "$u -> HTTP $code, $(wc -c < page.html) bytes, title: $(grep -o '<title>[^<]*' page.html | head -1)"
+          done
