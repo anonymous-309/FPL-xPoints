@@ -1,36 +1,14 @@
 (function () {
   'use strict';
   const $ = (id) => document.getElementById(id);
-  const STORE = 'xmin-overrides';
-  const state = { data: null, pos: '', sort: 'total', dir: -1, overrides: loadOverrides(), detail: null };
+  const state = { data: null, pos: '', sort: 'total', dir: -1, overrides: XMin.load() };
   const PARTS = { app: 'Appearance', goal: 'Goals', assist: 'Assists', bonus: 'Bonus', cs: 'Clean sheet', conceded: 'Goals conceded', saves: 'Saves', pensave: 'Penalty saves', penmiss: 'Penalty misses', own: 'Own goals', defcon: 'DefCon', cards: 'Cards' };
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   const f1 = (x) => x.toFixed(1);
 
-  function loadOverrides() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
-  function saveOverrides() { try { localStorage.setItem(STORE, JSON.stringify(state.overrides)); } catch (e) { /* edits still work for this visit */ } updateReset(); }
-  const parseMinutes = (text) => {
-    if (text.trim() === '') return null;
-    const n = Number(text);
-    return Number.isFinite(n) ? Math.round(Math.max(0, Math.min(90, n))) : undefined;
-  };
-  function overrideFor(p, g) {
-    const o = state.overrides[p.id];
-    if (!o) return null;
-    if (o.gw && o.gw[g] !== undefined) return o.gw[g];
-    return o.all === undefined ? null : o.all;
-  }
-  // Points for a gameweek, rescaled when the viewer has set their own minutes per match.
-  function view(p, g) {
-    const d = p.byGw[g];
-    if (!d) return null;
-    const x = overrideFor(p, g);
-    if (x === null) return d;
-    const n = d.opp.length, r = x / 90, f = d.full;
-    const plays = x > 0 ? 1 : 0, full = x >= 60 ? 1 : 0;
-    const parts = { app: (plays + full) * n, goal: f.goal * r, assist: f.assist * r, bonus: f.bonus * r, cs: f.cs * r, conceded: f.conceded * r, saves: f.saves * r, pensave: f.pensave * r, penmiss: f.penmiss * r, own: f.own * r, defcon: f.defcon * r, cards: f.cards * r };
-    return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: x * n, xg: f.xg * r, xa: f.xa * r, edited: true };
-  }
+  // Points for a gameweek, rescaled to the minutes set on the Minutes page.
+  const view = (p, g) => XMin.view(state.overrides, p, g);
+  const minutesText = (p, g) => XMin.join(XMin.minutes(state.overrides, p, g).mins);
   // Points per component, leaving out the ones that are zero for this player.
   const breakdownText = (d) => Object.entries(PARTS).filter(([k]) => Math.abs(d.parts[k]) >= 0.005).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n');
   const pct = (v) => `${Math.round(v * 100)}%`;
@@ -48,35 +26,19 @@
       .join('\n');
   }
   const findPlayer = (id) => state.data.players.find((p) => p.id === id);
-  function refreshRow(p) {
-    const tr = $('table').tBodies[0].querySelector(`tr[data-pid="${CSS.escape(p.id)}"]`);
-    if (tr) tr.replaceWith(row(p, visibleGws()));
-  }
-  function updateReset() {
+  function updateEdited() {
     const n = Object.keys(state.overrides).length;
-    $('reset').hidden = n === 0;
-    $('reset').textContent = `Reset Adjusted Min (${n})`;
+    $('edited').hidden = n === 0;
+    $('edited').textContent = `Your minutes for ${n} player${n === 1 ? '' : 's'}`;
   }
   function openText(text) {
-    state.detail = null;
     $('detail-text').textContent = text;
-    $('detail-min-row').hidden = true;
     $('detail').hidden = false;
   }
   function openGw(p, g) {
-    state.detail = { id: p.id, g };
     const d = view(p, g);
-    $('detail-text').textContent = `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${f1(d.xpts)} points, ${Math.round(d.xmin)} minutes\n\nChance 90min\n${chanceText(p, g)}\n\nPoints\n${breakdownText(d)}`;
-    const o = state.overrides[p.id];
-    $('detail-min').value = o && o.gw && o.gw[g] !== undefined ? o.gw[g] : '';
-    $('detail-min').placeholder = Math.round(d.xmin / d.opp.length);
-    $('detail-min-row').hidden = false;
-    $('detail').hidden = false;
-  }
-  function tidy(id) {
-    const o = state.overrides[id];
-    if (o && o.gw && !Object.keys(o.gw).length) delete o.gw;
-    if (o && o.all === undefined && !o.gw) delete state.overrides[id];
+    const mins = `${minutesText(p, g)} minutes${d.edited ? ' (yours)' : ''}`;
+    openText(`${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${f1(d.xpts)} points, ${mins}\n\nChance 90min\n${chanceText(p, g)}\n\nPoints\n${breakdownText(d)}`);
   }
 
   function heat(cell, x) {
@@ -87,14 +49,13 @@
 
   function visibleGws() { return state.data.gws.slice(0, Number($('horizon').value)); }
   const total = (p, gws) => gws.reduce((s, g) => s + (p.byGw[g] ? view(p, g).xpts : 0), 0);
-  const nextXmin = (p, gws) => { const d = view(p, gws[0]); return d ? d.xmin / d.opp.length : 0; };
 
   function filtered(gws) {
     const q = $('search').value.trim().toLowerCase();
     const team = $('team').value;
     const max = parseFloat($('price').value);
     const value = {
-      name: (p) => p.name.toLowerCase(), price: (p) => p.price, w5: (p) => (p.w5Min === null ? -1 : p.w5Min), xmin: (p) => nextXmin(p, gws), total: (p) => total(p, gws),
+      name: (p) => p.name.toLowerCase(), price: (p) => p.price, total: (p) => total(p, gws),
     }[state.sort] || ((p) => (p.byGw[state.sort] ? view(p, state.sort).xpts : -99));
     return state.data.players
       .filter((p) => (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
@@ -103,7 +64,7 @@
   }
 
   function header(gws) {
-    const columns = [['name', 'Player'], ['price', 'Price'], ['w5', 'xMin'], ['xmin', 'Adjusted Min'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total']];
+    const columns = [['name', 'Player'], ['price', 'Price'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total']];
     $('table').tHead.replaceChildren(el('tr', {}, ...columns.map(([key, label]) => {
       const th = el('th', { scope: 'col' }, el('button', { type: 'button', textContent: label, onclick: () => {
         if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' ? 1 : -1; }
@@ -123,20 +84,12 @@
     const cells = gws.map((g) => {
       const d = view(p, g);
       if (!d) return el('td', { className: 'none', textContent: 'Blank' });
-      const c = el('td', { className: 'gw', title: `Chance 90min\n${chanceText(p, g)}\n\nPoints\n${breakdownText(d)}`, tabIndex: 0 }, el('strong', { textContent: f1(d.xpts) }), el('small', { textContent: d.opp.join(', ') }));
+      const c = el('td', { className: d.edited ? 'gw edited' : 'gw', title: `${minutesText(p, g)} minutes${d.edited ? ' (yours)' : ''}\n\nChance 90min\n${chanceText(p, g)}\n\nPoints\n${breakdownText(d)}`, tabIndex: 0 }, el('strong', { textContent: f1(d.xpts) }), el('small', { textContent: d.opp.join(', ') }));
       c.dataset.gw = g;
       heat(c, d.xpts / Math.max(1, d.opp.length) * (d.opp.length > 1 ? 1.25 : 1));
       return c;
     });
-    const first = p.byGw[gws[0]];
-    const saved = state.overrides[p.id] && state.overrides[p.id].all;
-    const input = el('input', {
-      className: 'xmin-input', type: 'number', min: 0, max: 90, step: 1, inputMode: 'numeric',
-      value: saved === undefined ? '' : saved,
-      placeholder: first ? String(Math.round(first.xmin / first.opp.length)) : '',
-    });
-    input.setAttribute('aria-label', `Minutes per match for ${p.name}`);
-    const tr = el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), el('td', { textContent: p.w5Min === null ? '–' : Math.round(p.w5Min) }), el('td', { className: 'xmin' }, input), ...cells, el('td', { className: 'total', textContent: f1(total(p, gws)) }));
+    const tr = el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), ...cells, el('td', { className: 'total', textContent: f1(total(p, gws)) }));
     tr.dataset.pid = p.id;
     return tr;
   }
@@ -148,7 +101,7 @@
     header(gws);
     const list = filtered(gws);
     const body = list.length ? list.map((p) => row(p, gws))
-      : [el('tr', {}, el('td', { colSpan: gws.length + 5, className: 'none', textContent: 'No players match these filters. Widen the price, team or position.' }))];
+      : [el('tr', {}, el('td', { colSpan: gws.length + 3, className: 'none', textContent: 'No players match these filters. Widen the price, team or position.' }))];
     $('table').tBodies[0].replaceChildren(...body);
   }
 
@@ -162,7 +115,7 @@
     const current = $('team').value;
     $('team').replaceChildren(el('option', { value: '', textContent: 'All' }), ...[...new Set(data.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
     $('team').value = current;
-    updateReset();
+    updateEdited();
     render();
   }
 
@@ -184,31 +137,9 @@
     const td = e.target.closest('td.gw');
     if (td && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); openGw(findPlayer(td.closest('tr').dataset.pid), Number(td.dataset.gw)); }
   });
-  tbody.addEventListener('change', (e) => {
-    if (!e.target.matches('.xmin-input')) return;
-    const p = findPlayer(e.target.closest('tr').dataset.pid);
-    const v = parseMinutes(e.target.value);
-    if (v === undefined) return;
-    if (v === null) { if (state.overrides[p.id]) delete state.overrides[p.id].all; } else { state.overrides[p.id] = { ...(state.overrides[p.id] || {}), all: v }; }
-    tidy(p.id);
-    saveOverrides();
-    refreshRow(p);
-    if (state.detail && state.detail.id === p.id) openGw(p, state.detail.g);
-  });
-  $('detail-min').addEventListener('change', (e) => {
-    if (!state.detail) return;
-    const p = findPlayer(state.detail.id), g = state.detail.g, v = parseMinutes(e.target.value);
-    if (v === undefined) return;
-    const o = state.overrides[p.id] || (state.overrides[p.id] = {});
-    o.gw = o.gw || {};
-    if (v === null) delete o.gw[g]; else o.gw[g] = v;
-    tidy(p.id);
-    saveOverrides();
-    refreshRow(p);
-    openGw(p, g);
-  });
-  $('reset').addEventListener('click', () => { state.overrides = {}; saveOverrides(); $('detail').hidden = true; render(); });
   $('close').addEventListener('click', () => { $('detail').hidden = true; });
+  // Minutes edited on the Minutes page in another tab.
+  window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') { state.overrides = XMin.load(); updateEdited(); render(); } });
 
   fetch('data.json', { cache: 'no-store' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })

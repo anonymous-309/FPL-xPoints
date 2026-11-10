@@ -12,7 +12,7 @@
     <h1>xPoints</h1>
     <p id="status" role="status">Loading points</p>
   </div>
-  <nav class="links"><a href="chances.html">Chance 90min</a><a href="setpieces.html">Set pieces</a><a href="oop.html">OOP</a><a href="backtest.txt">Accuracy</a></nav>
+  <nav class="links"><a href="minutes.html">Minutes</a><a href="chances.html">Chance 90min</a><a href="setpieces.html">Set pieces</a><a href="oop.html">OOP</a><a href="backtest.txt">Accuracy</a></nav>
 </header>
 <div id="error" class="error" role="alert" hidden></div>
 <form id="filters" class="filters" autocomplete="off">
@@ -29,7 +29,7 @@
   <label>Gameweeks
     <select id="horizon"><option>3</option><option selected>5</option><option>8</option></select>
   </label>
-  <button id="reset" class="reset" type="button" hidden></button>
+  <a id="edited" class="edited-link" href="minutes.html" hidden></a>
 </form>
 <main>
   <div id="empty" class="empty"><p>Points appear here once the GitHub update has run.</p></div>
@@ -39,13 +39,13 @@
 </main>
 <aside id="detail" hidden aria-live="polite">
   <p id="detail-text"></p>
-  <label id="detail-min-row" hidden>Minutes per match this gameweek <input id="detail-min" type="number" min="0" max="90" step="1" inputmode="numeric"></label>
   <button id="close" type="button" aria-label="Close">×</button>
 </aside>
 <footer>
   <p id="warnings"></p>
-  <p>Opponents in capitals are home matches, lower case are away. xMin is expected minutes from recent matches, with newer matches weighted more; it skips one-off absences and red-card bans, and spots players returning from injury. Adjusted Min is xMin reduced when FPL flags an injury or suspension. Hover over or select a cell to see Chance 90min, the same figures as the Chance 90min page, and the points from each component. Edit Adjusted Min to recalculate with your own minutes for every gameweek, or select a gameweek cell to change just that one; clear the box to go back to the model figure. Appearance points follow FPL rules: 1 point for 1+ minutes and another for 60+. Every other component, including clean sheets, is scaled by Adjusted Min/90. These are statistical estimates, for reference only. Not affiliated with the Premier League.</p>
+  <p>Opponents in capitals are home matches, lower case are away. Expected minutes for every gameweek, including injuries and bans, are on the <a href="minutes.html">Minutes</a> page; minutes you set there are used here, and those cells are outlined. Hover over or select a cell to see the minutes, Chance 90min (the same figures as the Chance 90min page) and the points from each component. Appearance points follow FPL rules: 1 point for 1+ minutes and another for 60+. Every other component, including clean sheets, is scaled by minutes/90. These are statistical estimates, for reference only. Not affiliated with the Premier League.</p>
 </footer>
+<script src="minutes-core.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
