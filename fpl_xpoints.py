@@ -76,7 +76,7 @@ GOAL_MODES = {"learned": (None, None, None, None), "equal": (1 / 3, 1 / 3, 1 / 3
               "g50_k5": (0.5, 0.25, 0.25, 5.0), "g50_k2": (0.5, 0.25, 0.25, 2.0), "equal_k5": (1 / 3, 1 / 3, 1 / 3, 5.0), "equal_k2": (1 / 3, 1 / 3, 1 / 3, 2.0)}
 CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "mix30": (0.3, False), "venue70": (0.7, True)}
 PAST_GWS = 5  # played gameweeks shown on the Minutes page
-MINUTE_WEIGHTS = np.array([10.0, 9.0, 8.0, 7.0, 6.0])  # newest to oldest of the last 5 matches
+MINUTE_WEIGHTS = np.array([5.0, 4.0, 3.0, 2.0, 1.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
 
 NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "was_home",
@@ -276,7 +276,7 @@ def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray
 def ai_minute_detail(history: list[float]) -> tuple[float, float, float]:
     """Expected minutes and the chance of 1+ and 60+ minutes, from per-match minutes, oldest first (0 = did not play).
 
-    Weighted 10,9,8,7,6 from newest to oldest, except that:
+    Weighted 5,4,3,2,1 from newest to oldest, except that:
     - isolated absences of a regular starter (suspension, a knock, one rest) are skipped;
     - two or more absences in a row right now are kept, because he may really be out;
     - 2 to 5 straight matches of 70+ after a clearly lower one mean he is back: use only that streak;
@@ -315,7 +315,7 @@ def ai_minute(history: list[float]) -> float:
 
 def ai_minute_on_return(history: list[float]) -> tuple[float, float, float]:
     """AI Minute for a player coming back from an injury or ban: the matches he is missing right now are left out,
-    so the 10-9-8-7-6 formula runs on the matches before the absence."""
+    so the 5-4-3-2-1 formula runs on the matches before the absence."""
     end = len(history)
     while end > 0 and history[end - 1] == 0:
         end -= 1
@@ -870,7 +870,7 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
 
     Returns the share per fixture, whether his minutes should come from the matches before his current absence,
     a short note, and the gameweek he is back.
-    - A return date in the news (injury or ban): 0 before it, then his usual minutes from the 10-9-8-7-6 formula on
+    - A return date in the news (injury or ban): 0 before it, then his usual minutes from the 5-4-3-2-1 formula on
       the matches before the absence.
     - Injured or unavailable with no return date: 0 in every gameweek.
     - Suspended with no date, or a red card in his last match before FPL has flagged it: out for one match.
