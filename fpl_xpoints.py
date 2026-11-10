@@ -751,6 +751,9 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
         rows[m] = {"Captain (top 1)": cap, "Top 10 average": top10}
     print(pd.DataFrame(rows).T.round(2).to_string())
 
+    print("\n=== Top 100 by predicted points each GW (bias above 0 = predicted too high) ===")
+    print(pd.DataFrame({m: top100_scores(gw, c) for m, c in models.items()}).T.round(3).to_string())
+
     print("\n=== Calibration, regulars ===")
     bins = pd.qcut(regular["xpts"], 10, duplicates="drop")
     cal = regular.groupby(bins, observed=True).agg(predicted=("xpts", "mean"), actual=("total_points", "mean"), n=("xpts", "size"))
@@ -1133,6 +1136,16 @@ def cs_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, modes:
         print(f'{r["mode"]}: {r["coefs"]}')
 
 
+def top100_scores(gw: pd.DataFrame, col: str = "xpts") -> dict:
+    """Accuracy on the 100 players with the highest predicted points each gameweek, the ones a manager looks at."""
+    top = gw.sort_values(col, ascending=False).groupby("GW").head(100)
+    err = top["total_points"] - top[col]
+    rank = top.groupby("GW").apply(lambda g: g["total_points"].corr(g[col], method="spearman"), include_groups=False)
+    return {"top100_RMSE": float(np.sqrt((err ** 2).mean())), "top100_bias": float(-err.mean()),
+            "top100_pred": float(top[col].mean()), "top100_actual": float(top["total_points"].mean()),
+            "top100_rank_corr": float(rank.mean())}
+
+
 def goal_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, modes: list[str] | None = None) -> None:
     """Compares the learned goal model with fixed goals/xG/xGOT weights on last season's results."""
     def log_loss(prob: pd.Series, hit: pd.Series) -> float:
@@ -1162,6 +1175,7 @@ def goal_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, mode
                "RMSE_regulars": float(np.sqrt(((regular["total_points"] - regular["xpts"]) ** 2).mean())),
                "captain": float(gw.loc[gw.groupby("GW")["xpts"].idxmax(), "total_points"].mean()),
                "top10": float(gw.sort_values("xpts", ascending=False).groupby("GW").head(10)["total_points"].mean())}
+        row |= top100_scores(gw)
         ex = XPointsModel().fit(feat[feat["season"] != seasons[-1]]).explain()
         g = ex[ex["target"] == "goals"]
         row["coefs"] = ", ".join(f"{f}={c}" for f, c in zip(g["feature"], g["coef"]))
