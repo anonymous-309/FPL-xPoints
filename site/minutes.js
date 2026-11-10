@@ -71,7 +71,11 @@
     const usual = el('td', { className: 'usual', textContent: Math.round(p.minUsual), title: p.w5Min !== null && Math.round(p.w5Min) !== Math.round(p.minUsual) ? `${Math.round(p.w5Min)} counting his current absence` : '' });
     const past = pastGws().map((g) => {
       const m = pastMins(p, g);
-      return m ? el('td', { className: 'past', textContent: XMin.join(m) }) : el('td', { className: 'past none', textContent: '–' });
+      if (!m) return el('td', { className: 'past none', textContent: '–' });
+      const out = (p.pastOut && p.pastOut[g]) || [];
+      const td = el('td', { className: 'past' }, ...m.flatMap((x, i) => [...(i ? ['+'] : []), out[i] ? el('s', { textContent: x }) : String(x)]));
+      if (out.some(Boolean)) { td.classList.add('out'); td.title = 'Injured, ill or banned: left out of xMin'; }
+      return td;
     });
     const future = futureGws().map((g) => {
       const m = XMin.minutes(state.overrides, p, g);
