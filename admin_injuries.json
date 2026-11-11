@@ -1,1 +1,17 @@
-{"manual": [], "startOverrides": {}}
+{
+ "manual": [
+  {
+   "id": "c222531-admin-GW7-mwc0k6fd",
+   "pid": "c222531",
+   "name": "Gibbs-White",
+   "team": "NFO",
+   "position": "MID",
+   "type": "Injury",
+   "startGw": 7,
+   "endGw": 7,
+   "note": "",
+   "at": "2026-11-11T11:06:20.425Z"
+  }
+ ],
+ "startOverrides": {}
+}
