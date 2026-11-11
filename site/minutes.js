@@ -26,9 +26,9 @@
 
   function columns() {
     return [
-      ['name', 'Player'], ['usual', 'Usual', 'last 5'],
+      ['name', 'Player'],
       ...pastGws().map((g) => [`p${g}`, `GW${g}`, 'played']),
-      ['adjust', 'Adjust min', 'all GWs'],
+      ['usual', 'Usual', 'last 5'], ['adjust', 'Adjust min', 'all GWs'],
       ...futureGws().map((g) => [`f${g}`, `GW${g}`, 'xMin']),
       ['note', 'Injury / ban'],
     ];
@@ -99,7 +99,7 @@
       return td;
     });
     const note = el('td', { className: 'note', textContent: p.minNote || '', title: p.news || '' });
-    const tr = el('tr', {}, name, usual, ...past, adjust, ...future, note);
+    const tr = el('tr', {}, name, ...past, usual, adjust, ...future, note);
     tr.dataset.pid = p.id;
     return tr;
   }
