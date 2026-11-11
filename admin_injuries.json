@@ -23,6 +23,18 @@
    "endGw": 8,
    "note": "",
    "at": "2026-11-11T11:08:14.086Z"
+  },
+  {
+   "id": "c219168-admin-GW6-mwc0rkhk",
+   "pid": "c219168",
+   "name": "Isak",
+   "team": "LIV",
+   "position": "FWD",
+   "type": "Injury",
+   "startGw": 6,
+   "endGw": 6,
+   "note": "",
+   "at": "2026-11-11T11:12:05.240Z"
   }
  ],
  "startOverrides": {}
