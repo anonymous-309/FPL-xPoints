@@ -803,6 +803,68 @@ def usual_minutes(df: pd.DataFrame) -> dict[str, np.ndarray]:
     return out
 
 
+BPS_GOAL = {"GK": 12, "DEF": 12, "MID": 18, "FWD": 24}
+BPS_ASSIST, BPS_CS, BPS_CONCEDED = 9, 12, -2  # FPL: -4 per 2 goals conceded for GK and DEF, so about -2 a goal
+ASSISTED_GOALS = 0.93  # share of goals with an FPL assist (2023-26)
+
+
+def simulate_bonus(d: pd.DataFrame, sd: float = 6.0, sims: int = 2000, seed: int = 7) -> np.ndarray:
+    """Expected bonus for a full 90, from simulating each match: team goals from the other side's expected goals
+    conceded, each goal to a scorer by expected goals and an assister by expected assists, clean sheets for GK and
+    DEF, the rest of his BPS from expected BPS plus noise; then the top 3 BPS get 3, 2 and 1.
+
+    Needs per row: season, fixture, team, position, g90, a90, p_cs, conc90, bps90, p_60 (chance he plays 60+,
+    used as the chance he is on the pitch in a simulation). Returns bonus per row, given he plays."""
+    rng = np.random.default_rng(seed)
+    out = np.full(len(d), np.nan)
+    pos_all = d["position"].to_numpy()
+    for _, idx in d.groupby(["season", "fixture"], sort=False).indices.items():
+        g = d.iloc[idx]
+        teams = g["team"].unique()
+        if len(teams) != 2 or len(g) < 4:
+            continue
+        P = len(g)
+        pos = pos_all[idx]
+        defn = np.isin(pos, ["GK", "DEF"])
+        g90, a90 = g["g90"].to_numpy(float).clip(0), g["a90"].to_numpy(float).clip(0)
+        conc = g["conc90"].to_numpy(float)
+        team = g["team"].to_numpy()
+        on = rng.random((sims, P)) < g["p_60"].fillna(0).to_numpy(float).clip(0.02, 1)
+        goal_pts = np.array([BPS_GOAL.get(p, 18) for p in pos], float)
+        expected_events = goal_pts * g90 + BPS_ASSIST * a90 + defn * (BPS_CS * g["p_cs"].to_numpy(float) + BPS_CONCEDED * conc)
+        bps = (g["bps90"].to_numpy(float) - expected_events)[None, :] + rng.normal(0, sd, (sims, P))
+        def credit(weights: np.ndarray, pts: np.ndarray, live: np.ndarray, side: np.ndarray) -> None:
+            """Give one event per live simulation to a player of this side on the pitch, picked by weight."""
+            w = np.where(on & side[None, :], weights[None, :], 0.0)
+            tot = w.sum(1)
+            rows = np.where(live & (tot > 0))[0]
+            if not len(rows):
+                return
+            cum = np.cumsum(w[rows] / tot[rows, None], 1)
+            pick = (cum < rng.random((len(rows), 1))).sum(1).clip(0, P - 1)
+            bps[rows, pick] += pts[pick]
+
+        assist_pts = np.full(P, float(BPS_ASSIST))
+        for t in teams:
+            mine = team == t
+            goals = rng.poisson(float(conc[~mine][0]), sims)  # his team scores what the other side is expected to concede
+            for k in range(int(goals.max())):
+                live = goals > k
+                credit(g90, goal_pts, live, mine)
+                credit(a90, assist_pts, live & (rng.random(sims) < ASSISTED_GOALS), mine)
+            other_def = ~mine & defn
+            bps[:, other_def] += np.where(goals[:, None] == 0, BPS_CS, BPS_CONCEDED * goals[:, None])
+        bps = np.where(on, bps, -np.inf)
+        top = np.argsort(-bps, axis=1)[:, :3]
+        bonus = np.zeros((sims, P))
+        for rank, pts in enumerate((3, 2, 1)):
+            ok = np.isfinite(np.take_along_axis(bps, top[:, rank:rank + 1], 1))[:, 0]
+            bonus[np.where(ok)[0], top[ok, rank]] = pts
+        played = on.sum(0)
+        out[idx] = np.where(played > 0, (bonus * on).sum(0) / np.maximum(played, 1), np.nan)
+    return out
+
+
 class XPointsModel:
     def fit(self, train: pd.DataFrame) -> "XPointsModel":
         train = train[~train["future"] & train["minutes"].notna()]
@@ -1011,6 +1073,15 @@ def chance_report(pred: pd.DataFrame) -> None:
     count("xAssists", "a90", "assists", played)
     count("Saves (GK)", "saves90", "saves", gks)
     count("Bonus", "bonus90", "bonus", played)
+    # Bonus from simulating each match with the expected goals, assists, clean sheets and BPS of everyone in it.
+    for sd in (4.0, 6.0, 9.0):
+        d[f"bon_sim{sd:.0f}"] = simulate_bonus(d, sd=sd)
+    played = d[d["minutes"] > 0].copy()
+    for sd in (4, 6, 9):
+        played[f"bon_sim{sd}"] = played[f"bon_sim{sd}"].fillna(played["bonus90"])
+        count(f"Bonus simulated, noise {sd}", f"bon_sim{sd}", "bonus", played)
+    played["bon_mix"] = 0.5 * played["bon_sim6"] + 0.5 * played["bonus90"]
+    count("Bonus 50/50 simulated 6 + current", "bon_mix", "bonus", played)
     count("BPS", "bps90", "bps", played)
     dca = played[(played["position"] != "GK") & played["defensive_contribution"].notna()]
     if len(dca):
