@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Admin FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Admin</h1>
+    <p id="status" role="status">Usual minutes for everyone</p>
+  </div>
+  <nav class="links"><a href="index.html">xPoints</a><a href="minutes.html">Minutes</a><a href="planner.html">Planner</a></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+
+<form id="gate" class="filters admin-box" autocomplete="off">
+  <label>Password <input id="pass" type="password" autocomplete="current-password" required></label>
+  <button class="toggle" type="submit">Open</button>
+</form>
+
+<form id="tokenForm" class="filters admin-box" autocomplete="off" hidden>
+  <p class="meta">Saving writes admin_minutes.json to the GitHub repo, so this browser needs a GitHub token once: on GitHub, Settings → Developer settings → Fine-grained tokens → Generate new token, repository access <b>Only select repositories: FPL-xPoints</b>, permission <b>Contents: Read and write</b>. The token is kept only in this browser.</p>
+  <label>GitHub token <input id="token" type="password" autocomplete="off" required></label>
+  <button class="toggle" type="submit">Use token</button>
+</form>
+
+<div id="panel" hidden>
+  <form id="filters" class="filters" autocomplete="off">
+    <div class="seg" role="group" aria-label="Position">
+      <button type="button" data-pos="" aria-pressed="true">All</button>
+      <button type="button" data-pos="GK" aria-pressed="false">GK</button>
+      <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
+      <button type="button" data-pos="MID" aria-pressed="false">MID</button>
+      <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+    </div>
+    <label>Search player <input id="search" type="search"></label>
+    <label>Team <select id="team"><option value="">All</option></select></label>
+    <button id="onlySet" class="toggle" type="button" aria-pressed="false">Set by admin only</button>
+    <button id="save" class="toggle save" type="button" disabled>Save</button>
+    <button id="forget" class="reset" type="button">Forget token</button>
+  </form>
+  <p id="saved" class="meta admin-note" role="status"></p>
+  <div class="wrap" tabindex="0" aria-label="Admin minutes">
+    <table id="table" class="minutes admin"><thead><tr>
+      <th scope="col">Player</th><th scope="col">Formula<small>last 5</small></th><th scope="col">Admin min<small>all GWs</small></th><th scope="col">Note</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+</div>
+<footer>
+  <p>Admin min replaces a player's usual minutes (the 5-4-3-2-1 formula) for every upcoming gameweek, for everyone who uses the site, including xPoints and the Planner. Injuries, bans and doubtful flags still apply on top. Clear a box to go back to the formula. After you save, the site rebuilds with the new minutes in about 10 minutes.</p>
+</footer>
+<script src="admin.js"></script>
+</body>
+</html>

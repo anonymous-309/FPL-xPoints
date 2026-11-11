@@ -1001,6 +1001,35 @@ def penalty_shares(target: pd.DataFrame) -> np.ndarray:
     return out
 
 
+ADMIN_FILE = Path("admin_minutes.json")  # set on the Admin page: {"c<code>": {"min": 90, "name": "..."}}
+
+
+def admin_minutes(target: pd.DataFrame, path: Path = ADMIN_FILE) -> pd.DataFrame:
+    """Usual minutes set by the admin replace the formula's for every upcoming gameweek; injuries, bans and
+    doubtful flags still apply on top. 1+ and 60+ minutes follow the figure: certain if he gets 1+ or 60+."""
+    target = target.copy()
+    target["min_model"] = usual_minutes(target)["min"]
+    target["admin_min"] = np.nan
+    if not path.exists():
+        return target
+    try:
+        admin = {pid: float(v["min"]) for pid, v in json.loads(path.read_text(encoding="utf-8")).items() if v.get("min") is not None}
+    except (ValueError, TypeError, AttributeError) as e:
+        print(f"{path} not read ({e}); admin minutes ignored")
+        return target
+    rows = target["pid"].isin(list(admin))
+    m = target.loc[rows, "pid"].map(admin).clip(0, 90)
+    for col in ("w5_min", "ret_min"):
+        target.loc[rows, col] = m
+    for col in ("w5_p1", "ret_p1"):
+        target.loc[rows, col] = (m > 0).astype(float)
+    for col in ("w5_p60", "ret_p60"):
+        target.loc[rows, col] = (m >= 60).astype(float)
+    target.loc[rows, "admin_min"] = m
+    print(f"Admin minutes: {len(admin)} set, {target.loc[rows, 'pid'].nunique()} players found")
+    return target
+
+
 def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: bool, with_history: bool = False):
     cache = data_dir / "api_cache"
     hist, fut, first = live_frames(cache, offline, horizon)
@@ -1010,6 +1039,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
     target = doubtful_minutes(target, df)
+    target = admin_minutes(target)
     target["pen_cond"] = penalty_shares(target)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res
@@ -1067,7 +1097,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "w5Min": None if pd.isna(r["w5_min"]) else round(float(r["w5_min"]), 1),
             "role": r["role"], "box90": None if pd.isna(r["role_box90"]) else round(float(r["role_box90"]), 2),
             "xgi90": None if pd.isna(r["role_xgi90"]) else round(float(r["role_xgi90"]), 3),
-            "minUsual": round(float(r["min_usual"]), 1), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
+            "minUsual": round(float(r["min_usual"]), 1),
+            "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
+            "adminMin": None if pd.isna(r.get("admin_min", np.nan)) else round(float(r["admin_min"])), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
             "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "byGw": {}})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):

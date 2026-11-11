@@ -81,7 +81,9 @@
     if (p.status && p.status !== 'a') meta.append(' ', el('span', { className: 'flag', textContent: 'Flagged' }));
     const o = state.overrides[p.id] || {};
     const adjust = el('td', { className: 'xmin' }, input(o.all, String(Math.round(p.minUsual)), `Minutes per match for ${p.name} in every gameweek`, { all: '1' }));
-    const usual = el('td', { className: 'usual', textContent: Math.round(p.minUsual), title: p.w5Min !== null && Math.round(p.w5Min) !== Math.round(p.minUsual) ? `${Math.round(p.w5Min)} counting his current absence` : '' });
+    const usual = p.adminMin !== null && p.adminMin !== undefined
+      ? el('td', { className: 'usual admin-set', textContent: Math.round(p.minUsual), title: `Set by admin (formula ${Math.round(p.minModel ?? p.minUsual)})` })
+      : el('td', { className: 'usual', textContent: Math.round(p.minUsual), title: p.w5Min !== null && Math.round(p.w5Min) !== Math.round(p.minUsual) ? `${Math.round(p.w5Min)} counting his current absence` : '' });
     const past = pastGws().map((g) => {
       const m = pastMins(p, g);
       return m ? el('td', { className: 'past', textContent: XMin.join(m) }) : el('td', { className: 'past none', textContent: '–' });
