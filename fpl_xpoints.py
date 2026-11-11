@@ -59,6 +59,7 @@ K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0
 # Rare events need long memory and strong pull to the role average (rare-tune, log loss on 2025-26):
 # (half-life in matches, latest matches used, k). Red cards: a player's own record did not beat the role average.
 RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 400.0)}
+K_PEN_MISS = 20.0  # penalty attempts of league-average misses added to a taker's own record
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
@@ -592,6 +593,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     known = df["has_core"].fillna(False).astype(bool) & obs if "has_core" in df else pd.Series(False, index=df.index)
     teams_matches = df.loc[known].drop_duplicates(["season", "fixture", "team"]).shape[0]
     taken = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)).where(known, 0)
+    # Each taker's penalties and misses where they are counted, for his own miss rate.
+    df["pen_taken_k"], df["pen_missed_k"] = taken, df["core_pen_missed"].fillna(0).where(known, 0)
+    df["league_pen_miss"] = float(np.clip(df["pen_missed_k"].sum() / taken.sum(), 0.12, 0.35)) if taken.sum() > 200 else 1 - PEN_CONVERSION
     if teams_matches > 100:
         rate = taken.sum() / teams_matches
     else:
@@ -620,12 +624,13 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "mins": mins, "n90": mins / 90, "g": df["np_goals"], "a": df["assists"],
         "xg": df["np_xg"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
         "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
+        "ptk": df["pen_taken_k"], "pmk": df["pen_missed_k"],
         "box": df["core_box"].fillna(0), "boxn90": (mins / 90).where(df["has_core"].fillna(False).astype(bool), 0),
         "st": started.where(obs, 0), "n": obs.astype(float),
         "ban": (skipped(df) & obs).astype(float),
         "dh": (can_defcon & (dc >= thr)).astype(float), "do": can_defcon.astype(float),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban"]
+    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk"]
     roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
@@ -633,6 +638,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         p[f"L_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_LONG)
         p[f"S_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_SHORT)
+    for c in ("ptk", "pmk"):  # penalties taken and missed, equal weights over the latest 114 matches
+        p[f"Q_{c}"] = decayed_pre(keys, p[c].to_numpy(float), 1e9, 114)
     for c, (hl, cap, _) in RARE_MEMORY.items():
         p[f"Q_{c}"] = decayed_pre(keys, p[c].to_numpy(float), hl, cap)
         p[f"Q_n90_{c}"] = decayed_pre(keys, p["n90"].to_numpy(float), hl, cap)
@@ -703,6 +710,8 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
             df[f"r_{c}"] = (df[f"L_{c}"] + k * df[f"p_{c}"]) / (df["L_n90"] + k)
         df[f"f_{c}"] = (df[f"S_{c}"] + K_SHORT * df[f"r_{c}"]) / (df["S_n90"] + K_SHORT)
     df["defcon_rate"] = (df["X_dh"] + K_PLAYER * df["p_dh"]) / (df["X_do"] + K_PLAYER)
+    lm = df["league_pen_miss"] if "league_pen_miss" in df else 1 - PEN_CONVERSION
+    df["pen_miss_rate"] = (df["Q_pmk"].fillna(0) + K_PEN_MISS * lm) / (df["Q_ptk"].fillna(0) + K_PEN_MISS)
 
     ln = lambda s: np.log(s.clip(lower=EPS))
     df["l_xg"], df["l_xa"] = ln(df["r_xg"]), ln(df["r_xa"])
@@ -802,7 +811,9 @@ class XPointsModel:
         pen_cond = np.nan_to_num(pen_cond)
         team_pens = df["league_pen_rate"].to_numpy(float) * df["team_att"].fillna(1.0).to_numpy(float)
         pen90 = pen_cond * team_pens  # penalties he takes in a full 90
-        rate90["goals"] = rate90["goals"] + pen90 * PEN_CONVERSION
+        # His own miss rate over recent seasons, pulled to the league's (a saved penalty counts as a miss).
+        miss = df["pen_miss_rate"].fillna(1 - PEN_CONVERSION).to_numpy(float) if "pen_miss_rate" in df else np.full(len(df), 1 - PEN_CONVERSION)
+        rate90["goals"] = rate90["goals"] + pen90 * (1 - miss)
         lam = {k: rate90[k] * n90 for k in rate90}
         red90 = df["r_rc"].to_numpy(float)
         conc = self.conceded.predict(df[TEAM_FEATS])
@@ -828,7 +839,7 @@ class XPointsModel:
         ps90 = gk * df["r_ps"].to_numpy(float)
         full_pensave = ps90 * PEN_SAVE_PTS
         pts_pensave = full_pensave * n90
-        pm90, og90 = pen90 * (1 - PEN_CONVERSION), df["r_og"].to_numpy(float)
+        pm90, og90 = pen90 * miss, df["r_og"].to_numpy(float)
         full_penmiss, full_own = pm90 * PEN_MISS_PTS, og90 * OWN_GOAL_PTS
         pts_penmiss, pts_own = full_penmiss * n90, full_own * n90
         pts_card = -lam["yellow"] - 3 * red90 * n90
@@ -951,6 +962,12 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     for title, rate, actual in [("Yellow", "y90", "yellow_cards"), ("Red", "r90", "red_cards"), ("Penalty miss", "pm90", "penalties_missed"), ("Own goal", "og90", "own_goals")]:
         prob = 1 - np.exp(-played[rate] * played["minutes"] / 90)
         print(f"{title}: predicted {prob.mean():.3%}, actual {(played[actual] >= 1).mean():.3%}, n={len(played)}")
+    need = {"has_core", "core_pen_scored", "core_pen_missed", "pen90", "pm90"}
+    known = played[played["has_core"].fillna(False).astype(bool)] if need <= set(played.columns) else played.iloc[0:0]
+    if len(known):
+        att = known["core_pen_scored"].fillna(0) + known["core_pen_missed"].fillna(0)
+        print(f"Penalties taken per player match: predicted {(known['pen90'] * known['minutes'] / 90).mean():.4f}, actual {att.mean():.4f}, "
+              f"missed predicted {(known['pm90'] * known['minutes'] / 90).mean():.4f}, actual {known['core_pen_missed'].fillna(0).mean():.4f}, n={len(known)}")
     gks = played[played["position"] == "GK"]
     share = gks["minutes"] / 90
     print(f"Saves per GK match: predicted {(gks['saves90'] * share).mean():.3f}, actual {gks['saves'].mean():.3f}, n={len(gks)}")
@@ -1406,6 +1423,20 @@ def rare_tune(data_dir: Path, seasons: list[str]) -> None:
     ks = [5, 10, 20, 40, 60, 100, 200, 400, 1000, 2000]
     events = [("Yellow", "yellow_cards", "yc", None, 5), ("Red", "red_cards", "rc", None, 40),
               ("Own goal", "own_goals", "og", None, 60), ("Penalty save", "penalties_saved", "ps", "GK", 60)]
+    # Penalty misses per attempt (counted from 2024-25): own record pulled to the league miss rate by k attempts.
+    att = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)).to_numpy(float)
+    mis = df["core_pen_missed"].fillna(0).to_numpy(float)
+    tr = (df["season"] != seasons[-1]).to_numpy()
+    league = mis[tr].sum() / max(att[tr].sum(), 1)
+    A, M = decayed(att, 1e9, 114), decayed(mis, 1e9, 114)
+    rows = test & (att > 0)
+    n_att, n_mis = att[rows], mis[rows]
+    def pen_loss(rate):
+        r = np.clip(rate[rows], 1e-4, 1 - 1e-4)
+        return float(-(n_mis * np.log(r) + (n_att - n_mis) * np.log(1 - r)).sum() / n_att.sum())
+    base = pen_loss(np.full(len(df), league))
+    print(f"\n=== Penalty miss per attempt: {int(n_mis.sum())} of {int(n_att.sum())} missed in {seasons[-1]}, league {league:.1%}, league rate only: log loss {base:.5f} ===")
+    print("  ".join(f"k{k} {(base - pen_loss((M + k * league) / (A + k))) / base * 100:+.2f}%" for k in [2, 5, 10, 20, 40, 80, 160]))
     for title, col, tag, only, k_now in events:
         x = df[col].fillna(0).clip(upper=3).to_numpy(float)
         rows = test & ((df["position"] == only).to_numpy() if only else True)
