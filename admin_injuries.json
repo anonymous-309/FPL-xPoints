@@ -2591,6 +2591,42 @@
    "endGw": 9,
    "note": "Sofascore",
    "at": "2026-11-11T18:23:03+00:00"
+  },
+  {
+   "id": "c222531-sofascore-GW7",
+   "pid": "c222531",
+   "name": "Gibbs-White",
+   "team": "NFO",
+   "position": "MID",
+   "type": "Injury",
+   "startGw": 7,
+   "endGw": 7,
+   "note": "Sofascore",
+   "at": "2026-11-11T18:43:45+00:00"
+  },
+  {
+   "id": "c219168-sofascore-GW6",
+   "pid": "c219168",
+   "name": "Isak",
+   "team": "LIV",
+   "position": "FWD",
+   "type": "Injury",
+   "startGw": 6,
+   "endGw": 6,
+   "note": "Sofascore",
+   "at": "2026-11-11T18:43:45+00:00"
+  },
+  {
+   "id": "c510281-sofascore-GW1",
+   "pid": "c510281",
+   "name": "Sávio",
+   "team": "TOT",
+   "position": "MID",
+   "type": "Illness",
+   "startGw": 1,
+   "endGw": 1,
+   "note": "Sofascore",
+   "at": "2026-11-11T18:43:45+00:00"
   }
  ],
  "startOverrides": {}
