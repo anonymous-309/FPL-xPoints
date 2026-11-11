@@ -901,6 +901,88 @@ def _score(y: pd.Series, p: pd.Series) -> dict:
             "Pearson": float(y.corr(p)), "Spearman": float(y.corr(p, method="spearman"))}
 
 
+def _auc(score: np.ndarray, hit: np.ndarray) -> float:
+    """Chance a random match where it happened was rated above a random one where it did not (0.5 = no better than chance)."""
+    pos, n = hit.sum(), len(hit)
+    if pos == 0 or pos == n:
+        return float("nan")
+    ranks = pd.Series(score).rank().to_numpy()
+    return float((ranks[hit == 1].sum() - pos * (pos + 1) / 2) / (pos * (n - pos)))
+
+
+def chance_report(pred: pd.DataFrame) -> None:
+    """How good each Chance 90min figure was on the test season, against what happened.
+
+    The page shows chances for a full 90, so each is scaled to the minutes he really played. Baseline = the test
+    season's own average for his position, the best you could do knowing only position (it even peeks at the
+    season), so skill above 0 means the player-level figure adds something."""
+    d = pred[pred["minutes"].notna()].copy()
+    d["n90"] = d["minutes"] / 90
+    played = d[d["minutes"] > 0]
+    rows = []
+
+    def binary(title, prob, hit, group):
+        prob, hit = np.clip(np.asarray(prob, float), 1e-6, 1 - 1e-6), np.asarray(hit, float)
+        base = pd.Series(hit).groupby(np.asarray(group)).transform("mean").clip(1e-6, 1 - 1e-6).to_numpy()
+        brier, brier0 = np.mean((prob - hit) ** 2), np.mean((base - hit) ** 2)
+        ll = -np.mean(hit * np.log(prob) + (1 - hit) * np.log(1 - prob))
+        ll0 = -np.mean(hit * np.log(base) + (1 - hit) * np.log(1 - base))
+        none = hit.sum() == 0 or hit.sum() == len(hit)
+        rows.append({"figure": title, "n": len(hit), "predicted": prob.mean(), "actual": hit.mean(),
+                     "Brier skill": np.nan if none else 1 - brier / brier0, "log-loss skill": np.nan if none else 1 - ll / ll0, "AUC": _auc(prob, hit)})
+        return prob, hit
+
+    def per90(title, rate, actual, frame, cap_one=True):
+        prob = 1 - np.exp(-frame[rate].to_numpy(float) * frame["n90"].to_numpy(float))
+        hit = (frame[actual].fillna(0).to_numpy(float) >= 1).astype(float)
+        return binary(title, prob, hit, frame["position"])
+
+    calib = {}
+    p, h = binary("Appearance 1+", d["p_play"], d["minutes"] > 0, d["position"]); calib["Appearance 1+"] = (p, h)
+    p, h = binary("Appearance 60+", d["p_60"], d["minutes"] >= 60, d["position"]); calib["Appearance 60+"] = (p, h)
+    p, h = per90("Score 1+", "g90", "goals_scored", played); calib["Score 1+"] = (p, h)
+    p, h = per90("Assist 1+", "a90", "assists", played); calib["Assist 1+"] = (p, h)
+    teams = d.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
+    p, h = binary("Clean sheet (team)", teams["p_cs"], teams["ga"] == 0, np.zeros(len(teams))); calib["Clean sheet (team)"] = (p, h)
+    dc = played[(played["minutes"] >= 60) & played["defensive_contribution"].notna() & (played["position"] != "GK")]
+    if len(dc):
+        p, h = binary("DefCon (60+ min)", dc["p_defcon"], dc["defensive_contribution"] >= dc["position"].map(DEFCON_THRESHOLD), dc["position"]); calib["DefCon (60+ min)"] = (p, h)
+    gks = played[played["position"] == "GK"]
+    per90("Pen save (GK)", "ps90", "penalties_saved", gks)
+    per90("Pen miss", "pm90", "penalties_missed", played)
+    per90("Own goal", "og90", "own_goals", played)
+    per90("Red card", "r90", "red_cards", played)
+    p, h = per90("Yellow card", "y90", "yellow_cards", played); calib["Yellow card"] = (p, h)
+    t = pd.DataFrame(rows)
+    print("\n=== Chance 90min: each chance against what happened (test season) ===")
+    print("Skill: 1 - error / error of the position average (0 = no better, 1 = perfect). AUC: 0.5 = coin flip, 1 = perfect order.")
+    print(t.to_string(index=False, formatters={"predicted": "{:.2%}".format, "actual": "{:.2%}".format, "Brier skill": "{:+.3f}".format,
+                                                 "log-loss skill": "{:+.3f}".format, "AUC": "{:.3f}".format}))
+
+    counts = []
+    def count(title, rate, actual, frame, scale=True):
+        pr = frame[rate].to_numpy(float) * (frame["n90"].to_numpy(float) if scale else 1.0)
+        ac = frame[actual].fillna(0).to_numpy(float)
+        base = pd.Series(ac / np.maximum(frame["n90"].to_numpy(float), 1e-9) if scale else ac).groupby(frame["position"].to_numpy()).transform("mean").to_numpy() * (frame["n90"].to_numpy(float) if scale else 1.0)
+        mae, mae0 = np.mean(np.abs(pr - ac)), np.mean(np.abs(base - ac))
+        corr = float(np.corrcoef(pr, ac)[0, 1]) if np.std(pr) > 0 and np.std(ac) > 0 else float("nan")
+        counts.append({"figure": title, "n": len(ac), "predicted": pr.mean(), "actual": ac.mean(), "MAE": mae, "MAE skill": 1 - mae / mae0, "correlation": corr})
+    count("xGoals", "g90", "goals_scored", played)
+    count("xAssists", "a90", "assists", played)
+    count("Saves (GK)", "saves90", "saves", gks)
+    count("Bonus", "bonus90", "bonus", played)
+    count("Conceded (team)", "conc90", "ga", teams.assign(position="team", n90=1.0), scale=False)
+    print("\n=== Chance 90min: expected counts against what happened (test season) ===")
+    print(pd.DataFrame(counts).to_string(index=False, formatters={"predicted": "{:.3f}".format, "actual": "{:.3f}".format, "MAE": "{:.3f}".format,
+                                                                   "MAE skill": "{:+.3f}".format, "correlation": "{:.3f}".format}))
+
+    print("\n=== Chance 90min: calibration, predicted vs actual by predicted band ===")
+    for title, (p, h) in calib.items():
+        bands = pd.qcut(pd.Series(p), 5, duplicates="drop")
+        tab = pd.DataFrame({"p": p, "h": h}).groupby(bands, observed=True).agg(predicted=("p", "mean"), actual=("h", "mean"), n=("h", "size"))
+        print(f"{title}: " + "; ".join(f"{r.predicted:.1%}->{r.actual:.1%}" for r in tab.itertuples()))
+
+
 def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     pred = pred.copy()
     pred["pred_pts4"] = pred["pts4"].fillna(pred["ppg_all"]).fillna(0.0)
@@ -1661,6 +1743,7 @@ def main() -> None:
         season = a.test_season or a.seasons[-1]
         pred = walk_forward(feat, season, a.step)
         report(pred, a.data_dir / f"backtest_{season}.csv")
+        chance_report(pred)
         print("\n=== Coefficients, trained on seasons before the test season ===")
         print(XPointsModel().fit(feat[feat["season"] != season]).explain().to_string(index=False))
     elif a.command == "goal-tune":
