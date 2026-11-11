@@ -1449,7 +1449,8 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             hist.append(row | base | {"GW": row["round"], "team": teams[f["team_h"] if row["was_home"] else f["team_a"]], "opponent_team": row["opponent_team"], "future": False})
         last = max(played, key=lambda r: r.get("kickoff_time") or "", default=None)
         red_last = bool(last and float(last.get("red_cards") or 0) > 0)
-        # Doubtful: the match he got hurt in (the last one before FPL flagged him) and any since are left out of xMin.
+        # Doubtful: the match he got hurt in (the last one before FPL flagged him) is left out of xMin, and so are
+        # matches since then that he missed; matches he played while flagged count.
         flag_cut = None
         if p.get("status") == "d" and p.get("news_added"):
             before = [r["kickoff_time"] for r in played if r.get("kickoff_time") and r["kickoff_time"] <= p["news_added"]]
@@ -1474,13 +1475,17 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
 
 
 def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
-    """For a player flagged doubtful, xMin from the 5 matches before the one he got hurt in (see flag_cut)."""
+    """For a player flagged doubtful, xMin leaves out the match he got hurt in (see flag_cut) and the matches since
+    in which he did not play. A match he played while flagged (a 25% flag but he still started) counts as usual."""
     if "flag_cut" not in target:
         return target
     target = target.copy()
     obs = df[~df["future"] & df["minutes"].notna()]
     for pid, cut in target.loc[target["flag_cut"].notna(), ["pid", "flag_cut"]].drop_duplicates("pid").itertuples(index=False):
-        g = obs[(obs["pid"] == pid) & (obs["kickoff_time"] < pd.Timestamp(cut))].sort_values(["kickoff_time", "fixture"])
+        g = obs[obs["pid"] == pid]
+        knock = g["kickoff_time"] == pd.Timestamp(cut)
+        after = g["kickoff_time"] > pd.Timestamp(cut)
+        g = g[~knock & ~(after & (g["minutes"].fillna(0) == 0))].sort_values(["kickoff_time", "fixture"])
         if g.empty:
             continue
         n = len(g) + 1  # one extra row with no match gives the figures after all of them
@@ -1490,7 +1495,7 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
         out = ai_minutes(np.array([pid] * n), mins, np.append(np.ones(n - 1), 0.0), reds, bans)
         rows = target["pid"] == pid
         target.loc[rows, "w5_min"], target.loc[rows, "w5_p1"], target.loc[rows, "w5_p60"] = out[0][-1], out[1][-1], out[2][-1]
-        target.loc[rows, "recent_mins"] = out[-1][-1] + " (before the knock)"
+        target.loc[rows, "recent_mins"] = out[-1][-1] + " (without the knock match)"
     return target
 
 
