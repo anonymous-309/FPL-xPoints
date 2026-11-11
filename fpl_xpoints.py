@@ -810,6 +810,7 @@ def usual_minutes(df: pd.DataFrame) -> dict[str, np.ndarray]:
 BPS_GOAL = {"GK": 12, "DEF": 12, "MID": 18, "FWD": 24}
 BPS_ASSIST, BPS_CS, BPS_CONCEDED = 9, 12, -2  # FPL: -4 per 2 goals conceded for GK and DEF, so about -2 a goal
 BONUS_SIM_SHARE = 0.5
+BONUS_SIM_SD = 6.0
 ASSISTED_GOALS = 0.93  # share of goals with an FPL assist (2023-26)
 
 
@@ -973,7 +974,8 @@ class XPointsModel:
         # Bonus: half the per-player model, half a simulation of each match, where he competes for the top 3 BPS with
         # everyone on the pitch, both teams (Accuracy page: best correlation of the versions tried).
         if {"season", "fixture", "team"} <= set(df.columns):
-            sim = simulate_bonus(pd.concat([df[["season", "fixture", "team", "position"]], out], axis=1))
+            out["bonus90_glm"] = out["bonus90"]
+            sim = simulate_bonus(pd.concat([df[["season", "fixture", "team", "position"]], out], axis=1), sd=BONUS_SIM_SD)
             b90 = np.where(np.isnan(sim), out["bonus90"], BONUS_SIM_SHARE * sim + (1 - BONUS_SIM_SHARE) * out["bonus90"])
             out["bonus90"], out["full_bonus"], out["xbonus"] = b90, b90, b90 * n90
             out["pts_bonus"] = b90 * n90
@@ -1089,14 +1091,32 @@ def chance_report(pred: pd.DataFrame) -> None:
     count("xAssists", "a90", "assists", played)
     count("Saves (GK)", "saves90", "saves", gks)
     count("Bonus", "bonus90", "bonus", played)
-    # Bonus from simulating each match with the expected goals, assists, clean sheets and BPS of everyone in it.
-    for sd in (4.0, 6.0, 9.0):
-        d[f"bon_sim{sd:.0f}"] = simulate_bonus(d, sd=sd)
-    played = d[d["minutes"] > 0].copy()
-    for sd in (4, 6, 9):
-        played[f"bon_sim{sd}"] = played[f"bon_sim{sd}"].fillna(played["bonus90"])
-        count(f"Bonus simulated, noise {sd}", f"bon_sim{sd}", "bonus", played)
-
+    # Bonus: the per-player model, simulations of each match at several noise levels, and blends; scored per match
+    # and per player over the season (slope above 1 = the best bonus takers are predicted too low).
+    glm = "bonus90_glm" if "bonus90_glm" in d else "bonus90"
+    variants = {"Per-player model": d[glm], "Current (50/50, noise 6)": d["bonus90"]}
+    for sd in (2.0, 3.0, 4.0, 6.0):
+        variants[f"Simulated, noise {sd:.0f}"] = pd.Series(simulate_bonus(d, sd=sd), index=d.index).fillna(d[glm])
+    variants["75% simulated noise 3 + 25% model"] = 0.75 * variants["Simulated, noise 3"] + 0.25 * d[glm]
+    full = d[d["minutes"] >= 60]
+    rows_b, star = [], None
+    for name, v in variants.items():
+        pr, ac = v.loc[full.index].to_numpy(float), full["bonus"].fillna(0).to_numpy(float)
+        per = pd.DataFrame({"pid": full["pid"], "name": full["web_name"] if "web_name" in full else full["name"], "p": pr, "a": ac}).groupby(["pid", "name"]).agg(p=("p", "mean"), a=("a", "mean"), n=("a", "size"))
+        per = per[per["n"] >= 15]
+        slope = float(np.polyfit(per["p"], per["a"], 1)[0])
+        top = per.sort_values("a", ascending=False).head(20)
+        rows_b.append({"bonus version": name, "match corr": float(np.corrcoef(pr, ac)[0, 1]), "match MAE": float(np.mean(np.abs(pr - ac))),
+                       "player corr": float(per["p"].corr(per["a"])), "slope": slope,
+                       "top-20 takers predicted": top["p"].mean(), "top-20 actual": top["a"].mean()})
+        if name == "Per-player model":
+            star = top.head(10).rename(columns={"p": name})
+        else:
+            star[name] = per.loc[star.index, "p"]
+    print("\n=== Bonus versions, matches with 60+ minutes; players with 15+ such matches ===")
+    print(pd.DataFrame(rows_b).round(3).to_string(index=False))
+    print("\nTop 10 bonus takers per 60+ minute match (actual a) and each version's prediction:")
+    print(star.round(2).to_string())
     count("BPS", "bps90", "bps", played)
     dca = played[(played["position"] != "GK") & played["defensive_contribution"].notna()]
     if len(dca):
