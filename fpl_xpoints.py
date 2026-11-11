@@ -56,6 +56,9 @@ OWN_GOAL_PTS = -2
 
 HL_LONG, HL_SHORT, HL_MIN_SHORT, HL_MIN_LONG, HL_TEAM = 12, 4, 2, 8, 12
 K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0, 4.0, 8.0, 40.0, 60.0
+# Rare events need long memory and strong pull to the role average (rare-tune, log loss on 2025-26):
+# (half-life in matches, latest matches used, k). Red cards: a player's own record did not beat the role average.
+RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 400.0)}
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
@@ -256,10 +259,11 @@ def add_teams(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------- features
-def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray:
-    """Exponentially decayed sum of *earlier* rows of each key; the current row is excluded."""
+def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float, cap: int | None = None) -> np.ndarray:
+    """Exponentially decayed sum of *earlier* rows of each key over the latest cap rows; the current row is excluded."""
+    cap = cap or HISTORY_MATCHES
     d = 0.5 ** (1 / half_life)
-    tail = d ** HISTORY_MATCHES
+    tail = d ** cap
     out = np.zeros(len(x))
     s, prev, hist = 0.0, object(), []
     for i, (k, v) in enumerate(zip(keys, x)):
@@ -268,8 +272,8 @@ def decayed_pre(keys: np.ndarray, x: np.ndarray, half_life: float) -> np.ndarray
         out[i] = s
         hist.append(v)
         s = s * d + v
-        if len(hist) > HISTORY_MATCHES:
-            s -= hist[-HISTORY_MATCHES - 1] * tail
+        if len(hist) > cap:
+            s -= hist[-cap - 1] * tail
     return out
 
 
@@ -629,6 +633,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         p[f"L_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_LONG)
         p[f"S_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_SHORT)
+    for c, (hl, cap, _) in RARE_MEMORY.items():
+        p[f"Q_{c}"] = decayed_pre(keys, p[c].to_numpy(float), hl, cap)
+        p[f"Q_n90_{c}"] = decayed_pre(keys, p["n90"].to_numpy(float), hl, cap)
     for c, hl, tag in [("mins", HL_MIN_SHORT, "ms"), ("n", HL_MIN_SHORT, "ns"), ("st", HL_MIN_SHORT, "ss"),
                        ("mins", HL_MIN_LONG, "ml"), ("n", HL_MIN_LONG, "nl"), ("dh", HL_LONG, "dh"), ("do", HL_LONG, "do")]:
         p[f"X_{tag}"] = decayed_pre(keys, p[c].to_numpy(float), hl)
@@ -687,7 +694,13 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
 
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         k = K_RED if c == "rc" else K_PEN if c in ("ps", "pm", "og") else K_FINISH if c in ("g", "a") else K_PLAYER
-        df[f"r_{c}"] = (df[f"L_{c}"] + k * df[f"p_{c}"]) / (df["L_n90"] + k)
+        if c == "rc":
+            df["r_rc"] = df["p_rc"]
+        elif c in RARE_MEMORY:
+            k = RARE_MEMORY[c][2]
+            df[f"r_{c}"] = (df[f"Q_{c}"] + k * df[f"p_{c}"]) / (df[f"Q_n90_{c}"] + k)
+        else:
+            df[f"r_{c}"] = (df[f"L_{c}"] + k * df[f"p_{c}"]) / (df["L_n90"] + k)
         df[f"f_{c}"] = (df[f"S_{c}"] + K_SHORT * df[f"r_{c}"]) / (df["S_n90"] + K_SHORT)
     df["defcon_rate"] = (df["X_dh"] + K_PLAYER * df["p_dh"]) / (df["X_do"] + K_PLAYER)
 
