@@ -122,6 +122,7 @@
 
   function show(data) {
     state.data = data;
+    XMin.setPlayers(data.players);
     $('empty').hidden = true;
     $('wrap').hidden = false;
     const when = new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });

@@ -1558,7 +1558,7 @@ def set_piece_table(res: pd.DataFrame, gw: int) -> dict:
         teams.append({
             "team": team, "name": str(g["team"].iloc[0]), "opp": [str(g["opp_short"].iloc[0]).upper() if g["was_home"].iloc[0] else str(g["opp_short"].iloc[0]).lower()],
             "penRate": round(float(g["team_pens"].iloc[0]), 3),
-            "pens": [{"name": r["web_name"], "order": num(r["pen_order"]), "adjMin": round(float(r["xmin"]), 1),
+            "pens": [{"id": r["pid"], "name": r["web_name"], "order": num(r["pen_order"]), "adjMin": round(float(r["xmin"]), 1),
                       "share": round(float(r["pen_cond_used"] * r["xmin"] / 90), 3),
                       "xPenGoals": round(float(r["pen_cond_used"] * r["xmin"] / 90 * r["team_pens"] * (1 - r["pen_miss_rate"])), 3)} for _, r in pens.iterrows()],
             "fk": takers("fk_order"), "corners": takers("corner_order"), "notes": notes,
@@ -1592,11 +1592,18 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "minUsual": round(float(r["min_usual"]), 1),
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
             "adminMin": None if pd.isna(r.get("admin_min", np.nan)) else round(float(r["admin_min"])), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
-            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "byGw": {}})
+            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "byGw": {},
+            # penalty order and miss rate, so the site can move penalties to the next taker when minutes are edited
+            "penOrder": None if pd.isna(pd.to_numeric(r.get("pen_order"), errors="coerce")) else int(pd.to_numeric(r["pen_order"], errors="coerce")),
+            "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
         g["mins"].append(round(float(r["xmin"]), 1))
+        # per match: fixture, his share of team penalties while on the pitch, team penalties per match
+        g.setdefault("fx", []).append(int(r["fixture"]))
+        g.setdefault("pc", []).append(round(float(r["pen_cond_used"]), 4))
+        g.setdefault("tp", []).append(round(float(r["team_pens"]), 4))
         for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "penmiss", "own", "defcon", "cards"):
             g["full"][name] = round(g["full"].get(name, 0.0) + float(r[f"full_{name}"]), 3)
         g["full"]["xg"] = round(g["full"].get("xg", 0.0) + float(r["g90"]), 3)
