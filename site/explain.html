@@ -40,7 +40,7 @@
 
   <section>
     <h2>Bước 2: các cột của Chance 90min</h2>
-    <p>Mọi cột, trừ hai cột Appearance, đều giả định cầu thủ <b>đá đủ 90 phút</b>. Cột có dấu % là xác suất xảy ra <b>ít nhất một lần</b>. Cột không có % là số kỳ vọng (trung bình). Hai loại được nối với nhau bằng công thức: xác suất ít nhất 1 lần = 1 − e<sup>−kỳ vọng</sup>. Ví dụ kỳ vọng 0.70 bàn thì xác suất ghi ít nhất 1 bàn là 1 − e<sup>−0.70</sup> ≈ 50%.</p>
+    <p>Mọi cột, trừ hai cột Appearance, đều giả định cầu thủ <b>đá đủ 90 phút</b>. Cột có dấu % là xác suất xảy ra <b>ít nhất một lần</b>. Cột không có % là số kỳ vọng (trung bình). Hai loại được nối với nhau bằng công thức: xác suất ít nhất 1 lần = 1 − e<sup>−kỳ vọng</sup>. Ví dụ kỳ vọng tổng cộng 0.70 bàn thì xác suất ghi ít nhất 1 bàn là 1 − e<sup>−0.70</sup> ≈ 50%.</p>
     <p>Mọi tỉ lệ đều trộn hai nguồn: thành tích của chính cầu thủ (trận gần có trọng số cao hơn; trọng số giảm còn một nửa sau 12 trận) và mức trung bình của cầu thủ cùng vai trò. Cầu thủ càng ít phút thì càng bị kéo về mức trung bình. Nhờ vậy một trận may mắn không đẩy con số lên quá cao.</p>
     <div class="wrap explain-table" tabindex="0" aria-label="Các cột Chance 90min">
       <table class="cols">
@@ -48,8 +48,9 @@
         <tbody>
           <tr><th scope="row">Appearance 1+</th><td>Xác suất được ra sân (ít nhất 1 phút)</td><td>Tỉ lệ trận có ra sân, trọng số 5-4-3-2-1, nhân với cờ FPL</td><td>+1 điểm × xác suất này</td></tr>
           <tr><th scope="row">Appearance 60+</th><td>Xác suất đá từ 60 phút trở lên</td><td>Như trên, đếm các trận đá 60+ phút</td><td>+1 điểm nữa × xác suất này. Đây cũng là hệ số cho sạch lưới và bàn thua.</td></tr>
-          <tr><th scope="row">xGoals</th><td>Số bàn kỳ vọng nếu đá 90 phút, gồm cả penalty</td><td>Bàn thắng thật 50%, xG 25%, xGOT 25%; phong độ gần đây; sức tấn công của đội; hàng thủ đối thủ; sân nhà/khách. Cộng thêm penalty: số pen đội được hưởng × tỉ lệ anh ấy là người đá × (1 − tỉ lệ đá hỏng trung bình của giải)</td><td>xGoals × xMin/90 × điểm bàn thắng (FWD 4, MID 5, DEF 6, GK 10)</td></tr>
-          <tr><th scope="row">Score 1+</th><td>Xác suất ghi ít nhất 1 bàn</td><td>1 − e<sup>−xGoals</sup></td><td>Chỉ để tham khảo; xPoints dùng xGoals</td></tr>
+          <tr><th scope="row">Score 1+</th><td>Xác suất ghi ít nhất 1 bàn, tính cả penalty</td><td>1 − e<sup>−(NPxGoals + Pen goals)</sup></td><td>Chỉ để tham khảo; xPoints dùng NPxGoals và Pen goals</td></tr>
+          <tr><th scope="row">NPxGoals</th><td>Số bàn kỳ vọng từ bóng sống (không tính penalty) nếu đá 90 phút</td><td>Trộn ba nguồn, đều đã bỏ phần penalty: bàn thắng không phải pen 50%, NPxG 25%, NPxG on target (NPxGOT) 25%. Sau đó điều chỉnh theo phong độ gần đây, sức tấn công của đội, hàng thủ đối thủ và sân nhà/khách. NPxG = xG của FPL trừ 0.76 cho mỗi quả pen đã đá. Bàn từ pen và xGOT lấy từ bộ dữ liệu FPL Core Insights (có từ mùa 2024-25); NPxGOT = xGOT trừ phần của các quả pen.</td><td>(NPxGoals + Pen goals) × xMin/90 × điểm bàn thắng (FWD 4, MID 5, DEF 6, GK 10)</td></tr>
+          <tr><th scope="row">Pen goals</th><td>Số bàn kỳ vọng từ penalty nếu đá 90 phút</td><td>Số pen đội được hưởng mỗi trận × tỉ lệ anh ấy là người đá × (1 − tỉ lệ đá hỏng). Người số 1 đá 95% số pen khi có mặt trên sân; người số 2 đá phần còn lại khi người số 1 không có trên sân, và cứ thế. Nếu bạn sửa xMin của người đá pen phía trên trên trang Minutes, con số này đổi theo.</td><td>Cộng với NPxGoals như trên</td></tr>
           <tr><th scope="row">xAssists</th><td>Số kiến tạo kỳ vọng nếu đá 90 phút</td><td>xA, phong độ, khả năng tạo cơ hội, sức tấn công của đội, hàng thủ đối thủ, sân nhà/khách</td><td>xAssists × xMin/90 × 3</td></tr>
           <tr><th scope="row">Assist 1+</th><td>Xác suất có ít nhất 1 kiến tạo</td><td>1 − e<sup>−xAssists</sup></td><td>Chỉ để tham khảo</td></tr>
           <tr><th scope="row">Clean sheet</th><td>Xác suất đội giữ sạch lưới</td><td>e<sup>−Conceded</sup>: xác suất đội thủng 0 bàn</td><td>Clean sheet × Appearance 60+ × điểm sạch lưới (GK/DEF 4, MID 1, FWD 0)</td></tr>
@@ -63,7 +64,7 @@
           <tr><th scope="row">Red card</th><td>Xác suất nhận thẻ đỏ</td><td>Mức trung bình của vị trí, vì thẻ đỏ quá hiếm để đánh giá riêng từng người</td><td>Kỳ vọng × xMin/90 × (−3)</td></tr>
           <tr><th scope="row">Yellow card</th><td>Xác suất nhận thẻ vàng</td><td>Tỉ lệ thẻ vàng của cầu thủ (nhớ khoảng 114 trận gần nhất), kéo về mức trung bình của vị trí</td><td>Kỳ vọng × xMin/90 × (−1)</td></tr>
           <tr><th scope="row">BPS</th><td>Điểm BPS kỳ vọng nếu đá 90 phút</td><td>Thành tích BPS, phong độ, đội và đối thủ</td><td>Dùng để tính Bonus</td></tr>
-          <tr><th scope="row">Bonus</th><td>Số điểm bonus kỳ vọng nếu đá 90 phút</td><td>Trung bình cộng của hai cách. (1) Mô hình riêng từng cầu thủ, dựa trên bonus và BPS trước đây. (2) Mô phỏng 2,000 lần mỗi trận: chia bàn thắng cho người ghi bàn theo xGoals và cho người kiến tạo theo xAssists, cộng điểm sạch lưới, cộng BPS nền của từng người. Ba người BPS cao nhất cả hai đội lần lượt nhận 3, 2, 1.</td><td>Bonus × xMin/90</td></tr>
+          <tr><th scope="row">Bonus</th><td>Số điểm bonus kỳ vọng nếu đá 90 phút</td><td>Trung bình cộng của hai cách. (1) Mô hình riêng từng cầu thủ, dựa trên bonus và BPS trước đây. (2) Mô phỏng 2,000 lần mỗi trận: chia bàn thắng cho người ghi bàn theo NPxGoals + Pen goals và cho người kiến tạo theo xAssists, cộng điểm sạch lưới, cộng BPS nền của từng người. Ba người BPS cao nhất cả hai đội lần lượt nhận 3, 2, 1.</td><td>Bonus × xMin/90</td></tr>
         </tbody>
       </table>
     </div>
@@ -77,7 +78,7 @@
         <thead><tr><th scope="col">Hạng mục</th><th scope="col">Công thức</th></tr></thead>
         <tbody>
           <tr><th scope="row">Ra sân</th><td>P1 + P60</td></tr>
-          <tr><th scope="row">Bàn thắng</th><td>xGoals × m × điểm bàn thắng theo vị trí</td></tr>
+          <tr><th scope="row">Bàn thắng</th><td>(NPxGoals + Pen goals) × m × điểm bàn thắng theo vị trí</td></tr>
           <tr><th scope="row">Kiến tạo</th><td>xAssists × m × 3</td></tr>
           <tr><th scope="row">Sạch lưới</th><td>Clean sheet × P60 × điểm sạch lưới theo vị trí</td></tr>
           <tr><th scope="row">Bàn thua (GK, DEF)</th><td>−kỳ vọng (bàn thua chia 2, làm tròn xuống) × P60</td></tr>
