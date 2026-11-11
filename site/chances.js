@@ -2,7 +2,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
-  const state = { data: null, pos: '', sort: 'pScore', dir: -1, hideOut: true, overrides: XMin.load() };
+  const state = { data: null, pos: '', sort: 'order', dir: 1, hideOut: true, overrides: XMin.load() };
   // key, header, value at full colour, format ('pct', 'pct1' or number of decimals)
   const METRICS = [
     ['pApp1', 'Appearance 1+', 1, 'pct'], ['pApp60', 'Appearance 60+', 1, 'pct'],
@@ -72,8 +72,10 @@
   function render() {
     if (!state.data) return;
     header();
+    $('order').setAttribute('aria-pressed', String(state.sort === 'order'));
     const gw = $('gw').value, q = $('search').value.trim().toLowerCase(), team = $('team').value, max = parseFloat($('price').value);
-    const value = (p, d) => (state.sort === 'name' ? p.name.toLowerCase() : state.sort === 'price' ? p.price : state.sort === 'opp' ? d.opp.join() : figures(p, gw)[state.sort]);
+    const rank = state.sort === 'order' ? XMin.order(state.data, state.overrides) : null;
+    const value = (p, d) => (rank ? rank(p) : state.sort === 'name' ? p.name.toLowerCase() : state.sort === 'price' ? p.price : state.sort === 'opp' ? d.opp.join() : figures(p, gw)[state.sort]);
     const list = state.data.players
       .filter((p) => p.byGw[gw] && !(state.hideOut && Math.round(p.byGw[gw].pApp1 * 100) === 0 && Math.round(p.byGw[gw].pApp60 * 100) === 0) && (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
         && (!q || p.name.toLowerCase().includes(q) || p.fullName.toLowerCase().includes(q)))
@@ -83,6 +85,7 @@
   }
 
   $('filters').addEventListener('input', render);
+  $('order').addEventListener('click', () => { state.sort = 'order'; state.dir = 1; render(); });
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') { state.overrides = XMin.load(); cache.clear(); render(); } });
   $('hide-out').addEventListener('click', () => {
     state.hideOut = !state.hideOut;

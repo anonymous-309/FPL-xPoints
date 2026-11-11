@@ -33,17 +33,8 @@
       ['note', 'Injury / ban'],
     ];
   }
-  // Same order as the xPoints page (saved there each time it sorts), else total xPts over these gameweeks.
-  function xpointsOrder() {
-    let ids = null;
-    try { ids = JSON.parse(localStorage.getItem('xpoints-order')); } catch (e) { ids = null; }
-    if (Array.isArray(ids) && ids.length) {
-      const rank = new Map(ids.map((id, i) => [id, i]));
-      return (p) => (rank.has(p.id) ? rank.get(p.id) : ids.length);
-    }
-    const gws = futureGws();
-    return (p) => -gws.reduce((a, g) => { const d = XMin.view(state.overrides, p, g); return a + (d ? d.xpts : 0); }, 0);
-  }
+  // Same order as the xPoints page.
+  const xpointsOrder = () => XMin.order(state.data, state.overrides);
   function sortValue(key) {
     if (key === 'order') return xpointsOrder();
     if (key === 'name') return (p) => p.name.toLowerCase();

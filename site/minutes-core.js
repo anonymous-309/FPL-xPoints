@@ -101,5 +101,19 @@ window.XMin = (function () {
   }
 
   const join = (mins) => mins.map((x) => Math.round(x)).join('+');
-  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond };
+  // Player order of the xPoints page: the order it last showed (saved there, same data update only), else its
+  // default, total xPts over the first 5 gameweeks with this viewer's minutes. Returns rank (lower is higher).
+  function order(data, overrides) {
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem('xpoints-order')); } catch (e) { saved = null; }
+    if (saved && saved.updatedAt === data.updatedAt && Array.isArray(saved.ids) && saved.ids.length) {
+      const rank = new Map(saved.ids.map((id, i) => [id, i]));
+      return (p) => (rank.has(p.id) ? rank.get(p.id) : saved.ids.length);
+    }
+    const gws = data.gws.slice(0, 5).map(String), score = new Map();
+    data.players.forEach((p) => score.set(p.id, gws.reduce((a, g) => { const d = view(overrides, p, g); return a + (d ? d.xpts : 0); }, 0)));
+    return (p) => -(score.get(p.id) || 0);
+  }
+
+  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, order };
 })();

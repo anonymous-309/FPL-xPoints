@@ -65,7 +65,7 @@
     }[state.sort] || ((p) => (p.byGw[state.sort] ? view(p, state.sort).xpts : -99));
     const sorted = [...state.data.players].sort((a, b) => { const x = value(a), y = value(b); return (x < y ? -1 : x > y ? 1 : 0) * state.dir; });
     // The Minutes page lists players in this same order.
-    try { localStorage.setItem('xpoints-order', JSON.stringify(sorted.map((p) => p.id))); } catch (e) { /* the Minutes page falls back to total xPts */ }
+    try { localStorage.setItem('xpoints-order', JSON.stringify({ updatedAt: state.data.updatedAt, ids: sorted.map((p) => p.id) })); } catch (e) { /* the Minutes page falls back to total xPts */ }
     return sorted
       .filter((p) => (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
         && (!q || p.name.toLowerCase().includes(q) || p.fullName.toLowerCase().includes(q)));
