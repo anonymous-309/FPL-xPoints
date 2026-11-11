@@ -64,7 +64,11 @@ RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 4
 # every finite k scored worse than the league rate alone, so a taker's own record is effectively off for now;
 # lower this once a few more seasons of counted penalties exist.
 K_PEN_MISS = 1e6
-DC_PRIOR_DEFAULT = 8.0  # defensive actions per 90 before any are counted
+DC_PRIOR_DEFAULT = 8.0
+# FPL changed the bonus points system in 2025-26 (defensive actions now score BPS), so BPS and bonus are learned
+# only from this season on; earlier seasons are used only while there are too few new matches (backtest start).
+BPS_FROM = "2025-26"
+BPS_MIN_ROWS = 3000  # defensive actions per 90 before any are counted
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
@@ -631,7 +635,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     roll = pd.DataFrame({
         "pid": df["pid"], "tf": df["tf"], "position": df["position"], "future": df["future"],
         "mins": mins, "n90": mins / 90, "g": df["np_goals"], "a": df["assists"],
-        "xg": df["np_xg"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
+        "xg": df["np_xg"], "xa": df["expected_assists"],
+        "bon": df["bonus"].where(df["season"] >= BPS_FROM, 0), "bps": df["bps"].where(df["season"] >= BPS_FROM, 0),
+        "bpsn": (mins / 90).where(df["season"] >= BPS_FROM, 0), "bon_all": df["bonus"], "bps_all": df["bps"],
         "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
         "ptk": df["pen_taken_k"], "pmk": df["pen_missed_k"],
         "box": df["core_box"].fillna(0), "boxn90": (mins / 90).where(df["has_core"].fillna(False).astype(bool), 0),
@@ -641,12 +647,12 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         # defensive actions where FPL counts them (from 2025-26), any minutes
         "dcs": dc.where(obs & dc.notna() & (mins > 0), 0).fillna(0), "dcn": (mins / 90).where(obs & dc.notna() & (mins > 0), 0),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk", "dcs", "dcn"]
-    roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
+    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk", "dcs", "dcn", "bpsn"]
+    roll[stat + ["bon_all", "bps_all"]] = roll[stat + ["bon_all", "bps_all"]].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
     n90 = p["n90"].to_numpy(float)
-    for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
+    for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "bpsn"]:
         p[f"L_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_LONG)
         p[f"S_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_SHORT)
     p["L_dcs"], p["L_dcn"] = decayed_pre(keys, p["dcs"].to_numpy(float), HL_LONG), decayed_pre(keys, p["dcn"].to_numpy(float), HL_LONG)
@@ -695,13 +701,17 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     roll["role"] = roll["role"].fillna(roll["position"])
 
     def priors(group: str) -> pd.DataFrame:
-        cols = ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "dh", "do", "dcs", "dcn"]
+        cols = ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "dh", "do", "dcs", "dcn", "bpsn", "bon_all", "bps_all"]
         t = roll[~roll["future"]].groupby([group, "tf"], as_index=False)[cols].sum()
         idx = pd.MultiIndex.from_product([POSITIONS, sorted(df["tf"].unique())], names=[group, "tf"])
         t = t.set_index([group, "tf"]).reindex(idx, fill_value=0.0).sort_index()
         t = t.groupby(group).cumsum().groupby(group).shift(1).fillna(0.0)
         for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
-            t[f"p_{c}"] = (t[c] / t["n90"].replace(0, np.nan)).fillna(EPS)
+            t[f"p_{c}"] = (t[c] / t["bpsn" if c in ("bon", "bps") else "n90"].replace(0, np.nan)).fillna(EPS)
+        # before any new-season BPS exists, the old seasons' role averages stand in
+        for c in ("bon", "bps"):
+            old = (t[f"{c}_all"] / t["n90"].replace(0, np.nan)).fillna(EPS)
+            t[f"p_{c}"] = t[f"p_{c}"].where(t["bpsn"] > 0, old)
         t["p_dh"] = (t["dh"] / t["do"].replace(0, np.nan)).fillna(0.0)
         t["p_dc"] = (t["dcs"] / t["dcn"].replace(0, np.nan)).fillna(DC_PRIOR_DEFAULT)
         return t[[c for c in t.columns if c.startswith("p_")]].reset_index()
@@ -720,8 +730,10 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
             k = RARE_MEMORY[c][2]
             df[f"r_{c}"] = (df[f"Q_{c}"] + k * df[f"p_{c}"]) / (df[f"Q_n90_{c}"] + k)
         else:
-            df[f"r_{c}"] = (df[f"L_{c}"] + k * df[f"p_{c}"]) / (df["L_n90"] + k)
-        df[f"f_{c}"] = (df[f"S_{c}"] + K_SHORT * df[f"r_{c}"]) / (df["S_n90"] + K_SHORT)
+            n = "bpsn" if c in ("bon", "bps") else "n90"  # BPS and bonus count only matches under the new rules
+            df[f"r_{c}"] = (df[f"L_{c}"] + k * df[f"p_{c}"]) / (df[f"L_{n}"] + k)
+        n = "bpsn" if c in ("bon", "bps") else "n90"
+        df[f"f_{c}"] = (df[f"S_{c}"] + K_SHORT * df[f"r_{c}"]) / (df[f"S_{n}"] + K_SHORT)
     df["defcon_rate"] = (df["X_dh"] + K_PLAYER * df["p_dh"]) / (df["X_do"] + K_PLAYER)
     # Defensive actions per 90 (the DefCon count), shrunk to the role average.
     df["r_dc"] = (df["L_dcs"].fillna(0) + K_PLAYER * df["p_dc"].fillna(DC_PRIOR_DEFAULT)) / (df["L_dcn"].fillna(0) + K_PLAYER)
@@ -915,16 +927,21 @@ class XPointsModel:
         self.rates = {k: _fit_rate(train, tgt, f) for k, (tgt, f) in GLMS.items()}
         gk = train[train["position"] == "GK"]
         self.saves = _fit_rate(gk, "saves", SAVE_FEATS)
-        self.bps = _fit_rate(train.assign(bps_pos=train["bps"].clip(lower=0)), "bps_pos", BPS_FEATS)
+        # BPS and bonus learn only from matches under the current bonus rules, once there are enough of them.
+        tb = train[train["season"] >= BPS_FROM] if "season" in train else train
+        if (tb["minutes"] > 0).sum() < BPS_MIN_ROWS:
+            tb = train
+        self.rates["bonus"] = _fit_rate(tb, *GLMS["bonus"])
+        self.bps = _fit_rate(tb.assign(bps_pos=tb["bps"].clip(lower=0)), "bps_pos", BPS_FEATS)
         # Bonus in match context: learned from past matches, his expected BPS place among everyone in the match
         # (pre-match figures only) against the bonus he got when he played 60+ minutes.
         self.bonus_ctx = None
-        if {"season", "fixture"} <= set(train.columns):
-            ctx = bonus_context(train, own_bps(train, self.bps.predict(train[BPS_FEATS])), train["w5_min"].fillna(0).to_numpy(float))
-            rows = (train["minutes"] >= 60).to_numpy()
+        if {"season", "fixture"} <= set(tb.columns):
+            ctx = bonus_context(tb, own_bps(tb, self.bps.predict(tb[BPS_FEATS])), tb["w5_min"].fillna(0).to_numpy(float))
+            rows = (tb["minutes"] >= 60).to_numpy()
             if rows.sum() > 2000:
                 self.bonus_ctx = HistGradientBoostingRegressor(loss="poisson", max_iter=300, learning_rate=0.05, max_leaf_nodes=15,
-                                                               min_samples_leaf=80, random_state=0).fit(ctx[rows][BONUS_CTX_FEATS], train.loc[rows, "bonus"].fillna(0))
+                                                               min_samples_leaf=80, random_state=0).fit(ctx[rows][BONUS_CTX_FEATS], tb.loc[rows, "bonus"].fillna(0))
         # DefCon: count of defensive actions per 90, then the chance of reaching the threshold from that count and
         # his own record of reaching it, fitted on matches where FPL counts them.
         outf = train[(train["position"] != "GK") & train["defensive_contribution"].notna() & (train["minutes"] > 0)]
