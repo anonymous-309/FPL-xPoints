@@ -36,7 +36,8 @@ def find(name, team):
     n = norm(name)
     tid = team_id.get(TEAM.get(team, team))
     tests = (lambda p: full(p) == n, lambda p: norm(p["web_name"]) == n, lambda p: set(n.split()) <= set(full(p).split()),
-             lambda p: n.split()[-1] == norm(p["second_name"]).split()[-1] and full(p).startswith(n.split()[0][:3]))
+             lambda p: n.split()[-1] == norm(p["second_name"]).split()[-1] and full(p).startswith(n.split()[0][:3]),
+             lambda p: p["team"] == tid and set(norm(p["web_name"]).split()) <= set(n.split()))
     for pool in ([p for p in players if p["team"] == tid], players):
         for test in tests:
             hit = [p for p in pool if test(p)]
