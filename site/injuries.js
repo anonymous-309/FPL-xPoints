@@ -10,7 +10,7 @@
     const main = el('tr', { className: `inj ${r.status}`, tabIndex: 0 },
       el('td', { className: 'player' }, el('b', { textContent: r.name }), el('span', { textContent: `${r.team} ${r.position}` })),
       el('td', { textContent: r.type + (r.type === 'Doubtful' && r.chance !== null ? ` ${r.chance}%` : '') + (r.manual ? ' (admin)' : '') }),
-      el('td', { textContent: `GW${r.startGw}`, title: r.startFrom === 'matches' ? 'First of his zero-minute matches in a row' : 'Gameweek of the news' }),
+      el('td', { textContent: `GW${r.startGw}`, title: r.startFrom === 'matches' ? 'First of his zero-minute matches in a row' : r.startFrom === 'history' ? 'From Sofascore/FotMob match line-ups' : 'Gameweek of the news' }),
       el('td', { textContent: expected }),
       el('td', { textContent: r.status === 'out' ? 'Out' : r.returnedGw ? `GW${r.returnedGw}` : 'Left' }),
       el('td', { className: 'note', textContent: r.news || '' }));

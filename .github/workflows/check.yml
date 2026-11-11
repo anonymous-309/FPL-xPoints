@@ -1,8 +1,8 @@
-name: Them vang mat Sofascore
+name: Vang mat GW1-9 vao injury log
 on:
   push:
     branches: [main]
-    paths: [".github/workflows/check.yml", "tools/apply_sofascore.py", "absences_raw/sofascore.txt"]
+    paths: [".github/workflows/check.yml", "tools/history_absences.py"]
 permissions:
   contents: write
 jobs:
@@ -13,13 +13,12 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - run: pip install requests && python tools/apply_sofascore.py
+      - run: pip install requests && python tools/history_absences.py
       - name: Save
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add admin_injuries.json
+          git add admin_injuries.json injury_log.json
           git diff --cached --quiet && exit 0
-          git commit -m "Admin injuries: GW1-9 absences from Sofascore"
+          git commit -m "Injury log: GW1-9 absences from Sofascore and FotMob"
           for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
-# rerun after removing hand-added entries
