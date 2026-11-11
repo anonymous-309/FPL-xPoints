@@ -978,17 +978,28 @@ def chance_report(pred: pd.DataFrame) -> None:
 
     # Same test as FPL Review's "Massive Data" article (2019/20 GW9-26, 2,021 samples): outfield players who played
     # 90 minutes with 450+ minutes of earlier data; expected goals against goals and against xG, R2 and RMSE.
+    # Their simple baseline on the same season: xG per 90 over his last 5 matches with minutes (xG5).
+    hist = played.sort_values(["pid", "kickoff_time", "fixture"])
+    gx = hist.groupby("pid")
+    xg5 = (gx["expected_goals"].transform(lambda s: s.fillna(0).shift(1).rolling(5, min_periods=5).sum())
+           / gx["minutes"].transform(lambda s: s.shift(1).rolling(5, min_periods=5).sum()) * 90)
+    # and the position average for the season (a stand-in for their "basic" position-and-fixture model)
+    played = played.assign(xg5=xg5.reindex(played.index))
     fr = played[(played["position"] != "GK") & (played["minutes"] >= 90) & (played["L_n90"] >= 5) & played["GW"].between(9, 26)]
+    fr = fr[fr["xg5"].notna()]
     if len(fr) > 50:
-        pr = fr["g90"].to_numpy(float)
-        out = []
-        for target, label in (("expected_goals", "xG"), ("goals_scored", "Goals")):
-            ac = fr[target].fillna(0).to_numpy(float)
-            sse, sst = np.sum((pr - ac) ** 2), np.sum((ac - ac.mean()) ** 2)
-            out.append(f"{label} R2 {1 - sse / sst:.3f} (corr^2 {np.corrcoef(pr, ac)[0, 1] ** 2:.3f}), RMSE {np.sqrt(np.mean((pr - ac) ** 2)):.3f}")
-        hit = (fr["goals_scored"].fillna(0) >= 1).to_numpy(float)
-        print(f"\n=== FPL Review comparison (outfield, 90 min, 450+ min before, GW9-26), n={len(fr)} ===")
-        print("; ".join(out) + f"; anytime AUC {_auc(1 - np.exp(-pr), hit):.3f}")
+        def scores(pr):
+            out = {}
+            for target, label in (("expected_goals", "xG"), ("goals_scored", "Goals")):
+                ac = fr[target].fillna(0).to_numpy(float)
+                out[label] = (1 - np.sum((pr - ac) ** 2) / np.sum((ac - ac.mean()) ** 2), np.sqrt(np.mean((pr - ac) ** 2)))
+            hit = (fr["goals_scored"].fillna(0) >= 1).to_numpy(float)
+            return out, _auc(1 - np.exp(-pr), hit)
+        print(f"\n=== FPL Review comparison (outfield, 90 min, 450+ min before, GW9-26, 5 earlier matches), n={len(fr)} ===")
+        pos_avg = fr.groupby("position")["goals_scored"].transform("mean").to_numpy(float)
+        for label, pr in (("Model", fr["g90"].to_numpy(float)), ("xG5", fr["xg5"].to_numpy(float)), ("Position average", pos_avg)):
+            out, auc = scores(pr)
+            print(f"{label:17s} xG R2 {out['xG'][0]:.3f} RMSE {out['xG'][1]:.3f}; Goals R2 {out['Goals'][0]:.3f} RMSE {out['Goals'][1]:.3f}; anytime AUC {auc:.3f}")
         print("FPL Review 2019/20 (n=2021): Massive Data xG R2 0.353 RMSE 0.213, Goals R2 0.129 RMSE 0.345; "
               "bookmakers xG R2 0.321, Goals R2 0.112 RMSE 0.348; xG over last 5 xG R2 0.288, Goals R2 0.098")
 
