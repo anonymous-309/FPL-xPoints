@@ -1,0 +1,30 @@
+name: Doc vang mat GW1-9
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: [".github/workflows/absences.yml", "tools/fetch_absences.py"]
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install requests
+      - run: python tools/fetch_absences.py
+      - name: Save what was read
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add absences_raw
+          git diff --cached --quiet && exit 0
+          git commit -m "Absences GW1-9 read from Sofascore/FotMob"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
