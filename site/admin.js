@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   // SHA-256 of the password. This only keeps casual visitors out: the GitHub token is what allows saving.
-  const PASS = 'a5d9a53097f41fe4cff463a5b0d8fec6bbb6bf363f642a5cb56f54f9998a4f81';
+  const PASS = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
   const TOKEN_KEY = 'admin-gh-token';
   const FILE = 'admin_minutes.json';
   const REPO = (() => {

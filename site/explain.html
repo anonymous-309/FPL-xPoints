@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,107 +10,107 @@
 <header class="pitch">
   <div class="brand">
     <h1>How it works</h1>
-    <p id="status" role="status">Các chỉ số Chance 90min và cách tính xPoints</p>
+    <p id="status" role="status">The Chance 90min figures and how xPoints is calculated</p>
   </div>
-  <nav class="links"><a href="index.html">xPoints</a><a href="minutes.html">Minutes</a><a href="chances.html">Chance 90min</a><a href="planner.html">Planner</a><a href="injuries.html">Injuries</a><a href="backtest.txt">Accuracy</a></nav>
+  <nav class="links"><a href="index.html">xPoints</a><a href="minutes.html">Minutes</a><a href="chances.html">Chance 90min</a><a href="setpieces.html">Set pieces</a><a href="planner.html">Planner</a><a href="injuries.html">Injuries</a><a href="backtest.txt">Accuracy</a><a href="admin.html">Admin</a></nav>
 </header>
 <main class="explain">
   <section>
-    <h2>Ý tưởng chính</h2>
-    <p>xPoints của một cầu thủ trong một vòng được tính qua hai bước:</p>
+    <h2>The idea</h2>
+    <p>A player's xPoints for a gameweek comes from two steps:</p>
     <ol>
-      <li><b>Nếu đá đủ 90 phút</b> thì kỳ vọng được bao nhiêu điểm ở từng hạng mục (bàn thắng, kiến tạo, sạch lưới, bonus...). Đây là những gì trang <a href="chances.html">Chance 90min</a> hiển thị.</li>
-      <li><b>Nhân với số phút dự kiến</b> (xMin, trang <a href="minutes.html">Minutes</a>). Hạng mục nào tính điểm theo phút đá thì nhân với xMin/90. Sạch lưới và bàn thua chỉ tính khi đá 60 phút trở lên, nên nhân với xác suất đá 60+ phút.</li>
+      <li><b>If he plays the full 90 minutes</b>, how many points he is expected to get from each part of the FPL scoring (goals, assists, clean sheet, bonus and so on). This is what the <a href="chances.html">Chance 90min</a> page shows.</li>
+      <li><b>Scale by his expected minutes</b> (xMin, on the <a href="minutes.html">Minutes</a> page). Parts that build up with time on the pitch are multiplied by xMin/90. Clean sheet and goals conceded only count with 60+ minutes, so they are multiplied by his chance of playing 60+ minutes.</li>
     </ol>
-    <p class="formula">xPoints = điểm ra sân + Σ (điểm hạng mục nếu đá 90 phút × hệ số phút)</p>
-    <p>Vòng có hai trận (double gameweek) thì tính từng trận rồi cộng lại.</p>
+    <p class="formula">xPoints = appearance points + Σ (points from each part over 90 minutes × minutes factor)</p>
+    <p>In a double gameweek each match is worked out on its own and the two are added up.</p>
   </section>
 
   <section>
-    <h2>Bước 1: số phút (xMin)</h2>
+    <h2>Step 1: minutes (xMin)</h2>
     <ul>
-      <li><b>Công thức 5-4-3-2-1:</b> lấy 5 trận gần nhất, trận mới nhất nhân 5, trận trước đó nhân 4, rồi 3, 2, 1, sau đó chia cho 15. Ví dụ các trận gần nhất là 90, 90, 60, 90, 0 (mới nhất đứng đầu) thì xMin = (90×5 + 90×4 + 60×3 + 90×2 + 0×1) / 15 = 78.</li>
-      <li><b>Bỏ qua các trận không ra sân vì lý do ngoài chuyên môn:</b> treo giò do đủ thẻ vàng, chấn thương (theo trang <a href="injuries.html">Injuries</a> và những gì admin nhập tay), và trận đầu tiên bị gắn cờ Doubtful. Những trận này bị bỏ ra, thay bằng các trận cũ hơn cho đủ 5 trận.</li>
-      <li><b>Thẻ đỏ:</b> nghỉ hết án treo giò, sau đó quay lại 100% xMin như trước khi bị thẻ.</li>
-      <li><b>Cờ của FPL:</b> cờ 75% thì xMin vòng tới nhân 75%. Doubtful chỉ ảnh hưởng trận gần nhất. Chấn thương có ngày trở lại thì xMin bằng 0 cho đến vòng đó. Chấn thương không có ngày trở lại thì xMin bằng 0 ở mọi vòng.</li>
-      <li><b>Admin min:</b> nếu admin đặt số phút cho một cầu thủ thì số đó thay cho công thức. Trên trang Minutes, mỗi người xem còn có thể tự sửa xMin, và phần sửa này chỉ lưu trên trình duyệt của họ.</li>
-      <li><b>Appearance 1+ và 60+:</b> cùng trọng số 5-4-3-2-1 nhưng đếm tỉ lệ trận có ra sân và tỉ lệ trận đá từ 60 phút trở lên, rồi nhân với cờ của FPL.</li>
+      <li><b>The 5-4-3-2-1 formula:</b> take his last 5 matches, weight the latest by 5, the one before by 4, then 3, 2 and 1, and divide by 15. For example, latest first 90, 90, 60, 90, 0 gives xMin = (90×5 + 90×4 + 60×3 + 90×2 + 0×1) / 15 = 78.</li>
+      <li><b>Matches he missed for reasons other than selection are skipped:</b> yellow card bans, injuries (from the <a href="injuries.html">Injuries</a> log and any the admin added) and the first match after a Doubtful flag. Older matches fill the gap so there are always 5.</li>
+      <li><b>Red cards:</b> he misses the ban, then goes back to 100% of the xMin he had before the card.</li>
+      <li><b>FPL flags:</b> a 75% flag multiplies next gameweek's xMin by 75%. Doubtful only affects the next match. An injury with a return date gives 0 until that gameweek; one without a return date gives 0 for every gameweek.</li>
+      <li><b>Admin min:</b> a figure the admin sets on the <a href="admin.html">Admin</a> page replaces the formula for everyone. On the Minutes page, any viewer can also set their own xMin; those edits stay in their browser only.</li>
+      <li><b>Appearance 1+ and 60+:</b> the same 5-4-3-2-1 weights over the share of matches he played at all and the share where he played 60+ minutes, multiplied by the FPL flag.</li>
     </ul>
   </section>
 
   <section>
-    <h2>Bước 2: các cột của Chance 90min</h2>
-    <p>Mọi cột, trừ hai cột Appearance, đều giả định cầu thủ <b>đá đủ 90 phút</b>. Cột có dấu % là xác suất xảy ra <b>ít nhất một lần</b>. Cột không có % là số kỳ vọng (trung bình). Hai loại được nối với nhau bằng công thức: xác suất ít nhất 1 lần = 1 − e<sup>−kỳ vọng</sup>. Ví dụ kỳ vọng tổng cộng 0.70 bàn thì xác suất ghi ít nhất 1 bàn là 1 − e<sup>−0.70</sup> ≈ 50%.</p>
-    <p>Mọi tỉ lệ đều trộn hai nguồn: thành tích của chính cầu thủ (trận gần có trọng số cao hơn; trọng số giảm còn một nửa sau 12 trận) và mức trung bình của cầu thủ cùng vai trò. Cầu thủ càng ít phút thì càng bị kéo về mức trung bình. Nhờ vậy một trận may mắn không đẩy con số lên quá cao.</p>
-    <div class="wrap explain-table" tabindex="0" aria-label="Các cột Chance 90min">
+    <h2>Step 2: the Chance 90min columns</h2>
+    <p>Every column except the two Appearance ones assumes he <b>plays the full 90 minutes</b>. A column shown as a percentage is the chance of it happening <b>at least once</b>; the others are expected numbers (averages). The two are linked: chance of at least one = 1 − e<sup>−expected number</sup>. For example, 0.70 expected goals in total gives 1 − e<sup>−0.70</sup> ≈ 50% to score at least once.</p>
+    <p>Every rate blends two things: the player's own record (recent matches count more; a match's weight halves every 12 gameweeks) and the average of players in the same role. The fewer minutes he has, the more he is pulled towards that average, so one lucky match does not inflate his figures.</p>
+    <div class="wrap explain-table" tabindex="0" aria-label="Chance 90min columns">
       <table class="cols">
-        <thead><tr><th scope="col">Cột</th><th scope="col">Ý nghĩa</th><th scope="col">Tính từ đâu</th><th scope="col">Dùng trong xPoints</th></tr></thead>
+        <thead><tr><th scope="col">Column</th><th scope="col">What it is</th><th scope="col">Where it comes from</th><th scope="col">Use in xPoints</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Appearance 1+</th><td>Xác suất được ra sân (ít nhất 1 phút)</td><td>Tỉ lệ trận có ra sân, trọng số 5-4-3-2-1, nhân với cờ FPL</td><td>+1 điểm × xác suất này</td></tr>
-          <tr><th scope="row">Appearance 60+</th><td>Xác suất đá từ 60 phút trở lên</td><td>Như trên, đếm các trận đá 60+ phút</td><td>+1 điểm nữa × xác suất này. Đây cũng là hệ số cho sạch lưới và bàn thua.</td></tr>
-          <tr><th scope="row">Score 1+</th><td>Xác suất ghi ít nhất 1 bàn, tính cả penalty</td><td>1 − e<sup>−(NPxGoals + Pen goals)</sup></td><td>Chỉ để tham khảo; xPoints dùng NPxGoals và Pen goals</td></tr>
-          <tr><th scope="row">NPxGoals</th><td>Số bàn kỳ vọng từ bóng sống (không tính penalty) nếu đá 90 phút</td><td>Trộn ba nguồn, đều đã bỏ phần penalty: bàn thắng không phải pen 50%, NPxG 25%, NPxG on target (NPxGOT) 25%. Sau đó điều chỉnh theo phong độ gần đây, sức tấn công của đội, hàng thủ đối thủ và sân nhà/khách. NPxG = xG của FPL trừ 0.76 cho mỗi quả pen đã đá. Bàn từ pen và xGOT lấy từ bộ dữ liệu FPL Core Insights (có từ mùa 2024-25); NPxGOT = xGOT trừ phần của các quả pen.</td><td>(NPxGoals + Pen goals) × xMin/90 × điểm bàn thắng (FWD 4, MID 5, DEF 6, GK 10)</td></tr>
-          <tr><th scope="row">Pen goals</th><td>Số bàn kỳ vọng từ penalty nếu đá 90 phút</td><td>Số pen đội được hưởng mỗi trận × tỉ lệ anh ấy là người đá × (1 − tỉ lệ đá hỏng). Người số 1 đá 95% số pen khi có mặt trên sân; người số 2 đá phần còn lại khi người số 1 không có trên sân, và cứ thế. Nếu bạn sửa xMin của người đá pen phía trên trên trang Minutes, con số này đổi theo.</td><td>Cộng với NPxGoals như trên</td></tr>
-          <tr><th scope="row">xAssists</th><td>Số kiến tạo kỳ vọng nếu đá 90 phút</td><td>xA, phong độ, khả năng tạo cơ hội, sức tấn công của đội, hàng thủ đối thủ, sân nhà/khách</td><td>xAssists × xMin/90 × 3</td></tr>
-          <tr><th scope="row">Assist 1+</th><td>Xác suất có ít nhất 1 kiến tạo</td><td>1 − e<sup>−xAssists</sup></td><td>Chỉ để tham khảo</td></tr>
-          <tr><th scope="row">Clean sheet</th><td>Xác suất đội giữ sạch lưới</td><td>e<sup>−Conceded</sup>: xác suất đội thủng 0 bàn</td><td>Clean sheet × Appearance 60+ × điểm sạch lưới (GK/DEF 4, MID 1, FWD 0)</td></tr>
-          <tr><th scope="row">Conceded</th><td>Số bàn thua kỳ vọng của đội</td><td>Hàng thủ của đội và hàng công của đối thủ (bàn thật 70%, xG 30%), sân nhà/khách</td><td>GK/DEF: −1 điểm cho mỗi 2 bàn thua, tính bằng kỳ vọng của (số bàn thua chia 2, làm tròn xuống), nhân Appearance 60+</td></tr>
-          <tr><th scope="row">DefCon actions</th><td>Số pha phòng ngự FPL tính (phá bóng, chặn, cắt bóng, tắc bóng; MID/FWD tính thêm thu hồi bóng)</td><td>Thành tích của chính cầu thủ, đội, đối thủ (dữ liệu từ mùa 2025-26)</td><td>Dùng để tính DefCon %</td></tr>
-          <tr><th scope="row">DefCon</th><td>Xác suất đạt ngưỡng DefCon: 10 pha với DEF, 12 pha với MID/FWD</td><td>Kết hợp DefCon actions với tỉ lệ đạt ngưỡng thật của cầu thủ trước đây</td><td>DefCon × xMin/90 × 2 (không áp dụng cho GK)</td></tr>
-          <tr><th scope="row">Saves</th><td>Số pha cứu thua kỳ vọng (chỉ GK)</td><td>Thành tích cứu thua, hàng thủ của đội, hàng công đối thủ</td><td>+1 điểm cho mỗi 3 pha cứu thua: kỳ vọng của (số pha cứu thua chia 3, làm tròn xuống) × xMin/90</td></tr>
-          <tr><th scope="row">Pen save</th><td>Xác suất cản được penalty (chỉ GK)</td><td>Số pen đối thủ được hưởng (mức trung bình giải × sức tấn công đối thủ) × tỉ lệ pen bị cản trung bình (~12%)</td><td>Kỳ vọng × xMin/90 × 5</td></tr>
-          <tr><th scope="row">Pen miss</th><td>Xác suất đá hỏng penalty</td><td>Số pen anh ấy đá × tỉ lệ đá hỏng trung bình của giải</td><td>Kỳ vọng × xMin/90 × (−2)</td></tr>
-          <tr><th scope="row">Own goal</th><td>Xác suất phản lưới nhà</td><td>Tỉ lệ của chính cầu thủ, kéo mạnh về mức trung bình vì rất hiếm</td><td>Kỳ vọng × xMin/90 × (−2)</td></tr>
-          <tr><th scope="row">Red card</th><td>Xác suất nhận thẻ đỏ</td><td>Mức trung bình của vị trí, vì thẻ đỏ quá hiếm để đánh giá riêng từng người</td><td>Kỳ vọng × xMin/90 × (−3)</td></tr>
-          <tr><th scope="row">Yellow card</th><td>Xác suất nhận thẻ vàng</td><td>Tỉ lệ thẻ vàng của cầu thủ (nhớ khoảng 114 trận gần nhất), kéo về mức trung bình của vị trí</td><td>Kỳ vọng × xMin/90 × (−1)</td></tr>
-          <tr><th scope="row">BPS</th><td>Điểm BPS kỳ vọng nếu đá 90 phút</td><td>Thành tích BPS, phong độ, đội và đối thủ</td><td>Dùng để tính Bonus</td></tr>
-          <tr><th scope="row">Bonus</th><td>Số điểm bonus kỳ vọng nếu đá 90 phút</td><td>Trung bình cộng của hai cách. (1) Mô hình riêng từng cầu thủ, dựa trên bonus và BPS trước đây. (2) Mô phỏng 2,000 lần mỗi trận: chia bàn thắng cho người ghi bàn theo NPxGoals + Pen goals và cho người kiến tạo theo xAssists, cộng điểm sạch lưới, cộng BPS nền của từng người. Ba người BPS cao nhất cả hai đội lần lượt nhận 3, 2, 1.</td><td>Bonus × xMin/90</td></tr>
+          <tr><th scope="row">Appearance 1+</th><td>Chance he plays at least 1 minute</td><td>Share of matches he played, weighted 5-4-3-2-1, times the FPL flag</td><td>+1 point × this chance</td></tr>
+          <tr><th scope="row">Appearance 60+</th><td>Chance he plays 60+ minutes</td><td>As above, counting matches with 60+ minutes</td><td>+1 more point × this chance. Also the factor for clean sheet and goals conceded.</td></tr>
+          <tr><th scope="row">Score 1+</th><td>Chance he scores at least once, penalties included</td><td>1 − e<sup>−(NPxGoals + Pen goals)</sup></td><td>For reference only; xPoints uses NPxGoals and Pen goals</td></tr>
+          <tr><th scope="row">NPxGoals</th><td>Expected open-play goals (no penalties) over 90 minutes</td><td>A blend of three figures, all with penalties taken out: non-penalty goals 50%, NPxG 25%, non-penalty xG on target (NPxGOT) 25%. Then adjusted for recent form, his team's attack, the opponent's defence and home or away. NPxG = FPL's xG minus 0.76 for each penalty taken. Penalty goals and xGOT come from the FPL Core Insights data (from 2024-25); NPxGOT = xGOT minus the penalties' share.</td><td>(NPxGoals + Pen goals) × xMin/90 × goal points (FWD 4, MID 5, DEF 6, GK 10)</td></tr>
+          <tr><th scope="row">Pen goals</th><td>Expected penalty goals over 90 minutes</td><td>Team penalties per match × his share of them × (1 − miss rate). The number 1 takes 95% of penalties while he is on the pitch; the number 2 takes those left while the number 1 is off, and so on. If you edit the xMin of a taker above him on the Minutes page, this follows.</td><td>Added to NPxGoals as above</td></tr>
+          <tr><th scope="row">xAssists</th><td>Expected assists over 90 minutes</td><td>xA, form, chance creation, his team's attack, the opponent's defence, home or away</td><td>xAssists × xMin/90 × 3</td></tr>
+          <tr><th scope="row">Assist 1+</th><td>Chance of at least one assist</td><td>1 − e<sup>−xAssists</sup></td><td>For reference only</td></tr>
+          <tr><th scope="row">Clean sheet</th><td>Chance his team keeps a clean sheet</td><td>e<sup>−Conceded</sup>: the chance of conceding 0</td><td>Clean sheet × Appearance 60+ × clean sheet points (GK/DEF 4, MID 1, FWD 0)</td></tr>
+          <tr><th scope="row">Conceded</th><td>Goals his team is expected to concede</td><td>His team's defence and the opponent's attack (real goals 70%, xG 30%), home or away</td><td>GK/DEF: −1 point per 2 goals conceded, as the expected value of (goals conceded ÷ 2, rounded down), times Appearance 60+</td></tr>
+          <tr><th scope="row">DefCon actions</th><td>Defensive actions FPL counts (clearances, blocks, interceptions, tackles; recoveries too for MID and FWD)</td><td>His own record, his team and the opponent (data from 2025-26)</td><td>Used for DefCon</td></tr>
+          <tr><th scope="row">DefCon</th><td>Chance of reaching the DefCon threshold: 10 actions for DEF, 12 for MID and FWD</td><td>DefCon actions combined with how often he actually reached the threshold before</td><td>DefCon × xMin/90 × 2 (not for GK)</td></tr>
+          <tr><th scope="row">Saves</th><td>Expected saves (GK only)</td><td>His save record, his team's defence, the opponent's attack</td><td>+1 point per 3 saves: the expected value of (saves ÷ 3, rounded down) × xMin/90</td></tr>
+          <tr><th scope="row">Pen save</th><td>Chance he saves a penalty (GK only)</td><td>Penalties the opponent is expected to win (league rate × the opponent's attack) × the share of penalties saved (about 12%)</td><td>Expected number × xMin/90 × 5</td></tr>
+          <tr><th scope="row">Pen miss</th><td>Chance he misses a penalty</td><td>Penalties he takes × the league miss rate</td><td>Expected number × xMin/90 × (−2)</td></tr>
+          <tr><th scope="row">Own goal</th><td>Chance of an own goal</td><td>His own rate, pulled hard towards the average because own goals are rare</td><td>Expected number × xMin/90 × (−2)</td></tr>
+          <tr><th scope="row">Red card</th><td>Chance of a red card</td><td>The average for his position; red cards are too rare to judge players one by one</td><td>Expected number × xMin/90 × (−3)</td></tr>
+          <tr><th scope="row">Yellow card</th><td>Chance of a yellow card</td><td>His yellow card rate over about his last 114 matches, pulled towards the position average</td><td>Expected number × xMin/90 × (−1)</td></tr>
+          <tr><th scope="row">BPS</th><td>Expected BPS score over 90 minutes</td><td>His BPS record, form, his team and the opponent</td><td>Used for Bonus</td></tr>
+          <tr><th scope="row">Bonus</th><td>Expected bonus points over 90 minutes</td><td>The average of two methods. (1) A per-player model from his past bonus and BPS. (2) Each match simulated 2,000 times: goals go to scorers by NPxGoals + Pen goals and to assisters by xAssists, clean sheets are added, plus each player's base BPS. The top 3 BPS from both teams get 3, 2 and 1.</td><td>Bonus × xMin/90</td></tr>
         </tbody>
       </table>
     </div>
   </section>
 
   <section>
-    <h2>Công thức xPoints đầy đủ</h2>
-    <p>Với một trận, đặt <b>m</b> = xMin/90, <b>P1</b> = Appearance 1+, <b>P60</b> = Appearance 60+:</p>
-    <div class="wrap explain-table" tabindex="0" aria-label="Công thức xPoints">
+    <h2>The full xPoints formula</h2>
+    <p>For one match, with <b>m</b> = xMin/90, <b>P1</b> = Appearance 1+ and <b>P60</b> = Appearance 60+:</p>
+    <div class="wrap explain-table" tabindex="0" aria-label="xPoints formula">
       <table>
-        <thead><tr><th scope="col">Hạng mục</th><th scope="col">Công thức</th></tr></thead>
+        <thead><tr><th scope="col">Part</th><th scope="col">Formula</th></tr></thead>
         <tbody>
-          <tr><th scope="row">Ra sân</th><td>P1 + P60</td></tr>
-          <tr><th scope="row">Bàn thắng</th><td>(NPxGoals + Pen goals) × m × điểm bàn thắng theo vị trí</td></tr>
-          <tr><th scope="row">Kiến tạo</th><td>xAssists × m × 3</td></tr>
-          <tr><th scope="row">Sạch lưới</th><td>Clean sheet × P60 × điểm sạch lưới theo vị trí</td></tr>
-          <tr><th scope="row">Bàn thua (GK, DEF)</th><td>−kỳ vọng (bàn thua chia 2, làm tròn xuống) × P60</td></tr>
-          <tr><th scope="row">Cứu thua (GK)</th><td>kỳ vọng (cứu thua chia 3, làm tròn xuống) × m</td></tr>
-          <tr><th scope="row">Cản pen (GK)</th><td>số pen kỳ vọng cản được × 5 × m</td></tr>
+          <tr><th scope="row">Appearance</th><td>P1 + P60</td></tr>
+          <tr><th scope="row">Goals</th><td>(NPxGoals + Pen goals) × m × goal points for his position</td></tr>
+          <tr><th scope="row">Assists</th><td>xAssists × m × 3</td></tr>
+          <tr><th scope="row">Clean sheet</th><td>Clean sheet × P60 × clean sheet points for his position</td></tr>
+          <tr><th scope="row">Goals conceded (GK, DEF)</th><td>−expected (goals conceded ÷ 2, rounded down) × P60</td></tr>
+          <tr><th scope="row">Saves (GK)</th><td>expected (saves ÷ 3, rounded down) × m</td></tr>
+          <tr><th scope="row">Penalty saves (GK)</th><td>expected penalties saved × 5 × m</td></tr>
           <tr><th scope="row">DefCon</th><td>DefCon × 2 × m</td></tr>
           <tr><th scope="row">Bonus</th><td>Bonus × m</td></tr>
-          <tr><th scope="row">Đá hỏng pen</th><td>−2 × số pen hỏng kỳ vọng × m</td></tr>
-          <tr><th scope="row">Phản lưới nhà</th><td>−2 × số bàn phản lưới kỳ vọng × m</td></tr>
-          <tr><th scope="row">Thẻ</th><td>−(thẻ vàng kỳ vọng + 3 × thẻ đỏ kỳ vọng) × m</td></tr>
+          <tr><th scope="row">Penalty misses</th><td>−2 × expected penalties missed × m</td></tr>
+          <tr><th scope="row">Own goals</th><td>−2 × expected own goals × m</td></tr>
+          <tr><th scope="row">Cards</th><td>−(expected yellows + 3 × expected reds) × m</td></tr>
         </tbody>
       </table>
     </div>
-    <p>Khi sửa xMin trên trang Minutes hoặc xPoints, site tính lại theo đúng công thức này với số phút mới. Điểm ra sân tính theo luật FPL: 1 điểm nếu phút sửa lớn hơn 0, thêm 1 điểm nếu từ 60 phút trở lên.</p>
+    <p>When you edit xMin on the Minutes or xPoints page, the site recalculates with this formula at the new minutes. Appearance points then follow FPL rules: 1 point if the minutes are above 0, 1 more at 60 or above.</p>
   </section>
 
   <section>
-    <h2>Ví dụ với số liệu thật</h2>
+    <h2>Worked example with live data</h2>
     <form id="filters" class="filters example-filters" autocomplete="off">
-      <label>Cầu thủ <input id="player" list="players" placeholder="Haaland"></label>
+      <label>Player <input id="player" list="players" placeholder="Haaland"></label>
       <datalist id="players"></datalist>
       <label>Gameweek <select id="gw"></select></label>
     </form>
     <div id="error" class="error" role="alert" hidden></div>
-    <div id="example" class="wrap explain-table" tabindex="0" aria-label="Ví dụ tính xPoints" hidden>
-      <table id="exTable"><thead><tr><th scope="col">Hạng mục</th><th scope="col">Nếu đá 90 phút</th><th scope="col">× hệ số phút</th><th scope="col">Điểm</th></tr></thead><tbody></tbody></table>
+    <div id="example" class="wrap explain-table" tabindex="0" aria-label="Worked xPoints example" hidden>
+      <table id="exTable"><thead><tr><th scope="col">Part</th><th scope="col">Over 90 minutes</th><th scope="col">× minutes factor</th><th scope="col">Points</th></tr></thead><tbody></tbody></table>
     </div>
     <p id="exNote" class="meta"></p>
   </section>
 </main>
 <footer>
-  <p>Độ chính xác của từng chỉ số so với kết quả thật nằm ở trang <a href="backtest.txt">Accuracy</a>. Không liên kết với Premier League.</p>
+  <p>How accurate each figure is against real results is on the <a href="backtest.txt">Accuracy</a> page. Not affiliated with the Premier League.</p>
 </footer>
 <script src="explain.js"></script>
 </body>
