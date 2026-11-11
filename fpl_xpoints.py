@@ -823,6 +823,8 @@ class XPointsModel:
             hit = (full["defensive_contribution"] >= full["position"].map(DEFCON_THRESHOLD)).astype(int)
             if hit.nunique() == 2:
                 self.dc_combine = LogisticRegression(C=1.0, max_iter=1000).fit(X, hit)
+        tm = train.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
+        self.conceded = _glm().fit(tm[TEAM_FEATS], tm["ga"].to_numpy())
         return self
 
     @staticmethod
@@ -830,9 +832,6 @@ class XPointsModel:
         rate = df["defcon_rate"].clip(0.01, 0.99).to_numpy(float)
         thr = df["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
         return np.column_stack([np.log(rate / (1 - rate)), np.log(np.clip(dc90, 0.1, None) / thr)])
-        tm = train.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
-        self.conceded = _glm().fit(tm[TEAM_FEATS], tm["ga"].to_numpy())
-        return self
 
     def predict(self, df: pd.DataFrame, availability: pd.Series | None = None) -> pd.DataFrame:
         # xMin = weighted last-5 minutes, reduced by the FPL availability flag. FPL thresholds apply to that figure.
