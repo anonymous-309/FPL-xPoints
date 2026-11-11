@@ -34,6 +34,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import poisson
+from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.linear_model import LogisticRegression, PoissonRegressor
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -871,6 +872,35 @@ def simulate_bonus(d: pd.DataFrame, sd: float = 6.0, sims: int = 2000, seed: int
     return out
 
 
+BONUS_CTX_FEATS = ["ctx_rank", "ctx_log_xbps", "ctx_gap_best", "ctx_gap_3rd", "ctx_share_top3", "ctx_n", "is_DEF", "is_MID", "is_FWD"]
+BONUS_MODE = "context"  # "context": learned from each player's BPS place in the match; "blend": model + simulation
+
+
+def bonus_context(frame: pd.DataFrame, bps90: np.ndarray, mins: np.ndarray) -> pd.DataFrame:
+    """Each player's expected BPS place among everyone in the same match, both teams.
+
+    Expected BPS for the match = BPS per 90 x expected minutes / 90. Features: his rank, his BPS (log), the gap to
+    the best other player, the gap to the 3rd best, his share of the top-3 total, and how many are expected to play."""
+    x = pd.Series(np.clip(bps90 * np.clip(mins, 0, 90) / 90, 0, None), index=frame.index)
+    key = [frame["season"], frame["fixture"]]
+    g = x.groupby(key)
+    rank = g.rank(ascending=False, method="first")
+    first = g.transform("max")
+    second = g.transform(lambda s: s.nlargest(2).iloc[-1] if len(s) > 1 else s.max())
+    third = g.transform(lambda s: s.nlargest(3).iloc[-1] if len(s) > 2 else s.min())
+    top3 = g.transform(lambda s: s.nlargest(3).sum())
+    own = pd.Series(np.clip(bps90, 0, None), index=frame.index)  # his BPS if he plays the full match
+    best_other = np.where(rank == 1, second, first)
+    n = (x > 1).groupby(key).transform("sum")
+    pos = frame["position"]
+    return pd.DataFrame({
+        "ctx_rank": rank.to_numpy(float), "ctx_log_xbps": np.log1p(own).to_numpy(float),
+        "ctx_gap_best": (own - best_other).to_numpy(float), "ctx_gap_3rd": (own - third).to_numpy(float),
+        "ctx_share_top3": (own / top3.replace(0, np.nan)).fillna(0).to_numpy(float), "ctx_n": n.to_numpy(float),
+        "is_DEF": (pos == "DEF").to_numpy(float), "is_MID": (pos == "MID").to_numpy(float), "is_FWD": (pos == "FWD").to_numpy(float),
+    }, index=frame.index)
+
+
 class XPointsModel:
     def fit(self, train: pd.DataFrame) -> "XPointsModel":
         train = train[~train["future"] & train["minutes"].notna()]
@@ -880,6 +910,15 @@ class XPointsModel:
         gk = train[train["position"] == "GK"]
         self.saves = _fit_rate(gk, "saves", SAVE_FEATS)
         self.bps = _fit_rate(train.assign(bps_pos=train["bps"].clip(lower=0)), "bps_pos", BPS_FEATS)
+        # Bonus in match context: learned from past matches, his expected BPS place among everyone in the match
+        # (pre-match figures only) against the bonus he got when he played 60+ minutes.
+        self.bonus_ctx = None
+        if {"season", "fixture"} <= set(train.columns):
+            ctx = bonus_context(train, self.bps.predict(train[BPS_FEATS]), train["w5_min"].fillna(0).to_numpy(float))
+            rows = (train["minutes"] >= 60).to_numpy()
+            if rows.sum() > 2000:
+                self.bonus_ctx = HistGradientBoostingRegressor(loss="poisson", max_iter=300, learning_rate=0.05, max_leaf_nodes=15,
+                                                               min_samples_leaf=80, random_state=0).fit(ctx[rows][BONUS_CTX_FEATS], train.loc[rows, "bonus"].fillna(0))
         # DefCon: count of defensive actions per 90, then the chance of reaching the threshold from that count and
         # his own record of reaching it, fitted on matches where FPL counts them.
         outf = train[(train["position"] != "GK") & train["defensive_contribution"].notna() & (train["minutes"] > 0)]
@@ -982,6 +1021,12 @@ class XPointsModel:
                 frame["bps90"] = df["r_bps"].fillna(out["bps90"]).to_numpy(float)
             sim = simulate_bonus(frame, sd=BONUS_SIM_SD)
             b90 = np.where(np.isnan(sim), out["bonus90"], BONUS_SIM_SHARE * sim + (1 - BONUS_SIM_SHARE) * out["bonus90"])
+            out["bonus90_blend"] = b90
+            if self.bonus_ctx is not None:
+                ctx = bonus_context(df, out["bps90"].to_numpy(float), xmin)
+                out["bonus90_ctx"] = self.bonus_ctx.predict(ctx[BONUS_CTX_FEATS])
+                if BONUS_MODE == "context":
+                    b90 = out["bonus90_ctx"].to_numpy(float)
             out["bonus90"], out["full_bonus"], out["xbonus"] = b90, b90, b90 * n90
             out["pts_bonus"] = b90 * n90
         out["xpts"] = out[[c for c in out.columns if c.startswith("pts_")]].sum(axis=1)
@@ -1099,15 +1144,12 @@ def chance_report(pred: pd.DataFrame) -> None:
     # Bonus: the per-player model, simulations of each match at several noise levels, and blends; scored per match
     # and per player over the season (slope above 1 = the best bonus takers are predicted too low).
     glm = "bonus90_glm" if "bonus90_glm" in d else "bonus90"
-    variants = {"Per-player model": d[glm], "Current (50/50, noise 6)": d["bonus90"]}
-    for sd in (2.0, 3.0, 4.0, 6.0):
-        variants[f"Simulated, noise {sd:.0f}"] = pd.Series(simulate_bonus(d, sd=sd), index=d.index).fillna(d[glm])
-    variants["75% simulated noise 3 + 25% model"] = 0.75 * variants["Simulated, noise 3"] + 0.25 * d[glm]
-    # the same simulation with his own BPS record per 90 (less pulled to the average) as his BPS
-    own = d.assign(bps90=d["r_bps"].fillna(d["bps90"]))
-    for sd in (4.0, 6.0, 8.0):
-        variants[f"Simulated, own BPS, noise {sd:.0f}"] = pd.Series(simulate_bonus(own, sd=sd), index=d.index).fillna(d[glm])
-    variants["50/50 own BPS noise 6 + model"] = 0.5 * variants["Simulated, own BPS, noise 6"] + 0.5 * d[glm]
+    variants = {"Per-player model": d[glm]}
+    if "bonus90_blend" in d:
+        variants["Model + simulation (previous)"] = d["bonus90_blend"]
+    if "bonus90_ctx" in d:
+        variants["Match context model (new)"] = d["bonus90_ctx"].fillna(d[glm])
+        variants["50/50 context + previous"] = 0.5 * variants["Match context model (new)"] + 0.5 * d.get("bonus90_blend", d[glm])
     full = d[d["minutes"] >= 60]
     rows_b, star = [], None
     for name, v in variants.items():
@@ -1121,7 +1163,7 @@ def chance_report(pred: pd.DataFrame) -> None:
                        "player corr": float(per["p"].corr(per["a"])), "slope": slope,
                        "top-20 predicted: pred": picked["p"].mean(), "top-20 predicted: actual": picked["a"].mean(),
                        "top-20 actual: pred": top["p"].mean(), "top-20 actual: actual": top["a"].mean()})
-        if name == "Per-player model":
+        if star is None:
             star = top.head(10).rename(columns={"p": name})
         else:
             star[name] = per.loc[star.index, "p"]
