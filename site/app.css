@@ -221,3 +221,4 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .admin-formula { display: flex; align-items: center; height: 34px; min-width: 70px; color: var(--ink); font-weight: 650; font-size: 14px; }
 .minutes td.past span { display: block; }
 .minutes td.past small { display: block; margin-top: 2px; font-size: 11px; }
+.minutes td.past .out-zero { color: var(--warn); font-weight: 700; }

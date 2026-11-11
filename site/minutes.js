@@ -78,7 +78,17 @@
     const past = pastGws().map((g) => {
       const m = pastMins(p, g);
       const opp = (p.pastOpp && p.pastOpp[g]) || [];
-      return m ? el('td', { className: 'past' }, el('span', { textContent: XMin.join(m) }), opp.length ? el('small', { textContent: opp.join(', ') }) : '')
+      // A 0 for an injury or a ban is shown in red: that match is left out of the formula.
+      const why = (p.pastWhy && p.pastWhy[g]) || [];
+      const nums = el('span', {});
+      m.forEach((x, i) => {
+        if (i) nums.append('+');
+        const w = why[i];
+        nums.append(w && Math.round(x) === 0
+          ? el('b', { className: 'out-zero', textContent: '0', title: w === 'b' ? 'Banned: left out of the formula' : 'Injured or unavailable: left out of the formula' })
+          : String(Math.round(x)));
+      });
+      return m ? el('td', { className: 'past' }, nums, opp.length ? el('small', { textContent: opp.join(', ') }) : '')
         : el('td', { className: 'past none', textContent: '–' });
     });
     const future = futureGws().map((g) => {

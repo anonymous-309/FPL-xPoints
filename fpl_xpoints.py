@@ -1609,6 +1609,22 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     lab = lambda o, h: (short_of.get(str(o), str(o)[:3]).upper() if h else short_of.get(str(o), str(o)[:3]).lower())
     past_opp = {pid: {str(int(gw)): [lab(o, h) for o, h in zip(gg["opp"], gg["was_home"])] for gw, gg in g.groupby("GW")}
                 for pid, g in played[played["GW"].isin(past_gws)].groupby("pid")}
+    # Why a played-gameweek 0 was left out of the formula: "i" injury or other absence, "b" ban (yellow cards or red).
+    why = pd.Series("", index=played.index)
+    why[played["minutes"].fillna(0).eq(0) & played.get("inj_skip", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "i"
+    why[played.get("yellow_ban", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "b"
+    for _, g in played.groupby("pid"):
+        left = 0
+        for i, mins, red in zip(g.index, g["minutes"].fillna(0), g["red_cards"].fillna(0)):
+            if red > 0:
+                left = MAX_BAN_MATCHES
+            elif left > 0 and mins == 0:
+                why[i], left = "b", left - 1
+            else:
+                left = 0
+    played = played.assign(why=why)
+    past_why = {pid: {str(int(gw)): list(gg["why"]) for gw, gg in g.groupby("GW") if gg["why"].ne("").any()}
+                for pid, g in played[played["GW"].isin(past_gws)].groupby("pid")}
     usual = usual_minutes(res)
     res = res.assign(min_usual=usual["min"])
     players: dict[str, dict] = {}
@@ -1623,7 +1639,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "minUsual": round(float(r["min_usual"]), 1),
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
             "adminMin": None if pd.isna(r.get("admin_min", np.nan)) else round(float(r["admin_min"])), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
-            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "byGw": {},
+            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "pastWhy": past_why.get(r["pid"], {}), "byGw": {},
             # penalty order and miss rate, so the site can move penalties to the next taker when minutes are edited
             "penOrder": None if pd.isna(pd.to_numeric(r.get("pen_order"), errors="coerce")) else int(pd.to_numeric(r["pen_order"], errors="coerce")),
             "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None})
