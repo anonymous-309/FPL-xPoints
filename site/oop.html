@@ -12,7 +12,7 @@
     <h1>Out of position</h1>
     <p id="status" role="status">Loading data</p>
   </div>
-  <nav class="links"><a href="index.html">xPoints</a><a href="minutes.html">Minutes</a><a href="chances.html">Chance 90min</a><a href="setpieces.html">Set pieces</a><a href="planner.html">Planner</a><a href="injuries.html">Injuries</a><a href="backtest.txt">Accuracy</a><a href="explain.html">How it works</a><a href="admin.html">Admin</a></nav>
+  <nav class="sitenav" aria-label="Pages"></nav>
 </header>
 <div id="error" class="error" role="alert" hidden></div>
 <main>
@@ -25,5 +25,6 @@
   <p>A player is out of position (OOP) when FPL lists him as a defender but his recent touches in the opposition box and non-penalty xG + xA per 90 are both at or above the median midfielder,. Recent means his last few matches, newer ones weighted more, with at least about 270 minutes. For OOP players the model predicts goals, assists and bonus from the role he plays, and still scores the points by his FPL position, so an OOP defender keeps 6 points a goal and 4 for a clean sheet.</p>
 </footer>
 <script src="oop.js"></script>
+<script src="nav.js"></script>
 </body>
 </html>

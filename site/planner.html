@@ -12,7 +12,7 @@
     <h1>Planner</h1>
     <p id="status" role="status">Enter an FPL team ID</p>
   </div>
-  <nav class="links"><a href="index.html">xPoints</a><a href="minutes.html">Minutes</a><a href="chances.html">Chance 90min</a><a href="setpieces.html">Set pieces</a><a href="oop.html">OOP</a><a href="injuries.html">Injuries</a><a href="backtest.txt">Accuracy</a><a href="explain.html">How it works</a><a href="admin.html">Admin</a></nav>
+  <nav class="sitenav" aria-label="Pages"></nav>
 </header>
 <form id="pick" class="filters" autocomplete="off">
   <label>FPL team ID <input id="entry" type="text" inputmode="numeric" pattern="[0-9]*" required></label>
@@ -24,5 +24,6 @@
   <p>The plan picks the transfers that give the most expected points over the next 8 gameweeks, using the xPoints model's figures: a squad of 15 (2 GK, 5 DEF, 5 MID, 3 FWD), at most 3 per club, within your bank and selling prices; each gameweek the best 11 and a captain, whose points count twice; one free transfer a gameweek, up to 5 saved, and 4 points for every extra transfer. Bench players count 10% for auto-subs. It plans no chips, assumes prices stay the same, and does not see transfers you have made since the last deadline. Plans are worked out when the site updates, for the team IDs listed in planner_ids.txt in the GitHub repo. Not affiliated with the Premier League.</p>
 </footer>
 <script src="planner.js"></script>
+<script src="nav.js"></script>
 </body>
 </html>
