@@ -186,3 +186,12 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
   .cols td:nth-of-type(2)::before { content: "Where it comes from"; }
   .cols td:nth-of-type(3)::before { content: "Use in xPoints"; }
 }
+
+.admin-tabs { display: flex; gap: 4px; padding: 14px 16px 0; border-bottom: 1px solid var(--line); }
+.admin-tabs[hidden] { display: none; }
+.admin-tabs button { padding: 9px 18px; border: 1px solid var(--line); border-bottom: 0; border-radius: 3px 3px 0 0; background: #e6ece5; cursor: pointer; font-weight: 650; margin-bottom: -1px; }
+.admin-tabs button[aria-selected="true"] { background: var(--chalk); color: var(--turf); border-bottom: 1px solid var(--chalk); }
+.inj-admin > .meta, .admin-intro { max-width: 90ch; color: var(--muted); }
+.admin-intro { margin: 12px clamp(16px, 3vw, 36px) 0; }
+.admin-pick { padding-bottom: 0; }
+#injPlayer { width: 220px; }

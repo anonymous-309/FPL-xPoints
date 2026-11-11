@@ -85,7 +85,7 @@ K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
 GOAL_MODES = {"learned": (None, None, None, None), "equal": (1 / 3, 1 / 3, 1 / 3, 15.0), "g50": (0.5, 0.25, 0.25, 15.0), "xg40": (0.3, 0.4, 0.3, 15.0),
               "g50_k5": (0.5, 0.25, 0.25, 5.0), "g50_k2": (0.5, 0.25, 0.25, 2.0), "equal_k5": (1 / 3, 1 / 3, 1 / 3, 5.0), "equal_k2": (1 / 3, 1 / 3, 1 / 3, 2.0)}
 CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "mix30": (0.3, False), "venue70": (0.7, True)}
-PAST_GWS = 5  # played gameweeks shown on the Minutes page
+PAST_GWS = 38  # played gameweeks shown on the Minutes page (the whole season so far)
 MINUTE_WEIGHTS = np.array([5.0, 4.0, 3.0, 2.0, 1.0])  # newest to oldest of the last 5 matches
 BURN_IN_GWS = 6
 
@@ -554,12 +554,31 @@ def merged_injuries(log: list[dict], admin: dict) -> list[dict]:
     for m in admin["manual"]:
         end = m.get("endGw")
         out.append({"id": m["id"], "season": m.get("season", CURRENT_SEASON), "pid": m["pid"], "name": m.get("name", m["pid"]),
-                    "team": m.get("team", ""), "position": m.get("position", ""), "type": "Added by admin", "manual": True,
+                    "team": m.get("team", ""), "position": m.get("position", ""), "type": m.get("type") or "Injury", "manual": True,
                     "startGw": int(m["startGw"]), "endGw": None if end is None else int(end), "startFrom": "admin",
                     "status": "out" if end is None else "back", "returnedGw": None if end is None else int(end) + 1,
                     "news": m.get("note", ""), "expectedReturnGw": None, "expectedReturnDate": None, "chance": None, "updates": []})
     out.sort(key=lambda r: (r["status"] != "out", -r["startGw"], r["name"]))
     return out
+
+
+def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
+    """An absence the admin added by hand (injury, illness, ban, manager's discipline...) that covers an upcoming
+    gameweek: 0 minutes until End GW, then his usual minutes from before it (the absence is left out of the formula)."""
+    target = target.copy()
+    for m in admin.get("manual", []):
+        if m.get("season", CURRENT_SEASON) != CURRENT_SEASON:
+            continue
+        start, end = int(m["startGw"]), m.get("endGw")
+        end = 99 if end is None else int(end)
+        rows = (target["pid"] == m["pid"]) & target["GW"].between(start, end)
+        if not rows.any():
+            continue
+        kind = m.get("type") or "Injury"
+        target.loc[rows, "avail"] = 0.0
+        target.loc[rows, "min_note"] = f"{kind} (admin), out until " + ("further notice" if end == 99 else f"GW{end}")
+        target.loc[target["pid"] == m["pid"], "return_gw"] = None if end == 99 else end + 1
+    return target
 
 
 def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) -> pd.DataFrame:
@@ -1532,6 +1551,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     target = feat[feat["future"]].copy()
     target = doubtful_minutes(target, df)
     target = admin_minutes(target)
+    target = manual_absences(target, load_admin_injuries())
     target["pen_cond"] = penalty_shares(target)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res
@@ -1573,7 +1593,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     left = res.loc[gone].drop_duplicates("pid")
     print(f"Removed {len(left)} unavailable players, e.g. " + ", ".join(f'{n} ({str(w)[:40]})' for n, w in zip(left["web_name"].head(8), left["news"].head(8))))
     res = res[~gone]
-    # Minutes actually played in the latest gameweeks of this season, one entry per match.
+    # Minutes actually played in every gameweek of this season so far, one entry per match.
     played = df[(df["season"] == CURRENT_SEASON) & ~df["future"]].sort_values(["kickoff_time", "fixture"])
     past_gws = sorted(int(g) for g in played["GW"].dropna().unique() if int(g) < int(res["GW"].min()))[-PAST_GWS:]
     past = {pid: {str(int(gw)): [int(round(m)) for m in gg["minutes"].fillna(0)] for gw, gg in g.groupby("GW") if int(gw) in past_gws}

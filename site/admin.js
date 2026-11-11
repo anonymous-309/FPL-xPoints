@@ -14,7 +14,7 @@
   const API = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
   const INJ_API = `https://api.github.com/repos/${REPO}/contents/admin_injuries.json`;
   const state = { players: [], admin: {}, sha: null, pending: {}, pos: '', onlySet: false,
-    inj: { manual: [], startOverrides: {} }, injSha: null, injDirty: false, auto: [] };
+    inj: { manual: [], startOverrides: {} }, injSha: null, injDirty: false, auto: [], injPos: '', tab: 'abs' };
 
   const store = {
     get: (k, s = localStorage) => { try { return s.getItem(k); } catch (e) { return null; } },
@@ -59,14 +59,34 @@
   }
   const label = (p) => `${p.name} · ${p.team} ${p.position}`;
 
+  // Absences tab: the player list narrowed by position and team.
+  function pickList() {
+    const team = $('injTeam').value;
+    const list = state.players.filter((p) => (!state.injPos || p.position === state.injPos) && (!team || p.team === team))
+      .slice().sort((a, b) => a.name.localeCompare(b.name));
+    $('injPlayers').replaceChildren(...list.map((p) => el('option', { value: label(p) })));
+  }
+
+  function showTab(name) {
+    state.tab = name === 'min' ? 'min' : 'abs';
+    store.set('admin-tab', state.tab);
+    $('tab-abs').setAttribute('aria-selected', String(state.tab === 'abs'));
+    $('tab-min').setAttribute('aria-selected', String(state.tab === 'min'));
+    $('tab-abs').tabIndex = state.tab === 'abs' ? 0 : -1;
+    $('tab-min').tabIndex = state.tab === 'min' ? 0 : -1;
+    $('injPanel').hidden = state.tab !== 'abs';
+    $('panel').hidden = state.tab !== 'min';
+  }
+
   function renderInjuries() {
     const byId = new Map(state.players.map((p) => [p.id, p]));
     const del = (i) => el('button', { type: 'button', className: 'reset', textContent: 'Delete', onclick: () => { state.inj.manual.splice(i, 1); state.injDirty = true; renderInjuries(); } });
     $('injManual').tBodies[0].replaceChildren(...(state.inj.manual.length ? state.inj.manual.map((m, i) => el('tr', { className: m.unsaved ? 'changed' : '' },
       el('td', { className: 'player' }, el('b', { textContent: m.name }), el('span', { textContent: `${m.team} ${m.position || ''}` })),
+      el('td', { textContent: m.type || 'Injury' }),
       el('td', { textContent: `GW${m.startGw}` }), el('td', { textContent: m.endGw ? `GW${m.endGw}` : 'Still out' }),
       el('td', { className: 'note', textContent: m.note || '' }), el('td', {}, del(i))))
-      : [el('tr', {}, el('td', { colSpan: 5, className: 'none', textContent: 'None yet.' }))]));
+      : [el('tr', {}, el('td', { colSpan: 6, className: 'none', textContent: 'None yet.' }))]));
     $('injAuto').tBodies[0].replaceChildren(...state.auto.map((r) => {
       const auto = r.startGwAuto ?? r.startGw;
       const mine = state.inj.startOverrides[r.id];
@@ -178,9 +198,10 @@
       state.auto = log.filter((r) => !r.manual && r.status === 'out').sort((a, b) => a.name.localeCompare(b.name));
       state.players = data.players.slice().sort((a, b) => (b.minModel ?? b.minUsual) - (a.minModel ?? a.minUsual));
       $('team').replaceChildren(el('option', { value: '', textContent: 'All' }), ...[...new Set(state.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
-      $('panel').hidden = false;
-      $('injPanel').hidden = false;
-      $('playerList').replaceChildren(...state.players.map((p) => el('option', { value: label(p) })));
+      $('injTeam').replaceChildren(el('option', { value: '', textContent: 'All' }), ...[...new Set(state.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
+      $('tabs').hidden = false;
+      showTab(store.get('admin-tab') || 'abs');
+      pickList();
       render();
       renderInjuries();
     } catch (e) {
@@ -193,14 +214,27 @@
     if (await sha256($('pass').value) === PASS) { store.set('admin-open', '1', sessionStorage); openPanel(); } else { fail('Wrong password.'); $('pass').value = ''; }
   });
   $('tokenForm').addEventListener('submit', (e) => { e.preventDefault(); store.set(TOKEN_KEY, $('token').value.trim()); $('token').value = ''; openPanel(); });
-  $('forget').addEventListener('click', () => { store.del(TOKEN_KEY); $('panel').hidden = true; $('tokenForm').hidden = false; });
+  $('forget').addEventListener('click', () => { store.del(TOKEN_KEY); $('panel').hidden = true; $('injPanel').hidden = true; $('tabs').hidden = true; $('tokenForm').hidden = false; });
   $('filters').addEventListener('input', render);
   $('filters').addEventListener('submit', (e) => e.preventDefault());
-  document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#filters .seg button').forEach((b) => b.addEventListener('click', () => {
     state.pos = b.dataset.pos;
-    document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    document.querySelectorAll('#filters .seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     render();
   }));
+  document.querySelectorAll('#injPick .seg button').forEach((b) => b.addEventListener('click', () => {
+    state.injPos = b.dataset.pos;
+    document.querySelectorAll('#injPick .seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    pickList();
+  }));
+  $('injTeam').addEventListener('change', pickList);
+  $('injPick').addEventListener('submit', (e) => e.preventDefault());
+  [['tab-abs', 'abs'], ['tab-min', 'min']].forEach(([id, name]) => $(id).addEventListener('click', () => showTab(name)));
+  $('tabs').addEventListener('keydown', (e) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    showTab(state.tab === 'abs' ? 'min' : 'abs');
+    $(state.tab === 'abs' ? 'tab-abs' : 'tab-min').focus();
+  });
   $('onlySet').addEventListener('click', () => { state.onlySet = !state.onlySet; $('onlySet').setAttribute('aria-pressed', String(state.onlySet)); render(); });
   $('save').addEventListener('click', save);
   $('injSave').addEventListener('click', saveInjuries);
@@ -212,7 +246,7 @@
     if (!(start >= 1 && start <= 38) || (end !== null && !(end >= start && end <= 38))) { fail('Start GW must be 1-38, and End GW empty or not before Start GW.'); return; }
     $('error').hidden = true;
     state.inj.manual.push({ id: `${p.id}-admin-GW${start}-${Date.now().toString(36)}`, pid: p.id, name: p.name, team: p.team, position: p.position,
-      startGw: start, endGw: end, note: $('injNote').value.trim(), at: new Date().toISOString(), unsaved: true });
+      type: $('injType').value, startGw: start, endGw: end, note: $('injNote').value.trim(), at: new Date().toISOString(), unsaved: true });
     state.injDirty = true;
     $('injAdd').reset();
     renderInjuries();
