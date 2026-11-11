@@ -1098,6 +1098,11 @@ def chance_report(pred: pd.DataFrame) -> None:
     for sd in (2.0, 3.0, 4.0, 6.0):
         variants[f"Simulated, noise {sd:.0f}"] = pd.Series(simulate_bonus(d, sd=sd), index=d.index).fillna(d[glm])
     variants["75% simulated noise 3 + 25% model"] = 0.75 * variants["Simulated, noise 3"] + 0.25 * d[glm]
+    # the same simulation with his own BPS record per 90 (less pulled to the average) as his BPS
+    own = d.assign(bps90=d["r_bps"].fillna(d["bps90"]))
+    for sd in (4.0, 6.0, 8.0):
+        variants[f"Simulated, own BPS, noise {sd:.0f}"] = pd.Series(simulate_bonus(own, sd=sd), index=d.index).fillna(d[glm])
+    variants["50/50 own BPS noise 6 + model"] = 0.5 * variants["Simulated, own BPS, noise 6"] + 0.5 * d[glm]
     full = d[d["minutes"] >= 60]
     rows_b, star = [], None
     for name, v in variants.items():
@@ -1106,9 +1111,11 @@ def chance_report(pred: pd.DataFrame) -> None:
         per = per[per["n"] >= 15]
         slope = float(np.polyfit(per["p"], per["a"], 1)[0])
         top = per.sort_values("a", ascending=False).head(20)
+        picked = per.sort_values("p", ascending=False).head(20)
         rows_b.append({"bonus version": name, "match corr": float(np.corrcoef(pr, ac)[0, 1]), "match MAE": float(np.mean(np.abs(pr - ac))),
                        "player corr": float(per["p"].corr(per["a"])), "slope": slope,
-                       "top-20 takers predicted": top["p"].mean(), "top-20 actual": top["a"].mean()})
+                       "top-20 predicted: pred": picked["p"].mean(), "top-20 predicted: actual": picked["a"].mean(),
+                       "top-20 actual: pred": top["p"].mean(), "top-20 actual: actual": top["a"].mean()})
         if name == "Per-player model":
             star = top.head(10).rename(columns={"p": name})
         else:
