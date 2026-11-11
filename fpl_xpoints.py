@@ -805,6 +805,7 @@ def usual_minutes(df: pd.DataFrame) -> dict[str, np.ndarray]:
 
 BPS_GOAL = {"GK": 12, "DEF": 12, "MID": 18, "FWD": 24}
 BPS_ASSIST, BPS_CS, BPS_CONCEDED = 9, 12, -2  # FPL: -4 per 2 goals conceded for GK and DEF, so about -2 a goal
+BONUS_SIM_SHARE = 0.5
 ASSISTED_GOALS = 0.93  # share of goals with an FPL assist (2023-26)
 
 
@@ -961,6 +962,13 @@ class XPointsModel:
         out["full_cards"] = -rate90["yellow"] - 3 * red90
         out["p_defcon"] = (~gk) * p_def
         out["dc90"], out["bps90"] = (~gk) * dc90, self.bps.predict(df[BPS_FEATS])
+        # Bonus: half the per-player model, half a simulation of each match, where he competes for the top 3 BPS with
+        # everyone on the pitch, both teams (Accuracy page: best correlation of the versions tried).
+        if {"season", "fixture", "team"} <= set(df.columns):
+            sim = simulate_bonus(pd.concat([df[["season", "fixture", "team", "position"]], out], axis=1))
+            b90 = np.where(np.isnan(sim), out["bonus90"], BONUS_SIM_SHARE * sim + (1 - BONUS_SIM_SHARE) * out["bonus90"])
+            out["bonus90"], out["full_bonus"], out["xbonus"] = b90, b90, b90 * n90
+            out["pts_bonus"] = b90 * n90
         out["xpts"] = out[[c for c in out.columns if c.startswith("pts_")]].sum(axis=1)
         return out
 
@@ -1080,8 +1088,7 @@ def chance_report(pred: pd.DataFrame) -> None:
     for sd in (4, 6, 9):
         played[f"bon_sim{sd}"] = played[f"bon_sim{sd}"].fillna(played["bonus90"])
         count(f"Bonus simulated, noise {sd}", f"bon_sim{sd}", "bonus", played)
-    played["bon_mix"] = 0.5 * played["bon_sim6"] + 0.5 * played["bonus90"]
-    count("Bonus 50/50 simulated 6 + current", "bon_mix", "bonus", played)
+
     count("BPS", "bps90", "bps", played)
     dca = played[(played["position"] != "GK") & played["defensive_contribution"].notna()]
     if len(dca):
