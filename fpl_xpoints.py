@@ -1003,6 +1003,21 @@ def chance_report(pred: pd.DataFrame) -> None:
         print("FPL Review 2019/20 (n=2021): Massive Data xG R2 0.353 RMSE 0.213, Goals R2 0.129 RMSE 0.345; "
               "bookmakers xG R2 0.321, Goals R2 0.112 RMSE 0.348; xG over last 5 xG R2 0.288, Goals R2 0.098")
 
+    # Where goals and assists are missed: penalties vs open play, and by minutes played.
+    pg = played.assign(pen_pred=played["pen90"] * (1 - played["pen_miss_rate"].fillna(1 - PEN_CONVERSION)) * played["n90"],
+                       g_pred=played["g90"] * played["n90"], a_pred=played["a90"] * played["n90"])
+    kn = pg[pg["has_core"].fillna(False).astype(bool)] if "has_core" in pg else pg.iloc[0:0]
+    if len(kn):
+        print("\n=== Goals split, matches with counted penalties ===")
+        print(f"Penalty goals: predicted {kn['pen_pred'].sum():.0f}, actual {kn['core_pen_scored'].fillna(0).sum():.0f}; "
+              f"open-play goals: predicted {(kn['g_pred'] - kn['pen_pred']).sum():.0f}, actual {(kn['goals_scored'].fillna(0) - kn['core_pen_scored'].fillna(0)).sum():.0f}; "
+              f"all goals: predicted {kn['g_pred'].sum():.0f}, actual {kn['goals_scored'].fillna(0).sum():.0f}; assists: predicted {kn['a_pred'].sum():.0f}, actual {kn['assists'].fillna(0).sum():.0f}")
+    band = pd.cut(pg["minutes"], [0, 30, 60, 89, 90], labels=["1-30", "31-60", "61-89", "90"])
+    tab = pg.groupby(band, observed=True).agg(n=("minutes", "size"), g_pred=("g_pred", "sum"), g_act=("goals_scored", "sum"), a_pred=("a_pred", "sum"), a_act=("assists", "sum"))
+    tab["goals actual/pred"], tab["assists actual/pred"] = tab["g_act"] / tab["g_pred"], tab["a_act"] / tab["a_pred"]
+    print("\n=== Goals and assists by minutes played (actual / predicted, 1.00 = right) ===")
+    print(tab.round(2).to_string())
+
     print("\n=== Chance 90min: calibration, predicted vs actual by predicted band ===")
     for title, (p, h) in calib.items():
         bands = pd.qcut(pd.Series(p), 5, duplicates="drop")
@@ -1535,6 +1550,13 @@ def rare_tune(data_dir: Path, seasons: list[str]) -> None:
     ks = [5, 10, 20, 40, 60, 100, 200, 400, 1000, 2000]
     events = [("Yellow", "yellow_cards", "yc", None, 5), ("Red", "red_cards", "rc", None, 40),
               ("Own goal", "own_goals", "og", None, 60), ("Penalty save", "penalties_saved", "ps", "GK", 60)]
+    print("\n=== Goals and assists per match played, by season ===")
+    pl = df[df["minutes"] > 0]
+    tm = df.drop_duplicates(["season", "fixture", "team"]).groupby("season").size()
+    by = pl.groupby("season").agg(goals=("goals_scored", "sum"), assists=("assists", "sum"), xg=("expected_goals", "sum"), xa=("expected_assists", "sum"), n90=("minutes", lambda m: m.sum() / 90))
+    by["goals per team match"], by["assists per team match"] = by["goals"] / tm, by["assists"] / tm
+    by["assists per goal"], by["goals/xG"], by["assists/xA"] = by["assists"] / by["goals"], by["goals"] / by["xg"], by["assists"] / by["xa"]
+    print(by[["goals per team match", "assists per team match", "assists per goal", "goals/xG", "assists/xA"]].round(3).to_string())
     # Penalty misses per attempt (counted from 2024-25): own record pulled to the league miss rate by k attempts.
     att = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)).to_numpy(float)
     mis = df["core_pen_missed"].fillna(0).to_numpy(float)
