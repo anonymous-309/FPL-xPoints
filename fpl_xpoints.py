@@ -34,7 +34,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 from scipy.stats import poisson
-from sklearn.linear_model import PoissonRegressor
+from sklearn.linear_model import LogisticRegression, PoissonRegressor
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -63,6 +63,7 @@ RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 4
 # every finite k scored worse than the league rate alone, so a taker's own record is effectively off for now;
 # lower this once a few more seasons of counted penalties exist.
 K_PEN_MISS = 1e6
+DC_PRIOR_DEFAULT = 8.0  # defensive actions per 90 before any are counted
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
@@ -632,8 +633,10 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "st": started.where(obs, 0), "n": obs.astype(float),
         "ban": (skipped(df) & obs).astype(float),
         "dh": (can_defcon & (dc >= thr)).astype(float), "do": can_defcon.astype(float),
+        # defensive actions where FPL counts them (from 2025-26), any minutes
+        "dcs": dc.where(obs & dc.notna() & (mins > 0), 0).fillna(0), "dcn": (mins / 90).where(obs & dc.notna() & (mins > 0), 0),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk"]
+    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk", "dcs", "dcn"]
     roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
@@ -641,6 +644,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         p[f"L_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_LONG)
         p[f"S_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_SHORT)
+    p["L_dcs"], p["L_dcn"] = decayed_pre(keys, p["dcs"].to_numpy(float), HL_LONG), decayed_pre(keys, p["dcn"].to_numpy(float), HL_LONG)
     for c in ("ptk", "pmk"):  # penalties taken and missed, equal weights over the latest 114 matches
         p[f"Q_{c}"] = decayed_pre(keys, p[c].to_numpy(float), 1e9, 114)
     for c, (hl, cap, _) in RARE_MEMORY.items():
@@ -686,7 +690,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     roll["role"] = roll["role"].fillna(roll["position"])
 
     def priors(group: str) -> pd.DataFrame:
-        cols = ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "dh", "do"]
+        cols = ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "dh", "do", "dcs", "dcn"]
         t = roll[~roll["future"]].groupby([group, "tf"], as_index=False)[cols].sum()
         idx = pd.MultiIndex.from_product([POSITIONS, sorted(df["tf"].unique())], names=[group, "tf"])
         t = t.set_index([group, "tf"]).reindex(idx, fill_value=0.0).sort_index()
@@ -694,12 +698,13 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
             t[f"p_{c}"] = (t[c] / t["n90"].replace(0, np.nan)).fillna(EPS)
         t["p_dh"] = (t["dh"] / t["do"].replace(0, np.nan)).fillna(0.0)
+        t["p_dc"] = (t["dcs"] / t["dcn"].replace(0, np.nan)).fillna(DC_PRIOR_DEFAULT)
         return t[[c for c in t.columns if c.startswith("p_")]].reset_index()
 
     df = df.merge(p, on=["pid", "tf"], how="left")
     df["role"] = df["role"].fillna(df["position"])
     by_role = priors("role").drop(columns="p_dh").rename(columns={"role": "role"})
-    by_position = priors("position")[["position", "tf", "p_dh"]]  # DefCon thresholds follow the FPL position
+    by_position = priors("position")[["position", "tf", "p_dh"]]  # noqa: keep p_dc from role  # DefCon thresholds follow the FPL position
     df = df.merge(by_role, on=["role", "tf"], how="left").merge(by_position, on=["position", "tf"], how="left")
 
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
@@ -713,6 +718,14 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
             df[f"r_{c}"] = (df[f"L_{c}"] + k * df[f"p_{c}"]) / (df["L_n90"] + k)
         df[f"f_{c}"] = (df[f"S_{c}"] + K_SHORT * df[f"r_{c}"]) / (df["S_n90"] + K_SHORT)
     df["defcon_rate"] = (df["X_dh"] + K_PLAYER * df["p_dh"]) / (df["X_do"] + K_PLAYER)
+    # Defensive actions per 90 (the DefCon count), shrunk to the role average.
+    df["r_dc"] = (df["L_dcs"].fillna(0) + K_PLAYER * df["p_dc"].fillna(DC_PRIOR_DEFAULT)) / (df["L_dcn"].fillna(0) + K_PLAYER)
+    df["l_dc"] = np.log(df["r_dc"].clip(lower=0.1))
+    # Bonus goes to the top 3 BPS in a match: his BPS rate against the best 3 regulars in the same fixture.
+    top3 = (df[df["min_long"].fillna(0) >= 60].groupby(["season", "fixture"])["r_bps"]
+            .apply(lambda s: s.nlargest(3).mean()))
+    best = pd.MultiIndex.from_arrays([df["season"], df["fixture"]]).map(top3.to_dict().get)
+    df["rel_bps"] = (np.log(df["r_bps"].clip(lower=EPS)) - np.log(pd.Series(best, index=df.index, dtype=float).clip(lower=EPS))).fillna(0.0)
     lm = df["league_pen_miss"] if "league_pen_miss" in df else 1 - PEN_CONVERSION
     df["pen_miss_rate"] = (df["Q_pmk"].fillna(0) + K_PEN_MISS * lm) / (df["Q_ptk"].fillna(0) + K_PEN_MISS)
 
@@ -755,13 +768,17 @@ GLMS = {
     # Goals: one blend of the player's goals 50%, xG 25%, xGOT 25% (log scale, padded with 15 average xG), then form, team, opponent and venue.
     "goals": ("np_goals", ["blend_g50", "form_xg", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
     "assists": ("assists", ["l_xa", "form_xa", "creat", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
-    "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
+    "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "rel_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
 }
 TEAM_FEATS_LEARNED = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "was_home"]
 # Clean sheets and goals conceded: real goals weighted 70%, xG 30%, with one home/away factor for all teams.
 TEAM_FEATS_DEFAULT = ["cs_def_mix70", "cs_att_mix70", "was_home"]
 TEAM_FEATS = TEAM_FEATS_DEFAULT
+# Expected BPS and defensive actions per 90 (shown on Chance 90min; they feed bonus and DefCon%).
+BPS_FEATS = ["l_bps", "form_bps", "rel_bps", "l_team_att", "gap_team_att", "l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM
+DC_FEATS = ["l_dc", "l_opp_att", "gap_opp_att", "l_team_att", "gap_team_att", "was_home", "is_MID", "is_FWD"]
+DC_MIN_ROWS = 800  # counted matches needed before the DefCon count model is used
 SAVE_FEATS = ["l_sv", "l_opp_att", "gap_opp_att", "l_team_def", "gap_team_def", "was_home"]
 
 
@@ -794,6 +811,25 @@ class XPointsModel:
         self.rates = {k: _fit_rate(train, tgt, f) for k, (tgt, f) in GLMS.items()}
         gk = train[train["position"] == "GK"]
         self.saves = _fit_rate(gk, "saves", SAVE_FEATS)
+        self.bps = _fit_rate(train.assign(bps_pos=train["bps"].clip(lower=0)), "bps_pos", BPS_FEATS)
+        # DefCon: count of defensive actions per 90, then the chance of reaching the threshold from that count and
+        # his own record of reaching it, fitted on matches where FPL counts them.
+        outf = train[(train["position"] != "GK") & train["defensive_contribution"].notna() & (train["minutes"] > 0)]
+        self.dc, self.dc_combine = None, None
+        if len(outf) >= DC_MIN_ROWS:
+            self.dc = _fit_rate(outf, "defensive_contribution", DC_FEATS)
+            full = outf[outf["minutes"] >= 60]
+            X = self._dc_x(full, self.dc.predict(full[DC_FEATS]))
+            hit = (full["defensive_contribution"] >= full["position"].map(DEFCON_THRESHOLD)).astype(int)
+            if hit.nunique() == 2:
+                self.dc_combine = LogisticRegression(C=1.0, max_iter=1000).fit(X, hit)
+        return self
+
+    @staticmethod
+    def _dc_x(df: pd.DataFrame, dc90: np.ndarray) -> np.ndarray:
+        rate = df["defcon_rate"].clip(0.01, 0.99).to_numpy(float)
+        thr = df["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
+        return np.column_stack([np.log(rate / (1 - rate)), np.log(np.clip(dc90, 0.1, None) / thr)])
         tm = train.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
         self.conceded = _glm().fit(tm[TEAM_FEATS], tm["ga"].to_numpy())
         return self
@@ -835,7 +871,10 @@ class XPointsModel:
             mu = self.saves.predict(df.loc[gk, SAVE_FEATS])
             full_save[gk] = sum(poisson.sf(3 * j - 1, mu) for j in range(1, 11))  # E[floor(S/3)] over 90
         pts_save = full_save * n90
-        pts_def = (~gk) * n90 * df["defcon_rate"].to_numpy() * DEFCON_PTS
+        dc90 = self.dc.predict(df[DC_FEATS]) if self.dc is not None else df["r_dc"].to_numpy(float)
+        p_def = (self.dc_combine.predict_proba(self._dc_x(df, dc90))[:, 1] if self.dc_combine is not None
+                 else df["defcon_rate"].to_numpy(float))
+        pts_def = (~gk) * n90 * p_def * DEFCON_PTS
         saves90 = np.zeros(len(df))
         if gk.any():
             saves90[gk] = mu
@@ -857,9 +896,10 @@ class XPointsModel:
         out["full_goal"], out["full_assist"], out["full_bonus"] = rate90["goals"] * goal_pts, rate90["assists"] * 3, rate90["bonus"]
         out["full_cs"], out["full_conceded"], out["full_saves"] = pcs * cs_pts, full_conc, full_save
         out["full_pensave"], out["full_penmiss"], out["full_own"] = full_pensave, full_penmiss, full_own
-        out["full_defcon"] = (~gk) * df["defcon_rate"].to_numpy() * DEFCON_PTS
+        out["full_defcon"] = (~gk) * p_def * DEFCON_PTS
         out["full_cards"] = -rate90["yellow"] - 3 * red90
-        out["p_defcon"] = (~gk) * df["defcon_rate"].to_numpy()
+        out["p_defcon"] = (~gk) * p_def
+        out["dc90"], out["bps90"] = (~gk) * dc90, self.bps.predict(df[BPS_FEATS])
         out["xpts"] = out[[c for c in out.columns if c.startswith("pts_")]].sum(axis=1)
         return out
 
@@ -947,6 +987,7 @@ def chance_report(pred: pd.DataFrame) -> None:
     dc = played[(played["minutes"] >= 60) & played["defensive_contribution"].notna() & (played["position"] != "GK")]
     if len(dc):
         p, h = binary("DefCon (60+ min)", dc["p_defcon"], dc["defensive_contribution"] >= dc["position"].map(DEFCON_THRESHOLD), dc["position"]); calib["DefCon (60+ min)"] = (p, h)
+        binary("DefCon, own record only", dc["defcon_rate"], dc["defensive_contribution"] >= dc["position"].map(DEFCON_THRESHOLD), dc["position"])
     gks = played[played["position"] == "GK"]
     per90("Pen save (GK)", "ps90", "penalties_saved", gks)
     per90("Pen miss", "pm90", "penalties_missed", played)
@@ -971,6 +1012,10 @@ def chance_report(pred: pd.DataFrame) -> None:
     count("xAssists", "a90", "assists", played)
     count("Saves (GK)", "saves90", "saves", gks)
     count("Bonus", "bonus90", "bonus", played)
+    count("BPS", "bps90", "bps", played)
+    dca = played[(played["position"] != "GK") & played["defensive_contribution"].notna()]
+    if len(dca):
+        count("DefCon actions", "dc90", "defensive_contribution", dca)
     count("Conceded (team)", "conc90", "ga", teams.assign(position="team", n90=1.0), scale=False)
     print("\n=== Chance 90min: expected counts against what happened (test season) ===")
     print(pd.DataFrame(counts).to_string(index=False, formatters={"predicted": "{:.3f}".format, "actual": "{:.3f}".format, "MAE": "{:.3f}".format,
@@ -1383,7 +1428,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
             "adminMin": None if pd.isna(r.get("admin_min", np.nan)) else round(float(r["admin_min"])), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
             "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "byGw": {}})
-        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
+        g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
         g["mins"].append(round(float(r["xmin"]), 1))
@@ -1401,6 +1446,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g["xSaves"] += float(r["saves90"])
         g["xConceded"] += float(r["conc90"])
         g["bonus"] += float(r["bonus90"])
+        g["xDefcon"] += float(r["dc90"])
+        g["xBps"] += float(r["bps90"])
         g["noCs"] *= 1 - float(r["p_cs"])
         g["noDef"] *= 1 - float(r["p_defcon"])
         g["noApp"] *= 1 - float(r["p_play"])
@@ -1425,6 +1472,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             g["pOwnGoal"] = round(1 - np.exp(-g.pop("log")), 5)
             g["xSaves"], g["xConceded"] = round(g["xSaves"], 3), round(g["xConceded"], 3)
             g["bonus"] = round(g["bonus"], 3)
+            g["xDefcon"], g["xBps"] = round(g["xDefcon"], 2), round(g["xBps"], 1)
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws, "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])

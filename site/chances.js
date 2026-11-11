@@ -7,12 +7,12 @@
   const METRICS = [
     ['pApp1', 'Appearance 1+', 1, 'pct'], ['pApp60', 'Appearance 60+', 1, 'pct'],
     ['pScore', 'Score 1+', 0.6, 'pct'], ['xGoals', 'xGoals', 0.9, 2], ['pAssist', 'Assist 1+', 0.35, 'pct'], ['xAssists', 'xAssists', 0.45, 2],
-    ['pCs', 'Clean sheet', 0.6, 'pct'], ['xConceded', 'Conceded', 2.4, 2], ['pDefcon', 'DefCon', 0.7, 'pct'], ['xSaves', 'Saves', 4.5, 1],
+    ['pCs', 'Clean sheet', 0.6, 'pct'], ['xConceded', 'Conceded', 2.4, 2], ['pDefcon', 'DefCon', 0.7, 'pct'], ['xDefcon', 'DefCon actions', 14, 1], ['xSaves', 'Saves', 4.5, 1],
     ['pPenSave', 'Pen save', 0.03, 'pct1'], ['pPenMiss', 'Pen miss', 0.03, 'pct1'], ['pOwnGoal', 'Own goal', 0.03, 'pct1'],
-    ['pRed', 'Red card', 0.02, 'pct1'], ['pYellow', 'Yellow card', 0.4, 'pct'], ['bonus', 'Bonus', 1.5, 2],
+    ['pRed', 'Red card', 0.02, 'pct1'], ['pYellow', 'Yellow card', 0.4, 'pct'], ['xBps', 'BPS', 32, 0], ['bonus', 'Bonus', 1.5, 2],
   ];
   const isChance = (fmt) => fmt === 'pct' || fmt === 'pct1';
-  const notApplicable = (p, key) => (key === 'pDefcon' && p.position === 'GK') || ((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK');
+  const notApplicable = (p, key) => ((key === 'pDefcon' || key === 'xDefcon') && p.position === 'GK') || ((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK');
 
   function heat(cell, t) {
     const v = Math.max(0, Math.min(1, t));
