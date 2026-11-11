@@ -975,7 +975,12 @@ class XPointsModel:
         # everyone on the pitch, both teams (Accuracy page: best correlation of the versions tried).
         if {"season", "fixture", "team"} <= set(df.columns):
             out["bonus90_glm"] = out["bonus90"]
-            sim = simulate_bonus(pd.concat([df[["season", "fixture", "team", "position"]], out], axis=1), sd=BONUS_SIM_SD)
+            # His BPS in the simulation is his own BPS record per 90 (r_bps), which keeps players like Bruno or
+            # Gabriel, who earn BPS beyond goals, above the average more than the BPS model does.
+            frame = pd.concat([df[["season", "fixture", "team", "position"]], out], axis=1)
+            if "r_bps" in df:
+                frame["bps90"] = df["r_bps"].fillna(out["bps90"]).to_numpy(float)
+            sim = simulate_bonus(frame, sd=BONUS_SIM_SD)
             b90 = np.where(np.isnan(sim), out["bonus90"], BONUS_SIM_SHARE * sim + (1 - BONUS_SIM_SHARE) * out["bonus90"])
             out["bonus90"], out["full_bonus"], out["xbonus"] = b90, b90, b90 * n90
             out["pts_bonus"] = b90 * n90
