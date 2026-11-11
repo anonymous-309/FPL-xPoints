@@ -59,7 +59,10 @@ K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0
 # Rare events need long memory and strong pull to the role average (rare-tune, log loss on 2025-26):
 # (half-life in matches, latest matches used, k). Red cards: a player's own record did not beat the role average.
 RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 400.0)}
-K_PEN_MISS = 20.0  # penalty attempts of league-average misses added to a taker's own record
+# Penalty attempts of league-average misses added to a taker's own record. On 2025-26 (92 penalties, rare-tune)
+# every finite k scored worse than the league rate alone, so a taker's own record is effectively off for now;
+# lower this once a few more seasons of counted penalties exist.
+K_PEN_MISS = 1e6
 PROMOTED_ATT, PROMOTED_DEF = 0.85, 1.15  # starting belief for newly promoted teams
 LEAGUE_XG_FALLBACK = 1.35
 EPS = 1e-3
