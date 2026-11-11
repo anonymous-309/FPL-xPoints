@@ -26,4 +26,4 @@ jobs:
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
       - run: python fpl_xpoints.py rare-tune
-# top-100 metrics (rare events, penalty misses, season goal and assist rates)
+# top-100 metrics (rare events, penalty misses, season rates, bonus by season)

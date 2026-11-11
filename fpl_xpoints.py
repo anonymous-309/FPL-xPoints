@@ -1763,6 +1763,14 @@ def rare_tune(data_dir: Path, seasons: list[str]) -> None:
     ks = [5, 10, 20, 40, 60, 100, 200, 400, 1000, 2000]
     events = [("Yellow", "yellow_cards", "yc", None, 5), ("Red", "red_cards", "rc", None, 40),
               ("Own goal", "own_goals", "og", None, 60), ("Penalty save", "penalties_saved", "ps", "GK", 60)]
+    print("\n=== Bonus per match with 60+ minutes, top takers by season ===")
+    full = df[df["minutes"] >= 60]
+    by = full.groupby(["name", "season"]).agg(bonus=("bonus", "mean"), n=("bonus", "size")).reset_index()
+    stars = by[by["n"] >= 15].sort_values("bonus", ascending=False).groupby("season").head(8)
+    print(stars.round(2).to_string(index=False))
+    for who in ("Haaland", "Salah", "Palmer", "Bruno"):
+        h = by[by["name"].str.contains(who, na=False) & (by["n"] >= 10)]
+        print(who + ": " + "; ".join(f'{r.season} {r.bonus:.2f} ({r.n} matches)' for r in h.itertuples()))
     print("\n=== Goals and assists per match played, by season ===")
     pl = df[df["minutes"] > 0]
     tm = df.drop_duplicates(["season", "fixture", "team"]).groupby("season").size()
