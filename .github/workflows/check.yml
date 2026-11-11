@@ -22,3 +22,4 @@ jobs:
           git diff --cached --quiet && exit 0
           git commit -m "Admin injuries: GW1-9 absences from Sofascore"
           for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
+# rerun after removing hand-added entries
