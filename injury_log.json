@@ -1,1 +1,2402 @@
-[]
+[
+ {
+  "id": "c577016-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c577016",
+  "name": "Acheampong",
+  "team": "CHE",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Unspecified injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Unspecified injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c535301-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c535301",
+  "name": "Baleba",
+  "team": "MUN",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c540324-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c540324",
+  "name": "Belloumi",
+  "team": "HUL",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Hamstring injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Hamstring injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c441264-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c441264",
+  "name": "Brobbey",
+  "team": "SUN",
+  "position": "FWD",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Muscular injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Muscular injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c76357-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c76357",
+  "name": "Cairney",
+  "team": "FUL",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Expected back 21 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-21"
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Expected back 21 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-21",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c243526-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c243526",
+  "name": "Gudmundsson",
+  "team": "LEE",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Hamstring injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Hamstring injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c209036-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c209036",
+  "name": "Guéhi",
+  "team": "MCI",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Unspecified injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Unspecified injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c477424-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c477424",
+  "name": "Gvardiol",
+  "team": "MCI",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Unspecified injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Unspecified injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c180974-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c180974",
+  "name": "Joelinton",
+  "team": "NEW",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Unspecified injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Unspecified injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c95658-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c95658",
+  "name": "Maguire",
+  "team": "MUN",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Back injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Back injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c231747-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c231747",
+  "name": "Mateta",
+  "team": "CRY",
+  "position": "FWD",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Suspended",
+    "news": "Suspended until 2 Dec",
+    "chance": 0,
+    "expectedReturnGw": 13,
+    "expectedReturnDate": "2026-12-02"
+   }
+  ],
+  "type": "Suspended",
+  "news": "Suspended until 2 Dec",
+  "chance": 0,
+  "expectedReturnGw": 13,
+  "expectedReturnDate": "2026-12-02",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c445028-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c445028",
+  "name": "Morita",
+  "team": "HUL",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Groin injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Groin injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c466525-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c466525",
+  "name": "Stach",
+  "team": "LEE",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Foot injury - 50% chance of playing",
+    "chance": 50,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Foot injury - 50% chance of playing",
+  "chance": 50,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c511499-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c511499",
+  "name": "Tel",
+  "team": "TOT",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Ankle injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Ankle injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c502500-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c502500",
+  "name": "Thiago",
+  "team": "BRE",
+  "position": "FWD",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Suspended",
+    "news": "Suspended until 5 Dec",
+    "chance": 0,
+    "expectedReturnGw": 14,
+    "expectedReturnDate": "2026-12-05"
+   }
+  ],
+  "type": "Suspended",
+  "news": "Suspended until 5 Dec",
+  "chance": 0,
+  "expectedReturnGw": 14,
+  "expectedReturnDate": "2026-12-05",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c97032-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c97032",
+  "name": "Virgil",
+  "team": "LIV",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Unspecified injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Unspecified injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c84450-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c84450",
+  "name": "Xhaka",
+  "team": "SUN",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Calf injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Calf injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c547027-2026-27-GW9",
+  "season": "2026-27",
+  "pid": "c547027",
+  "name": "Diarra",
+  "team": "SUN",
+  "position": "MID",
+  "startGw": 9,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Muscular injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Muscular injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c616077-2026-27-GW9",
+  "season": "2026-27",
+  "pid": "c616077",
+  "name": "Dowman",
+  "team": "ARS",
+  "position": "MID",
+  "startGw": 9,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Suspended",
+    "news": "Suspended until 29 Nov",
+    "chance": 0,
+    "expectedReturnGw": 12,
+    "expectedReturnDate": "2026-11-29"
+   }
+  ],
+  "type": "Suspended",
+  "news": "Suspended until 29 Nov",
+  "chance": 0,
+  "expectedReturnGw": 12,
+  "expectedReturnDate": "2026-11-29",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c441266-2026-27-GW9",
+  "season": "2026-27",
+  "pid": "c441266",
+  "name": "Gravenberch",
+  "team": "LIV",
+  "position": "MID",
+  "startGw": 9,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Foot injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Foot injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c551210-2026-27-GW9",
+  "season": "2026-27",
+  "pid": "c551210",
+  "name": "Hato",
+  "team": "CHE",
+  "position": "DEF",
+  "startGw": 9,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Unspecified injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Unspecified injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c437499-2026-27-GW9",
+  "season": "2026-27",
+  "pid": "c437499",
+  "name": "Lacroix",
+  "team": "CHE",
+  "position": "DEF",
+  "startGw": 9,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c428580-2026-27-GW9",
+  "season": "2026-27",
+  "pid": "c428580",
+  "name": "Onyeka",
+  "team": "COV",
+  "position": "MID",
+  "startGw": 9,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Groin injury - 50% chance of playing",
+    "chance": 50,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Groin injury - 50% chance of playing",
+  "chance": 50,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c461102-2026-27-GW9",
+  "season": "2026-27",
+  "pid": "c461102",
+  "name": "Thomas",
+  "team": "COV",
+  "position": "DEF",
+  "startGw": 9,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Calf injury - 50% chance of playing",
+    "chance": 50,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Calf injury - 50% chance of playing",
+  "chance": 50,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c250199-2026-27-GW8",
+  "season": "2026-27",
+  "pid": "c250199",
+  "name": "Dominguez",
+  "team": "NFO",
+  "position": "MID",
+  "startGw": 8,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Muscular injury - Expected back 30 Dec",
+    "chance": 0,
+    "expectedReturnGw": 18,
+    "expectedReturnDate": "2026-12-30"
+   }
+  ],
+  "type": "Injury",
+  "news": "Muscular injury - Expected back 30 Dec",
+  "chance": 0,
+  "expectedReturnGw": 18,
+  "expectedReturnDate": "2026-12-30",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c216094-2026-27-GW8",
+  "season": "2026-27",
+  "pid": "c216094",
+  "name": "Frimpong",
+  "team": "LIV",
+  "position": "DEF",
+  "startGw": 8,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c475168-2026-27-GW8",
+  "season": "2026-27",
+  "pid": "c475168",
+  "name": "João Pedro",
+  "team": "CHE",
+  "position": "FWD",
+  "startGw": 8,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Thigh injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Thigh injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c98980-2026-27-GW8",
+  "season": "2026-27",
+  "pid": "c98980",
+  "name": "Martinez",
+  "team": "CHE",
+  "position": "GK",
+  "startGw": 8,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Head injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Head injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c223340-2026-27-GW8",
+  "season": "2026-27",
+  "pid": "c223340",
+  "name": "Saka",
+  "team": "ARS",
+  "position": "MID",
+  "startGw": 8,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Thigh injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Thigh injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c437730-2026-27-GW8",
+  "season": "2026-27",
+  "pid": "c437730",
+  "name": "Semenyo",
+  "team": "MCI",
+  "position": "MID",
+  "startGw": 8,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c214590-2026-27-GW8",
+  "season": "2026-27",
+  "pid": "c214590",
+  "name": "Wan-Bissaka",
+  "team": "AVL",
+  "position": "DEF",
+  "startGw": 8,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Hamstring injury - 50% chance of playing",
+    "chance": 50,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Hamstring injury - 50% chance of playing",
+  "chance": 50,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c570526-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c570526",
+  "name": "Bergvall",
+  "team": "TOT",
+  "position": "MID",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c176297-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c176297",
+  "name": "Rashford",
+  "team": "MUN",
+  "position": "MID",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hip injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Hip injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c487992-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c487992",
+  "name": "Ruggeri",
+  "team": "AVL",
+  "position": "DEF",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Expected back 2 Jan",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": "2027-01-02"
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Expected back 2 Jan",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": "2027-01-02",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c494928-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c494928",
+  "name": "Sanchez",
+  "team": "BOU",
+  "position": "DEF",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Ankle injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Ankle injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c232185-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c232185",
+  "name": "Sarr",
+  "team": "CRY",
+  "position": "MID",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Groin injury - Expected back 21 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-21"
+   }
+  ],
+  "type": "Injury",
+  "news": "Groin injury - Expected back 21 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-21",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c106760-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c106760",
+  "name": "Shaw",
+  "team": "MUN",
+  "position": "DEF",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Unspecified injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Unspecified injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c222694-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c222694",
+  "name": "Struijk",
+  "team": "BHA",
+  "position": "DEF",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Expected back 8 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-08"
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Expected back 8 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-08",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c510281-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c510281",
+  "name": "Sávio",
+  "team": "TOT",
+  "position": "MID",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Muscular injury - Expected back 21 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-21"
+   }
+  ],
+  "type": "Injury",
+  "news": "Muscular injury - Expected back 21 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-21",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c223827-2026-27-GW6",
+  "season": "2026-27",
+  "pid": "c223827",
+  "name": "Ballard",
+  "team": "SUN",
+  "position": "DEF",
+  "startGw": 6,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c244858-2026-27-GW6",
+  "season": "2026-27",
+  "pid": "c244858",
+  "name": "Carvalho",
+  "team": "BRE",
+  "position": "MID",
+  "startGw": 6,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knock - Expected back 23 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-23"
+   }
+  ],
+  "type": "Injury",
+  "news": "Knock - Expected back 23 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-23",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c223723-2026-27-GW6",
+  "season": "2026-27",
+  "pid": "c223723",
+  "name": "Tomiyasu",
+  "team": "CRY",
+  "position": "DEF",
+  "startGw": 6,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Calf injury - Expected back 21 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-21"
+   }
+  ],
+  "type": "Injury",
+  "news": "Calf injury - Expected back 21 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-21",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c614574-2026-27-GW6",
+  "season": "2026-27",
+  "pid": "c614574",
+  "name": "Tóth.A",
+  "team": "BOU",
+  "position": "MID",
+  "startGw": 6,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c539142-2026-27-GW5",
+  "season": "2026-27",
+  "pid": "c539142",
+  "name": "Amenda",
+  "team": "COV",
+  "position": "DEF",
+  "startGw": 5,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Calf injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Calf injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c225796-2026-27-GW5",
+  "season": "2026-27",
+  "pid": "c225796",
+  "name": "James",
+  "team": "CHE",
+  "position": "DEF",
+  "startGw": 5,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c485711-2026-27-GW5",
+  "season": "2026-27",
+  "pid": "c485711",
+  "name": "Šeško",
+  "team": "MUN",
+  "position": "FWD",
+  "startGw": 5,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Shin injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Shin injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c465920-2026-27-GW4",
+  "season": "2026-27",
+  "pid": "c465920",
+  "name": "Mudryk",
+  "team": "TOT",
+  "position": "MID",
+  "startGw": 4,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Ankle injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Ankle injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c626751-2026-27-GW3",
+  "season": "2026-27",
+  "pid": "c626751",
+  "name": "Ansah",
+  "team": "HUL",
+  "position": "FWD",
+  "startGw": 3,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Back injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Back injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c471551-2026-27-GW3",
+  "season": "2026-27",
+  "pid": "c471551",
+  "name": "Azeez",
+  "team": "BHA",
+  "position": "MID",
+  "startGw": 3,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Expected back 8 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-08"
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Expected back 8 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-08",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c194010-2026-27-GW3",
+  "season": "2026-27",
+  "pid": "c194010",
+  "name": "Henry",
+  "team": "BRE",
+  "position": "DEF",
+  "startGw": 3,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hip injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Hip injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c461199-2026-27-GW3",
+  "season": "2026-27",
+  "pid": "c461199",
+  "name": "Mundle",
+  "team": "SUN",
+  "position": "MID",
+  "startGw": 3,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c515621-2026-27-GW2",
+  "season": "2026-27",
+  "pid": "c515621",
+  "name": "Chadi Riad",
+  "team": "CRY",
+  "position": "DEF",
+  "startGw": 2,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c169359-2026-27-GW2",
+  "season": "2026-27",
+  "pid": "c169359",
+  "name": "Targett",
+  "team": "HUL",
+  "position": "DEF",
+  "startGw": 2,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Ankle injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Ankle injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c700308-2026-27-GW2",
+  "season": "2026-27",
+  "pid": "c700308",
+  "name": "Yohanna",
+  "team": "BHA",
+  "position": "MID",
+  "startGw": 2,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Unspecified injury - Expected back 22 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-22"
+   }
+  ],
+  "type": "Injury",
+  "news": "Unspecified injury - Expected back 22 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-22",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c492777-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c492777",
+  "name": "Bradley",
+  "team": "LIV",
+  "position": "DEF",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c183656-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c183656",
+  "name": "Dasilva",
+  "team": "BRE",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Hamstring injury - 25% chance of playing",
+    "chance": 25,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Hamstring injury - 25% chance of playing",
+  "chance": 25,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c439668-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c439668",
+  "name": "Eccles",
+  "team": "COV",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Ankle injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Ankle injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c510663-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c510663",
+  "name": "Ekitiké",
+  "team": "LIV",
+  "position": "FWD",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Achilles injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Achilles injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c487117-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c487117",
+  "name": "Ferguson",
+  "team": "BHA",
+  "position": "FWD",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Ankle injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Ankle injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c593174-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c593174",
+  "name": "Furo",
+  "team": "BRE",
+  "position": "FWD",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Unspecified injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Unspecified injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c463936-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c463936",
+  "name": "Gittens",
+  "team": "CHE",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Ankle injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Ankle injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c470294-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c470294",
+  "name": "Gyabi",
+  "team": "HUL",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Thigh injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Thigh injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c501902-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c501902",
+  "name": "Hughes",
+  "team": "HUL",
+  "position": "DEF",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Groin injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Groin injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c436893-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c436893",
+  "name": "J.Araujo",
+  "team": "BOU",
+  "position": "DEF",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Thigh injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Thigh injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c554578-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c554578",
+  "name": "Jaouen",
+  "team": "NEW",
+  "position": "GK",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c432987-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c432987",
+  "name": "Jaros",
+  "team": "LIV",
+  "position": "GK",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c647681-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c647681",
+  "name": "Leoni",
+  "team": "LIV",
+  "position": "DEF",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c465525-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c465525",
+  "name": "Matazo",
+  "team": "HUL",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c565297-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c565297",
+  "name": "Mateo Joseph",
+  "team": "LEE",
+  "position": "FWD",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c543295-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c543295",
+  "name": "Milambo",
+  "team": "BRE",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c620487-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c620487",
+  "name": "Milosavljević",
+  "team": "BOU",
+  "position": "DEF",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Thigh injury - Expected back 31 Oct",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-10-31"
+   }
+  ],
+  "type": "Injury",
+  "news": "Thigh injury - Expected back 31 Oct",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-10-31",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c451340-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c451340",
+  "name": "Mitoma",
+  "team": "BHA",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Expected back 22 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-22"
+   }
+  ],
+  "type": "Injury",
+  "news": "Hamstring injury - Expected back 22 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-22",
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c550839-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c550839",
+  "name": "Odobert",
+  "team": "TOT",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c449871-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c449871",
+  "name": "Onana",
+  "team": "AVL",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c500151-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c500151",
+  "name": "Savona",
+  "team": "NFO",
+  "position": "DEF",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c608181-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c608181",
+  "name": "Tzimas",
+  "team": "BHA",
+  "position": "FWD",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c232112-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c232112",
+  "name": "Ugarte",
+  "team": "MUN",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c220583-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c220583",
+  "name": "Woolfenden",
+  "team": "COV",
+  "position": "DEF",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c176412-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c176412",
+  "name": "Wright",
+  "team": "COV",
+  "position": "FWD",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Thigh injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Thigh injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ },
+ {
+  "id": "c493362-2026-27-GW1",
+  "season": "2026-27",
+  "pid": "c493362",
+  "name": "Xavi",
+  "team": "TOT",
+  "position": "MID",
+  "startGw": 1,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-11T03:52Z"
+ }
+]
