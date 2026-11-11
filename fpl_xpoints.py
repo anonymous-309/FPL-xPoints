@@ -1362,6 +1362,71 @@ MARKET_CS_GW11 = {"Man City": 43, "Arsenal": 38, "Brighton": 38, "Spurs": 38, "B
                   "Man Utd": 17, "Newcastle": 14, "Hull City": 13, "Ipswich Town": 13, "Fulham": 10}
 
 
+def rare_tune(data_dir: Path, seasons: list[str]) -> None:
+    """Compares memory (half-life, match cap) and shrinkage k for rare events, on the last season's matches.
+
+    Rate per 90 = (decayed events + k x position average) / (decayed 90s + k); the chance of 1+ in a match is
+    1 - exp(-rate x minutes/90), scored by log loss against what happened."""
+    df = load_history(data_dir, seasons)
+    df = df[~df["future"] & df["minutes"].notna()].sort_values(["pid", "kickoff_time", "fixture"]).reset_index(drop=True)
+    keys = df["pid"].to_numpy()
+    n90 = (df["minutes"] / 90).to_numpy(float)
+    test = ((df["season"] == seasons[-1]) & (df["minutes"] > 0)).to_numpy()
+
+    def decayed(x: np.ndarray, hl: float, cap: int) -> np.ndarray:
+        d = 0.5 ** (1 / hl)
+        tail = d ** cap
+        out = np.zeros(len(x))
+        s, prev, hist = 0.0, object(), []
+        for i, (k, v) in enumerate(zip(keys, x)):
+            if k != prev:
+                s, prev, hist = 0.0, k, []
+            out[i] = s
+            hist.append(v)
+            s = s * d + v
+            if len(hist) > cap:
+                s -= hist[-cap - 1] * tail
+        return out
+
+    memories = [(12, 38, "half-life 12, last 38 (now)"), (24, 76, "half-life 24, last 76"), (38, 114, "half-life 38, last 114"),
+                (76, 114, "half-life 76, last 114"), (1e9, 114, "equal weights, last 114")]
+    ks = [5, 10, 20, 40, 60, 100, 200, 400, 1000, 2000]
+    events = [("Yellow", "yellow_cards", "yc", None, 5), ("Red", "red_cards", "rc", None, 40),
+              ("Own goal", "own_goals", "og", None, 60), ("Penalty save", "penalties_saved", "ps", "GK", 60)]
+    for title, col, tag, only, k_now in events:
+        x = df[col].fillna(0).clip(upper=3).to_numpy(float)
+        rows = test & ((df["position"] == only).to_numpy() if only else True)
+        train = (df["season"] != seasons[-1]).to_numpy() & ((df["position"] == only).to_numpy() if only else True)
+        prior_by_pos = df[train].groupby("position").apply(lambda g: g[col].fillna(0).sum() / max((g["minutes"] / 90).sum(), 1e-9))
+        prior = df["position"].map(prior_by_pos).fillna(prior_by_pos.mean()).to_numpy(float)
+        hit = (x[rows] >= 1).astype(float)
+        expo = n90[rows]
+        def loss(rate):
+            p = np.clip(1 - np.exp(-rate[rows] * expo), 1e-6, 1 - 1e-6)
+            return float(-(hit * np.log(p) + (1 - hit) * np.log(1 - p)).mean())
+        base = loss(prior)
+        print(f"\n=== {title}: {int(hit.sum())} of {len(hit)} matches, position average only: log loss {base:.5f} ===")
+        best = None
+        for hl, cap, label in memories:
+            ev, ninety = decayed(x, hl, cap), decayed(n90, hl, cap)
+            line = []
+            for k in ks:
+                rate = (ev + k * prior) / (ninety + k)
+                l = loss(rate)
+                line.append(f"k{k} {(base - l) / base * 100:+.2f}%")
+                if best is None or l < best[0]:
+                    best = (l, label, k, hl, cap)
+            print(f"{label:28s} " + "  ".join(line))
+        l, label, k, hl, cap = best
+        # how much one event moves a regular's rate: 30 full matches, none of these events, then one
+        ev0 = np.zeros(30); mins = np.ones(31)
+        d = 0.5 ** (1 / hl)
+        w = d ** np.arange(30)[::-1]
+        before = (0 + k * prior_by_pos.mean()) / (w.sum() + k)
+        after = (1 + k * prior_by_pos.mean()) / (w.sum() * d + 1 + k)
+        print(f"Best: {label}, k={k}: {(base - l) / base * 100:+.2f}% on position average only; one {title.lower()} moves a regular's rate x{after / before:.1f} (now: k={k_now})")
+
+
 def tune(data_dir: Path, seasons: list[str], step: int, offline: bool) -> None:
     """Compares ways of rating teams, on last season's results and on this gameweek's clean sheet market."""
     global HL_TEAM, TEAM_CARRY, TEAM_WINDOW
@@ -1531,7 +1596,7 @@ def home_away(data_dir: Path, seasons: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -1557,6 +1622,8 @@ def main() -> None:
         cs_tune(a.data_dir, a.seasons, a.step, a.offline, a.modes)
     elif a.command == "home-away":
         home_away(a.data_dir, a.seasons)
+    elif a.command == "rare-tune":
+        rare_tune(a.data_dir, HIST_SEASONS)
     elif a.command == "tune":
         tune(a.data_dir, a.seasons, a.step, a.offline)
     elif a.command == "site":
