@@ -151,3 +151,9 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .injuries tr.inj-detail td { background: #f0f3ef; text-align: left; font-size: 13px; }
 .injuries tr.inj-detail ul { margin: 0; padding-left: 18px; }
 .injuries tr.inj-detail[hidden] { display: none; }
+.inj-admin { padding: 0 16px 16px; }
+.inj-admin h2 { margin: 18px 0 4px; }
+.inj-admin h3 { margin: 16px 0 6px; font-size: 15px; }
+.inj-admin .filters { padding-left: 0; padding-right: 0; }
+.inj-admin[hidden] { display: none; }
+.inj-admin .wrap { min-height: 0; max-height: none; }

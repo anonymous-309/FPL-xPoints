@@ -50,6 +50,24 @@
     </tr></thead><tbody></tbody></table>
   </div>
 </div>
+<section id="injPanel" class="inj-admin" hidden>
+  <h2>Injuries</h2>
+  <p class="meta">Add an absence the log missed (for example one week out), or correct when a logged one started. Every match from Start to End GW is left out of the minutes formula. Leave End GW empty if he is still out.</p>
+  <form id="injAdd" class="filters" autocomplete="off">
+    <label>Player <input id="injPlayer" list="playerList" required></label>
+    <datalist id="playerList"></datalist>
+    <label>Start GW <input id="injStart" type="number" min="1" max="38" inputmode="numeric" required></label>
+    <label>End GW <input id="injEnd" type="number" min="1" max="38" inputmode="numeric"></label>
+    <label>Note <input id="injNote" type="text"></label>
+    <button class="toggle" type="submit">Add</button>
+    <button id="injSave" class="toggle save" type="button" disabled>Save</button>
+  </form>
+  <p id="injSaved" class="meta admin-note" role="status"></p>
+  <h3>Added by admin</h3>
+  <div class="wrap"><table class="minutes admin" id="injManual"><thead><tr><th scope="col">Player</th><th scope="col">Start</th><th scope="col">End</th><th scope="col">Note</th><th scope="col"></th></tr></thead><tbody></tbody></table></div>
+  <h3>Logged automatically, out now</h3>
+  <div class="wrap"><table class="minutes admin" id="injAuto"><thead><tr><th scope="col">Player</th><th scope="col">Start<small>from the log</small></th><th scope="col">Start GW<small>yours</small></th><th scope="col">News</th></tr></thead><tbody></tbody></table></div>
+</section>
 <footer>
   <p>Admin min replaces a player's usual minutes (the 5-4-3-2-1 formula) for every upcoming gameweek, for everyone who uses the site, including xPoints and the Planner. Injuries, bans and doubtful flags still apply on top. Clear a box to go back to the formula. After you save, the site rebuilds with the new minutes in about 10 minutes.</p>
 </footer>

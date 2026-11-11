@@ -12,7 +12,9 @@
     return `${owner}/${name.endsWith('.html') ? 'FPL-xPoints' : name}`;
   })();
   const API = `https://api.github.com/repos/${REPO}/contents/${FILE}`;
-  const state = { players: [], admin: {}, sha: null, pending: {}, pos: '', onlySet: false };
+  const INJ_API = `https://api.github.com/repos/${REPO}/contents/admin_injuries.json`;
+  const state = { players: [], admin: {}, sha: null, pending: {}, pos: '', onlySet: false,
+    inj: { manual: [], startOverrides: {} }, injSha: null, injDirty: false, auto: [] };
 
   const store = {
     get: (k, s = localStorage) => { try { return s.getItem(k); } catch (e) { return null; } },
@@ -36,6 +38,69 @@
     const j = await r.json();
     state.sha = j.sha;
     state.admin = JSON.parse(unb64(j.content) || '{}');
+  }
+
+  async function ghGet(url, empty) {
+    const r = await fetch(`${url}?ref=main`, { headers: headers(), cache: 'no-store' });
+    if (r.status === 404) return { data: empty, sha: null };
+    if (r.status === 401 || r.status === 403) throw new Error('token');
+    if (!r.ok) throw new Error(String(r.status));
+    const j = await r.json();
+    return { data: JSON.parse(unb64(j.content) || 'null') || empty, sha: j.sha };
+  }
+  async function ghPut(url, data, sha, message) {
+    const body = { message: message.slice(0, 200), content: b64(JSON.stringify(data, null, 1) + '\n'), branch: 'main' };
+    if (sha) body.sha = sha;
+    const r = await fetch(url, { method: 'PUT', headers: { ...headers(), 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (r.status === 401 || r.status === 403 || r.status === 404) throw new Error('token');
+    if (r.status === 409) throw new Error('changed');
+    if (!r.ok) throw new Error(String(r.status));
+    return (await r.json()).content.sha;
+  }
+  const label = (p) => `${p.name} · ${p.team} ${p.position}`;
+
+  function renderInjuries() {
+    const byId = new Map(state.players.map((p) => [p.id, p]));
+    const del = (i) => el('button', { type: 'button', className: 'reset', textContent: 'Delete', onclick: () => { state.inj.manual.splice(i, 1); state.injDirty = true; renderInjuries(); } });
+    $('injManual').tBodies[0].replaceChildren(...(state.inj.manual.length ? state.inj.manual.map((m, i) => el('tr', { className: m.unsaved ? 'changed' : '' },
+      el('td', { className: 'player' }, el('b', { textContent: m.name }), el('span', { textContent: `${m.team} ${m.position || ''}` })),
+      el('td', { textContent: `GW${m.startGw}` }), el('td', { textContent: m.endGw ? `GW${m.endGw}` : 'Still out' }),
+      el('td', { className: 'note', textContent: m.note || '' }), el('td', {}, del(i))))
+      : [el('tr', {}, el('td', { colSpan: 5, className: 'none', textContent: 'None yet.' }))]));
+    $('injAuto').tBodies[0].replaceChildren(...state.auto.map((r) => {
+      const auto = r.startGwAuto ?? r.startGw;
+      const mine = state.inj.startOverrides[r.id];
+      const input = el('input', { className: 'xmin-input', type: 'number', min: 1, max: 38, inputMode: 'numeric', value: mine ?? '', placeholder: `GW${auto}` });
+      input.setAttribute('aria-label', `Start gameweek for ${r.name}`);
+      input.addEventListener('change', () => {
+        const n = Math.round(Number(input.value));
+        if (input.value.trim() === '' || n === auto) delete state.inj.startOverrides[r.id];
+        else if (n >= 1 && n <= 38) state.inj.startOverrides[r.id] = n; else { input.value = mine ?? ''; return; }
+        state.injDirty = true; renderInjuries();
+      });
+      const p = byId.get(r.pid);
+      return el('tr', { className: mine !== undefined ? 'changed' : '' },
+        el('td', { className: 'player' }, el('b', { textContent: r.name }), el('span', { textContent: `${r.team} ${p ? p.position : ''}` })),
+        el('td', { textContent: `GW${auto}` }), el('td', { className: mine !== undefined ? 'fut edited' : 'fut' }, input), el('td', { className: 'note', textContent: r.news || '' }));
+    }));
+    $('injSave').disabled = !state.injDirty;
+  }
+
+  async function saveInjuries() {
+    $('injSave').disabled = true;
+    $('injSaved').textContent = 'Saving…';
+    try {
+      const latest = await ghGet(INJ_API, { manual: [], startOverrides: {} });
+      const data = { manual: state.inj.manual.map(({ unsaved, ...m }) => m), startOverrides: state.inj.startOverrides };
+      state.injSha = await ghPut(INJ_API, data, latest.sha, `Admin injuries: ${data.manual.length} added by hand, ${Object.keys(data.startOverrides).length} start corrections`);
+      state.inj = data;
+      state.injDirty = false;
+      $('injSaved').textContent = `Saved at ${new Date().toLocaleTimeString('en-GB', { timeStyle: 'short' })}. The site uses them in about 10 minutes.`;
+    } catch (e) {
+      $('injSaved').textContent = '';
+      fail(e.message === 'token' ? 'GitHub refused the token. Tap Forget token and enter one with Contents: Read and write.' : `Could not save the injuries (${e.message}). Your changes are still here; try Save again.`);
+    }
+    renderInjuries();
   }
 
   function value(p) {
@@ -106,11 +171,18 @@
     $('tokenForm').hidden = true;
     $('error').hidden = true;
     try {
-      const [data] = await Promise.all([fetch('data.json', { cache: 'no-store' }).then((r) => r.json()), loadAdminFile()]);
+      const [data, inj, log] = await Promise.all([fetch('data.json', { cache: 'no-store' }).then((r) => r.json()),
+        ghGet(INJ_API, { manual: [], startOverrides: {} }), fetch('injury_log.json', { cache: 'no-store' }).then((r) => (r.ok ? r.json() : [])).catch(() => []), loadAdminFile()]);
+      state.inj = { manual: inj.data.manual || [], startOverrides: inj.data.startOverrides || {} };
+      state.injSha = inj.sha;
+      state.auto = log.filter((r) => !r.manual && r.status === 'out').sort((a, b) => a.name.localeCompare(b.name));
       state.players = data.players.slice().sort((a, b) => (b.minModel ?? b.minUsual) - (a.minModel ?? a.minUsual));
       $('team').replaceChildren(el('option', { value: '', textContent: 'All' }), ...[...new Set(state.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
       $('panel').hidden = false;
+      $('injPanel').hidden = false;
+      $('playerList').replaceChildren(...state.players.map((p) => el('option', { value: label(p) })));
       render();
+      renderInjuries();
     } catch (e) {
       if (e.message === 'token') { store.del(TOKEN_KEY); $('tokenForm').hidden = false; fail('GitHub refused the token. Enter a token with Contents: Read and write on FPL-xPoints.'); } else fail('Could not load the players. Reload the page to try again.');
     }
@@ -131,6 +203,20 @@
   }));
   $('onlySet').addEventListener('click', () => { state.onlySet = !state.onlySet; $('onlySet').setAttribute('aria-pressed', String(state.onlySet)); render(); });
   $('save').addEventListener('click', save);
+  $('injSave').addEventListener('click', saveInjuries);
+  $('injAdd').addEventListener('submit', (e) => {
+    e.preventDefault();
+    const p = state.players.find((x) => label(x) === $('injPlayer').value.trim()) || state.players.find((x) => x.name.toLowerCase() === $('injPlayer').value.trim().toLowerCase());
+    const start = Math.round(Number($('injStart').value)), endText = $('injEnd').value.trim(), end = endText === '' ? null : Math.round(Number(endText));
+    if (!p) { fail('Pick a player from the list.'); return; }
+    if (!(start >= 1 && start <= 38) || (end !== null && !(end >= start && end <= 38))) { fail('Start GW must be 1-38, and End GW empty or not before Start GW.'); return; }
+    $('error').hidden = true;
+    state.inj.manual.push({ id: `${p.id}-admin-GW${start}-${Date.now().toString(36)}`, pid: p.id, name: p.name, team: p.team, position: p.position,
+      startGw: start, endGw: end, note: $('injNote').value.trim(), at: new Date().toISOString(), unsaved: true });
+    state.injDirty = true;
+    $('injAdd').reset();
+    renderInjuries();
+  });
   $('table').tBodies[0].addEventListener('change', (e) => {
     if (!e.target.matches('.xmin-input')) return;
     const pid = e.target.dataset.pid, text = e.target.value.trim();
@@ -142,7 +228,7 @@
     render();
   });
   $('table').tBodies[0].addEventListener('keydown', (e) => { if (e.key === 'Enter' && e.target.matches('.xmin-input')) { e.preventDefault(); e.target.blur(); } });
-  window.addEventListener('beforeunload', (e) => { if (Object.keys(state.pending).length) { e.preventDefault(); e.returnValue = ''; } });
+  window.addEventListener('beforeunload', (e) => { if (Object.keys(state.pending).length || state.injDirty) { e.preventDefault(); e.returnValue = ''; } });
 
   if (store.get('admin-open', sessionStorage)) openPanel();
 })();

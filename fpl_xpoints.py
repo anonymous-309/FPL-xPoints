@@ -520,16 +520,49 @@ def update_injury_log(df: pd.DataFrame, first: int, path: Path = INJURY_LOG, now
     return log
 
 
-def mark_injuries(df: pd.DataFrame, log: list[dict]) -> pd.DataFrame:
-    """Flags the zero-minute matches inside each logged absence ("inj_skip"), so the formula leaves them out."""
+ADMIN_INJURIES = Path("admin_injuries.json")  # set on the Admin page: {"manual": [...], "startOverrides": {id: gw}}
+
+
+def load_admin_injuries(path: Path = ADMIN_INJURIES) -> dict:
+    try:
+        data = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+    except ValueError as e:
+        print(f"{path} not read ({e}); admin injuries ignored")
+        data = {}
+    return {"manual": list(data.get("manual", [])), "startOverrides": dict(data.get("startOverrides", {}))}
+
+
+def merged_injuries(log: list[dict], admin: dict) -> list[dict]:
+    """The logged absences with the admin's start gameweeks, plus the absences the admin added by hand."""
+    out = []
+    for r in log:
+        r = dict(r)
+        if r["id"] in admin["startOverrides"]:
+            r["startGwAuto"], r["startGw"], r["startFrom"] = r["startGw"], int(admin["startOverrides"][r["id"]]), "admin"
+        out.append(r)
+    for m in admin["manual"]:
+        end = m.get("endGw")
+        out.append({"id": m["id"], "season": m.get("season", CURRENT_SEASON), "pid": m["pid"], "name": m.get("name", m["pid"]),
+                    "team": m.get("team", ""), "position": m.get("position", ""), "type": "Added by admin", "manual": True,
+                    "startGw": int(m["startGw"]), "endGw": None if end is None else int(end), "startFrom": "admin",
+                    "status": "out" if end is None else "back", "returnedGw": None if end is None else int(end) + 1,
+                    "news": m.get("note", ""), "expectedReturnGw": None, "expectedReturnDate": None, "chance": None, "updates": []})
+    out.sort(key=lambda r: (r["status"] != "out", -r["startGw"], r["name"]))
+    return out
+
+
+def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) -> pd.DataFrame:
+    """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
+    logged absence, every match for one the admin added by hand (he may have gone off injured early)."""
     df = df.copy()
     df["inj_skip"] = False
-    obs = ~df["future"] & (df["season"] == CURRENT_SEASON) & (df["minutes"] == 0)
-    for r in log:
+    season = ~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()
+    for r in merged_injuries(log, admin or {"manual": [], "startOverrides": {}}):
         if r.get("season") != CURRENT_SEASON:
             continue
-        end = (r["returnedGw"] - 1) if r.get("returnedGw") else 99
-        df.loc[obs & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end), "inj_skip"] = True
+        end = r["endGw"] if r.get("manual") and r.get("endGw") is not None else (r["returnedGw"] - 1) if r.get("returnedGw") else 99
+        rows = season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end)
+        df.loc[rows if r.get("manual") else rows & (df["minutes"] == 0), "inj_skip"] = True
     print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}")
     return df
 
@@ -1126,7 +1159,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
     df = yellow_bans(clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON]))
     log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
-    df = mark_injuries(df, log)
+    df = mark_injuries(df, log, load_admin_injuries())
     feat = build_features(df)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
@@ -1253,8 +1286,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     # Stamp script and style links with this build, so browsers fetch the new files instead of a cached copy.
     for page in out_dir.glob("*.html"):
         page.write_text(re.sub(r'((?:src|href)="[\w.-]+\.(?:js|css))"', rf'\1?v={payload["updatedAt"]}"', page.read_text(encoding="utf-8")), encoding="utf-8")
-    if INJURY_LOG.exists():
-        shutil.copy(INJURY_LOG, out_dir / "injury_log.json")
+    if INJURY_LOG.exists() or ADMIN_INJURIES.exists():
+        log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
+        (out_dir / "injury_log.json").write_text(json.dumps(merged_injuries(log, load_admin_injuries()), ensure_ascii=False), encoding="utf-8")
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     first = str(payload["gws"][0])
     top = sorted((p for p in players.values() if first in p["byGw"]), key=lambda p: -p["byGw"][first]["pScore"])[:5]
