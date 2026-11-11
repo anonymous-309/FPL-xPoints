@@ -48,6 +48,10 @@ window.XMin = (function () {
     const r = m.mins.reduce((a, b) => a + b, 0) / m.mins.length / 90, f = d.full;
     const parts = { app: m.mins.reduce((a, x) => a + (x > 0 ? 1 : 0) + (x >= 60 ? 1 : 0), 0) };
     PARTS.forEach((k) => { parts[k] = f[k] * r; });
+    // Clean sheet and goals conceded count only for matches with 60+ minutes (FPL rule).
+    const full60 = m.mins.filter((x) => x >= 60).length / m.mins.length;
+    parts.cs = f.cs * full60;
+    parts.conceded = f.conceded * full60;
     return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: r * 90 * m.mins.length, mins: m.mins, xg: f.xg * r, xa: f.xa * r, edited: m.source };
   }
 

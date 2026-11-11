@@ -928,9 +928,10 @@ class XPointsModel:
         pts_app = p_play + p_60  # FPL: 1 point for 1+ minutes, another for 60+
         pts_goal = lam["goals"] * pos.map(GOAL_PTS).to_numpy()
         pts_ast = lam["assists"] * 3
-        pts_cs = n90 * pcs * pos.map(CS_PTS).to_numpy()
+        # FPL gives clean-sheet points and the goals-conceded deduction only to players with 60+ minutes.
+        pts_cs = p_60 * pcs * pos.map(CS_PTS).to_numpy()
         full_conc = -1.0 * is_gkdef * (conc - (1 - np.exp(-2 * conc)) / 2) / 2  # E[floor(G/2)] over 90
-        pts_conc = full_conc * n90
+        pts_conc = full_conc * p_60
         gk = (pos == "GK").to_numpy()
         full_save = np.zeros(len(df))
         if gk.any():
