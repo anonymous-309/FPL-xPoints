@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Injuries FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Injuries</h1>
+    <p id="status" role="status">Loading the injury log</p>
+  </div>
+  <nav class="links"><a href="index.html">xPoints</a><a href="minutes.html">Minutes</a><a href="planner.html">Planner</a><a href="chances.html">Chance 90min</a><a href="setpieces.html">Set pieces</a><a href="oop.html">OOP</a></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <div class="seg" role="group" aria-label="Show">
+    <button type="button" data-show="out" aria-pressed="true">Out now</button>
+    <button type="button" data-show="back" aria-pressed="false">Back</button>
+    <button type="button" data-show="" aria-pressed="false">All</button>
+  </div>
+  <label>Search player <input id="search" type="search"></label>
+  <label>Team <select id="team"><option value="">All</option></select></label>
+  <label>Type <select id="type"><option value="">All</option><option>Injury</option><option>Suspended</option><option>Doubtful</option><option>Unavailable</option></select></label>
+</form>
+<main>
+  <div class="wrap" tabindex="0" aria-label="Injury log">
+    <table id="table" class="minutes injuries"><thead><tr>
+      <th scope="col">Player</th><th scope="col">Type</th><th scope="col">Start</th><th scope="col">Expected back</th><th scope="col">Back</th><th scope="col">Latest news</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+</main>
+<footer>
+  <p>One row per absence, added each time the site updates and never removed. <b>Start</b> is the first of his zero-minute matches in a row when FPL first flagged him (or the gameweek of the news if he had not missed a match yet). <b>Expected back</b> is the first match on or after the return date in FPL's news; select a row to see every change of news. <b>Back</b> is the gameweek he played again. Zero-minute matches from Start until he is back are left out of the minutes formula. The log starts on 11 Nov 2026; earlier absences are not in it. Not affiliated with the Premier League.</p>
+</footer>
+<script src="injuries.js"></script>
+</body>
+</html>

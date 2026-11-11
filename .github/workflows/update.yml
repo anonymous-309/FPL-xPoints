@@ -10,7 +10,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write  # to save injury_log.json back to the repo
   pages: write
   id-token: write
 
@@ -40,6 +40,16 @@ jobs:
         run: python fpl_xpoints.py download
       - name: Build the points table
         run: python fpl_xpoints.py site --out _site
+      - name: Save the injury log
+        continue-on-error: true
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add injury_log.json
+          if git diff --cached --quiet; then echo "Injury log unchanged"; exit 0; fi
+          git commit -m "Injury log: update"
+          git pull --rebase origin main
+          git push origin HEAD:main
       - name: Plan transfers for the teams in planner_ids.txt
         continue-on-error: true
         run: python planner.py --site _site --ids planner_ids.txt

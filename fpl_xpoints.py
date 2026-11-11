@@ -319,9 +319,9 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
         if k != prev:
             hist, raw, ban_left, prev = [], [], 0, k
         out[i] = ai_minute_detail(hist) + ai_minute_on_return(hist)
-        recent.append(",".join("ban" if m < 0 else str(int(round(m))) for m in raw[-8:]))
+        recent.append(",".join("out" if m < 0 else str(int(round(m))) for m in raw[-8:]))
         if n > 0 and b >= n:
-            raw.append(-1.0)  # shown as "ban" in the log
+            raw.append(-1.0)  # shown as "out" in the log (ban or injury)
         elif n > 0:
             minutes = float(v) / n
             raw.append(minutes)
@@ -451,6 +451,89 @@ def yellow_bans(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def skipped(df: pd.DataFrame) -> pd.Series:
+    """Matches left out of the minutes formula: yellow-card bans and injury absences."""
+    out = pd.Series(False, index=df.index)
+    for col in ("yellow_ban", "inj_skip"):
+        if col in df:
+            out |= df[col].fillna(False).astype(bool)
+    return out
+
+
+INJURY_LOG = Path("injury_log.json")  # kept in the repo; the update workflow commits it after each build
+OUT_STATUS = {"i": "Injury", "s": "Suspended", "d": "Doubtful", "n": "Unavailable"}
+
+
+def update_injury_log(df: pd.DataFrame, first: int, path: Path = INJURY_LOG, now: str | None = None) -> list[dict]:
+    """Adds to the injury log: one record per absence, never deleted.
+
+    A player FPL flags (injured, suspended, doubtful, unavailable) gets a record with the gameweek it started (the
+    first of his zero-minute matches in a row up to now, else the gameweek the news came out) and the gameweek he is
+    expected back (from the return date in the news). Each change of news or expected return is added to its
+    updates. When FPL no longer flags him, the record is closed with the gameweek he played again."""
+    now = now or pd.Timestamp.now(tz="UTC").strftime("%Y-%m-%dT%H:%MZ")
+    log = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+    fut = df[df["future"]].sort_values(["GW", "kickoff_time"]).drop_duplicates("pid")
+    played = df[~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()].sort_values(["kickoff_time", "fixture"])
+    matches = {pid: list(zip(g["GW"].astype(int), g["minutes"].astype(float))) for pid, g in played.groupby("pid")}
+    open_by_pid = {r["pid"]: r for r in log if r["status"] == "out" and r.get("season") == CURRENT_SEASON}
+    added = changed = closed = 0
+    for r in fut.itertuples(index=False):
+        status = r.status if isinstance(r.status, str) else "a"
+        rec = open_by_pid.get(r.pid)
+        if status in OUT_STATUS:
+            news = r.news if isinstance(r.news, str) else ""
+            back = None if pd.isna(r.return_gw) else int(r.return_gw)
+            when = return_date(news, r.news_added if isinstance(r.news_added, str) else None)
+            chance = None if pd.isna(r.chance) else int(r.chance)
+            if rec is None:
+                m = matches.get(r.pid, [])
+                k = len(m)
+                while k > 0 and m[k - 1][1] == 0:
+                    k -= 1
+                start, source = (m[k][0], "matches") if k < len(m) else (int(r.news_gw), "news")
+                rec = {"id": f"{r.pid}-{CURRENT_SEASON}-GW{start}", "season": CURRENT_SEASON, "pid": r.pid, "name": r.web_name,
+                       "team": r.team_short, "position": r.position, "startGw": start, "startFrom": source, "firstSeen": now,
+                       "status": "out", "returnedGw": None, "updates": []}
+                log.append(rec)
+                open_by_pid[r.pid] = rec
+                added += 1
+            now_state = {"type": OUT_STATUS[status], "news": news, "chance": chance, "expectedReturnGw": back,
+                         "expectedReturnDate": None if when is None else when.strftime("%Y-%m-%d")}
+            last = rec["updates"][-1] if rec["updates"] else {}
+            if any(last.get(k) != v for k, v in now_state.items()):
+                rec["updates"].append({"gw": first, "at": now, **now_state})
+                changed += 1
+            rec.update(now_state, team=r.team_short, lastSeen=now)
+        elif rec is not None:
+            back_gw = next((gw for gw, mins in matches.get(r.pid, []) if gw >= rec["startGw"] and mins > 0), first)
+            rec.update(status="back" if status == "a" else "left", returnedGw=back_gw, closedAt=now)
+            closed += 1
+    # players with no upcoming fixture left in the data (left the league): close what is open
+    gone = set(open_by_pid) - set(fut["pid"])
+    for pid in gone:
+        if open_by_pid[pid]["status"] == "out":
+            open_by_pid[pid].update(status="left", closedAt=now)
+    log.sort(key=lambda r: (r["status"] != "out", -r["startGw"], r["name"]))
+    path.write_text(json.dumps(log, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    print(f"Injury log: {added} new, {changed} updated, {closed} back, {sum(r['status'] == 'out' for r in log)} out now, {len(log)} in total")
+    return log
+
+
+def mark_injuries(df: pd.DataFrame, log: list[dict]) -> pd.DataFrame:
+    """Flags the zero-minute matches inside each logged absence ("inj_skip"), so the formula leaves them out."""
+    df = df.copy()
+    df["inj_skip"] = False
+    obs = ~df["future"] & (df["season"] == CURRENT_SEASON) & (df["minutes"] == 0)
+    for r in log:
+        if r.get("season") != CURRENT_SEASON:
+            continue
+        end = (r["returnedGw"] - 1) if r.get("returnedGw") else 99
+        df.loc[obs & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end), "inj_skip"] = True
+    print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}")
+    return df
+
+
 def build_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     last_hist = df.loc[~df["future"], "t"].max()
@@ -502,7 +585,7 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
         "box": df["core_box"].fillna(0), "boxn90": (mins / 90).where(df["has_core"].fillna(False).astype(bool), 0),
         "st": started.where(obs, 0), "n": obs.astype(float),
-        "ban": (df["yellow_ban"].fillna(False).astype(bool) & obs).astype(float) if "yellow_ban" in df else pd.Series(0.0, index=df.index),
+        "ban": (skipped(df) & obs).astype(float),
         "dh": (can_defcon & (dc >= thr)).astype(float), "do": can_defcon.astype(float),
     })
     stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban"]
@@ -925,6 +1008,12 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
     first = upcoming[0]
     gws = set(range(first, first + horizon))
     hist, fut = [], []
+
+    def news_gw(added: str | None) -> int:
+        """The gameweek being played when the news was written: the last one whose deadline had passed."""
+        past = [g for g, d in deadlines.items() if d and added and d <= added]
+        return max(past) if past else first
+
     for p in boot["elements"]:
         if pos.get(p["element_type"]) is None:
             continue
@@ -959,6 +1048,7 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             fut.append(base | {"GW": f["event"], "fixture": f["id"], "team": teams[team_id], "opponent_team": f["team_a"] if home else f["team_h"],
                                 "was_home": home, "kickoff_time": f.get("kickoff_time"), "value": p["now_cost"], "minutes": np.nan, "future": True,
                                 "avail": avail, "from_return": from_return, "min_note": note, "return_gw": back_gw, "flag_cut": flag_cut,
+                                "news_added": p.get("news_added"), "chance": p.get("chance_of_playing_next_round"), "news_gw": news_gw(p.get("news_added")),
                                 "team_short": short[team_id], "opp_short": short[f["team_a"] if home else f["team_h"]], "web_name": p["web_name"], "status": p.get("status"), "news": p.get("news", ""),
                                 "pen_text": p.get("penalties_text") or "", "fk_text": p.get("direct_freekicks_text") or "", "corner_text": p.get("corners_and_indirect_freekicks_text") or ""})
     return pd.DataFrame(hist), pd.DataFrame(fut), first
@@ -977,7 +1067,7 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
         n = len(g) + 1  # one extra row with no match gives the figures after all of them
         mins = np.append(g["minutes"].to_numpy(float), 0.0)
         reds = np.append(g["red_cards"].fillna(0).to_numpy(float), 0.0)
-        bans = np.append(g["yellow_ban"].fillna(False).astype(float).to_numpy(), 0.0) if "yellow_ban" in g else None
+        bans = np.append(skipped(g).astype(float).to_numpy(), 0.0)
         out = ai_minutes(np.array([pid] * n), mins, np.append(np.ones(n - 1), 0.0), reds, bans)
         rows = target["pid"] == pid
         target.loc[rows, "w5_min"], target.loc[rows, "w5_p1"], target.loc[rows, "w5_p60"] = out[0][-1], out[1][-1], out[2][-1]
@@ -1035,6 +1125,8 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     hist, fut, first = live_frames(cache, offline, horizon)
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
     df = yellow_bans(clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON]))
+    log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
+    df = mark_injuries(df, log)
     feat = build_features(df)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
@@ -1161,6 +1253,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     # Stamp script and style links with this build, so browsers fetch the new files instead of a cached copy.
     for page in out_dir.glob("*.html"):
         page.write_text(re.sub(r'((?:src|href)="[\w.-]+\.(?:js|css))"', rf'\1?v={payload["updatedAt"]}"', page.read_text(encoding="utf-8")), encoding="utf-8")
+    if INJURY_LOG.exists():
+        shutil.copy(INJURY_LOG, out_dir / "injury_log.json")
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     first = str(payload["gws"][0])
     top = sorted((p for p in players.values() if first in p["byGw"]), key=lambda p: -p["byGw"][first]["pScore"])[:5]
