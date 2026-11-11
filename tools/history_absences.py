@@ -22,7 +22,7 @@ RANK = {"Suspended": 0, "Illness": 1, "Injury": 2, "Other": 3}
 
 def norm(s):
     s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
-    return re.sub(r"[^a-z ]", "", s.replace("-", " ")).strip()
+    return " ".join(re.sub(r"[^a-z ]", "", re.sub(r"[-.']", " ", s)).split())
 
 
 boot = requests.get("https://fantasy.premierleague.com/api/bootstrap-static/", timeout=30).json()
@@ -37,7 +37,9 @@ def find(name, team):
     tid = team_id.get(TEAM.get(team, team))
     tests = (lambda p: full(p) == n, lambda p: norm(p["web_name"]) == n, lambda p: set(n.split()) <= set(full(p).split()),
              lambda p: n.split()[-1] == norm(p["second_name"]).split()[-1] and full(p).startswith(n.split()[0][:3]),
-             lambda p: p["team"] == tid and set(norm(p["web_name"]).split()) <= set(n.split()))
+             lambda p: p["team"] == tid and set(norm(p["web_name"]).split()) <= set(n.split()),
+             lambda p: p["team"] == tid and set(norm(p["second_name"]).split()) <= set(n.split()),
+             lambda p: p["team"] == tid and bool(set(full(p).split()) & set(n.split()) - {"junior", "jr", "de", "da", "van", "der"}))
     for pool in ([p for p in players if p["team"] == tid], players):
         for test in tests:
             hit = [p for p in pool if test(p)]
@@ -134,3 +136,7 @@ print(f"Added {len(added)} records to the injury log from {len(by_player)} playe
 from collections import Counter
 print(Counter(r["type"] for r in added))
 print(f"Listed but played, left out: {len(played)}. Not matched: {', '.join(sorted(set(missed)))}")
+for name in sorted(set(missed)):
+    toks = set(norm(name).split())
+    near = [f'{p["first_name"]} {p["second_name"]} ({p["web_name"]}, {teams[p["team"]]["short_name"]})' for p in players if toks & set(full(p).split() + norm(p["web_name"]).split())]
+    print(f"  {name}: FPL players with a shared name: {'; '.join(near[:6]) or 'none'}")
