@@ -32,12 +32,12 @@ def get(url, **kw):
 
 
 def sofascore():
-    base = "https://api.sofascore.com/api/v1"
-    seasons = get(f"{base}/unique-tournament/17/seasons")
-    if not seasons:
-        S.headers.update({"Origin": "https://www.sofascore.com", "Referer": "https://www.sofascore.com/"})
-        base = "https://www.sofascore.com/api/v1"
+    S.headers.update({"Origin": "https://www.sofascore.com", "Referer": "https://www.sofascore.com/"})
+    seasons = None
+    for base in ["https://api.sofascore.com/api/v1", "https://www.sofascore.com/api/v1", "https://api.sofascore.app/api/v1"]:
         seasons = get(f"{base}/unique-tournament/17/seasons")
+        if seasons:
+            break
     if not seasons:
         print("Sofascore: no answer")
         return None
@@ -62,7 +62,12 @@ def sofascore():
 
 
 def fotmob():
-    lg = get("https://www.fotmob.com/api/leagues", params={"id": 47, "ccode3": "GBR"})
+    S.headers.update({"Referer": "https://www.fotmob.com/"})
+    lg, api = None, None
+    for api in ["https://www.fotmob.com/api/data", "https://www.fotmob.com/api"]:
+        lg = get(f"{api}/leagues", params={"id": 47, "ccode3": "GBR"})
+        if lg:
+            break
     if not lg:
         print("FotMob: no answer")
         return None
@@ -72,7 +77,7 @@ def fotmob():
         rnd = int(m.get("round") or m.get("roundName") or 0)
         if rnd not in ROUNDS or not (m.get("status") or {}).get("finished"):
             continue
-        d = get("https://www.fotmob.com/api/matchDetails", params={"matchId": m["id"]})
+        d = get(f"{api}/matchDetails", params={"matchId": m["id"]})
         if d is None:
             print("FotMob: match details refused")
             return out if out["matches"] else None
