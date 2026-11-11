@@ -976,6 +976,22 @@ def chance_report(pred: pd.DataFrame) -> None:
     print(pd.DataFrame(counts).to_string(index=False, formatters={"predicted": "{:.3f}".format, "actual": "{:.3f}".format, "MAE": "{:.3f}".format,
                                                                    "MAE skill": "{:+.3f}".format, "correlation": "{:.3f}".format}))
 
+    # Same test as FPL Review's "Massive Data" article (2019/20 GW9-26, 2,021 samples): outfield players who played
+    # 90 minutes with 450+ minutes of earlier data; expected goals against goals and against xG, R2 and RMSE.
+    fr = played[(played["position"] != "GK") & (played["minutes"] >= 90) & (played["L_n90"] >= 5) & played["GW"].between(9, 26)]
+    if len(fr) > 50:
+        pr = fr["g90"].to_numpy(float)
+        out = []
+        for target, label in (("expected_goals", "xG"), ("goals_scored", "Goals")):
+            ac = fr[target].fillna(0).to_numpy(float)
+            sse, sst = np.sum((pr - ac) ** 2), np.sum((ac - ac.mean()) ** 2)
+            out.append(f"{label} R2 {1 - sse / sst:.3f} (corr^2 {np.corrcoef(pr, ac)[0, 1] ** 2:.3f}), RMSE {np.sqrt(np.mean((pr - ac) ** 2)):.3f}")
+        hit = (fr["goals_scored"].fillna(0) >= 1).to_numpy(float)
+        print(f"\n=== FPL Review comparison (outfield, 90 min, 450+ min before, GW9-26), n={len(fr)} ===")
+        print("; ".join(out) + f"; anytime AUC {_auc(1 - np.exp(-pr), hit):.3f}")
+        print("FPL Review 2019/20 (n=2021): Massive Data xG R2 0.353 RMSE 0.213, Goals R2 0.129 RMSE 0.345; "
+              "bookmakers xG R2 0.321, Goals R2 0.112 RMSE 0.348; xG over last 5 xG R2 0.288, Goals R2 0.098")
+
     print("\n=== Chance 90min: calibration, predicted vs actual by predicted band ===")
     for title, (p, h) in calib.items():
         bands = pd.qcut(pd.Series(p), 5, duplicates="drop")
