@@ -872,8 +872,8 @@ def simulate_bonus(d: pd.DataFrame, sd: float = 6.0, sims: int = 2000, seed: int
     return out
 
 
-BONUS_CTX_FEATS = ["ctx_rank", "ctx_log_xbps", "ctx_gap_best", "ctx_gap_3rd", "ctx_share_top3", "ctx_n", "is_DEF", "is_MID", "is_FWD"]
-BONUS_MODE = "context"  # "context": learned from each player's BPS place in the match; "blend": model + simulation
+BONUS_CTX_FEATS = ["ctx_rank", "ctx_log_xbps", "ctx_gap_best", "ctx_gap_3rd", "ctx_share_top3", "ctx_n", "l_bon", "is_DEF", "is_MID", "is_FWD"]
+BONUS_MODE = "blend"  # "context": learned from each player's BPS place in the match; "blend": model + simulation
 
 
 def bonus_context(frame: pd.DataFrame, bps90: np.ndarray, mins: np.ndarray) -> pd.DataFrame:
@@ -897,8 +897,14 @@ def bonus_context(frame: pd.DataFrame, bps90: np.ndarray, mins: np.ndarray) -> p
         "ctx_rank": rank.to_numpy(float), "ctx_log_xbps": np.log1p(own).to_numpy(float),
         "ctx_gap_best": (own - best_other).to_numpy(float), "ctx_gap_3rd": (own - third).to_numpy(float),
         "ctx_share_top3": (own / top3.replace(0, np.nan)).fillna(0).to_numpy(float), "ctx_n": n.to_numpy(float),
+        "l_bon": frame["l_bon"].to_numpy(float) if "l_bon" in frame else np.zeros(len(frame)),
         "is_DEF": (pos == "DEF").to_numpy(float), "is_MID": (pos == "MID").to_numpy(float), "is_FWD": (pos == "FWD").to_numpy(float),
     }, index=frame.index)
+
+
+def own_bps(df: pd.DataFrame, model_bps: np.ndarray) -> np.ndarray:
+    """His own BPS record per 90 (shrunk a little to his role), falling back to the BPS model."""
+    return df["r_bps"].fillna(pd.Series(model_bps, index=df.index)).to_numpy(float) if "r_bps" in df else model_bps
 
 
 class XPointsModel:
@@ -914,7 +920,7 @@ class XPointsModel:
         # (pre-match figures only) against the bonus he got when he played 60+ minutes.
         self.bonus_ctx = None
         if {"season", "fixture"} <= set(train.columns):
-            ctx = bonus_context(train, self.bps.predict(train[BPS_FEATS]), train["w5_min"].fillna(0).to_numpy(float))
+            ctx = bonus_context(train, own_bps(train, self.bps.predict(train[BPS_FEATS])), train["w5_min"].fillna(0).to_numpy(float))
             rows = (train["minutes"] >= 60).to_numpy()
             if rows.sum() > 2000:
                 self.bonus_ctx = HistGradientBoostingRegressor(loss="poisson", max_iter=300, learning_rate=0.05, max_leaf_nodes=15,
@@ -1023,7 +1029,7 @@ class XPointsModel:
             b90 = np.where(np.isnan(sim), out["bonus90"], BONUS_SIM_SHARE * sim + (1 - BONUS_SIM_SHARE) * out["bonus90"])
             out["bonus90_blend"] = b90
             if self.bonus_ctx is not None:
-                ctx = bonus_context(df, out["bps90"].to_numpy(float), xmin)
+                ctx = bonus_context(df, own_bps(df, out["bps90"].to_numpy(float)), xmin)
                 out["bonus90_ctx"] = self.bonus_ctx.predict(ctx[BONUS_CTX_FEATS])
                 if BONUS_MODE == "context":
                     b90 = out["bonus90_ctx"].to_numpy(float)
