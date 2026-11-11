@@ -34,7 +34,8 @@ full = lambda p: norm(f'{p["first_name"]} {p["second_name"]}')
 
 def find(name, team):
     n = norm(name)
-    tid = team_id.get(TEAM.get(team, team))
+    tid = team_id.get(TEAM.get(team, team)) or next((t["id"] for t in boot["teams"] if norm(t["name"]) in norm(team) or norm(team) in norm(t["name"])
+                                                       or norm(team).split()[0] == norm(t["name"]).split()[0]), None)
     tests = (lambda p: full(p) == n, lambda p: norm(p["web_name"]) == n, lambda p: set(n.split()) <= set(full(p).split()),
              lambda p: n.split()[-1] == norm(p["second_name"]).split()[-1] and full(p).startswith(n.split()[0][:3]),
              lambda p: p["team"] == tid and set(norm(p["web_name"]).split()) <= set(n.split()),
