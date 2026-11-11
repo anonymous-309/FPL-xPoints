@@ -1,0 +1,220 @@
+# Missing players in Premier League GW1-9 2026-27 from Sofascore match lineups, read once on 2026-11-12.
+# name|team (Sofascore)|reason|rounds listed as missing|rounds listed as doubtful
+Bruno Guimarães|Arsenal|Injury|1|
+Jurriën Timber|Arsenal|Injury|1,2,3|
+William Saliba|Arsenal|Injury|1,2,3,4,5,6,7,8,9|
+Haji Wright|Coventry City|Injury|1,2,3,4,5,6,7,8,9|
+Ephron Mason-Clark|Coventry City|Injury||1
+Charlie Hughes|Hull City|Injury|1,2,3,4,5,6,7,8,9|
+Darko Gyabi|Hull City|Injury|1,2,3,4,5,6,7,8,9|
+Eliot Matazo|Hull City|Injury|1,2,3,4,5,6,7,8,9|
+Jack Butland|Hull City|Injury|1,2,3,4,5,6,7,8|
+Joe Gelhardt|Hull City|Injury|1,2|
+Matty Jacob|Hull City|Injury|1,2|
+Óscar Zambrano|Hull City|Injury|1,2,3|
+Tim Iroegbunam|Hull City|Injury||1
+Amad Diallo|Manchester United|Injury|1,2,3,4,5|
+Carlos Baleba|Manchester United|Injury|1,2,3,4|
+Manuel Ugarte|Manchester United|Injury|1,2,3,4,5,6,7,8,9|
+Matthijs de Ligt|Manchester United|Injury|1,6|
+Tom Heaton|Manchester United|Injury|1,2,3,4,5,6,7|
+Mason Mount|Manchester United|Injury||1
+Christian Nørgaard|Everton|Injury|1,2,3,4,5|
+Tim Iroegbunam|Everton|Injury|1|
+Ben Chilwell|Crystal Palace|Injury||1,2,7
+Dean Henderson|Crystal Palace|Injury|5,6|1,4
+Honest Ahanor|Crystal Palace|Injury||1,3
+Abdul Fatawu Issahaku|Ipswich Town|Injury||1
+Azor Matusiwa|Ipswich Town|Injury|2,3|1
+Florentino Luís|Ipswich Town|Injury||1
+Simon Adingra|Sunderland|Injury|1,2|
+Nicolò Savona|Nottingham Forest|Injury|1,2,3,4,5,6,7,8,9|
+Ryan Yates|Nottingham Forest|Injury|1|
+Gabriel Gudmundsson|Leeds United|Injury|1|
+Mateo Joseph|Leeds United|Injury|1,2,3,4,5,6,7,8,9|
+Wilfried Gnonto|Leeds United|Injury|1|
+Antoni Milambo|Brentford|Injury|1,2,3,4,5,6,7,8,9|
+Sepp van den Berg|Brentford|Injury|1,2,3,4,5|
+Dejan Kulusevski|Tottenham Hotspur|Injury|1,2,4|
+Micky van de Ven|Tottenham Hotspur|Injury|1|
+Pape Matar Sarr|Tottenham Hotspur|Injury|1|2
+Pedro Porro|Tottenham Hotspur|Injury|1,7|5
+Sávio|Tottenham Hotspur|Illness|1|
+Wilson Odobert|Tottenham Hotspur|Injury|1,2,3,4,5,6,7,8,9|
+Xavi Simons|Tottenham Hotspur|Injury|1,2,3,4,5,6,7,8,9|
+Evan Ferguson|Brighton & Hove Albion|Injury|1,2,3,4,5,6,7,8,9|
+Kaoru Mitoma|Brighton & Hove Albion|Injury|1,2,3,4,5,6,7,8,9|
+Stefanos Tzimas|Brighton & Hove Albion|Injury|1,2,3,4,5,6,7,8,9|
+Yankuba Minteh|Brighton & Hove Albion|Injury|1,2,3,4,5,6,7,8|
+Femi Azeez|Brighton & Hove Albion|Injury|3,5,6,7,8,9|1,2
+Amadou Onana|Aston Villa|Injury|1,2,3,4,5,6,7,8,9|
+Brian Madjo|Aston Villa|Injury|1,2,3,4,5|
+Emiliano Martínez|Aston Villa|Injury||1
+Tammy Abraham|Aston Villa|Injury||1
+Jérémy Doku|Manchester City|Injury|1,2,3|
+Sávio|Manchester City|Illness|1|
+Ryan McAidoo|Manchester City|Injury||1
+Ryan Christie|Bournemouth|Suspended|1|
+Amine Adli|Bournemouth|Injury|1,2,3,4,5|
+Eli Junior Kroupi|Bournemouth|Injury|1,2,3,4,5,6,7|
+Julián Araujo|Bournemouth|Injury|1,2,3,4,5,6,7,8,9|
+Veljko Milosavljević|Bournemouth|Injury|1,2,3,4|
+Joelinton|Newcastle United|Injury|1,2,3,4,5|
+Dan Burn|Newcastle United|Injury|2,3,4,5|1
+Conor Bradley|Liverpool FC|Injury|1,2,3,4,5,6,7,8,9|
+Giovanni Leoni|Liverpool FC|Injury|1,2,3,4,5,6,7,8,9|
+Hugo Ekitiké|Liverpool FC|Injury|1,2,3,4,5,6,7,8,9|
+Joe Gomez|Liverpool FC|Injury|1,2,3,4|
+Stefan Bajčetić|Liverpool FC|Injury|1,2|
+Joachim Andersen|Fulham|Suspended|1|
+Tom Cairney|Fulham|Injury|1,2,3,4,5|
+Hugo Larsson|Fulham|Injury||1,2,7
+Wesley Fofana|Chelsea|Suspended|1|
+Jordan Henderson|Chelsea|Injury|1,2,3,4|
+Emiliano Martínez|Chelsea|Injury|8,9|1
+Chadi Riad|Crystal Palace|Injury|2,3,4,5,6,7,8,9|
+Ismaïla Sarr|Crystal Palace|Injury|2,3,4,8,9|
+Jean-Philippe Mateta|Crystal Palace|Injury|3,4,5,6|2
+Matheus Nunes|Manchester City|Injury||2,8
+Federico Chiesa|Liverpool FC|Injury|2,3,4,5|
+Ibrahim Sangaré|Nottingham Forest|Injury|2|3
+Morgan Gibbs-White|Nottingham Forest|Injury||2,7
+Neco Williams|Nottingham Forest|Injury||2,9
+Kaine Kesler-Hayden|Coventry City|Injury|2,3,4,5|
+Luke Woolfenden|Coventry City|Injury|2,3,4,5,6,7,8,9|
+James Maddison|Tottenham Hotspur|Injury||2,3
+William Osula|Newcastle United|Injury|2,3,4,5|
+Enzo Fernández|Chelsea|Injury||2
+Marco Palestra|Chelsea|Injury|4|2,3
+Jack Hinshelwood|Brighton & Hove Albion|Injury|2,3,4,5|
+Georginio Rutter|Brighton & Hove Albion|Injury||2,3
+Yasin Ayari|Brighton & Hove Albion|Injury||2,3
+Ilia Gruev|Leeds United|Injury|2,3|
+Dayann Methalie|Sunderland|Suspended|2|
+Luc De Fougerolles|Fulham|Injury||2
+Jack Taylor|Ipswich Town|Injury|2,3,4,5|
+Jaden Philogene-Bidace|Ipswich Town|Injury|2,3|
+João Gomes|Aston Villa|Suspended|2,3,4|
+Johan Manzambi|Aston Villa|Injury|2,3|8
+Gabriel Jesus|Arsenal|Other|2|
+Gabriel Martinelli|Arsenal|Other|2|
+Emersonn|Ipswich Town|Injury||3
+Josh Dasilva|Brentford|Injury|4,5,6,7,8,9|3
+Mathias Jensen|Brentford|Injury|4,5|3
+Habib Diarra|Sunderland|Injury|3,4,5,6|
+Mats Wieffer|Brighton & Hove Albion|Injury|3,4,5,6,7|
+Michael Svoboda|Brighton & Hove Albion|Injury|3,4|
+Joe Rodon|Leeds United|Injury|3,4,5,6,7,8|
+Nico O'Reilly|Manchester City|Injury||3
+Stephen Mfuni|Coventry City|Other|3|
+Richarlison|Tottenham Hotspur|Other|3|
+Sávio|Tottenham Hotspur|Injury|7,8,9|3
+Lewie Coyle|Hull City|Injury||3
+Cristhian Mosquera|Arsenal|Injury||3,4
+Moisés Caicedo|Chelsea|Injury|4|3
+Leon Goretzka|Aston Villa|Injury|4,5,6|
+Matty Cash|Aston Villa|Injury||4
+Jair|Nottingham Forest|Injury||4
+Nikola Milenković|Nottingham Forest|Injury|5|4,6
+Nathan Collins|Brentford|Injury|4,5|
+Emmanuel Emegha|Chelsea|Injury|4,7|5
+Hidemasa Morita|Hull City|Injury|4,5|
+Ilyas Ansah|Hull City|Injury|4,5,6,7,8,9|
+John Egan|Hull City|Injury||4
+Paddy McNair|Hull City|Injury||4
+Eddie Nketiah|Crystal Palace|Injury||4
+Mykhailo Mudryk|Tottenham Hotspur|Injury|4,5,6,7,8,9|
+Romaine Mundle|Sunderland|Injury|4,5,6,7,8,9|
+Josh Eccles|Coventry City|Injury|4,5,6,7,8,9|
+Ellis Simms|Coventry City|Injury||4
+Zadok Yohanna|Brighton & Hove Albion|Injury|4,5,6,7,8,9|
+Luke Shaw|Manchester United|Injury|9|4,7
+Anthony Elanga|Newcastle United|Injury|5,6,7|4
+Ewen Jaouen|Newcastle United|Injury|5,6,7,8,9|4
+Kaye Furo|Brentford|Injury|5,6,7,8,9|
+João Pedro|Chelsea|Injury|5,8,9|
+Reece James|Chelsea|Injury|6,7,8,9|5
+Sandro Tonali|Tottenham Hotspur|Injury||5
+Ian Maatsen|Aston Villa|Injury|5,6,7|
+Pau Torres|Aston Villa|Injury|5|
+Marco Bizot|Aston Villa|Injury||5
+Lewis Dunk|Brighton & Hove Albion|Injury||5
+Ben White|Arsenal|Injury||5
+Merlin Röhl|Everton|Injury||5
+Jacob Ramsey|Newcastle United|Injury|5,7|
+Nico González|Newcastle United|Injury|5|
+Amar Dedić|Newcastle United|Injury||5
+Nobel Mendy|Hull City|Injury|5,7,8|
+Matt Targett|Hull City|Injury|6,7,8,9|5
+Taiwo Awoniyi|Coventry City|Suspended|5,6|
+Aurèle Amenda|Coventry City|Injury|5,6,7,8,9|
+Justin Kluivert|Bournemouth|Injury|5,6|
+Harry Wilson|Leeds United|Injury||5
+Axel Disasi|Crystal Palace|Suspended|5,6,7|
+Phil Foden|Manchester City|Suspended|5,6|
+Reinildo Mandava|Sunderland|Suspended|5|
+Kenny Tete|Fulham|Injury|5|
+Benjamin Šeško|Manchester United|Injury|5,6,7,8,9|
+Christos Tzolis|Arsenal|Injury|6,7,8|
+Daniel James|Leeds United|Injury||6,7
+Modou Kéba Cissé|Aston Villa|Injury|6|
+George Hemmings|Aston Villa|Injury||6,7
+Mikkel Damsgaard|Brentford|Injury||6
+Jamie Gittens|Chelsea|Injury|6,7|
+Alex Scott|Bournemouth|Injury|6,7,8,9|
+Abdul Fatawu Issahaku|Ipswich Town|Suspended|6|
+Antonee Robinson|Fulham|Injury||6
+Brian Brobbey|Sunderland|Injury|6|
+Daniel Ballard|Sunderland|Injury|6,7,8,9|
+Patrick Dorgu|Manchester United|Injury|6,7,8,9|
+Noussair Mazraoui|Manchester United|Injury||6
+Takehiro Tomiyasu|Crystal Palace|Injury|6,7,8,9|
+Igor Jesus|Nottingham Forest|Injury|6,7,8,9|
+Vitaliy Mykolenko|Everton|Injury||6
+Alexander Isak|Liverpool FC|Injury|6|
+Cody Gakpo|Liverpool FC|Injury|6|
+Dominik Szoboszlai|Liverpool FC|Injury|8|6
+Tino Livramento|Newcastle United|Injury|6,7,8,9|
+Ryan Gravenberch|Liverpool FC|Suspended|7|
+Lucas Gourna-Douath|Hull City|Injury|7|8
+Mohamed Ali Cho|Hull City|Injury|7|
+Matteo Ruggeri|Aston Villa|Injury|7,8,9|
+Thomas Meunier|Sunderland|Injury|7|8
+Wilson Isidor|Sunderland|Injury||7,8
+Pascal Struijk|Brighton & Hove Albion|Suspended|7|
+Kobbie Mainoo|Manchester United|Injury||7
+Piero Hincapié|Arsenal|Injury|7|
+Rodrigo Bentancur|Tottenham Hotspur|Suspended|7,8,9|
+Lucas Bergvall|Tottenham Hotspur|Injury|7,8,9|
+Destiny Udogie|Tottenham Hotspur|Injury||7,8
+Saša Lukić|Ipswich Town|Injury|8|9
+Aaron Wan-Bissaka|Aston Villa|Injury|8,9|
+Antoine Semenyo|Manchester City|Injury|8,9|
+Bukayo Saka|Arsenal|Injury|8,9|
+Ryan Sessegnon|Fulham|Suspended|8,9|
+Pep Chavarría|Chelsea|Injury|8|
+Tosin Adarabioyo|Tottenham Hotspur|Injury|9|8
+Jørgen Strand Larsen|Crystal Palace|Injury||8
+Quinten Timber|Crystal Palace|Injury||8
+Yehor Yarmoliuk|Brentford|Suspended|8,9|
+Vitaly Janelt|Brentford|Suspended|8|
+Jeremie Frimpong|Liverpool FC|Injury|8,9|
+Víctor Muñoz|Liverpool FC|Injury||8
+Pascal Struijk|Brighton & Hove Albion|Injury|9|8
+Marcus Rashford|Manchester United|Injury||8,9
+Alex Tóth|Bournemouth|Injury|8,9|
+Kevin Danso|Sunderland|Suspended|8|
+Aarón Anselmino|Chelsea|Injury|9|
+Jorrel Hato|Chelsea|Injury|9|
+Maxence Lacroix|Chelsea|Injury|9|
+Fabio Carvalho|Brentford|Injury|9|
+Rico Henry|Brentford|Injury|9|
+Nicolás Domínguez|Nottingham Forest|Injury|9|
+Bobby Thomas|Coventry City|Injury||9
+Nordi Mukiele|Sunderland|Injury||9
+Ferdi Kadıoğlu|Brighton & Hove Albion|Injury|9|
+Max Dowman|Arsenal|Suspended|9|
+Noni Madueke|Arsenal|Injury||9
+Lewis Miley|Newcastle United|Injury||9
+Matías Fernández-Pardo|Newcastle United|Illness||9
+Jack Grealish|Everton|Other|9|
