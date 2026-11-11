@@ -73,6 +73,7 @@ MAX_BAN_MATCHES = 4
 HIST_PEN_SHARE = {1: 0.85, 2: 0.12, 3: 0.03}  # share of team penalties by FPL order, used for past seasons
 PEN_TAKE_ON_PITCH = 0.95  # chance the listed taker steps up when he is on the pitch
 PEN_CONVERSION, PEN_XG = 0.78, 0.76
+PEN_SAVE_SHARE = 0.12  # share of penalties saved, used until penalties are counted
 SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_order", "corners_and_indirect_freekicks_order": "corner_order"}
 HL_FINISH, K_XGOT, K_FINISH_XG = 12, 8.0, 15.0  # finishing: same half-life as the rest, shrunk by xG volume
 HISTORY_MATCHES = 38  # every decayed record uses only each player's or team's latest 38 matches
@@ -600,6 +601,9 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
     # Each taker's penalties and misses where they are counted, for his own miss rate.
     df["pen_taken_k"], df["pen_missed_k"] = taken, df["core_pen_missed"].fillna(0).where(known, 0)
     df["league_pen_miss"] = float(np.clip(df["pen_missed_k"].sum() / taken.sum(), 0.12, 0.35)) if taken.sum() > 200 else 1 - PEN_CONVERSION
+    # Share of penalties the goalkeeper saves, where penalties are counted.
+    saved = df.loc[known & (df["position"] == "GK"), "penalties_saved"].fillna(0).sum()
+    df["league_pen_save"] = float(np.clip(saved / taken.sum(), 0.05, 0.3)) if taken.sum() > 200 else PEN_SAVE_SHARE
     if teams_matches > 100:
         rate = taken.sum() / teams_matches
     else:
@@ -940,7 +944,10 @@ class XPointsModel:
         saves90 = np.zeros(len(df))
         if gk.any():
             saves90[gk] = mu
-        ps90 = gk * df["r_ps"].to_numpy(float)
+        # Penalty saves: penalties the opponent is expected to win (league rate x their attack) x share saved.
+        opp_pens = df["league_pen_rate"].to_numpy(float) * df["opp_att"].fillna(1.0).to_numpy(float)
+        save_share = df["league_pen_save"].to_numpy(float) if "league_pen_save" in df else np.full(len(df), PEN_SAVE_SHARE)
+        ps90 = gk * opp_pens * save_share
         full_pensave = ps90 * PEN_SAVE_PTS
         pts_pensave = full_pensave * n90
         pm90, og90 = pen90 * miss, df["r_og"].to_numpy(float)
@@ -1472,7 +1479,7 @@ def set_piece_table(res: pd.DataFrame, gw: int) -> dict:
             "penRate": round(float(g["team_pens"].iloc[0]), 3),
             "pens": [{"name": r["web_name"], "order": num(r["pen_order"]), "adjMin": round(float(r["xmin"]), 1),
                       "share": round(float(r["pen_cond_used"] * r["xmin"] / 90), 3),
-                      "xPenGoals": round(float(r["pen_cond_used"] * r["xmin"] / 90 * r["team_pens"] * PEN_CONVERSION), 3)} for _, r in pens.iterrows()],
+                      "xPenGoals": round(float(r["pen_cond_used"] * r["xmin"] / 90 * r["team_pens"] * (1 - r["pen_miss_rate"])), 3)} for _, r in pens.iterrows()],
             "fk": takers("fk_order"), "corners": takers("corner_order"), "notes": notes,
         })
     return {"gw": int(gw), "teams": teams}
