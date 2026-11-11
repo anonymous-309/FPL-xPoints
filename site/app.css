@@ -219,3 +219,5 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 @media (prefers-reduced-motion: reduce) { .bars i, .menu-panel { transition: none; animation: none; } }
 @media (max-width: 520px) { .menu-label { display: none; } .menu-btn { padding: 0 11px; } }
 .admin-formula { display: flex; align-items: center; height: 34px; min-width: 70px; color: var(--ink); font-weight: 650; font-size: 14px; }
+.minutes td.past span { display: block; }
+.minutes td.past small { display: block; margin-top: 2px; font-size: 11px; }

@@ -1598,6 +1598,12 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     past_gws = sorted(int(g) for g in played["GW"].dropna().unique() if int(g) < int(res["GW"].min()))[-PAST_GWS:]
     past = {pid: {str(int(gw)): [int(round(m)) for m in gg["minutes"].fillna(0)] for gw, gg in g.groupby("GW") if int(gw) in past_gws}
             for pid, g in played[played["GW"].isin(past_gws)].groupby("pid")}
+    # Opponent of each of those matches, written like upcoming ones: capitals at home, lower case away.
+    short_of = dict(zip(res["team"].astype(str), res["team_short"].astype(str)))
+    short_of.update(dict(zip(res["opp"].astype(str), res["opp_short"].astype(str))) if "opp" in res else {})
+    lab = lambda o, h: (short_of.get(str(o), str(o)[:3]).upper() if h else short_of.get(str(o), str(o)[:3]).lower())
+    past_opp = {pid: {str(int(gw)): [lab(o, h) for o, h in zip(gg["opp"], gg["was_home"])] for gw, gg in g.groupby("GW")}
+                for pid, g in played[played["GW"].isin(past_gws)].groupby("pid")}
     usual = usual_minutes(res)
     res = res.assign(min_usual=usual["min"])
     players: dict[str, dict] = {}
@@ -1612,7 +1618,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "minUsual": round(float(r["min_usual"]), 1),
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
             "adminMin": None if pd.isna(r.get("admin_min", np.nan)) else round(float(r["admin_min"])), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
-            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "byGw": {},
+            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "byGw": {},
             # penalty order and miss rate, so the site can move penalties to the next taker when minutes are edited
             "penOrder": None if pd.isna(pd.to_numeric(r.get("pen_order"), errors="coerce")) else int(pd.to_numeric(r["pen_order"], errors="coerce")),
             "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None})
