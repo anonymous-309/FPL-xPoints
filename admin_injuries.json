@@ -11,6 +11,18 @@
    "endGw": 7,
    "note": "",
    "at": "2026-11-11T11:06:20.425Z"
+  },
+  {
+   "id": "c141746-admin-GW8-mwc0mm4m",
+   "pid": "c141746",
+   "name": "B.Fernandes",
+   "team": "MUN",
+   "position": "MID",
+   "type": "Manager discipline",
+   "startGw": 8,
+   "endGw": 8,
+   "note": "",
+   "at": "2026-11-11T11:08:14.086Z"
   }
  ],
  "startOverrides": {}
