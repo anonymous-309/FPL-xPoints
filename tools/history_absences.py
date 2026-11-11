@@ -141,3 +141,8 @@ for name in sorted(set(missed)):
     toks = set(norm(name).split())
     near = [f'{p["first_name"]} {p["second_name"]} ({p["web_name"]}, {teams[p["team"]]["short_name"]})' for p in players if toks & set(full(p).split() + norm(p["web_name"]).split())]
     print(f"  {name}: FPL players with a shared name: {'; '.join(near[:6]) or 'none'}")
+# Check: each added record with the player's minutes in GW1-10.
+for r in added:
+    eid = next(p["id"] for p in players if f'c{p["code"]}' == r["pid"])
+    print(f'  {r["name"]:16} {r["team"]} {r["news"]:45} minutes GW1-10: ' + " ".join(str(minutes[eid].get(g, "-")) for g in range(1, 11)))
+
