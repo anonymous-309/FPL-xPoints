@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: [".github/workflows/absences.yml", "tools/fetch_absences.py"]
+    paths: [".github/workflows/absences.yml", "tools/fetch_absences.py", "tools/apply_absences.py"]
 
 permissions:
   contents: write
@@ -19,12 +19,13 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install requests
-      - run: python tools/fetch_absences.py
+      - run: python tools/fetch_absences.py || test -f absences_raw/fotmob.json
+      - run: python tools/apply_absences.py
       - name: Save what was read
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add absences_raw
+          git add absences_raw admin_injuries.json
           git diff --cached --quiet && exit 0
-          git commit -m "Absences GW1-9 read from Sofascore/FotMob"
+          git commit -m "Admin injuries: GW1-9 absences from FotMob"
           for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
