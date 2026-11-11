@@ -1,18 +1,6 @@
 {
  "manual": [
   {
-   "id": "c222531-admin-GW7-mwc0k6fd",
-   "pid": "c222531",
-   "name": "Gibbs-White",
-   "team": "NFO",
-   "position": "MID",
-   "type": "Injury",
-   "startGw": 7,
-   "endGw": 7,
-   "note": "",
-   "at": "2026-11-11T11:06:20.425Z"
-  },
-  {
    "id": "c141746-admin-GW8-mwc0mm4m",
    "pid": "c141746",
    "name": "B.Fernandes",
@@ -23,30 +11,6 @@
    "endGw": 8,
    "note": "",
    "at": "2026-11-11T11:08:14.086Z"
-  },
-  {
-   "id": "c219168-admin-GW6-mwc0rkhk",
-   "pid": "c219168",
-   "name": "Isak",
-   "team": "LIV",
-   "position": "FWD",
-   "type": "Injury",
-   "startGw": 6,
-   "endGw": 6,
-   "note": "",
-   "at": "2026-11-11T11:12:05.240Z"
-  },
-  {
-   "id": "c510281-admin-GW1-mwcd6vf2",
-   "pid": "c510281",
-   "name": "Sávio",
-   "team": "TOT",
-   "position": "MID",
-   "type": "Injury",
-   "startGw": 1,
-   "endGw": 2,
-   "note": "Transfer from MC",
-   "at": "2026-11-11T16:59:54.638Z"
   },
   {
    "id": "c605972-fotmob-GW3",
