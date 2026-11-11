@@ -1,0 +1,1473 @@
+{
+"matches": [
+{
+"round": 1,
+"id": "5795363",
+"home": "Arsenal",
+"away": "Coventry City",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 1,
+"id": "5795364",
+"home": "Hull City",
+"away": "Manchester United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 1,
+"id": "5795365",
+"home": "Everton",
+"away": "Crystal Palace",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 1,
+"id": "5795366",
+"home": "Ipswich Town",
+"away": "Sunderland",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 1,
+"id": "5795367",
+"home": "Nottingham Forest",
+"away": "Leeds United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 1,
+"id": "5795368",
+"home": "Brentford",
+"away": "Tottenham Hotspur",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 1,
+"id": "5795369",
+"home": "Brighton & Hove Albion",
+"away": "Aston Villa",
+"homeUnavailable": [
+{
+"id": 1352713,
+"age": 22,
+"name": "Carlos Baleba",
+"positionId": 1000,
+"countryName": "Cameroon",
+"countryCode": "CMR",
+"marketValue": 53464752,
+"unavailability": {
+"injuryId": 30,
+"type": "injury",
+"expectedReturn": "Mid September 2026"
+},
+"firstName": "Carlos",
+"lastName": "Baleba",
+"nationalTeamId": 6629
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 1,
+"id": "5795370",
+"home": "Manchester City",
+"away": "AFC Bournemouth",
+"homeUnavailable": [
+{
+"id": 1174337,
+"age": 22,
+"name": "Sávio",
+"countryName": "Brazil",
+"countryCode": "BRA",
+"marketValue": 44892010,
+"unavailability": {
+"injuryId": 92,
+"type": "injury",
+"expectedReturn": "Doubtful"
+},
+"firstName": "",
+"lastName": "Sávio",
+"nationalTeamId": 8256
+}
+],
+"awayUnavailable": [
+{
+"id": 439369,
+"age": 31,
+"name": "Ryan Christie",
+"positionId": 1000,
+"countryName": "Scotland",
+"countryCode": "SCO",
+"marketValue": 6759410,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late August 2026",
+"expectedReturnDate": "2026-08-23T15:00:00Z"
+},
+"firstName": "Ryan",
+"lastName": "Christie",
+"nationalTeamId": 8498
+}
+]
+},
+{
+"round": 1,
+"id": "5795371",
+"home": "Newcastle United",
+"away": "Liverpool",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 1310118,
+"age": 21,
+"name": "Stefan Bajcetic",
+"positionId": 1000,
+"countryName": "Spain",
+"countryCode": "ESP",
+"marketValue": 8085209,
+"unavailability": {
+"injuryId": 42,
+"type": "injury",
+"expectedReturn": "Early September 2026"
+},
+"firstName": "Stefan",
+"lastName": "Bajcetic",
+"nationalTeamId": 6720
+}
+]
+},
+{
+"round": 1,
+"id": "5795372",
+"home": "Fulham",
+"away": "Chelsea",
+"homeUnavailable": [
+{
+"id": 503659,
+"age": 30,
+"name": "Joachim Andersen",
+"positionId": 1100,
+"countryName": "Denmark",
+"countryCode": "DEN",
+"marketValue": 23827801,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late August 2026",
+"expectedReturnDate": "2026-08-24T21:00:00Z"
+},
+"firstName": "Joachim",
+"lastName": "Andersen",
+"nationalTeamId": 8238
+}
+],
+"awayUnavailable": [
+{
+"id": 917802,
+"age": 25,
+"name": "Wesley Fofana",
+"positionId": 1100,
+"countryName": "France",
+"countryCode": "FRA",
+"marketValue": 27670184,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late August 2026",
+"expectedReturnDate": "2026-08-24T21:00:00Z"
+},
+"firstName": "Wesley",
+"lastName": "Fofana",
+"nationalTeamId": 6723
+}
+]
+},
+{
+"round": 2,
+"id": "5795429",
+"home": "Crystal Palace",
+"away": "Manchester City",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795431",
+"home": "Liverpool",
+"away": "Nottingham Forest",
+"homeUnavailable": [
+{
+"id": 1310118,
+"age": 21,
+"name": "Stefan Bajcetic",
+"positionId": 1000,
+"countryName": "Spain",
+"countryCode": "ESP",
+"marketValue": 8085209,
+"unavailability": {
+"injuryId": 42,
+"type": "injury",
+"expectedReturn": "Early September 2026"
+},
+"firstName": "Stefan",
+"lastName": "Bajcetic",
+"nationalTeamId": 6720
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795425",
+"home": "AFC Bournemouth",
+"away": "Everton",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795428",
+"home": "Coventry City",
+"away": "Hull City",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795434",
+"home": "Tottenham Hotspur",
+"away": "Newcastle United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795427",
+"home": "Chelsea",
+"away": "Brighton & Hove Albion",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795430",
+"home": "Leeds United",
+"away": "Brentford",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795433",
+"home": "Sunderland",
+"away": "Fulham",
+"homeUnavailable": [
+{
+"id": 1664716,
+"age": 20,
+"name": "Dayann Méthalie",
+"positionId": 1100,
+"countryName": "France",
+"countryCode": "FRA",
+"marketValue": 9949684,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late August 2026",
+"expectedReturnDate": "2026-08-30T15:00:00Z"
+},
+"firstName": "Dayann",
+"lastName": "Méthalie",
+"nationalTeamId": 6723
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795432",
+"home": "Manchester United",
+"away": "Ipswich Town",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 2,
+"id": "5795426",
+"home": "Aston Villa",
+"away": "Arsenal",
+"homeUnavailable": [
+{
+"id": 1174672,
+"age": 25,
+"name": "João Gomes",
+"positionId": 1100,
+"countryName": "Brazil",
+"countryCode": "BRA",
+"marketValue": 36287824,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid September 2026",
+"expectedReturnDate": "2026-09-12T16:00:00Z"
+},
+"firstName": "João",
+"lastName": "Gomes",
+"nationalTeamId": 8256
+},
+{
+"id": 671331,
+"age": 29,
+"name": "Leon Bailey",
+"positionId": 1000,
+"countryName": "Jamaica",
+"countryCode": "JAM",
+"marketValue": 11008321,
+"unavailability": {
+"injuryId": 87,
+"type": "injury",
+"expectedReturn": "Doubtful"
+},
+"firstName": "Leon",
+"lastName": "Bailey",
+"nationalTeamId": 5806
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 3,
+"id": "5795441",
+"home": "Ipswich Town",
+"away": "Liverpool",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 3,
+"id": "5795443",
+"home": "Newcastle United",
+"away": "AFC Bournemouth",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 3,
+"id": "5795436",
+"home": "Brentford",
+"away": "Sunderland",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 3,
+"id": "5795437",
+"home": "Brighton & Hove Albion",
+"away": "Leeds United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 3,
+"id": "5795439",
+"home": "Fulham",
+"away": "Crystal Palace",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 1669629,
+"age": 18,
+"name": "Honest Ahanor",
+"countryName": "Italy",
+"countryCode": "ITA",
+"marketValue": 21445892,
+"unavailability": {
+"injuryId": 69,
+"type": "injury",
+"expectedReturn": "Doubtful"
+},
+"firstName": "Honest",
+"lastName": "Ahanor",
+"nationalTeamId": 8204
+}
+]
+},
+{
+"round": 3,
+"id": "5795442",
+"home": "Manchester City",
+"away": "Coventry City",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 3,
+"id": "5795444",
+"home": "Nottingham Forest",
+"away": "Tottenham Hotspur",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 3,
+"id": "5795440",
+"home": "Hull City",
+"away": "Aston Villa",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 1174672,
+"age": 25,
+"name": "João Gomes",
+"positionId": 1100,
+"countryName": "Brazil",
+"countryCode": "BRA",
+"marketValue": 36287824,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid September 2026",
+"expectedReturnDate": "2026-09-12T16:00:00Z"
+},
+"firstName": "João",
+"lastName": "Gomes",
+"nationalTeamId": 8256
+}
+]
+},
+{
+"round": 3,
+"id": "5795438",
+"home": "Everton",
+"away": "Manchester United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 3,
+"id": "5795435",
+"home": "Arsenal",
+"away": "Chelsea",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795445",
+"home": "AFC Bournemouth",
+"away": "Brentford",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795446",
+"home": "Aston Villa",
+"away": "Nottingham Forest",
+"homeUnavailable": [
+{
+"id": 1174672,
+"age": 25,
+"name": "João Gomes",
+"positionId": 1100,
+"countryName": "Brazil",
+"countryCode": "BRA",
+"marketValue": 36287824,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid September 2026",
+"expectedReturnDate": "2026-09-12T16:00:00Z"
+},
+"firstName": "João",
+"lastName": "Gomes",
+"nationalTeamId": 8256
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795447",
+"home": "Chelsea",
+"away": "Hull City",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795449",
+"home": "Crystal Palace",
+"away": "Ipswich Town",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795451",
+"home": "Liverpool",
+"away": "Fulham",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795454",
+"home": "Tottenham Hotspur",
+"away": "Everton",
+"homeUnavailable": [
+{
+"id": 976506,
+"age": 25,
+"name": "Mykhaylo Mudryk",
+"positionId": 1000,
+"countryName": "Ukraine",
+"countryCode": "UKR",
+"marketValue": 30619485,
+"unavailability": {
+"injuryId": 30,
+"type": "injury",
+"expectedReturn": "Early November 2026"
+},
+"firstName": "Mykhaylo",
+"lastName": "Mudryk",
+"nationalTeamId": 6718
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795453",
+"home": "Sunderland",
+"away": "Arsenal",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795448",
+"home": "Coventry City",
+"away": "Brighton & Hove Albion",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795452",
+"home": "Manchester United",
+"away": "Manchester City",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 4,
+"id": "5795450",
+"home": "Leeds United",
+"away": "Newcastle United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 5,
+"id": "5795456",
+"home": "Brentford",
+"away": "Chelsea",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 5,
+"id": "5795464",
+"home": "Tottenham Hotspur",
+"away": "Aston Villa",
+"homeUnavailable": [
+{
+"id": 976506,
+"age": 25,
+"name": "Mykhaylo Mudryk",
+"positionId": 1000,
+"countryName": "Ukraine",
+"countryCode": "UKR",
+"marketValue": 30619485,
+"unavailability": {
+"injuryId": 30,
+"type": "injury",
+"expectedReturn": "Early October 2026"
+},
+"firstName": "Mykhaylo",
+"lastName": "Mudryk",
+"nationalTeamId": 6718
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 5,
+"id": "5795457",
+"home": "Brighton & Hove Albion",
+"away": "Arsenal",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 5,
+"id": "5795458",
+"home": "Everton",
+"away": "Ipswich Town",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 5,
+"id": "5795462",
+"home": "Newcastle United",
+"away": "Hull City",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 5,
+"id": "5795463",
+"home": "Nottingham Forest",
+"away": "Coventry City",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 643717,
+"age": 29,
+"name": "Taiwo Awoniyi",
+"positionId": 1100,
+"countryName": "Nigeria",
+"countryCode": "NGA",
+"marketValue": 7899105,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Early October 2026",
+"expectedReturnDate": "2026-10-10T16:00:00Z"
+},
+"firstName": "Taiwo",
+"lastName": "Awoniyi",
+"nationalTeamId": 6346
+}
+]
+},
+{
+"round": 5,
+"id": "5795455",
+"home": "AFC Bournemouth",
+"away": "Liverpool",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 5,
+"id": "5795460",
+"home": "Leeds United",
+"away": "Crystal Palace",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 696646,
+"age": 28,
+"name": "Axel Disasi",
+"positionId": 1100,
+"countryName": "France",
+"countryCode": "FRA",
+"marketValue": 17864177,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid October 2026",
+"expectedReturnDate": "2026-10-17T16:00:00Z"
+},
+"firstName": "Axel",
+"lastName": "Disasi",
+"nationalTeamId": 6723
+}
+]
+},
+{
+"round": 5,
+"id": "5795461",
+"home": "Manchester City",
+"away": "Sunderland",
+"homeUnavailable": [
+{
+"id": 815006,
+"age": 26,
+"name": "Phil Foden",
+"positionId": 1100,
+"countryName": "England",
+"countryCode": "ENG",
+"marketValue": 72377361,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid October 2026",
+"expectedReturnDate": "2026-10-11T17:30:00Z"
+},
+"firstName": "Phil",
+"lastName": "Foden",
+"nationalTeamId": 8491
+}
+],
+"awayUnavailable": [
+{
+"id": 600524,
+"age": 32,
+"name": "Reinildo",
+"positionId": 1100,
+"countryName": "Mozambique",
+"countryCode": "MOZ",
+"marketValue": 2790817,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid September 2026",
+"expectedReturnDate": "2026-09-20T15:00:00Z"
+},
+"firstName": "",
+"lastName": "Reinildo",
+"nationalTeamId": 5965
+}
+]
+},
+{
+"round": 5,
+"id": "5795459",
+"home": "Fulham",
+"away": "Manchester United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 6,
+"id": "5795465",
+"home": "Arsenal",
+"away": "Leeds United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 6,
+"id": "5795466",
+"home": "Aston Villa",
+"away": "Brentford",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 6,
+"id": "5795467",
+"home": "Chelsea",
+"away": "AFC Bournemouth",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 6,
+"id": "5795471",
+"home": "Ipswich Town",
+"away": "Fulham",
+"homeUnavailable": [
+{
+"id": 1265626,
+"age": 22,
+"name": "Abdul Fatawu",
+"positionId": 1100,
+"countryName": "Ghana",
+"countryCode": "GHA",
+"marketValue": 26235860,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Early October 2026",
+"expectedReturnDate": "2026-10-10T16:00:00Z"
+},
+"firstName": "Abdul",
+"lastName": "Fatawu",
+"nationalTeamId": 6714
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 6,
+"id": "5795474",
+"home": "Sunderland",
+"away": "Brighton & Hove Albion",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 6,
+"id": "5795473",
+"home": "Manchester United",
+"away": "Tottenham Hotspur",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 976506,
+"age": 25,
+"name": "Mykhaylo Mudryk",
+"positionId": 1000,
+"countryName": "Ukraine",
+"countryCode": "UKR",
+"marketValue": 28146018,
+"unavailability": {
+"injuryId": 30,
+"type": "injury",
+"expectedReturn": "Late October 2026"
+},
+"firstName": "Mykhaylo",
+"lastName": "Mudryk",
+"nationalTeamId": 6718
+}
+]
+},
+{
+"round": 6,
+"id": "5795469",
+"home": "Crystal Palace",
+"away": "Nottingham Forest",
+"homeUnavailable": [
+{
+"id": 696646,
+"age": 28,
+"name": "Axel Disasi",
+"positionId": 1100,
+"countryName": "France",
+"countryCode": "FRA",
+"marketValue": 17864177,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid October 2026",
+"expectedReturnDate": "2026-10-18T15:00:00Z"
+},
+"firstName": "Axel",
+"lastName": "Disasi",
+"nationalTeamId": 6723
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 6,
+"id": "5795470",
+"home": "Hull City",
+"away": "Everton",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 6,
+"id": "5795472",
+"home": "Liverpool",
+"away": "Manchester City",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 815006,
+"age": 26,
+"name": "Phil Foden",
+"positionId": 1100,
+"countryName": "England",
+"countryCode": "ENG",
+"marketValue": 70902300,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid October 2026",
+"expectedReturnDate": "2026-10-17T16:00:00Z"
+},
+"firstName": "Phil",
+"lastName": "Foden",
+"nationalTeamId": 8491
+}
+]
+},
+{
+"round": 6,
+"id": "5795468",
+"home": "Coventry City",
+"away": "Newcastle United",
+"homeUnavailable": [
+{
+"id": 643717,
+"age": 29,
+"name": "Taiwo Awoniyi",
+"positionId": 1100,
+"countryName": "Nigeria",
+"countryCode": "NGA",
+"marketValue": 6714239,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid October 2026",
+"expectedReturnDate": "2026-10-12T21:00:00Z"
+},
+"firstName": "Taiwo",
+"lastName": "Awoniyi",
+"nationalTeamId": 6346
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 7,
+"id": "5795478",
+"home": "Everton",
+"away": "Chelsea",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 7,
+"id": "5795476",
+"home": "Brentford",
+"away": "Liverpool",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 956683,
+"age": 24,
+"name": "Ryan Gravenberch",
+"positionId": 1100,
+"countryName": "Netherlands",
+"countryCode": "NED",
+"marketValue": 71405740,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid October 2026",
+"expectedReturnDate": "2026-10-17T16:00:00Z"
+},
+"firstName": "Ryan",
+"lastName": "Gravenberch",
+"nationalTeamId": 6708
+}
+]
+},
+{
+"round": 7,
+"id": "5795479",
+"home": "Fulham",
+"away": "Hull City",
+"homeUnavailable": [
+{
+"id": 1339269,
+"age": 22,
+"name": "Hugo Larsson",
+"positionId": 1000,
+"countryName": "Sweden",
+"countryCode": "SWE",
+"marketValue": 36017234,
+"unavailability": {
+"injuryId": 47,
+"type": "injury",
+"expectedReturn": "Doubtful"
+},
+"firstName": "Hugo",
+"lastName": "Larsson",
+"nationalTeamId": 8520
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 7,
+"id": "5795481",
+"home": "Manchester City",
+"away": "Ipswich Town",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 7,
+"id": "5795482",
+"home": "Newcastle United",
+"away": "Aston Villa",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 7,
+"id": "5795475",
+"home": "AFC Bournemouth",
+"away": "Sunderland",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 7,
+"id": "5795477",
+"home": "Brighton & Hove Albion",
+"away": "Crystal Palace",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 696646,
+"age": 28,
+"name": "Axel Disasi",
+"positionId": 1100,
+"countryName": "France",
+"countryCode": "FRA",
+"marketValue": 17864177,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Mid October 2026",
+"expectedReturnDate": "2026-10-18T15:00:00Z"
+},
+"firstName": "Axel",
+"lastName": "Disasi",
+"nationalTeamId": 6723
+}
+]
+},
+{
+"round": 7,
+"id": "5795480",
+"home": "Leeds United",
+"away": "Manchester United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 7,
+"id": "5795483",
+"home": "Nottingham Forest",
+"away": "Arsenal",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 7,
+"id": "5795484",
+"home": "Tottenham Hotspur",
+"away": "Coventry City",
+"homeUnavailable": [
+{
+"id": 620618,
+"age": 29,
+"name": "Rodrigo Bentancur",
+"positionId": 1100,
+"countryName": "Uruguay",
+"countryCode": "URU",
+"marketValue": 23406614,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-24T18:30:00Z"
+},
+"firstName": "Rodrigo",
+"lastName": "Bentancur",
+"nationalTeamId": 5796
+},
+{
+"id": 976506,
+"age": 25,
+"name": "Mykhaylo Mudryk",
+"positionId": 1000,
+"countryName": "Ukraine",
+"countryCode": "UKR",
+"marketValue": 28146018,
+"unavailability": {
+"injuryId": 30,
+"type": "injury",
+"expectedReturn": "Early November 2026"
+},
+"firstName": "Mykhaylo",
+"lastName": "Mudryk",
+"nationalTeamId": 6718
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 8,
+"id": "5795491",
+"home": "Ipswich Town",
+"away": "Nottingham Forest",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 8,
+"id": "5795486",
+"home": "Aston Villa",
+"away": "Manchester City",
+"homeUnavailable": [
+{
+"id": 760320,
+"age": 28,
+"name": "Aaron Wan-Bissaka",
+"positionId": 1000,
+"countryName": "DR Congo",
+"countryCode": "COD",
+"marketValue": 16235508,
+"unavailability": {
+"injuryId": 42,
+"type": "injury",
+"expectedReturn": "Mid November 2026"
+},
+"firstName": "Aaron",
+"lastName": "Wan-Bissaka",
+"nationalTeamId": 6321
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 8,
+"id": "5795485",
+"home": "Arsenal",
+"away": "Everton",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 8,
+"id": "5795488",
+"home": "Coventry City",
+"away": "Fulham",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 773991,
+"age": 26,
+"name": "Ryan Sessegnon",
+"positionId": 1100,
+"countryName": "England",
+"countryCode": "ENG",
+"marketValue": 18365455,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-31T21:00:00Z"
+},
+"firstName": "Ryan",
+"lastName": "Sessegnon",
+"nationalTeamId": 8491
+}
+]
+},
+{
+"round": 8,
+"id": "5795487",
+"home": "Chelsea",
+"away": "Tottenham Hotspur",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 620618,
+"age": 29,
+"name": "Rodrigo Bentancur",
+"positionId": 1100,
+"countryName": "Uruguay",
+"countryCode": "URU",
+"marketValue": 23406614,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-31T18:30:00Z"
+},
+"firstName": "Rodrigo",
+"lastName": "Bentancur",
+"nationalTeamId": 5796
+},
+{
+"id": 976506,
+"age": 25,
+"name": "Mykhaylo Mudryk",
+"positionId": 1000,
+"countryName": "Ukraine",
+"countryCode": "UKR",
+"marketValue": 28146018,
+"unavailability": {
+"injuryId": 30,
+"type": "injury",
+"expectedReturn": "Early November 2026"
+},
+"firstName": "Mykhaylo",
+"lastName": "Mudryk",
+"nationalTeamId": 6718
+}
+]
+},
+{
+"round": 8,
+"id": "5795489",
+"home": "Crystal Palace",
+"away": "Newcastle United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 8,
+"id": "5795490",
+"home": "Hull City",
+"away": "Brentford",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 688273,
+"age": 28,
+"name": "Vitaly Janelt",
+"positionId": 1100,
+"countryName": "Germany",
+"countryCode": "GER",
+"marketValue": 17218749,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-25T15:00:00Z"
+},
+"firstName": "Vitaly",
+"lastName": "Janelt",
+"nationalTeamId": 8570
+},
+{
+"id": 1157236,
+"age": 22,
+"name": "Yehor Yarmoliuk",
+"positionId": 1100,
+"countryName": "Ukraine",
+"countryCode": "UKR",
+"marketValue": 46872562,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-31T16:00:00Z"
+},
+"firstName": "Yehor",
+"lastName": "Yarmoliuk",
+"nationalTeamId": 6718
+}
+]
+},
+{
+"round": 8,
+"id": "5795492",
+"home": "Liverpool",
+"away": "Brighton & Hove Albion",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 8,
+"id": "5795493",
+"home": "Manchester United",
+"away": "AFC Bournemouth",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 8,
+"id": "5795494",
+"home": "Sunderland",
+"away": "Leeds United",
+"homeUnavailable": [
+{
+"id": 754126,
+"age": 28,
+"name": "Kevin Danso",
+"positionId": 1100,
+"countryName": "Austria",
+"countryCode": "AUT",
+"marketValue": 18680638,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-25T17:30:00Z"
+},
+"firstName": "Kevin",
+"lastName": "Danso",
+"nationalTeamId": 8255
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 9,
+"id": "5795498",
+"home": "Chelsea",
+"away": "Manchester United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 9,
+"id": "5795495",
+"home": "AFC Bournemouth",
+"away": "Leeds United",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 9,
+"id": "5795497",
+"home": "Brentford",
+"away": "Nottingham Forest",
+"homeUnavailable": [
+{
+"id": 1157236,
+"age": 22,
+"name": "Yehor Yarmoliuk",
+"positionId": 1100,
+"countryName": "Ukraine",
+"countryCode": "UKR",
+"marketValue": 46103798,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-31T16:00:00Z"
+},
+"firstName": "Yehor",
+"lastName": "Yarmoliuk",
+"nationalTeamId": 6718
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 9,
+"id": "5795499",
+"home": "Coventry City",
+"away": "Sunderland",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 9,
+"id": "5795500",
+"home": "Hull City",
+"away": "Ipswich Town",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 9,
+"id": "5795502",
+"home": "Manchester City",
+"away": "Brighton & Hove Albion",
+"homeUnavailable": [],
+"awayUnavailable": []
+},
+{
+"round": 9,
+"id": "5795504",
+"home": "Tottenham Hotspur",
+"away": "Crystal Palace",
+"homeUnavailable": [
+{
+"id": 620618,
+"age": 29,
+"name": "Rodrigo Bentancur",
+"positionId": 1100,
+"countryName": "Uruguay",
+"countryCode": "URU",
+"marketValue": 17447742,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-31T18:30:00Z"
+},
+"firstName": "Rodrigo",
+"lastName": "Bentancur",
+"nationalTeamId": 5796
+},
+{
+"id": 976506,
+"age": 25,
+"name": "Mykhaylo Mudryk",
+"positionId": 1000,
+"countryName": "Ukraine",
+"countryCode": "UKR",
+"marketValue": 18415971,
+"unavailability": {
+"injuryId": 30,
+"type": "injury",
+"expectedReturn": "Late November 2026"
+},
+"firstName": "Mykhaylo",
+"lastName": "Mudryk",
+"nationalTeamId": 6718
+}
+],
+"awayUnavailable": []
+},
+{
+"round": 9,
+"id": "5795496",
+"home": "Aston Villa",
+"away": "Fulham",
+"homeUnavailable": [
+{
+"id": 760320,
+"age": 28,
+"name": "Aaron Wan-Bissaka",
+"positionId": 1000,
+"countryName": "DR Congo",
+"countryCode": "COD",
+"marketValue": 17694746,
+"unavailability": {
+"injuryId": 42,
+"type": "injury",
+"expectedReturn": "Mid November 2026"
+},
+"firstName": "Aaron",
+"lastName": "Wan-Bissaka",
+"nationalTeamId": 6321
+}
+],
+"awayUnavailable": [
+{
+"id": 773991,
+"age": 26,
+"name": "Ryan Sessegnon",
+"positionId": 1100,
+"countryName": "England",
+"countryCode": "ENG",
+"marketValue": 18570883,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late October 2026",
+"expectedReturnDate": "2026-10-31T21:00:00Z"
+},
+"firstName": "Ryan",
+"lastName": "Sessegnon",
+"nationalTeamId": 8491
+}
+]
+},
+{
+"round": 9,
+"id": "5795501",
+"home": "Liverpool",
+"away": "Arsenal",
+"homeUnavailable": [],
+"awayUnavailable": [
+{
+"id": 1635773,
+"age": 16,
+"name": "Max Dowman",
+"positionId": 1100,
+"countryName": "England",
+"countryCode": "ENG",
+"marketValue": 63461213,
+"unavailability": {
+"type": "suspension",
+"expectedReturn": "Late November 2026",
+"expectedReturnDate": "2026-11-21T16:00:00Z"
+},
+"firstName": "Max",
+"lastName": "Dowman",
+"nationalTeamId": 8491
+}
+]
+},
+{
+"round": 9,
+"id": "5795503",
+"home": "Newcastle United",
+"away": "Everton",
+"homeUnavailable": [],
+"awayUnavailable": []
+}
+]
+}
