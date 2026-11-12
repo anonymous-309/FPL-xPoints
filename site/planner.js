@@ -133,7 +133,7 @@
   }
 
   // ---- settings ----
-  const SET_KEY = 'planner-settings';
+  const SET_KEY = 'planner-settings-v2';  // v2: transfer gameweeks default 4
   function loadSettings() {
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(SET_KEY)) || {}; } catch (e) { saved = {}; }

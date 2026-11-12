@@ -6,7 +6,7 @@
   'use strict';
   const HIT = 4;
   const MAX_FT = 5;
-  const DEPTH = 3;           // transfers are planned in the first 3 gameweeks only (plus wildcard and free hit weeks)
+  const DEPTH = 4;           // transfers are planned in the first 4 gameweeks only (plus wildcard and free hit weeks)
   const BENCH_W = 0.1;       // share of a bench player's points the search counts, a rough stand-in for auto-subs
   const CHURN = 0.1;         // small cost per transfer so it does not swap players for nothing
   const SQUAD = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
