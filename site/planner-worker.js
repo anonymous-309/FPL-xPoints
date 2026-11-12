@@ -13,8 +13,8 @@ self.onmessage = async (e) => {
     const sol = highs.solve(e.data.lp, e.data.options || {});
     const values = {};
     Object.entries(sol.Columns || {}).forEach(([name, c]) => { values[name] = c.Primal; });
-    self.postMessage({ ok: true, status: sol.Status, objective: sol.ObjectiveValue, values });
+    self.postMessage({ id: e.data.id, ok: true, status: sol.Status, objective: sol.ObjectiveValue, values });
   } catch (err) {
-    self.postMessage({ ok: false, error: String((err && err.message) || err) });
+    self.postMessage({ id: e.data.id, ok: false, error: String((err && err.message) || err) });
   }
 };

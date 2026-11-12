@@ -14,7 +14,7 @@
     const q = new URLSearchParams(location.search).get('proxy');
     try { if (q) localStorage.setItem('planner-proxy', q); return (q || localStorage.getItem('planner-proxy') || PROXY_DEFAULT).replace(/\/+$/, ''); } catch (e) { return (q || PROXY_DEFAULT).replace(/\/+$/, ''); }
   })();
-  const state = { data: null, team: null, entry: null, plan: null, week: 0, overrides: XMin.load(), worker: null };
+  const state = { settings: null, data: null, team: null, entry: null, plan: null, week: 0, overrides: XMin.load(), worker: null };
 
   // Club colours for the shirts: body, sleeves, stripes (or null).
   const KIT = {
@@ -132,42 +132,232 @@
     return total;
   }
 
-  function solve(lp) {
-    return new Promise((resolve, reject) => {
-      if (state.worker) state.worker.terminate();
-      const w = new Worker('planner-worker.js');
-      state.worker = w;
-      const timer = setTimeout(() => { w.terminate(); reject(new Error('The solver took too long. Try fewer gameweeks.')); }, 150000);
-      w.onmessage = (e) => { clearTimeout(timer); w.terminate(); if (e.data.ok) resolve(e.data); else reject(new Error(e.data.error)); };
-      w.onerror = (e) => { clearTimeout(timer); w.terminate(); reject(new Error(e.message || 'The solver could not load. Check your connection and try again.')); };
-      w.postMessage({ lp, options: { time_limit: 60, mip_rel_gap: 0.005, presolve: 'on' } });
+  // ---- settings ----
+  const SET_KEY = 'planner-settings';
+  function loadSettings() {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem(SET_KEY)) || {}; } catch (e) { saved = {}; }
+    return { ...S.DEFAULTS, keep: [], avoid: [], ...saved };
+  }
+  function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(state.settings)); } catch (e) { /* fine */ } }
+
+  function settingsForm() {
+    const st = state.settings;
+    const T = Number($('horizon').value);
+    $('depth').replaceChildren(...Array.from({ length: T }, (_, k) => el('option', { value: String(k + 1), textContent: String(k + 1) })));
+    $('depth').value = String(Math.min(st.depth, T));
+    $('decay').value = String(st.decay);
+    $('ftValue').value = String(st.ftValue);
+    $('bankValue').value = String(st.bankValue);
+    $('maxHits').value = st.maxHits == null ? '' : String(st.maxHits);
+    ['keep', 'avoid'].forEach((kind) => {
+      $(`${kind}List`).replaceChildren(...st[kind].map((id) => {
+        const p = state.data.players.find((x) => x.id === id) || (state.team && state.team.squad.find((x) => x.id === id));
+        return el('span', { className: 'pick-tag' }, p ? `${p.name} (${p.team})` : id,
+          el('button', { type: 'button', textContent: '×', title: 'Remove', 'aria-label': `Remove ${p ? p.name : id}`, onclick: () => { st[kind] = st[kind].filter((x) => x !== id); saveSettings(); settingsForm(); } }));
+      }));
     });
   }
+
+  function readSettings() {
+    const st = state.settings;
+    const num = (id, lo, hi, dflt) => { const n = Number($(id).value); return Number.isFinite(n) && $(id).value !== '' ? Math.max(lo, Math.min(hi, n)) : dflt; };
+    st.depth = Number($('depth').value) || S.DEFAULTS.depth;
+    st.decay = num('decay', 0.5, 1, S.DEFAULTS.decay);
+    st.ftValue = num('ftValue', 0, 5, S.DEFAULTS.ftValue);
+    st.bankValue = num('bankValue', 0, 1, S.DEFAULTS.bankValue);
+    st.maxHits = $('maxHits').value === '' ? null : Number($('maxHits').value);
+    saveSettings();
+  }
+
+  function addPick(kind) {
+    const text = $(`${kind}Pick`).value.trim();
+    if (!text) return;
+    const label = (p) => `${p.name} (${p.team} ${p.position})`;
+    const p = state.data.players.find((x) => label(x) === text) || state.data.players.find((x) => x.name.toLowerCase() === text.toLowerCase());
+    if (!p) { showError(`No player called "${text}". Pick one from the list.`); return; }
+    $('error').hidden = true;
+    const other = kind === 'keep' ? 'avoid' : 'keep';
+    state.settings[other] = state.settings[other].filter((x) => x !== p.id);
+    if (!state.settings[kind].includes(p.id)) state.settings[kind].push(p.id);
+    $(`${kind}Pick`).value = '';
+    saveSettings();
+    settingsForm();
+  }
+
+  // ---- solving ----
+  // One worker for the whole tree of plans; each solve gets a fresh HiGHS inside it.
+  function openSolver() {
+    const w = new Worker(`planner-worker.js?v=${state.data.updatedAt}`);
+    let next = 0;
+    const waiting = new Map();
+    w.onmessage = (e) => { const r = waiting.get(e.data.id); if (!r) return; waiting.delete(e.data.id); clearTimeout(r.timer); if (e.data.ok) r.resolve(e.data); else r.reject(new Error(e.data.error)); };
+    w.onerror = (e) => { waiting.forEach((r) => { clearTimeout(r.timer); r.reject(new Error(e.message || 'The solver could not load. Check your connection and try again.')); }); waiting.clear(); };
+    return {
+      solve: (lp) => new Promise((resolve, reject) => {
+        const id = ++next;
+        const timer = setTimeout(() => { waiting.delete(id); reject(new Error('The solver took too long. Try fewer gameweeks.')); }, 120000);
+        waiting.set(id, { resolve, reject, timer });
+        w.postMessage({ id, lp, options: { time_limit: 25, mip_rel_gap: 0.001, presolve: 'on' } });
+      }),
+      close: () => w.terminate(),
+    };
+  }
+
+  const WIDTH = [3, 2, 2];  // options at the first, second and third gameweek; one path after that
 
   async function makePlan() {
     const { chips, clash } = chosenChips();
     if (clash) { showError(clash); return; }
+    readSettings();
     $('error').hidden = true;
     const gws = horizonGws();
+    const T = gws.length;
     const all = players(gws);
-    const P = S.pool(all, state.team.squad.map((s) => s.id));
-    const input = { players: P, T: gws.length, ft: state.team.ft, bank: state.team.bank, chips };
-    const model = S.build(input);
+    const st = state.settings;
+    const P = S.pool(all, state.team.squad.map((s) => s.id).concat(st.keep, st.avoid));
+    const index = new Map(P.map((p, i) => [p.id, i]));
+    const base = { players: P, T, ft: state.team.ft, bank: state.team.bank, chips, settings: st,
+      keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
+    const levels = Math.min(WIDTH.length, Math.min(st.depth, T));
+    let planned = WIDTH[0] + 1, count = WIDTH[0] + 1;
+    for (let k = 1; k < levels; k++) { planned += count * (WIDTH[k] - 1); count *= WIDTH[k]; }
+    let done = 0;
+    const progress = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }),
+      el('div', { className: 'progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(planned), 'aria-valuenow': String(done) }, el('span', { style: `width:${Math.round((100 * done) / planned)}%` })));
     $('go').disabled = true;
-    $('out').replaceChildren(el('p', { className: 'working', textContent: `Working out the best plan for GW${gws[0]}-${gws[gws.length - 1]} (usually a few seconds, up to a minute)…` }));
+    progress(`Working out the options for GW${gws[0]}-${gws[gws.length - 1]}…`);
+    const solver = openSolver();
+    let worst = 'Optimal';
+    const solveWith = async (extra) => {
+      const input = { ...base, ...extra };
+      const model = S.build(input);
+      const sol = await solver.solve(S.toLP(model));
+      done++;
+      progress(`Working out the options: ${done} of about ${planned} plans checked…`);
+      if (!sol.values || !Object.keys(sol.values).length || /infeasible/i.test(sol.status)) return null;
+      if (!/optimal/i.test(sol.status)) worst = sol.status;
+      return { input, model, values: sol.values, weeks: S.decode(input, model, sol.values) };
+    };
     try {
-      const sol = await solve(S.toLP(model));
-      if (!sol.values || !Object.keys(sol.values).length) throw new Error(`No plan found (${sol.status}).`);
-      const weeks = S.decode(input, model, sol.values);
-      state.plan = { gws, P, weeks, chips, status: sol.status, hold: holdPoints(P, gws.length) };
+      // first gameweek: the best few options, then saving the transfer for comparison
+      const roots = [];
+      const cuts = [];
+      for (let k = 0; k < WIDTH[0]; k++) {
+        const sol = await solveWith({ cut: cuts.slice() });
+        if (!sol) break;
+        const opt = S.option(sol.input, sol.values, 0);
+        roots.push({ t: 0, opt, sol, fixes: [opt], children: [] });
+        cuts.push(opt);
+        if (k === 0 && levels === 0) break;
+      }
+      if (!roots.length) throw new Error('No plan fits these settings (check the players to keep and the chips).');
+      const isRoll = (o) => !o.z && !o.buys.length && !o.sells.length;
+      const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
+      if (!week0Chip && !roots.some((r) => isRoll(r.opt))) {
+        const sol = await solveWith({ roll: [0] });
+        if (sol) roots.push({ t: 0, opt: S.option(sol.input, sol.values, 0), sol, fixes: [S.option(sol.input, sol.values, 0)], children: [], roll: true });
+      } else roots.forEach((r) => { if (isRoll(r.opt)) r.roll = true; });
+      // later gameweeks: within each branch, the best option and the next best
+      const grow = async (node, level) => {
+        if (level >= levels) return;
+        const t = node.t + 1;
+        const first = { t, opt: S.option(node.sol.input, node.sol.values, t), sol: node.sol, children: [] };
+        first.fixes = node.fixes.concat(first.opt);
+        node.children.push(first);
+        for (let k = 1; k < WIDTH[level]; k++) {
+          const sol = await solveWith({ fix: node.fixes, cut: node.children.map((c) => c.opt) });
+          if (!sol) break;
+          const opt = S.option(sol.input, sol.values, t);
+          if (node.children.some((c) => S.sameOption(c.opt, opt))) break;
+          node.children.push({ t, opt, sol, fixes: node.fixes.concat(opt), children: [] });
+        }
+        for (const c of node.children) await grow(c, level + 1);
+      };
+      for (const r of roots) { if (!r.roll || levels > 1) await grow(r, 1); }
+      progress('Simulating 5,000 scenarios to compare the options…');
+      await new Promise((r) => setTimeout(r, 30));
+      const sols = [];
+      const visit = (n) => { if (!sols.includes(n.sol)) sols.push(n.sol); n.children.forEach(visit); };
+      roots.forEach(visit);
+      const res = simulateAll(P, gws, sols);
+      const share = (nodes) => {
+        const tot = nodes.map(() => 0), first = nodes.map(() => 0);
+        const N = res[0].total.length;
+        const pick = (get, out) => {
+          for (let s = 0; s < N; s++) {
+            let best = -Infinity, win = [];
+            nodes.forEach((n, k) => { const v = get(res[sols.indexOf(n.sol)])[s]; if (v > best + 1e-6) { best = v; win = [k]; } else if (Math.abs(v - best) <= 1e-6) win.push(k); });
+            win.forEach((k) => { out[k] += 1 / win.length / N; });
+          }
+        };
+        const t = nodes[0].t;
+        pick((r) => r.total, tot); pick((r) => r.week[t], first);
+        nodes.forEach((n, k) => { n.win = tot[k]; n.winFirst = first[k]; });
+      };
+      const shareAll = (nodes) => { if (nodes.length > 1) share(nodes); nodes.forEach((n) => shareAll(n.children)); };
+      shareAll(roots);
+      // each first-week option against saving the transfer, head to head
+      const save = roots.find((r) => r.roll);
+      if (save) {
+        const rs = res[sols.indexOf(save.sol)].total;
+        roots.forEach((n) => {
+          if (n === save) return;
+          const a = res[sols.indexOf(n.sol)].total;
+          let w = 0;
+          for (let s = 0; s < a.length; s++) w += a[s] > rs[s] + 1e-6 ? 1 : Math.abs(a[s] - rs[s]) <= 1e-6 ? 0.5 : 0;
+          n.vsSave = w / a.length;
+        });
+      }
+      state.plan = { gws, P, roots, chips, status: worst, hold: holdPoints(P, T), path: [0], levels };
       state.week = 0;
       render();
     } catch (e) {
       showError(`Could not work out a plan: ${e.message}`);
       $('out').replaceChildren();
     } finally {
+      solver.close();
       $('go').disabled = false;
     }
+  }
+
+  // Scenario inputs for every player in any of the plans.
+  function simulateAll(P, gws, sols) {
+    const used = new Set();
+    sols.forEach((s) => s.weeks.forEach((w) => w.xi.concat(w.bench).forEach((i) => used.add(i))));
+    const ids = [...used];
+    const local = new Map(ids.map((i, k) => [i, k]));
+    const byId = new Map(state.data.players.map((p) => [p.id, p]));
+    // expected goals each team scores in each match: what the other side is expected to concede
+    const lambda = new Map();
+    state.data.players.forEach((p) => gws.forEach((g) => {
+      const d = p.byGw[g];
+      if (!d || !d.fx) return;
+      d.fx.forEach((fx, j) => { const opp = String(d.opp[j]).toUpperCase(); const k = `${fx}|${opp}`; if (!lambda.has(k)) lambda.set(k, d.xConceded / d.fx.length); });
+    }));
+    const simPlayers = ids.map((i) => {
+      const q = P[i], p = byId.get(q.id);
+      return {
+        position: q.position, xp: q.xp,
+        weeks: gws.map((g) => {
+          const d = p && p.byGw[g];
+          if (!d || !d.fx) return [];
+          const v = XMin.view(state.overrides, p, g);
+          const n = d.fx.length;
+          const per = (x) => (x || 0) / n;
+          const perP = (x) => 1 - Math.pow(1 - Math.min(0.999, x || 0), 1 / n);
+          const edited = v && v.edited && v.edited !== 'model';
+          return d.fx.map((fx, j) => ({
+            fx, team: p.team, opp: String(d.opp[j]).toUpperCase(), fixed: edited ? v.mins[j] : null,
+            p1: perP(d.pApp1), p60: perP(d.pApp60), mins: d.mins[j] ?? d.xmin / n,
+            g: per(d.xGoals), a: per(d.xAssists), saves: per(d.xSaves), bonus: per(d.bonus), dc: perP(d.pDefcon),
+            ps: perP(d.pPenSave), pm: perP(d.pPenMiss), og: perP(d.pOwnGoal), y: perP(d.pYellow), r: perP(d.pRed),
+          }));
+        }),
+      };
+    });
+    const remap = (w) => ({ ...w, xi: w.xi.map((i) => local.get(i)), bench: w.bench.map((i) => local.get(i)), cap: local.get(w.cap), vice: local.get(w.vice), bb: w.chip === 'bboost' });
+    return S.simulate({ T: gws.length, players: simPlayers, lambda, paths: sols.map((s) => s.weeks.map(remap)), sims: 5000, seed: 7 });
   }
 
   // ---- display ----
@@ -220,9 +410,50 @@
       bench);
   }
 
+  const pct = (x) => `${Math.round(x * 100)}%`;
+  const optionText = (P, n) => {
+    if (n.opt.z) return 'Free Hit squad';
+    if (!n.opt.buys.length && !n.opt.sells.length) return n.t === 0 ? 'Save the transfer' : 'No transfer';
+    const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
+    const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[a].name.localeCompare(P[b].name);
+    const outs = n.opt.sells.slice().sort(byPos), ins = n.opt.buys.slice().sort(byPos);
+    return outs.map((o, k) => `${P[o].name} → ${ins[k] !== undefined ? P[ins[k]].name : ''}`).join(', ');
+  };
+  const planPts = (sol) => sol.weeks.reduce((a, w) => a + w.xpts, 0);
+
+  function optionCards(P, nodes, level, gw) {
+    const sel = state.plan.path[level] ?? 0;
+    const multi = nodes.length > 1;
+    return el('section', { className: 'options' },
+      el('h3', {}, level === 0 ? `Options for GW${gw}` : `GW${gw} in this branch`),
+      el('div', { className: 'option-row' }, ...nodes.map((n, k) => {
+        const w = n.sol.weeks[n.t];
+        const b = el('button', { type: 'button', className: 'option-card', onclick: () => { state.plan.path = state.plan.path.slice(0, level).concat(k); state.week = n.t; render(); } },
+          el('span', { className: 'opt-label', textContent: n.roll && level === 0 ? 'Save' : `Option ${k + 1}` }),
+          el('span', { className: 'opt-moves', textContent: optionText(P, n) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
+          el('span', { className: 'opt-pts' }, el('b', { textContent: f1(planPts(n.sol)) }), ' xPts plan'),
+          multi ? el('span', { className: 'opt-win' }, el('b', { textContent: pct(n.win) }), ' best', el('small', { textContent: ` · GW${gw} only ${pct(n.winFirst)}` })) : '',
+          n.vsSave != null ? el('span', { className: 'opt-pts', textContent: `Beats saving the transfer ${pct(n.vsSave)}` }) : '');
+        b.setAttribute('aria-pressed', String(k === sel));
+        return b;
+      })));
+  }
+
   function render() {
-    const { gws, weeks, hold } = state.plan;
-    const total = weeks.reduce((a, w) => a + w.xpts, 0);
+    const { gws, roots, hold, P } = state.plan;
+    // the chosen path through the branches
+    const chain = [];
+    let nodes = roots;
+    for (let level = 0; nodes && nodes.length; level++) {
+      const k = Math.min(state.plan.path[level] ?? 0, nodes.length - 1);
+      state.plan.path[level] = k;
+      chain.push({ nodes, level, node: nodes[k] });
+      nodes = nodes[k].children;
+    }
+    const leaf = chain[chain.length - 1].node;
+    const weeks = leaf.sol.weeks;
+    state.plan.weeks = weeks;
+    const total = planPts(leaf.sol);
     const moves = weeks.reduce((a, w) => a + (w.chip === 'freehit' ? 0 : w.ins.length), 0);
     const hits = weeks.reduce((a, w) => a + w.hits, 0);
     const gain = total - hold;
@@ -234,12 +465,14 @@
       return b;
     }));
     const summary = el('section', { className: 'summary' },
-      el('p', {}, el('b', { textContent: `${f1(total)} xPts` }), ` over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs included: `,
+      el('p', {}, 'This path: ', el('b', { textContent: `${f1(total)} xPts` }), ` over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs included: `,
         el('b', { textContent: `${gain >= 0 ? '+' : ''}${f1(gain)}` }), ` on keeping your squad without chips (${f1(hold)}). ${moves} transfer${moves === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''}` : 'no hits'}.`),
+      el('p', { className: 'meta', textContent: '"Best" is how often an option scores the most of the options next to it, over 5,000 simulated runs of every match (the rest of the plan included; "GW only" counts that gameweek alone). Options are ordered by the planner’s score, which counts later gameweeks a little less and values saved transfers, so plan xPts can be slightly out of order. Options that share most moves split their wins, so also look at "Beats saving the transfer": a good move usually wins that 55-65% of the time.' }),
       state.team.madeAlready && state.team.madeAlready.length ? el('p', { className: 'meta', textContent: `Already made for GW${state.team.lastGw + 1}: ${state.team.madeAlready.join(', ')} (counted in your squad and free transfers).` }) : '',
       Object.keys(state.overrides).length ? el('p', { className: 'meta', textContent: `Uses your minutes edits from the Minutes page (${Object.keys(state.overrides).length} players).` }) : '',
-      /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `The search stopped at its time limit (${state.plan.status}); the plan is good but may not be the very best.` }));
-    $('out').replaceChildren(summary, tabs, weekView(weeks[state.week]));
+      /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
+    const cards = chain.filter((c) => c.nodes.length > 1 || c.level === 0).map((c) => optionCards(P, c.nodes, c.level, gws[c.node.t]));
+    $('out').replaceChildren(summary, ...cards, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
   }
 
   function showError(text) { $('error').textContent = text; $('error').hidden = false; }
@@ -341,7 +574,14 @@
   }
 
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
-  $('horizon').addEventListener('change', chipChoices);
+  $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); });
+  ['depth', 'decay', 'ftValue', 'bankValue', 'maxHits'].forEach((id) => $(id).addEventListener('change', readSettings));
+  ['keep', 'avoid'].forEach((kind) => {
+    $(`${kind}Add`).addEventListener('click', () => addPick(kind));
+    $(`${kind}Pick`).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addPick(kind); } });
+  });
+  $('resetSettings').addEventListener('click', () => { state.settings = { ...S.DEFAULTS, keep: [], avoid: [] }; saveSettings(); settingsForm(); });
+  state.settings = loadSettings();
   $('entry').addEventListener('change', () => { if ($('entry').value.trim() !== state.entry) { state.team = null; state.entry = null; chipChoices(); } });
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') state.overrides = XMin.load(); });
 
@@ -350,6 +590,12 @@
   $('entry').value = new URLSearchParams(location.search).get('id') || saved || '11081';
   fetch('data.json', { cache: 'no-store' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
-    .then((data) => { state.data = data; XMin.setPlayers(data.players); go(); })
+    .then((data) => {
+      state.data = data;
+      XMin.setPlayers(data.players);
+      $('playerNames').replaceChildren(...data.players.slice().sort((a, b) => a.name.localeCompare(b.name)).map((p) => el('option', { value: `${p.name} (${p.team} ${p.position})` })));
+      settingsForm();
+      go();
+    })
     .catch(() => showError('Could not load the xPoints data. Reload the page to try again.'));
 })();

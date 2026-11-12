@@ -31,11 +31,20 @@
     return players.filter((p) => keep.has(p.id) || owned.has(p.id));
   }
 
+  // Default settings, as FPL Review's solver.
+  const DEFAULTS = { decay: 0.85, ftValue: 1.5, bankValue: 0.1, maxHits: null, depth: DEPTH };
+
   // input: {players: [{id, position, team, price, sell (owned only), owned, xp: [T]}], T, ft, bank,
-  //         chips: {wildcard: [t], freehit: [t], bboost: [t], '3xc': [t]} (week indexes), depth}
+  //         chips: {wildcard: [t], freehit: [t], bboost: [t], '3xc': [t]} (week indexes),
+  //         settings: {decay, ftValue, bankValue, maxHits, depth}, keep: [i], avoid: [i] (player indexes),
+  //         fix: [{t, buys, sells, z}] (a week's transfers set exactly), cut: [{t, buys, sells, z}] (a week's
+  //         transfers that must not be repeated), roll: [t] (weeks with no transfer)}
+  // The search weighs week t by decay^t, adds ftValue for each free transfer saved past the last transfer week and
+  // bankValue for each £1m left in the bank then. Points shown to the viewer are never discounted.
   function build(input) {
     const { players: P, T, ft, bank } = input;
-    const depth = Math.min(input.depth ?? DEPTH, T);
+    const set = { ...DEFAULTS, ...(input.settings || {}) };
+    const depth = Math.max(1, Math.min(set.depth ?? DEPTH, T));
     const chips = input.chips || {};
     const has = (name, t) => (chips[name] || []).includes(t);
     const n = P.length;
@@ -46,13 +55,18 @@
     const addObj = (name, c) => { if (c) obj.set(name, (obj.get(name) || 0) + c); };
     const row = (terms, lo, hi) => rows.push({ terms: terms.filter(([c]) => c !== 0), lo, hi });
     const sellValue = (i) => (P[i].owned ? P[i].sell : P[i].price);
+    const w = (t) => Math.pow(set.decay, t);
+    const keep = new Set(input.keep || []), avoid = new Set(input.avoid || []);
 
     const transferWeek = (t) => !has('freehit', t) && (t < depth || has('wildcard', t));
     let bankPrev = null;      // name of the bank variable after the last transfer week, null = starting bank
     let ftVar = null;         // free transfers available this week
+    let lastPaid = -1;        // last week with paid transfers
+    let firstMove = -1;       // first week the regular squad can change
     for (let t = 0; t < T; t++) {
       const x = (i) => `x${t}_${i}`;
       const xPrev = (i) => (t ? `x${t - 1}_${i}` : null);
+      if (transferWeek(t) && firstMove < 0) firstMove = t;
       // regular squad
       for (let i = 0; i < n; i++) {
         v(x(i));
@@ -64,6 +78,9 @@
           addObj(`b${t}_${i}`, -CHURN);
         } else if (t) row([[1, x(i)], [-1, xPrev(i)]], 0, 0);
         else row([[1, x(i)]], P[i].owned ? 1 : 0, P[i].owned ? 1 : 0);
+        // players the viewer wants kept or left out (an owned one is sold at the first chance)
+        if (keep.has(i) && firstMove >= 0) row([[1, x(i)]], 1, 1);
+        if (avoid.has(i) && firstMove >= 0) row([[1, x(i)]], 0, 0);
       }
       squadRules(x);
       if (transferWeek(t)) {
@@ -72,33 +89,36 @@
         for (let i = 0; i < n; i++) { terms.push([-sellValue(i), `s${t}_${i}`]); terms.push([P[i].price, `b${t}_${i}`]); }
         if (bankPrev) { terms.push([-1, bankPrev]); row(terms, 0, 0); } else row(terms, bank, bank);
         bankPrev = bk;
+        if ((input.roll || []).includes(t)) row([...Array(n).keys()].map((i) => [1, `b${t}_${i}`]), 0, 0);
       }
       // free transfers and hits, only in the first weeks (later weeks have no paid transfers)
       if (t < depth) {
         const f = v(`f${t}`, 'I', 0, MAX_FT);
         if (t === 0) row([[1, f]], ft, ft);
-        else {
-          const prevFree = has('wildcard', t - 1) || has('freehit', t - 1);
-          if (prevFree) row([[1, f], [-1, ftVar]], -Infinity, 0);
-          else row([[1, f], [-1, ftVar], [1, `u${t - 1}`]], -Infinity, 1);
-        }
+        else nextFt(f, t - 1);
         ftVar = f;
         if (!has('wildcard', t) && !has('freehit', t)) {
-          const nn = v(`n${t}`, 'I', 0, 15), u = v(`u${t}`, 'I', 0, MAX_FT), h = v(`h${t}`, 'I', 0, 15);
+          const nn = v(`n${t}`, 'I', 0, 15), u = v(`u${t}`, 'I', 0, MAX_FT);
+          const h = v(`h${t}`, 'I', 0, set.maxHits == null ? 15 : set.maxHits);
           const terms = [[1, nn]];
           for (let i = 0; i < n; i++) terms.push([-1, `b${t}_${i}`]);
           row(terms, 0, 0);
           row([[1, u], [-1, nn]], -Infinity, 0);
           row([[1, u], [-1, f]], -Infinity, 0);
           row([[1, h], [-1, nn], [1, u]], 0, Infinity);
-          addObj(h, -HIT);
+          addObj(h, -HIT * w(t));
+          lastPaid = t;
         }
       }
       // free hit: a separate squad for this week, paid for with the squad's selling value and the bank
       let sq = x;
       if (has('freehit', t)) {
         const z = (i) => `z${t}_${i}`;
-        for (let i = 0; i < n; i++) v(z(i));
+        for (let i = 0; i < n; i++) {
+          v(z(i));
+          if (keep.has(i)) row([[1, z(i)]], 1, 1);
+          if (avoid.has(i)) row([[1, z(i)]], 0, 0);
+        }
         squadRules(z);
         const terms = [];
         for (let i = 0; i < n; i++) {
@@ -118,7 +138,7 @@
         row([[1, y], [-1, sq(i)]], -Infinity, 0);
         row([[1, c], [-1, y]], -Infinity, 0);
         yTerms.push([1, y]); cTerms.push([1, c]);
-        const xp = P[i].xp[t];
+        const xp = P[i].xp[t] * w(t);
         const benchW = bb ? 1 : BENCH_W;
         addObj(y, xp * (1 - benchW));
         addObj(sq(i), xp * benchW);
@@ -128,7 +148,38 @@
       row(cTerms, 1, 1);
       POS.forEach((pos) => row(P.map((p, i) => [p.position === pos ? 1 : 0, `y${t}_${i}`]), XI[pos][0], XI[pos][1]));
     }
-    return { vars, obj, rows, depth };
+    // Free transfers carried past the transfer weeks, and money left in the bank, are worth something.
+    if (set.ftValue && lastPaid >= 0 && ftVar) {
+      const fEnd = v('fend', 'I', 0, MAX_FT);
+      nextFt(fEnd, depth - 1);
+      addObj(fEnd, set.ftValue * w(depth));
+    }
+    if (set.bankValue && bankPrev) addObj(bankPrev, set.bankValue * w(depth));
+    // a branch: some weeks' transfers fixed, some excluded
+    (input.fix || []).forEach((o) => {
+      if (o.z) { for (let i = 0; i < n; i++) row([[1, `z${o.t}_${i}`]], o.z.includes(i) ? 1 : 0, o.z.includes(i) ? 1 : 0); return; }
+      if (!vars.has(`b${o.t}_0`)) return;
+      for (let i = 0; i < n; i++) {
+        row([[1, `b${o.t}_${i}`]], o.buys.includes(i) ? 1 : 0, o.buys.includes(i) ? 1 : 0);
+        row([[1, `s${o.t}_${i}`]], o.sells.includes(i) ? 1 : 0, o.sells.includes(i) ? 1 : 0);
+      }
+    });
+    (input.cut || []).forEach((o) => {
+      // at least one of these variables must differ from this option
+      const on = o.z ? o.z.map((i) => `z${o.t}_${i}`) : o.buys.map((i) => `b${o.t}_${i}`).concat(o.sells.map((i) => `s${o.t}_${i}`));
+      const all = o.z ? [...Array(n).keys()].map((i) => `z${o.t}_${i}`) : [...Array(n).keys()].flatMap((i) => [`b${o.t}_${i}`, `s${o.t}_${i}`]);
+      if (!vars.has(all[0])) return;
+      const onSet = new Set(on);
+      row(all.map((name) => [onSet.has(name) ? 1 : -1, name]), -Infinity, on.length - 1);
+    });
+    return { vars, obj, rows, depth, settings: set };
+
+    // free transfers next week: +1 up to 5 after a normal week, unchanged after a wildcard or free hit
+    function nextFt(fNext, tPrev) {
+      const prevFree = has('wildcard', tPrev) || has('freehit', tPrev);
+      if (prevFree) row([[1, fNext], [-1, `f${tPrev}`]], -Infinity, 0);
+      else row([[1, fNext], [-1, `f${tPrev}`], [1, `u${tPrev}`]], -Infinity, 1);
+    }
 
     function squadRules(sq) {
       row(P.map((p, i) => [1, sq(i)]), 15, 15);
@@ -136,6 +187,16 @@
       [...new Set(P.map((p) => p.team))].forEach((team) => row(P.map((p, i) => [p.team === team ? 1 : 0, sq(i)]), -Infinity, 3));
     }
   }
+
+  // One week's transfers in a solution: what a branch is fixed or cut on.
+  function option(input, values, t) {
+    const fh = (input.chips && input.chips.freehit || []).includes(t);
+    const on = (name) => Math.round(values[name] || 0) === 1;
+    const idx = [...Array(input.players.length).keys()];
+    if (fh) return { t, z: idx.filter((i) => on(`z${t}_${i}`)) };
+    return { t, buys: idx.filter((i) => on(`b${t}_${i}`)), sells: idx.filter((i) => on(`s${t}_${i}`)) };
+  }
+  const sameOption = (a, b) => JSON.stringify(a.z || [a.buys, a.sells]) === JSON.stringify(b.z || [b.buys, b.sells]);
 
   // CPLEX LP text. Long sums are split over several lines.
   function toLP(model) {
@@ -287,7 +348,132 @@
     return weeks;
   }
 
-  const api = { build, toLP, decode, pool, expectedWithSubs, DEPTH, HIT, MAX_FT };
+  // ---- Simulation: how often each option comes out on top ----
+  const GOAL_PTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
+  const CS_PTS = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
+
+  function poisson(lambda, rand) {
+    if (lambda <= 0) return 0;
+    const L = Math.exp(-Math.min(lambda, 30));
+    let k = 0, p = 1;
+    do { k++; p *= rand(); } while (p > L);
+    return k - 1;
+  }
+
+  // Points of one gameweek team in one scenario, with FPL auto-subs and the vice-captain rule.
+  function scoreWeek(pos, wk, played, pts) {
+    const all = wk.xi.concat(wk.bench);
+    let total = 0;
+    if (wk.bb) all.forEach((i) => { if (played(i)) total += pts(i); });
+    else {
+      const on = wk.xi.filter((i) => played(i));
+      const count = (list, p) => list.filter((i) => pos[i] === p).length;
+      const used = new Set();
+      const gk = wk.xi.find((i) => pos[i] === 'GK');
+      const bgk = wk.bench[0];
+      if (!played(gk) && bgk !== undefined && pos[bgk] === 'GK' && played(bgk)) { on.push(bgk); used.add(bgk); }
+      wk.xi.filter((i) => pos[i] !== 'GK' && !played(i)).forEach(() => {
+        for (const b of wk.bench.slice(1)) {
+          if (used.has(b) || !played(b)) continue;
+          const trial = on.concat(b);
+          const outfield = trial.filter((i) => pos[i] !== 'GK').length;
+          if (outfield > 10) break;
+          const need = Math.max(0, 3 - count(trial, 'DEF')) + Math.max(0, 2 - count(trial, 'MID')) + Math.max(0, 1 - count(trial, 'FWD'));
+          if (need > 10 - outfield) continue;
+          on.push(b); used.add(b);
+          break;
+        }
+      });
+      on.forEach((i) => { total += pts(i); });
+    }
+    const c = played(wk.cap) ? wk.cap : played(wk.vice) ? wk.vice : null;
+    if (c !== null) total += (wk.mult - 1) * pts(c);
+    return total - HIT * (wk.hits || 0);
+  }
+
+  // Scenarios shared by every option: each player's minutes, each team's goals in each match (so team-mates share
+  // clean sheets and a striker's goals are the other side's goals conceded), then goals and assists shared out in
+  // line with each player's figures, plus saves, DefCon, bonus and cards. Each player's average is lined up with his
+  // xPts, so the options keep the points shown; only the spread comes from the simulation.
+  // sim: {T, players: [{position, xp: [T], weeks: [[match]]}], lambda: Map('fixture|team' -> expected goals),
+  //       paths: [[{xi, bench, cap, vice, mult, bb, hits}]], sims, seed}
+  // match: {fx, team, opp, fixed (minutes set by the viewer, or null), p1, p60, mins, g, a, saves, ps, pm, og, y, r, dc, bonus}
+  // Returns per path the points of every scenario: total over the plan and each gameweek's.
+  function simulate(sim) {
+    const rand = rng(sim.seed || 2024);
+    const N = sim.sims || 5000, T = sim.T, players = sim.players;
+    const pos = players.map((p) => p.position);
+    const pts = players.map(() => Array.from({ length: T }, () => new Float32Array(N)));
+    const played = players.map(() => Array.from({ length: T }, () => new Uint8Array(N)));
+    const lam = (fx, team) => sim.lambda.get(`${fx}|${team}`) ?? 1.3;
+    for (let s = 0; s < N; s++) {
+      const goals = new Map();
+      const teamGoals = (fx, team) => { const k = `${fx}|${team}`; if (!goals.has(k)) goals.set(k, poisson(lam(fx, team), rand)); return goals.get(k); };
+      players.forEach((p, i) => {
+        for (let t = 0; t < T; t++) {
+          let total = 0, any = 0;
+          (p.weeks[t] || []).forEach((m) => {
+            let mins;
+            if (m.fixed != null) mins = m.fixed;
+            else {
+              const u = rand();
+              const sub = Math.max(5, Math.min(59, m.p1 > m.p60 ? (m.mins - m.p60 * 88) / (m.p1 - m.p60) : 30));
+              mins = u < m.p60 ? 88 : u < m.p1 ? sub : 0;
+            }
+            if (mins <= 0) return;
+            any = 1;
+            const w = Math.min(90, mins) / 90;
+            total += 1 + (mins >= 60 ? 1 : 0);
+            const G = teamGoals(m.fx, m.team), GA = teamGoals(m.fx, m.opp), L = Math.max(lam(m.fx, m.team), 0.05);
+            const sg = Math.min(0.95, (m.g * w) / L), sa = Math.min(0.9, (m.a * w) / L);
+            for (let k = 0; k < G; k++) {
+              if (rand() < sg) total += GOAL_PTS[p.position];
+              if (rand() < sa) total += 3;
+            }
+            if (mins >= 60) {
+              if (GA === 0) total += CS_PTS[p.position];
+              if (p.position === 'GK' || p.position === 'DEF') total -= Math.floor(GA / 2);
+            }
+            if (p.position === 'GK') {
+              total += Math.floor(poisson(m.saves * w, rand) / 3);
+              if (rand() < m.ps * w) total += 5;
+            } else if (rand() < m.dc * w) total += 2;
+            total += Math.min(3, poisson(m.bonus * w, rand));
+            if (rand() < m.y * w) total -= 1;
+            if (rand() < m.r * w) total -= 3;
+            if (rand() < m.og * w) total -= 2;
+            if (rand() < m.pm * w) total -= 2;
+          });
+          pts[i][t][s] = total;
+          played[i][t][s] = any;
+        }
+      });
+    }
+    // line each player's average up with his xPts
+    players.forEach((p, i) => {
+      for (let t = 0; t < T; t++) {
+        const a = pts[i][t];
+        let mean = 0;
+        for (let s = 0; s < N; s++) mean += a[s];
+        mean /= N;
+        const target = p.xp[t];
+        if (mean > 0.05 && target > 0) { const k = Math.max(0.5, Math.min(2, target / mean)); for (let s = 0; s < N; s++) a[s] *= k; }
+      }
+    });
+    return sim.paths.map((path) => {
+      const total = new Float32Array(N), week = path.map(() => new Float32Array(N));
+      for (let s = 0; s < N; s++) {
+        path.forEach((wk, t) => {
+          const v = scoreWeek(pos, wk, (i) => played[i][t][s] === 1, (i) => pts[i][t][s]);
+          total[s] += v;
+          week[t][s] = v;
+        });
+      }
+      return { total, week };
+    });
+  }
+
+  const api = { build, toLP, decode, pool, expectedWithSubs, option, sameOption, simulate, DEPTH, HIT, MAX_FT, DEFAULTS };
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.PlannerSolve = api;
 })(typeof self !== 'undefined' ? self : this);
