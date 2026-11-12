@@ -222,3 +222,45 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .minutes td.past span { display: block; }
 .minutes td.past small { display: block; margin-top: 2px; font-size: 11px; }
 .minutes td.past .out-zero { color: var(--warn); font-weight: 700; }
+/* Planner: inputs, week tabs and the FPL-style pitch */
+.plan-form .update { height: 34px; padding: 0 18px; }
+.chip-picks { display: flex; flex-wrap: wrap; gap: 12px 18px; align-items: end; }
+.chip-picks .meta { color: var(--muted); font-size: 13px; padding-bottom: 8px; }
+.planner { max-width: 640px; padding-bottom: 24px; }
+.planner .working { color: var(--muted); padding: 24px 0; }
+.week-tabs { display: flex; flex-wrap: wrap; margin: 0 0 12px; }
+.week-tabs button { display: grid; height: auto; padding: 6px 12px; line-height: 1.2; text-align: center; flex: 1 1 64px; }
+.week-tabs small { font-size: 11.5px; opacity: .85; font-variant-numeric: tabular-nums; }
+.week-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.week-head h2 { margin: 0; font: 700 24px/1.1 var(--display); display: flex; align-items: center; gap: 8px; }
+.chip-tag { padding: 2px 8px; border-radius: 10px; background: var(--flag); color: var(--ink); font: 650 12px/1.5 var(--body); }
+.week-pts b { font: 700 26px/1 var(--display); font-variant-numeric: tabular-nums; }
+.week-pts span { color: var(--muted); }
+.week-view > .meta { margin: 4px 0 10px; }
+.moves-table { margin: 0 0 12px; }
+.moves-table th { text-align: left; font-size: 12px; color: var(--muted); padding: 0 6px 4px; }
+.moves-table td { padding: 5px 6px; border-top: 1px solid var(--line); vertical-align: top; width: 50%; }
+.moves-table small { display: block; color: var(--muted); font-size: 11.5px; }
+.moves-table .outp b { color: var(--warn); }
+.moves-table .inp b { color: var(--turf); }
+.pp-pitch { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 18px 4px 20px; border-radius: 8px 8px 0 0; overflow: hidden;
+  background: repeating-linear-gradient(180deg, #0fa356 0 56px, #0c9a50 56px 112px); }
+.pp-lines { position: absolute; inset: 8px; border: 2px solid #ffffffb0; border-bottom: 0; pointer-events: none; }
+.pp-lines::before { content: ''; position: absolute; left: 25%; right: 25%; top: -2px; height: 70px; border: 2px solid #ffffffb0; border-top: 0; }
+.pp-lines::after { content: ''; position: absolute; left: 50%; bottom: -70px; width: 140px; height: 140px; margin-left: -70px; border: 2px solid #ffffffb0; border-radius: 50%; }
+.pp-row { position: relative; display: flex; justify-content: center; gap: clamp(3px, 1.6vw, 14px); padding: 0 2px; }
+.pp-card { position: relative; display: grid; justify-items: center; flex: 0 1 84px; min-width: 0; }
+.pp-card .shirt { width: clamp(38px, 10vw, 50px); height: clamp(38px, 10vw, 50px); filter: drop-shadow(0 2px 2px #0003); }
+.pp-name, .pp-pts, .pp-opp { display: block; width: 100%; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pp-name { background: #fff; color: var(--ink); font-weight: 650; font-size: 12px; padding: 2px 3px; border-radius: 3px 3px 0 0; }
+.pp-pts { background: #1d1033; color: #fff; font: 700 13px/1.35 var(--display); font-variant-numeric: tabular-nums; }
+.pp-opp { background: #f0f4f1; color: var(--muted); font-size: 10.5px; padding: 1px 2px; border-radius: 0 0 3px 3px; }
+.pp-badges { position: absolute; top: -2px; left: 2px; display: grid; gap: 2px; z-index: 1; }
+.pp-badge { display: grid; place-items: center; min-width: 18px; height: 18px; padding: 0 3px; border-radius: 9px; font: 700 10px/1 var(--body); }
+.pp-badge.cap, .pp-badge.vice { background: #1d1033; color: #fff; }
+.pp-badge.new { background: var(--flag); color: var(--ink); }
+.pp-bench { display: flex; justify-content: center; gap: clamp(3px, 1.6vw, 14px); padding: 8px 4px 14px; background: #bfe6cc; border-radius: 0 0 8px 8px; }
+.pp-slot { display: grid; justify-items: center; gap: 2px; flex: 0 1 84px; min-width: 0; }
+.pp-slot .pp-card { width: 100%; }
+.pp-slot-label { font: 650 11.5px/1 var(--body); color: #1d4b33; }
+@media (max-width: 420px) { .pp-name { font-size: 11px; } .pp-opp { font-size: 9.5px; } }
