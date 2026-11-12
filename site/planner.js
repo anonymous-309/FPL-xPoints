@@ -187,20 +187,27 @@
 
   // ---- solving ----
   // One worker for the whole tree of plans; each solve gets a fresh HiGHS inside it.
+  // A fresh worker for every solve: HiGHS in WebAssembly does not give memory back, and after several solves in one
+  // worker it can run out and abort. A solve that aborts is tried once more in a new worker.
   function openSolver() {
-    const w = new Worker(`planner-worker.js?v=${state.data.updatedAt}`);
-    let next = 0;
-    const waiting = new Map();
-    w.onmessage = (e) => { const r = waiting.get(e.data.id); if (!r) return; waiting.delete(e.data.id); clearTimeout(r.timer); if (e.data.ok) r.resolve(e.data); else r.reject(new Error(e.data.error)); };
-    w.onerror = (e) => { waiting.forEach((r) => { clearTimeout(r.timer); r.reject(new Error(e.message || 'The solver could not load. Check your connection and try again.')); }); waiting.clear(); };
+    let current = null;
+    const once = (lp) => new Promise((resolve, reject) => {
+      const w = new Worker(`planner-worker.js?v=${state.data.updatedAt}`);
+      current = w;
+      const done = (fn, arg) => { clearTimeout(timer); w.terminate(); if (current === w) current = null; fn(arg); };
+      const timer = setTimeout(() => done(reject, new Error('The solver took too long. Try fewer gameweeks.')), 120000);
+      w.onmessage = (e) => (e.data.ok ? done(resolve, e.data) : done(reject, new Error(e.data.error)));
+      w.onerror = (e) => done(reject, new Error(e.message || 'The solver could not load. Check your connection and try again.'));
+      w.postMessage({ id: 1, lp, options: { time_limit: 25, mip_rel_gap: 0.001, presolve: 'on' } });
+    });
     return {
-      solve: (lp) => new Promise((resolve, reject) => {
-        const id = ++next;
-        const timer = setTimeout(() => { waiting.delete(id); reject(new Error('The solver took too long. Try fewer gameweeks.')); }, 120000);
-        waiting.set(id, { resolve, reject, timer });
-        w.postMessage({ id, lp, options: { time_limit: 25, mip_rel_gap: 0.001, presolve: 'on' } });
-      }),
-      close: () => w.terminate(),
+      solve: async (lp) => {
+        try { return await once(lp); } catch (e) {
+          if (!/abort|memory|unreachable/i.test(e.message)) throw e;
+          return once(lp);
+        }
+      },
+      close: () => { if (current) current.terminate(); },
     };
   }
 
