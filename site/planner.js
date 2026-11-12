@@ -228,7 +228,7 @@
   }
 
   // transfer options at each gameweek (plus saving the transfer at every step); one path after these
-  const WIDTH = [3, 2, 1];  // later transfer weeks (if set in Settings) are planned along one path, not branched
+  const PER_COUNT = 3;  // best plans for each number of transfers this gameweek
 
   async function makePlan() {
     const { chips, clash } = chosenChips();
@@ -247,113 +247,79 @@
     const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
     const forcedN = Math.max(fIn.length, fOut.length);
     if (forcedN) base.force = { buys: fIn.map((id) => index.get(id)), sells: fOut.map((id) => index.get(id)) };
-    const levels = Math.min(WIDTH.length, Math.min(st.depth, T));
-    let planned = WIDTH[0] + 1, count = WIDTH[0] + 1;
-    for (let k = 1; k < levels; k++) { planned += count * WIDTH[k]; count *= WIDTH[k] + 1; }
+    // The options this gameweek: the best 3 plans using each number of transfers, from all free transfers down to 1,
+    // and the best plan saving them (or making only the forced ones). Later gameweeks follow each plan's own path.
+    const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
+    const groups = [];
+    if (week0Chip) groups.push({ count: null, n: PER_COUNT });
+    else {
+      const top = Math.max(state.team.ft, forcedN, 1);
+      for (let k = top; k > forcedN; k--) groups.push({ count: k, n: PER_COUNT });
+      groups.push({ count: forcedN, n: 1 });
+    }
+    const planned = groups.reduce((a, g) => a + g.n, 0);
     let done = 0;
     const progress = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }),
       el('div', { className: 'progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(planned), 'aria-valuenow': String(done) }, el('span', { style: `width:${Math.round((100 * done) / planned)}%` })));
     $('go').disabled = true;
     progress(`Working out the options for GW${gws[0]}-${gws[gws.length - 1]}…`);
     const solver = openSolver();
-    let worst = 'Optimal', skipped = 0, firstDone = false;
+    let worst = 'Optimal', skipped = 0;
     const solveWith = async (extra) => {
       const input = { ...base, ...extra };
       const model = S.build(input);
       let sol;
       try { sol = await solver.solve(S.toLP(model)); } catch (e) {
-        // the solver crashed on this one plan even after retries: leave that branch out rather than stop everything
+        // the solver crashed on this one plan even after retries: leave it out rather than stop everything
         done++;
-        if (!firstDone || !/abort|memory|unreachable|unable to solve/i.test(e.message)) throw e;
+        if (!/abort|memory|unreachable|unable to solve/i.test(e.message)) throw e;
         skipped++;
         return null;
       }
-      firstDone = true;
       done++;
-      progress(`Working out the options: ${done} of about ${planned} plans checked…`);
+      progress(`Working out the options: ${done} of ${planned} plans…`);
       if (!sol.values || !Object.keys(sol.values).length || /infeasible/i.test(sol.status)) return null;
       if (!/optimal/i.test(sol.status)) worst = sol.status;
       return { input, model, values: sol.values, weeks: S.decode(input, model, sol.values) };
     };
     try {
-      // first gameweek: the best few options, then saving the transfer for comparison
-      const roots = [];
-      const cuts = [];
-      for (let k = 0; k < WIDTH[0]; k++) {
-        const sol = await solveWith({ cut: cuts.slice() });
-        if (!sol) break;
-        const opt = S.option(sol.input, sol.values, 0);
-        roots.push({ t: 0, opt, sol, fixes: [opt], children: [] });
-        cuts.push(opt);
-        if (k === 0 && levels === 0) break;
+      const options = [];
+      for (const g of groups) {
+        const cuts = [];
+        for (let r = 0; r < g.n; r++) {
+          const extra = { cut: cuts.slice() };
+          if (g.count !== null) extra.count = [{ t: 0, n: g.count }];
+          const sol = await solveWith(extra);
+          if (!sol) continue;
+          const opt = S.option(sol.input, sol.values, 0);
+          if (options.some((o) => S.sameOption(o.opt, opt))) continue;
+          options.push({ t: 0, opt, sol, count: g.count, rank: r + 1, roll: g.count !== null && g.count === forcedN });
+          cuts.push(opt);
+        }
       }
-      if (!roots.length) throw new Error('No plan fits these settings (check the players to keep and the chips).');
-      const isRoll = (o) => !o.z && (o.t === 0 ? o.buys.length <= forcedN && o.sells.length <= forcedN : !o.buys.length && !o.sells.length);
-      const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
-      if (!week0Chip && !roots.some((r) => isRoll(r.opt))) {
-        const sol = await solveWith({ roll: [0] });
-        if (sol) roots.push({ t: 0, opt: S.option(sol.input, sol.values, 0), sol, fixes: [S.option(sol.input, sol.values, 0)], children: [], roll: true });
-      } else roots.forEach((r) => { if (isRoll(r.opt)) r.roll = true; });
-      // later gameweeks: within each branch, the best option and the next best
-      const grow = async (node, level) => {
-        if (level >= levels) return;
-        const t = node.t + 1;
-        const first = { t, opt: S.option(node.sol.input, node.sol.values, t), sol: node.sol, children: [] };
-        first.fixes = node.fixes.concat(first.opt);
-        node.children.push(first);
-        for (let k = 1; k < WIDTH[level]; k++) {
-          const sol = await solveWith({ fix: node.fixes, cut: node.children.map((c) => c.opt) });
-          if (!sol) break;
-          const opt = S.option(sol.input, sol.values, t);
-          if (node.children.some((c) => S.sameOption(c.opt, opt))) break;
-          node.children.push({ t, opt, sol, fixes: node.fixes.concat(opt), children: [] });
-        }
-        // saving the transfer is always one of the choices
-        const chipWeek = (chips.wildcard || []).includes(t) || (chips.freehit || []).includes(t);
-        const saved = node.children.find((c) => isRoll(c.opt));
-        if (saved) saved.roll = true;
-        else if (!chipWeek) {
-          const sol = await solveWith({ fix: node.fixes, roll: [t] });
-          if (sol) { const opt = S.option(sol.input, sol.values, t); node.children.push({ t, opt, sol, fixes: node.fixes.concat(opt), children: [], roll: true }); }
-        }
-        for (const c of node.children) await grow(c, level + 1);
-      };
-      for (const r of roots) await grow(r, 1);
+      if (!options.length) throw new Error(skipped ? 'The solver ran out of memory on this device. Try fewer gameweeks to plan.' : 'No plan fits these settings (check the players to keep and the chips).');
       progress('Simulating 5,000 scenarios to compare the options…');
       await new Promise((r) => setTimeout(r, 30));
-      const sols = [];
-      const visit = (n) => { if (!sols.includes(n.sol)) sols.push(n.sol); n.children.forEach(visit); };
-      roots.forEach(visit);
-      const res = simulateAll(P, gws, sols);
-      const share = (nodes) => {
-        const tot = nodes.map(() => 0), first = nodes.map(() => 0);
-        const N = res[0].total.length;
-        const pick = (get, out) => {
-          for (let s = 0; s < N; s++) {
-            let best = -Infinity, win = [];
-            nodes.forEach((n, k) => { const v = get(res[sols.indexOf(n.sol)])[s]; if (v > best + 1e-6) { best = v; win = [k]; } else if (Math.abs(v - best) <= 1e-6) win.push(k); });
-            win.forEach((k) => { out[k] += 1 / win.length / N; });
-          }
-        };
-        const t = nodes[0].t;
-        pick((r) => r.total, tot); pick((r) => r.week[t], first);
-        nodes.forEach((n, k) => { n.win = tot[k]; n.winFirst = first[k]; });
+      const res = simulateAll(P, gws, options.map((o) => o.sol));
+      const N = res[0].total.length;
+      const share = (get) => {
+        const out = options.map(() => 0);
+        for (let s = 0; s < N; s++) {
+          let best = -Infinity, win = [];
+          options.forEach((o, k) => { const v = get(res[k])[s]; if (v > best + 1e-6) { best = v; win = [k]; } else if (Math.abs(v - best) <= 1e-6) win.push(k); });
+          win.forEach((k) => { out[k] += 1 / win.length / N; });
+        }
+        return out;
       };
-      const shareAll = (nodes) => { if (nodes.length > 1) share(nodes); nodes.forEach((n) => shareAll(n.children)); };
-      shareAll(roots);
-      // each first-week option against saving the transfer, head to head
-      const save = roots.find((r) => r.roll);
-      if (save) {
-        const rs = res[sols.indexOf(save.sol)].total;
-        roots.forEach((n) => {
-          if (n === save) return;
-          const a = res[sols.indexOf(n.sol)].total;
-          let w = 0;
-          for (let s = 0; s < a.length; s++) w += a[s] > rs[s] + 1e-6 ? 1 : Math.abs(a[s] - rs[s]) <= 1e-6 ? 0.5 : 0;
-          n.vsSave = w / a.length;
-        });
-      }
-      state.plan = { gws, P, roots, chips, skipped, force: base.force, status: worst, hold: holdPoints(P, T), path: [0], levels };
+      const tot = share((r) => r.total), first = share((r) => r.week[0]);
+      options.forEach((o, k) => { o.win = tot[k]; o.winFirst = first[k]; o.pts = planPts(o.sol); });
+      // within each number of transfers, list by expected points
+      const groupOf = (o) => groups.findIndex((g) => g.count === o.count);
+      options.sort((a, b) => groupOf(a) - groupOf(b) || b.pts - a.pts);
+      options.forEach((o, k) => { o.rank = k > 0 && options[k - 1].count === o.count ? options[k - 1].rank + 1 : 1; });
+      state.plan = { gws, P, options, chips, skipped, force: base.force, status: worst, hold: holdPoints(P, T), pick: 0 };
+      // open the plan with the most expected points
+      state.plan.pick = options.reduce((bi, o, k) => (o.pts > options[bi].pts ? k : bi), 0);
       state.week = 0;
       render();
     } catch (e) {
@@ -470,50 +436,45 @@
   const planPts = (sol) => sol.weeks.reduce((a, w) => a + w.xpts, 0);
 
   // The options as a tree: each gameweek's options branch out from the one chosen before it.
-  // The options as a tree. Each option's share is split down its branches: the first gameweek's options add up to
-  // 100%, and so do all the second gameweek's options together, and so on. A share is the option's own win rate
-  // against its siblings times its parent's share.
-  const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
-  function treeView(P, roots, gws) {
-    const path = state.plan.path;
-    const node = (n, k, level, trail, onPath, siblings, parent) => {
-      const here = trail.concat(k);
-      const on = onPath && path[level] === k;
-      const share = siblings > 1 ? parent * n.win : parent;
-      const w = n.sol.weeks[n.t];
-      // every first-gameweek option shows its second-gameweek options; deeper ones open along the chosen path
-      const kids = (on || level === 0) && n.children.length > 1 ? n.children : [];
-      const btn = el('button', { type: 'button', className: 'tree-node', onclick: () => { state.plan.path = here.slice(); state.week = n.t; render(); } },
-        el('span', { className: 'tn-gw', textContent: `GW${gws[n.t]}` }),
-        el('span', { className: 'tn-moves', textContent: optionText(P, n) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
-        el('span', { className: 'tn-win', title: `${pctFine(share)} of all simulated runs end up on this branch${level && siblings > 1 ? ` (${pct(n.win)} of its parent's)` : ''}; GW${gws[n.t]} alone: ${pct(n.winFirst ?? 1)} of its branch` },
-          el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(share * 100)}%` })), el('b', { textContent: pctFine(share) })),
-        el('span', { className: 'tn-pts', textContent: `${f1(planPts(n.sol))} xPts` + (level && siblings > 1 ? ` · ${pct(n.win)} of this branch` : '') + (n.vsSave != null ? ` · beats saving ${pct(n.vsSave)}` : '') }));
-      btn.setAttribute('aria-pressed', String(on));
-      return el('li', { className: on ? 'on' : '' }, btn,
-        kids.length ? el('ul', {}, ...kids.map((c, j) => node(c, j, level + 1, here, on, kids.length, share))) : '');
-    };
+  // The options in one table: each row is a plan; the best expected points and the most wins are marked.
+  function optionsView(P, options, gws) {
+    const bestPts = Math.max(...options.map((o) => o.pts)), bestWin = Math.max(...options.map((o) => o.win));
+    const label = (o) => (o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
+      : o.roll ? (o.count ? 'Forced only' : 'Save') : `${o.count} transfer${o.count > 1 ? 's' : ''}`);
+    const rows = options.map((o, k) => {
+      const w = o.sol.weeks[0];
+      const tr = el('tr', { className: k === state.plan.pick ? 'on' : '', tabIndex: 0, onclick: () => { state.plan.pick = k; state.week = 0; render(); },
+        onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); state.plan.pick = k; state.week = 0; render(); } } },
+        el('td', { className: 'opt-count' }, el('b', { textContent: label(o) }), o.rank > 1 ? el('small', { textContent: ` #${o.rank}` }) : ''),
+        el('td', { className: 'opt-moves', textContent: (o.roll && !o.count ? 'Save the transfer' : optionText(P, o)) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
+        el('td', { className: `num${o.pts === bestPts ? ' best' : ''}`, textContent: f1(o.pts) }),
+        el('td', { className: `num${o.win === bestWin ? ' best' : ''}` }, el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(o.win * 100)}%` })), ' ', pctFine(o.win)),
+        el('td', { className: 'num muted', textContent: pctFine(o.winFirst) }));
+      tr.setAttribute('aria-selected', String(k === state.plan.pick));
+      return tr;
+    });
+    const top = (key) => options.reduce((bi, o, k) => (o[key] > options[bi][key] ? k : bi), 0);
+    const pBest = options[top('pts')], wBest = options[top('win')];
+    const say = (o) => `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}: ${o.roll && !o.count ? 'save' : optionText(P, o)}`;
     return el('section', { className: 'options' },
-      el('h3', {}, 'Options: each % is the share of the 5,000 simulated runs in which that branch comes out best. Each gameweek’s options add up to 100%; tap one to open its later gameweeks.'),
-      el('div', { className: 'tree-root', textContent: `Your team now · ${state.team.ft} free transfer${state.team.ft === 1 ? '' : 's'}, £${state.team.bank.toFixed(1)} in the bank` }),
-      el('ul', { className: 'tree' }, ...roots.map((n, k) => node(n, k, 0, [], true, roots.length, 1))));
+      el('h3', {}, `Options for GW${gws[0]}: tap one to see its plan`),
+      el('p', { className: 'opt-verdict' }, 'Most expected points: ', el('b', { textContent: say(pBest) }),
+        pBest === wBest ? ' (also best most often).' : '. Best most often: ', pBest === wBest ? '' : el('b', { textContent: say(wBest) })),
+      el('div', { className: 'wrap' }, el('table', { className: 'opt-table' },
+        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses' }), el('th', { scope: 'col', textContent: 'Transfers' }),
+          el('th', { scope: 'col', className: 'num', textContent: 'xPts plan' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }),
+          el('th', { scope: 'col', className: 'num', textContent: `GW${gws[0]}` }))),
+        el('tbody', {}, ...rows))));
   }
 
+  const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
+
   function render() {
-    const { gws, roots, hold, P } = state.plan;
-    // the chosen path through the branches
-    const chain = [];
-    let nodes = roots;
-    for (let level = 0; nodes && nodes.length; level++) {
-      const k = Math.min(state.plan.path[level] ?? 0, nodes.length - 1);
-      state.plan.path[level] = k;
-      chain.push({ nodes, level, node: nodes[k] });
-      nodes = nodes[k].children;
-    }
-    const leaf = chain[chain.length - 1].node;
-    const weeks = leaf.sol.weeks;
+    const { gws, options, hold, P } = state.plan;
+    const pick = options[Math.min(state.plan.pick, options.length - 1)];
+    const weeks = pick.sol.weeks;
     state.plan.weeks = weeks;
-    const total = planPts(leaf.sol);
+    const total = pick.pts;
     const moves = weeks.reduce((a, w) => a + (w.chip === 'freehit' ? 0 : w.ins.length), 0);
     const hits = weeks.reduce((a, w) => a + w.hits, 0);
     const gain = total - hold;
@@ -525,14 +486,14 @@
       return b;
     }));
     const summary = el('section', { className: 'summary' },
-      el('p', {}, 'This path: ', el('b', { textContent: `${f1(total)} xPts` }), ` over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs included: `,
+      el('p', {}, 'This plan: ', el('b', { textContent: `${f1(total)} xPts` }), ` over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs included: `,
         el('b', { textContent: `${gain >= 0 ? '+' : ''}${f1(gain)}` }), ` on keeping your squad without chips (${f1(hold)}). ${moves} transfer${moves === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''}` : 'no hits'}.`),
-      el('p', { className: 'meta', textContent: '"Best" is how often an option scores the most of the options next to it, over 5,000 simulated runs of every match (the rest of the plan included; "GW only" counts that gameweek alone). Options are ordered by the planner’s score, which counts later gameweeks a little less and values saved transfers, so plan xPts can be slightly out of order. Options that share most moves split their wins, so also look at "Beats saving the transfer": a good move usually wins that 55-65% of the time.' }),
+      el('p', { className: 'meta', textContent: '"Best" is the share of 5,000 simulated runs of every match in which that plan scores the most of all the plans in the table (they add up to 100%); the last column counts the first gameweek alone. A plan can have the most expected points and still be best less often, when its points come from rarer big hauls.' }),
       state.team.madeAlready && state.team.madeAlready.length ? el('p', { className: 'meta', textContent: `Already made for GW${state.team.lastGw + 1}: ${state.team.madeAlready.join(', ')} (counted in your squad and free transfers).` }) : '',
       Object.keys(state.overrides).length ? el('p', { className: 'meta', textContent: `Uses your minutes edits from the Minutes page (${Object.keys(state.overrides).length} players).` }) : '',
-      state.plan.skipped ? el('p', { className: 'meta', textContent: `${state.plan.skipped} of the branches could not be worked out (the solver ran out of memory on this device) and are left out of the tree.` }) : '',
+      state.plan.skipped ? el('p', { className: 'meta', textContent: `${state.plan.skipped} of the plans could not be worked out (the solver ran out of memory on this device) and are left out.` }) : '',
       /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
-    $('out').replaceChildren(summary, treeView(P, roots, gws), tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
+    $('out').replaceChildren(optionsView(P, options, gws), summary, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
   }
 
   function showError(text) { $('error').textContent = text; $('error').hidden = false; }

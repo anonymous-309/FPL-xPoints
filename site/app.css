@@ -315,3 +315,19 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .tn-pts { grid-area: pts; font-size: 12px; color: var(--muted); }
 @media (max-width: 420px) { .tree ul { margin-left: 8px; } .tn-bar { display: none; } }
 .set-note { margin: 4px 0 6px; font-size: 12.5px; color: var(--muted); }
+/* Planner options table */
+.opt-verdict { margin: 0 0 8px; font-size: 13.5px; }
+.opt-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.opt-table th { text-align: left; font-size: 11.5px; color: var(--muted); padding: 4px 6px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.opt-table td { padding: 7px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.opt-table .num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.opt-table .num.best { color: var(--turf); font-weight: 700; }
+.opt-table .muted { color: var(--muted); }
+.opt-table .opt-count { white-space: nowrap; }
+.opt-table .opt-count small { color: var(--muted); }
+.opt-table .opt-moves { font-weight: 600; line-height: 1.3; }
+.opt-table tbody tr { cursor: pointer; }
+.opt-table tbody tr:hover { background: #f3f8f4; }
+.opt-table tbody tr.on { background: #e6f2ea; box-shadow: inset 3px 0 0 var(--turf); }
+.opt-table .tn-bar { display: inline-block; vertical-align: middle; width: 32px; }
+@media (max-width: 420px) { .opt-table .tn-bar { display: none; } .opt-table { font-size: 12.5px; } }

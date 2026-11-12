@@ -172,6 +172,11 @@
         row([[1, `s${o.t}_${i}`]], o.sells.includes(i) ? 1 : 0, o.sells.includes(i) ? 1 : 0);
       }
     });
+    // an exact number of transfers in a gameweek
+    (input.count || []).forEach(({ t, n: k }) => {
+      if (!vars.has(`b${t}_0`)) return;
+      row([...Array(n).keys()].map((i) => [1, `b${t}_${i}`]), k, k);
+    });
     (input.cut || []).forEach((o) => {
       // at least one of these variables must differ from this option
       const on = o.z ? o.z.map((i) => `z${o.t}_${i}`) : o.buys.map((i) => `b${o.t}_${i}`).concat(o.sells.map((i) => `s${o.t}_${i}`));
