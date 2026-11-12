@@ -86,7 +86,7 @@
   function row(p, gws) {
     const meta = el('span', { textContent: `${p.team} ${p.position}` });
     const name = el('td', { className: 'player', title: p.news || p.fullName }, el('b', { textContent: p.name }), meta);
-    if (p.role && p.role !== p.position) name.querySelector('b').append(' ', el('span', { className: 'oop', textContent: `OOP ${p.role}`, title: `Listed as ${p.position} but plays as ${p.role}` }));
+    if (p.role && p.role !== p.position) name.querySelector('b').append(' ', el('span', { className: 'oop', textContent: 'OOP', title: `Listed as ${p.position} but plays as ${p.role}` }));
     if (p.news) name.dataset.news = `${p.name}: ${p.news}`;
     if (p.status && p.status !== 'a') meta.append(' ', el('span', { className: 'flag', textContent: 'Flagged' }));
     const cells = gws.map((g) => {
