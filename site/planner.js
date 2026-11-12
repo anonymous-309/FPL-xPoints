@@ -444,27 +444,33 @@
   const planPts = (sol) => sol.weeks.reduce((a, w) => a + w.xpts, 0);
 
   // The options as a tree: each gameweek's options branch out from the one chosen before it.
+  // The options as a tree. Each option's share is split down its branches: the first gameweek's options add up to
+  // 100%, and so do all the second gameweek's options together, and so on. A share is the option's own win rate
+  // against its siblings times its parent's share.
+  const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
   function treeView(P, roots, gws) {
     const path = state.plan.path;
-    const node = (n, k, level, trail, onPath, siblings) => {
+    const node = (n, k, level, trail, onPath, siblings, parent) => {
       const here = trail.concat(k);
       const on = onPath && path[level] === k;
+      const share = siblings > 1 ? parent * n.win : parent;
       const w = n.sol.weeks[n.t];
-      const kids = on && n.children.length > 1 ? n.children : [];
+      // every first-gameweek option shows its second-gameweek options; deeper ones open along the chosen path
+      const kids = (on || level === 0) && n.children.length > 1 ? n.children : [];
       const btn = el('button', { type: 'button', className: 'tree-node', onclick: () => { state.plan.path = here.slice(); state.week = n.t; render(); } },
         el('span', { className: 'tn-gw', textContent: `GW${gws[n.t]}` }),
         el('span', { className: 'tn-moves', textContent: optionText(P, n) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
-        siblings > 1 ? el('span', { className: 'tn-win', title: `Best of these ${siblings} options in ${pct(n.win)} of the simulated runs (GW${gws[n.t]} alone: ${pct(n.winFirst)})` },
-          el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(n.win * 100)}%` })), el('b', { textContent: pct(n.win) })) : '',
-        el('span', { className: 'tn-pts', textContent: `${f1(planPts(n.sol))} xPts` + (n.vsSave != null ? ` · beats saving ${pct(n.vsSave)}` : '') }));
+        el('span', { className: 'tn-win', title: `${pctFine(share)} of all simulated runs end up on this branch${level && siblings > 1 ? ` (${pct(n.win)} of its parent's)` : ''}; GW${gws[n.t]} alone: ${pct(n.winFirst ?? 1)} of its branch` },
+          el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(share * 100)}%` })), el('b', { textContent: pctFine(share) })),
+        el('span', { className: 'tn-pts', textContent: `${f1(planPts(n.sol))} xPts` + (level && siblings > 1 ? ` · ${pct(n.win)} of this branch` : '') + (n.vsSave != null ? ` · beats saving ${pct(n.vsSave)}` : '') }));
       btn.setAttribute('aria-pressed', String(on));
       return el('li', { className: on ? 'on' : '' }, btn,
-        kids.length ? el('ul', {}, ...kids.map((c, j) => node(c, j, level + 1, here, on, kids.length))) : '');
+        kids.length ? el('ul', {}, ...kids.map((c, j) => node(c, j, level + 1, here, on, kids.length, share))) : '');
     };
     return el('section', { className: 'options' },
-      el('h3', {}, 'Options: % is how often each one scores the most of its branch. Tap one to open its next gameweek.'),
+      el('h3', {}, 'Options: each % is the share of the 5,000 simulated runs in which that branch comes out best. Each gameweek’s options add up to 100%; tap one to open its later gameweeks.'),
       el('div', { className: 'tree-root', textContent: `Your team now · ${state.team.ft} free transfer${state.team.ft === 1 ? '' : 's'}, £${state.team.bank.toFixed(1)} in the bank` }),
-      el('ul', { className: 'tree' }, ...roots.map((n, k) => node(n, k, 0, [], true, roots.length))));
+      el('ul', { className: 'tree' }, ...roots.map((n, k) => node(n, k, 0, [], true, roots.length, 1))));
   }
 
   function render() {
