@@ -133,10 +133,14 @@
   }
 
   // ---- settings ----
-  const SET_KEY = 'planner-settings-v3';  // v3: transfer gameweeks default 3
+  const SET_KEY = 'planner-settings-v4';  // v4: a saved transfer is worth 2 by default
   function loadSettings() {
     let saved = {};
-    try { saved = JSON.parse(localStorage.getItem(SET_KEY)) || {}; } catch (e) { saved = {}; }
+    try {
+      saved = JSON.parse(localStorage.getItem(SET_KEY)) || null;
+      // carry settings over from the previous version, apart from the old saved-transfer value
+      if (!saved) { saved = JSON.parse(localStorage.getItem('planner-settings-v3')) || {}; delete saved.ftValue; }
+    } catch (e) { saved = {}; }
     const st = { ...S.DEFAULTS, keep: [], avoid: [], forceIn: [], forceOut: [], forceGw: null, ...saved };
     // forced transfers only hold for the gameweek they were set for
     if (state.data && st.forceGw !== state.data.gws[0]) { st.forceIn = []; st.forceOut = []; st.forceGw = state.data.gws[0]; }
@@ -228,7 +232,8 @@
   }
 
   // transfer options at each gameweek (plus saving the transfer at every step); one path after these
-  const PER_COUNT = 3;  // best plans for each number of transfers this gameweek
+  // best plans for each number of transfers this gameweek: 3, or 2 when there are 3+ free transfers (more rows)
+  const perCount = (ft) => (ft >= 3 ? 2 : 3);
 
   async function makePlan() {
     const { chips, clash } = chosenChips();
@@ -251,10 +256,10 @@
     // and the best plan saving them (or making only the forced ones). Later gameweeks follow each plan's own path.
     const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
     const groups = [];
-    if (week0Chip) groups.push({ count: null, n: PER_COUNT });
+    if (week0Chip) groups.push({ count: null, n: 3 });
     else {
       const top = Math.max(state.team.ft, forcedN, 1);
-      for (let k = top; k > forcedN; k--) groups.push({ count: k, n: PER_COUNT });
+      for (let k = top; k > forcedN; k--) groups.push({ count: k, n: perCount(state.team.ft) });
       groups.push({ count: forcedN, n: 1 });
     }
     const planned = groups.reduce((a, g) => a + g.n, 0);

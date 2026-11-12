@@ -32,7 +32,7 @@
   }
 
   // Default settings, as FPL Review's solver.
-  const DEFAULTS = { decay: 0.85, ftValue: 1.5, bankValue: 0.1, maxHits: null, depth: DEPTH };
+  const DEFAULTS = { decay: 0.85, ftValue: 2, bankValue: 0.1, maxHits: null, depth: DEPTH };
 
   // input: {players: [{id, position, team, price, sell (owned only), owned, xp: [T]}], T, ft, bank,
   //         chips: {wildcard: [t], freehit: [t], bboost: [t], '3xc': [t]} (week indexes),
