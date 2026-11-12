@@ -89,7 +89,15 @@
         for (let i = 0; i < n; i++) { terms.push([-sellValue(i), `s${t}_${i}`]); terms.push([P[i].price, `b${t}_${i}`]); }
         if (bankPrev) { terms.push([-1, bankPrev]); row(terms, 0, 0); } else row(terms, bank, bank);
         bankPrev = bk;
-        if ((input.roll || []).includes(t)) row([...Array(n).keys()].map((i) => [1, `b${t}_${i}`]), 0, 0);
+        // transfers the viewer has already made (or wants made) in the first gameweek
+        const forced = t === 0 && input.force ? input.force : null;
+        if (forced) {
+          forced.buys.forEach((i) => { if (!P[i].owned) row([[1, `b0_${i}`]], 1, 1); });
+          forced.sells.forEach((i) => { if (P[i].owned) row([[1, `s0_${i}`]], 1, 1); });
+        }
+        // saving the transfer: no transfers apart from the forced ones
+        const forcedN = forced ? Math.max(forced.buys.length, forced.sells.length) : 0;
+        if ((input.roll || []).includes(t)) row([...Array(n).keys()].map((i) => [1, `b${t}_${i}`]), -Infinity, forcedN);
       }
       // free transfers and hits, only in the first weeks (later weeks have no paid transfers)
       if (t < depth) {

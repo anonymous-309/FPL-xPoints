@@ -137,7 +137,10 @@
   function loadSettings() {
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(SET_KEY)) || {}; } catch (e) { saved = {}; }
-    return { ...S.DEFAULTS, keep: [], avoid: [], ...saved };
+    const st = { ...S.DEFAULTS, keep: [], avoid: [], forceIn: [], forceOut: [], forceGw: null, ...saved };
+    // forced transfers only hold for the gameweek they were set for
+    if (state.data && st.forceGw !== state.data.gws[0]) { st.forceIn = []; st.forceOut = []; st.forceGw = state.data.gws[0]; }
+    return st;
   }
   function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(state.settings)); } catch (e) { /* fine */ } }
 
@@ -150,7 +153,8 @@
     $('ftValue').value = String(st.ftValue);
     $('bankValue').value = String(st.bankValue);
     $('maxHits').value = st.maxHits == null ? '' : String(st.maxHits);
-    ['keep', 'avoid'].forEach((kind) => {
+    $('forceGw').textContent = `GW${state.data.gws[0]}`;
+    ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
       $(`${kind}List`).replaceChildren(...st[kind].map((id) => {
         const p = state.data.players.find((x) => x.id === id) || (state.team && state.team.squad.find((x) => x.id === id));
         return el('span', { className: 'pick-tag' }, p ? `${p.name} (${p.team})` : id,
@@ -177,8 +181,13 @@
     const p = state.data.players.find((x) => label(x) === text) || state.data.players.find((x) => x.name.toLowerCase() === text.toLowerCase());
     if (!p) { showError(`No player called "${text}". Pick one from the list.`); return; }
     $('error').hidden = true;
-    const other = kind === 'keep' ? 'avoid' : 'keep';
-    state.settings[other] = state.settings[other].filter((x) => x !== p.id);
+    const owned = state.team && state.team.squad.some((x) => x.id === p.id);
+    if (kind === 'forceIn' && owned) { showError(`${p.name} is already in your squad.`); return; }
+    if (kind === 'forceOut' && state.team && !owned) { showError(`${p.name} is not in your squad.`); return; }
+    // a player can only be in one list that makes sense together
+    const clash = { keep: ['avoid', 'forceOut'], avoid: ['keep', 'forceIn'], forceIn: ['avoid', 'forceOut'], forceOut: ['keep', 'forceIn'] }[kind];
+    clash.forEach((other) => { state.settings[other] = state.settings[other].filter((x) => x !== p.id); });
+    state.settings.forceGw = state.data.gws[0];
     if (!state.settings[kind].includes(p.id)) state.settings[kind].push(p.id);
     $(`${kind}Pick`).value = '';
     saveSettings();
@@ -229,10 +238,14 @@
     const T = gws.length;
     const all = players(gws);
     const st = state.settings;
-    const P = S.pool(all, state.team.squad.map((s) => s.id).concat(st.keep, st.avoid));
+    const P = S.pool(all, state.team.squad.map((s) => s.id).concat(st.keep, st.avoid, st.forceIn, st.forceOut));
     const index = new Map(P.map((p, i) => [p.id, i]));
     const base = { players: P, T, ft: state.team.ft, bank: state.team.bank, chips, settings: st,
       keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
+    const ownedIds = new Set(state.team.squad.map((x) => x.id));
+    const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
+    const forcedN = Math.max(fIn.length, fOut.length);
+    if (forcedN) base.force = { buys: fIn.map((id) => index.get(id)), sells: fOut.map((id) => index.get(id)) };
     const levels = Math.min(WIDTH.length, Math.min(st.depth, T));
     let planned = WIDTH[0] + 1, count = WIDTH[0] + 1;
     for (let k = 1; k < levels; k++) { planned += count * WIDTH[k]; count *= WIDTH[k] + 1; }
@@ -266,7 +279,7 @@
         if (k === 0 && levels === 0) break;
       }
       if (!roots.length) throw new Error('No plan fits these settings (check the players to keep and the chips).');
-      const isRoll = (o) => !o.z && !o.buys.length && !o.sells.length;
+      const isRoll = (o) => !o.z && (o.t === 0 ? o.buys.length <= forcedN && o.sells.length <= forcedN : !o.buys.length && !o.sells.length);
       const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
       if (!week0Chip && !roots.some((r) => isRoll(r.opt))) {
         const sol = await solveWith({ roll: [0] });
@@ -436,10 +449,11 @@
   const optionText = (P, n) => {
     if (n.opt.z) return 'Free Hit squad';
     if (!n.opt.buys.length && !n.opt.sells.length) return 'Save the transfer';
+    const forcedOnly = n.roll && n.t === 0;
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[a].name.localeCompare(P[b].name);
     const outs = n.opt.sells.slice().sort(byPos), ins = n.opt.buys.slice().sort(byPos);
-    return outs.map((o, k) => `${P[o].name} → ${ins[k] !== undefined ? P[ins[k]].name : ''}`).join(', ');
+    return outs.map((o, k) => `${P[o].name} → ${ins[k] !== undefined ? P[ins[k]].name : ''}`).join(', ') + (forcedOnly ? ' (forced only)' : '');
   };
   const planPts = (sol) => sol.weeks.reduce((a, w) => a + w.xpts, 0);
 
@@ -609,11 +623,11 @@
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
   $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); });
   ['depth', 'decay', 'ftValue', 'bankValue', 'maxHits'].forEach((id) => $(id).addEventListener('change', readSettings));
-  ['keep', 'avoid'].forEach((kind) => {
+  ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
     $(`${kind}Pick`).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addPick(kind); } });
   });
-  $('resetSettings').addEventListener('click', () => { state.settings = { ...S.DEFAULTS, keep: [], avoid: [] }; saveSettings(); settingsForm(); });
+  $('resetSettings').addEventListener('click', () => { state.settings = { ...S.DEFAULTS, keep: [], avoid: [], forceIn: [], forceOut: [], forceGw: state.data.gws[0] }; saveSettings(); settingsForm(); });
   state.settings = loadSettings();
   $('entry').addEventListener('change', () => { if ($('entry').value.trim() !== state.entry) { state.team = null; state.entry = null; chipChoices(); } });
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') state.overrides = XMin.load(); });
@@ -626,6 +640,7 @@
     .then((data) => {
       state.data = data;
       XMin.setPlayers(data.players);
+      state.settings = loadSettings();
       $('playerNames').replaceChildren(...data.players.slice().sort((a, b) => a.name.localeCompare(b.name)).map((p) => el('option', { value: `${p.name} (${p.team} ${p.position})` })));
       settingsForm();
       go();

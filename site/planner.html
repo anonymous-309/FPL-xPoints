@@ -33,6 +33,11 @@
       <div><label>Keep (always in the squad) <span class="pick-add"><input id="keepPick" list="playerNames" placeholder="Player"><button id="keepAdd" type="button">Add</button></span></label><div id="keepList" class="pick-list"></div></div>
       <div><label>Avoid (never in the squad) <span class="pick-add"><input id="avoidPick" list="playerNames" placeholder="Player"><button id="avoidAdd" type="button">Add</button></span></label><div id="avoidList" class="pick-list"></div></div>
     </div>
+    <p class="set-note">Force a transfer in <b id="forceGw">this gameweek</b>, for one you have already made or want made. It counts against your free transfers like any other; the plan picks the rest. Cleared when the gameweek moves on.</p>
+    <div class="set-picks">
+      <div><label>Force in <span class="pick-add"><input id="forceInPick" list="playerNames" placeholder="Player to buy"><button id="forceInAdd" type="button">Add</button></span></label><div id="forceInList" class="pick-list"></div></div>
+      <div><label>Force out <span class="pick-add"><input id="forceOutPick" list="playerNames" placeholder="Player to sell"><button id="forceOutAdd" type="button">Add</button></span></label><div id="forceOutList" class="pick-list"></div></div>
+    </div>
     <details class="advanced">
       <summary>Advanced</summary>
       <label>Bank value per £1m <input id="bankValue" type="number" step="0.05" min="0" max="1" inputmode="decimal"><small>Points £1m left in the bank is worth</small></label>
