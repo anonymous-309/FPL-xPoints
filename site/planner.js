@@ -7,6 +7,13 @@
   const S = window.PlannerSolve;
   const CHIP_LABEL = { wildcard: 'Wildcard', freehit: 'Free Hit', bboost: 'Bench Boost', '3xc': 'Triple Captain' };
   const POS_LABEL = { GK: 'GKP', DEF: 'DEF', MID: 'MID', FWD: 'FWD' };
+  // Address of the Cloudflare Worker that reads FPL for the page (tools/cloudflare-worker.js). Empty: only teams the
+  // site build read (planner_ids.txt). ?proxy=https://... on the page address tries another one and remembers it.
+  const PROXY_DEFAULT = '';
+  const PROXY = (() => {
+    const q = new URLSearchParams(location.search).get('proxy');
+    try { if (q) localStorage.setItem('planner-proxy', q); return (q || localStorage.getItem('planner-proxy') || PROXY_DEFAULT).replace(/\/+$/, ''); } catch (e) { return (q || PROXY_DEFAULT).replace(/\/+$/, ''); }
+  })();
   const state = { data: null, team: null, entry: null, plan: null, week: 0, overrides: XMin.load(), worker: null };
 
   // Club colours for the shirts: body, sleeves, stripes (or null).
@@ -238,19 +245,85 @@
   function showError(text) { $('error').textContent = text; $('error').hidden = false; }
 
   // ---- loading ----
+  // The team straight from FPL through the site's proxy (tools/cloudflare-worker.js); same rules as planner.py.
+  async function teamFromFpl(entry) {
+    const get = async (path) => {
+      const r = await fetch(`${PROXY}/api/${path}`);
+      if (r.status === 404) { const e = new Error(`There is no FPL team with ID ${entry}.`); e.final = true; throw e; }
+      if (!r.ok) throw new Error(`FPL answered ${r.status}`);
+      return r.json();
+    };
+    const [boot, history, info, transfers] = await Promise.all([get('bootstrap-static/'), get(`entry/${entry}/history/`), get(`entry/${entry}/`), get(`entry/${entry}/transfers/`)]);
+    const played = history.current || [];
+    if (!played.length) { const e = new Error(`Team ${entry} has not played a gameweek yet.`); e.final = true; throw e; }
+    const elements = new Map(boot.elements.map((e) => [e.id, e]));
+    const teams = new Map(boot.teams.map((t) => [t.id, t.short_name]));
+    const last = played[played.length - 1].event;
+    const used = (history.chips || []).map((c) => ({ name: c.name, event: c.event }));
+    const chipAt = new Map(used.map((c) => [c.event, c.name]));
+    const picks = await get(`entry/${entry}/event/${chipAt.get(last) === 'freehit' && last > 1 ? last - 1 : last}/picks/`);
+    const squad = picks.picks.map((p) => p.element);
+    // free transfers: 1 after GW1, +1 a gameweek up to 5, less the transfers made; a wildcard or free hit adds none
+    let ft = 1;
+    played.forEach((e) => {
+      if (e.event === 1 || ['wildcard', 'freehit'].includes(chipAt.get(e.event))) return;
+      ft = Math.min(S.MAX_FT, Math.max(ft - e.event_transfers, 0) + 1);
+    });
+    let bank = played[played.length - 1].bank / 10;
+    // selling price: half the rise since he was bought (rounded down to 0.1), the full fall
+    const sorted = transfers.slice().sort((a, b) => (a.time < b.time ? -1 : 1));
+    const bought = new Map();
+    sorted.forEach((t) => bought.set(t.element_in, t.element_in_cost));
+    const selling = new Map(squad.map((e) => {
+      const now = elements.get(e).now_cost, paid = bought.has(e) ? bought.get(e) : now - (elements.get(e).cost_change_start || 0);
+      return [e, (now > paid ? paid + Math.floor((now - paid) / 2) : now) / 10];
+    }));
+    // transfers already made for the coming gameweek
+    const made = [];
+    sorted.filter((t) => t.event > last).forEach((t) => {
+      const k = squad.indexOf(t.element_out);
+      if (k < 0) return;
+      squad[k] = t.element_in;
+      selling.delete(t.element_out);
+      selling.set(t.element_in, t.element_in_cost / 10);
+      bank += (t.element_out_cost - t.element_in_cost) / 10;
+      made.push(`${elements.get(t.element_out).web_name} -> ${elements.get(t.element_in).web_name}`);
+    });
+    ft = Math.max(ft - made.length, 0);
+    // chips not yet played in their window (from 2025-26 each chip comes once per half of the season)
+    const defs = boot.chips && boot.chips.length ? boot.chips.filter((c) => CHIP_LABEL[c.name]) : Object.keys(CHIP_LABEL).map((name) => ({ name, start_event: 1, stop_event: 38 }));
+    const chipsAvailable = defs.map((c) => ({ name: c.name, label: CHIP_LABEL[c.name], from: Math.max(c.start_event || 1, last + 1), to: c.stop_event || 38, start: c.start_event || 1 }))
+      .filter((c) => c.to >= last + 1 && !used.some((u) => u.name === c.name && u.event >= c.start && u.event <= c.to));
+    const POSN = { 1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD' };
+    return {
+      entry: Number(entry), name: info.name || '', manager: `${info.player_first_name || ''} ${info.player_last_name || ''}`.trim(),
+      lastGw: last, bank: Math.round(bank * 10) / 10, ft, madeAlready: made, live: true,
+      squad: squad.map((e) => { const el2 = elements.get(e); return { id: `c${el2.code}`, name: el2.web_name, team: teams.get(el2.team), position: POSN[el2.element_type], price: el2.now_cost / 10, sell: selling.get(e) }; }),
+      chipsUsed: used, chipsAvailable, updatedAt: new Date().toISOString(),
+    };
+  }
+
+  async function teamFromSite(entry) {
+    const r = await fetch(`plans/${entry}.json`, { cache: 'no-store' });
+    if (r.status === 404) throw new Error(`Could not read team ${entry} from FPL right now, and the site has no saved copy of it. Try again in a minute.`);
+    if (!r.ok) throw new Error('Could not load the team. Reload the page to try again.');
+    return r.json();
+  }
+
   async function loadTeam(entry) {
     $('error').hidden = true;
     $('status').textContent = `Loading team ${entry}`;
-    const r = await fetch(`plans/${entry}.json`, { cache: 'no-store' });
-    if (r.status === 404) throw new Error(`No data for team ${entry} yet. Add ${entry} to planner_ids.txt in the GitHub repo; it appears after the next update.`);
-    if (!r.ok) throw new Error('Could not load the team. Reload the page to try again.');
-    const team = await r.json();
+    let team = null;
+    if (PROXY) {
+      try { team = await teamFromFpl(entry); } catch (e) { if (e.final) throw e; team = null; }
+    }
+    if (!team) team = await teamFromSite(entry);
     if (!Array.isArray(team.squad) || !team.squad[0] || typeof team.squad[0] !== 'object') throw new Error('The team data is from an older version of the site. It is refreshed at the next update.');
     state.team = team;
     state.entry = entry;
     try { localStorage.setItem(KEY, entry); } catch (e) { /* fine */ }
     const when = team.updatedAt ? new Date(team.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' }) : '';
-    $('status').textContent = `${team.name}${team.manager ? ' · ' + team.manager : ''} · bank £${team.bank.toFixed(1)}, ${team.ft} free transfer${team.ft === 1 ? '' : 's'}${when ? ' · read ' + when : ''}`;
+    $('status').textContent = `${team.name}${team.manager ? ' · ' + team.manager : ''} · bank £${team.bank.toFixed(1)}, ${team.ft} free transfer${team.ft === 1 ? '' : 's'}${team.live ? ' · read from FPL just now' : when ? ' · read ' + when : ''}`;
     chipChoices();
   }
 
