@@ -133,7 +133,7 @@
   }
 
   // ---- settings ----
-  const SET_KEY = 'planner-settings-v2';  // v2: transfer gameweeks default 4
+  const SET_KEY = 'planner-settings-v3';  // v3: transfer gameweeks default 3
   function loadSettings() {
     let saved = {};
     try { saved = JSON.parse(localStorage.getItem(SET_KEY)) || {}; } catch (e) { saved = {}; }
@@ -218,7 +218,7 @@
   }
 
   // transfer options at each gameweek (plus saving the transfer at every step); one path after these
-  const WIDTH = [3, 2, 2, 1, 1];
+  const WIDTH = [3, 3, 2];  // later transfer weeks (if set in Settings) are planned along one path, not branched
 
   async function makePlan() {
     const { chips, clash } = chosenChips();
