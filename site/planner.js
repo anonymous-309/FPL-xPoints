@@ -217,7 +217,8 @@
     };
   }
 
-  const WIDTH = [3, 2, 2];  // options at the first, second and third gameweek; one path after that
+  // transfer options at each gameweek (plus saving the transfer at every step); one path after these
+  const WIDTH = [3, 2, 2, 1, 1];
 
   async function makePlan() {
     const { chips, clash } = chosenChips();
@@ -234,7 +235,7 @@
       keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
     const levels = Math.min(WIDTH.length, Math.min(st.depth, T));
     let planned = WIDTH[0] + 1, count = WIDTH[0] + 1;
-    for (let k = 1; k < levels; k++) { planned += count * (WIDTH[k] - 1); count *= WIDTH[k]; }
+    for (let k = 1; k < levels; k++) { planned += count * WIDTH[k]; count *= WIDTH[k] + 1; }
     let done = 0;
     const progress = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }),
       el('div', { className: 'progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(planned), 'aria-valuenow': String(done) }, el('span', { style: `width:${Math.round((100 * done) / planned)}%` })));
@@ -285,9 +286,17 @@
           if (node.children.some((c) => S.sameOption(c.opt, opt))) break;
           node.children.push({ t, opt, sol, fixes: node.fixes.concat(opt), children: [] });
         }
+        // saving the transfer is always one of the choices
+        const chipWeek = (chips.wildcard || []).includes(t) || (chips.freehit || []).includes(t);
+        const saved = node.children.find((c) => isRoll(c.opt));
+        if (saved) saved.roll = true;
+        else if (!chipWeek) {
+          const sol = await solveWith({ fix: node.fixes, roll: [t] });
+          if (sol) { const opt = S.option(sol.input, sol.values, t); node.children.push({ t, opt, sol, fixes: node.fixes.concat(opt), children: [], roll: true }); }
+        }
         for (const c of node.children) await grow(c, level + 1);
       };
-      for (const r of roots) { if (!r.roll || levels > 1) await grow(r, 1); }
+      for (const r of roots) await grow(r, 1);
       progress('Simulating 5,000 scenarios to compare the options…');
       await new Promise((r) => setTimeout(r, 30));
       const sols = [];
@@ -426,7 +435,7 @@
   const pct = (x) => `${Math.round(x * 100)}%`;
   const optionText = (P, n) => {
     if (n.opt.z) return 'Free Hit squad';
-    if (!n.opt.buys.length && !n.opt.sells.length) return n.t === 0 ? 'Save the transfer' : 'No transfer';
+    if (!n.opt.buys.length && !n.opt.sells.length) return 'Save the transfer';
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[a].name.localeCompare(P[b].name);
     const outs = n.opt.sells.slice().sort(byPos), ins = n.opt.buys.slice().sort(byPos);
@@ -441,7 +450,7 @@
       const here = trail.concat(k);
       const on = onPath && path[level] === k;
       const w = n.sol.weeks[n.t];
-      const kids = n.children.length > 1 ? n.children : [];
+      const kids = on && n.children.length > 1 ? n.children : [];
       const btn = el('button', { type: 'button', className: 'tree-node', onclick: () => { state.plan.path = here.slice(); state.week = n.t; render(); } },
         el('span', { className: 'tn-gw', textContent: `GW${gws[n.t]}` }),
         el('span', { className: 'tn-moves', textContent: optionText(P, n) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
@@ -453,7 +462,7 @@
         kids.length ? el('ul', {}, ...kids.map((c, j) => node(c, j, level + 1, here, on, kids.length))) : '');
     };
     return el('section', { className: 'options' },
-      el('h3', {}, 'Options: % is how often each one scores the most of its branch'),
+      el('h3', {}, 'Options: % is how often each one scores the most of its branch. Tap one to open its next gameweek.'),
       el('div', { className: 'tree-root', textContent: `Your team now · ${state.team.ft} free transfer${state.team.ft === 1 ? '' : 's'}, £${state.team.bank.toFixed(1)} in the bank` }),
       el('ul', { className: 'tree' }, ...roots.map((n, k) => node(n, k, 0, [], true, roots.length))));
   }
