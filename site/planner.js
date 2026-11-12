@@ -228,7 +228,7 @@
   }
 
   // transfer options at each gameweek (plus saving the transfer at every step); one path after these
-  const WIDTH = [3, 3, 2];  // later transfer weeks (if set in Settings) are planned along one path, not branched
+  const WIDTH = [3, 2, 1];  // later transfer weeks (if set in Settings) are planned along one path, not branched
 
   async function makePlan() {
     const { chips, clash } = chosenChips();
@@ -621,7 +621,7 @@
     const entry = $('entry').value.trim();
     if (!/^\d+$/.test(entry) || !state.data) return;
     try {
-      if (entry !== state.entry) await loadTeam(entry);
+      await loadTeam(entry);  // read the team again each time, so the plan starts from FPL's latest data
       await makePlan();
     } catch (e) {
       showError(e.message);
@@ -653,7 +653,10 @@
       state.settings = loadSettings();
       $('playerNames').replaceChildren(...data.players.slice().sort((a, b) => a.name.localeCompare(b.name)).map((p) => el('option', { value: `${p.name} (${p.team} ${p.position})` })));
       settingsForm();
-      go();
+      // read the team so its chips show, but only plan when asked: a plan takes a while
+      const entry = $('entry').value.trim();
+      $('out').replaceChildren(el('p', { className: 'working', textContent: 'Choose the gameweeks, chips and settings, then press Make plan.' }));
+      if (/^\d+$/.test(entry)) loadTeam(entry).catch((e) => { showError(e.message); $('status').textContent = 'Enter an FPL team ID'; });
     })
     .catch(() => showError('Could not load the xPoints data. Reload the page to try again.'));
 })();
