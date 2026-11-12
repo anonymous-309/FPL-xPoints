@@ -210,12 +210,13 @@
       w.postMessage({ id: 1, lp, options });
     });
     // HiGHS in WebAssembly sometimes aborts on a long search; a looser stopping point avoids it
-    const LADDER = [{ time_limit: 25, mip_rel_gap: 0.001 }, { time_limit: 20, mip_rel_gap: 0.01 }, { time_limit: 10, mip_rel_gap: 0.03 }];
+    const LADDER = [{ time_limit: 25, mip_rel_gap: 0.001, presolve: 'on' }, { time_limit: 20, mip_rel_gap: 0.01, presolve: 'on' },
+      { time_limit: 10, mip_rel_gap: 0.03, presolve: 'on' }, { time_limit: 10, mip_rel_gap: 0.03, presolve: 'off' }];
     return {
       solve: async (lp) => {
         let last;
         for (const options of LADDER) {
-          try { return await once(lp, { ...options, presolve: 'on' }); } catch (e) {
+          try { return await once(lp, options); } catch (e) {
             last = e;
             if (!/abort|memory|unreachable|unable to solve/i.test(e.message)) throw e;
           }
@@ -255,11 +256,19 @@
     $('go').disabled = true;
     progress(`Working out the options for GW${gws[0]}-${gws[gws.length - 1]}…`);
     const solver = openSolver();
-    let worst = 'Optimal';
+    let worst = 'Optimal', skipped = 0, firstDone = false;
     const solveWith = async (extra) => {
       const input = { ...base, ...extra };
       const model = S.build(input);
-      const sol = await solver.solve(S.toLP(model));
+      let sol;
+      try { sol = await solver.solve(S.toLP(model)); } catch (e) {
+        // the solver crashed on this one plan even after retries: leave that branch out rather than stop everything
+        done++;
+        if (!firstDone || !/abort|memory|unreachable|unable to solve/i.test(e.message)) throw e;
+        skipped++;
+        return null;
+      }
+      firstDone = true;
       done++;
       progress(`Working out the options: ${done} of about ${planned} plans checked…`);
       if (!sol.values || !Object.keys(sol.values).length || /infeasible/i.test(sol.status)) return null;
@@ -344,7 +353,7 @@
           n.vsSave = w / a.length;
         });
       }
-      state.plan = { gws, P, roots, chips, status: worst, hold: holdPoints(P, T), path: [0], levels };
+      state.plan = { gws, P, roots, chips, skipped, status: worst, hold: holdPoints(P, T), path: [0], levels };
       state.week = 0;
       render();
     } catch (e) {
@@ -518,6 +527,7 @@
       el('p', { className: 'meta', textContent: '"Best" is how often an option scores the most of the options next to it, over 5,000 simulated runs of every match (the rest of the plan included; "GW only" counts that gameweek alone). Options are ordered by the planner’s score, which counts later gameweeks a little less and values saved transfers, so plan xPts can be slightly out of order. Options that share most moves split their wins, so also look at "Beats saving the transfer": a good move usually wins that 55-65% of the time.' }),
       state.team.madeAlready && state.team.madeAlready.length ? el('p', { className: 'meta', textContent: `Already made for GW${state.team.lastGw + 1}: ${state.team.madeAlready.join(', ')} (counted in your squad and free transfers).` }) : '',
       Object.keys(state.overrides).length ? el('p', { className: 'meta', textContent: `Uses your minutes edits from the Minutes page (${Object.keys(state.overrides).length} players).` }) : '',
+      state.plan.skipped ? el('p', { className: 'meta', textContent: `${state.plan.skipped} of the branches could not be worked out (the solver ran out of memory on this device) and are left out of the tree.` }) : '',
       /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
     $('out').replaceChildren(summary, treeView(P, roots, gws), tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
   }
