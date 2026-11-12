@@ -9,7 +9,7 @@
   const POS_LABEL = { GK: 'GKP', DEF: 'DEF', MID: 'MID', FWD: 'FWD' };
   // Address of the Cloudflare Worker that reads FPL for the page (tools/cloudflare-worker.js). Empty: only teams the
   // site build read (planner_ids.txt). ?proxy=https://... on the page address tries another one and remembers it.
-  const PROXY_DEFAULT = '';
+  const PROXY_DEFAULT = 'https://fpl-proxy.ntp2503.workers.dev';
   const PROXY = (() => {
     const q = new URLSearchParams(location.search).get('proxy');
     try { if (q) localStorage.setItem('planner-proxy', q); return (q || localStorage.getItem('planner-proxy') || PROXY_DEFAULT).replace(/\/+$/, ''); } catch (e) { return (q || PROXY_DEFAULT).replace(/\/+$/, ''); }
