@@ -293,3 +293,24 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .opt-pts, .opt-win { font-size: 12.5px; color: var(--muted); }
 .opt-pts b, .opt-win b { color: var(--ink); font-variant-numeric: tabular-nums; }
 .opt-win b { color: var(--turf); font-size: 14px; }
+/* Planner option tree */
+.tree-root { display: inline-block; padding: 6px 10px; border-radius: 6px; background: var(--turf); color: #fff; font-weight: 650; font-size: 13px; }
+.tree, .tree ul { list-style: none; margin: 0; padding: 0; }
+.tree { margin-left: 14px; }
+.tree ul { margin-left: 18px; }
+.tree li { position: relative; padding: 6px 0 0 18px; }
+.tree li::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; border-left: 2px solid var(--line); }
+.tree li:last-child::before { bottom: auto; height: 26px; }
+.tree li::after { content: ''; position: absolute; left: 0; top: 26px; width: 16px; border-top: 2px solid var(--line); }
+.tree li.on::before, .tree li.on::after { border-color: var(--turf); }
+.tree-node { display: grid; grid-template-columns: auto 1fr auto; grid-template-areas: "gw moves win" "gw pts pts"; gap: 2px 8px; align-items: center;
+  width: 100%; text-align: left; padding: 7px 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--paper); color: var(--ink); font: inherit; cursor: pointer; }
+.tree-node[aria-pressed="true"] { border-color: var(--turf); box-shadow: inset 0 0 0 1px var(--turf); background: #eef7f1; }
+.tn-gw { grid-area: gw; align-self: start; font: 700 11px/1.6 var(--body); color: var(--muted); }
+.tn-moves { grid-area: moves; font-weight: 650; font-size: 13.5px; line-height: 1.3; }
+.tn-win { grid-area: win; display: flex; align-items: center; gap: 6px; }
+.tn-win b { color: var(--turf); font: 700 15px/1 var(--display); font-variant-numeric: tabular-nums; min-width: 36px; text-align: right; }
+.tn-bar { width: 44px; height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+.tn-bar span { display: block; height: 100%; background: var(--turf); }
+.tn-pts { grid-area: pts; font-size: 12px; color: var(--muted); }
+@media (max-width: 420px) { .tree ul { margin-left: 8px; } .tn-bar { display: none; } }

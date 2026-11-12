@@ -191,21 +191,27 @@
   // worker it can run out and abort. A solve that aborts is tried once more in a new worker.
   function openSolver() {
     let current = null;
-    const once = (lp) => new Promise((resolve, reject) => {
+    const once = (lp, options) => new Promise((resolve, reject) => {
       const w = new Worker(`planner-worker.js?v=${state.data.updatedAt}`);
       current = w;
       const done = (fn, arg) => { clearTimeout(timer); w.terminate(); if (current === w) current = null; fn(arg); };
       const timer = setTimeout(() => done(reject, new Error('The solver took too long. Try fewer gameweeks.')), 120000);
       w.onmessage = (e) => (e.data.ok ? done(resolve, e.data) : done(reject, new Error(e.data.error)));
       w.onerror = (e) => done(reject, new Error(e.message || 'The solver could not load. Check your connection and try again.'));
-      w.postMessage({ id: 1, lp, options: { time_limit: 25, mip_rel_gap: 0.001, presolve: 'on' } });
+      w.postMessage({ id: 1, lp, options });
     });
+    // HiGHS in WebAssembly sometimes aborts on a long search; a looser stopping point avoids it
+    const LADDER = [{ time_limit: 25, mip_rel_gap: 0.001 }, { time_limit: 20, mip_rel_gap: 0.01 }, { time_limit: 10, mip_rel_gap: 0.03 }];
     return {
       solve: async (lp) => {
-        try { return await once(lp); } catch (e) {
-          if (!/abort|memory|unreachable/i.test(e.message)) throw e;
-          return once(lp);
+        let last;
+        for (const options of LADDER) {
+          try { return await once(lp, { ...options, presolve: 'on' }); } catch (e) {
+            last = e;
+            if (!/abort|memory|unreachable|unable to solve/i.test(e.message)) throw e;
+          }
         }
+        throw last;
       },
       close: () => { if (current) current.terminate(); },
     };
@@ -428,22 +434,28 @@
   };
   const planPts = (sol) => sol.weeks.reduce((a, w) => a + w.xpts, 0);
 
-  function optionCards(P, nodes, level, gw) {
-    const sel = state.plan.path[level] ?? 0;
-    const multi = nodes.length > 1;
+  // The options as a tree: each gameweek's options branch out from the one chosen before it.
+  function treeView(P, roots, gws) {
+    const path = state.plan.path;
+    const node = (n, k, level, trail, onPath, siblings) => {
+      const here = trail.concat(k);
+      const on = onPath && path[level] === k;
+      const w = n.sol.weeks[n.t];
+      const kids = n.children.length > 1 ? n.children : [];
+      const btn = el('button', { type: 'button', className: 'tree-node', onclick: () => { state.plan.path = here.slice(); state.week = n.t; render(); } },
+        el('span', { className: 'tn-gw', textContent: `GW${gws[n.t]}` }),
+        el('span', { className: 'tn-moves', textContent: optionText(P, n) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
+        siblings > 1 ? el('span', { className: 'tn-win', title: `Best of these ${siblings} options in ${pct(n.win)} of the simulated runs (GW${gws[n.t]} alone: ${pct(n.winFirst)})` },
+          el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(n.win * 100)}%` })), el('b', { textContent: pct(n.win) })) : '',
+        el('span', { className: 'tn-pts', textContent: `${f1(planPts(n.sol))} xPts` + (n.vsSave != null ? ` · beats saving ${pct(n.vsSave)}` : '') }));
+      btn.setAttribute('aria-pressed', String(on));
+      return el('li', { className: on ? 'on' : '' }, btn,
+        kids.length ? el('ul', {}, ...kids.map((c, j) => node(c, j, level + 1, here, on, kids.length))) : '');
+    };
     return el('section', { className: 'options' },
-      el('h3', {}, level === 0 ? `Options for GW${gw}` : `GW${gw} in this branch`),
-      el('div', { className: 'option-row' }, ...nodes.map((n, k) => {
-        const w = n.sol.weeks[n.t];
-        const b = el('button', { type: 'button', className: 'option-card', onclick: () => { state.plan.path = state.plan.path.slice(0, level).concat(k); state.week = n.t; render(); } },
-          el('span', { className: 'opt-label', textContent: n.roll && level === 0 ? 'Save' : `Option ${k + 1}` }),
-          el('span', { className: 'opt-moves', textContent: optionText(P, n) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
-          el('span', { className: 'opt-pts' }, el('b', { textContent: f1(planPts(n.sol)) }), ' xPts plan'),
-          multi ? el('span', { className: 'opt-win' }, el('b', { textContent: pct(n.win) }), ' best', el('small', { textContent: ` · GW${gw} only ${pct(n.winFirst)}` })) : '',
-          n.vsSave != null ? el('span', { className: 'opt-pts', textContent: `Beats saving the transfer ${pct(n.vsSave)}` }) : '');
-        b.setAttribute('aria-pressed', String(k === sel));
-        return b;
-      })));
+      el('h3', {}, 'Options: % is how often each one scores the most of its branch'),
+      el('div', { className: 'tree-root', textContent: `Your team now · ${state.team.ft} free transfer${state.team.ft === 1 ? '' : 's'}, £${state.team.bank.toFixed(1)} in the bank` }),
+      el('ul', { className: 'tree' }, ...roots.map((n, k) => node(n, k, 0, [], true, roots.length))));
   }
 
   function render() {
@@ -478,8 +490,7 @@
       state.team.madeAlready && state.team.madeAlready.length ? el('p', { className: 'meta', textContent: `Already made for GW${state.team.lastGw + 1}: ${state.team.madeAlready.join(', ')} (counted in your squad and free transfers).` }) : '',
       Object.keys(state.overrides).length ? el('p', { className: 'meta', textContent: `Uses your minutes edits from the Minutes page (${Object.keys(state.overrides).length} players).` }) : '',
       /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
-    const cards = chain.filter((c) => c.nodes.length > 1 || c.level === 0).map((c) => optionCards(P, c.nodes, c.level, gws[c.node.t]));
-    $('out').replaceChildren(summary, ...cards, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
+    $('out').replaceChildren(summary, treeView(P, roots, gws), tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
   }
 
   function showError(text) { $('error').textContent = text; $('error').hidden = false; }
