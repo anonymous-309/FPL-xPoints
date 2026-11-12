@@ -174,12 +174,12 @@
     saveSettings();
   }
 
-  function addPick(kind) {
+  function addPick(kind, quiet) {
     const text = $(`${kind}Pick`).value.trim();
     if (!text) return;
     const label = (p) => `${p.name} (${p.team} ${p.position})`;
     const p = state.data.players.find((x) => label(x) === text) || state.data.players.find((x) => x.name.toLowerCase() === text.toLowerCase());
-    if (!p) { showError(`No player called "${text}". Pick one from the list.`); return; }
+    if (!p) { if (!quiet) showError(`No player called "${text}". Pick one from the list.`); return; }
     $('error').hidden = true;
     const owned = state.team && state.team.squad.some((x) => x.id === p.id);
     if (kind === 'forceIn' && owned) { showError(`${p.name} is already in your squad.`); return; }
@@ -353,7 +353,7 @@
           n.vsSave = w / a.length;
         });
       }
-      state.plan = { gws, P, roots, chips, skipped, status: worst, hold: holdPoints(P, T), path: [0], levels };
+      state.plan = { gws, P, roots, chips, skipped, force: base.force, status: worst, hold: holdPoints(P, T), path: [0], levels };
       state.week = 0;
       render();
     } catch (e) {
@@ -461,7 +461,10 @@
     const forcedOnly = n.roll && n.t === 0;
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[a].name.localeCompare(P[b].name);
-    const outs = n.opt.sells.slice().sort(byPos), ins = n.opt.buys.slice().sort(byPos);
+    // forced transfers first, paired as the viewer set them, then the rest by position
+    const fo = n.t === 0 && state.plan.force ? state.plan.force : { buys: [], sells: [] };
+    const outs = fo.sells.filter((i) => n.opt.sells.includes(i)).concat(n.opt.sells.filter((i) => !fo.sells.includes(i)).sort(byPos));
+    const ins = fo.buys.filter((i) => n.opt.buys.includes(i)).concat(n.opt.buys.filter((i) => !fo.buys.includes(i)).sort(byPos));
     return outs.map((o, k) => `${P[o].name} → ${ins[k] !== undefined ? P[ins[k]].name : ''}`).join(', ') + (forcedOnly ? ' (forced only)' : '');
   };
   const planPts = (sol) => sol.weeks.reduce((a, w) => a + w.xpts, 0);
@@ -622,6 +625,9 @@
     if (!/^\d+$/.test(entry) || !state.data) return;
     try {
       await loadTeam(entry);  // read the team again each time, so the plan starts from FPL's latest data
+      // a name typed in a Keep, Avoid or Force box counts even if Add was not pressed
+      ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => addPick(kind));
+      if (!$('error').hidden) return;
       await makePlan();
     } catch (e) {
       showError(e.message);
@@ -636,6 +642,8 @@
   ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
     $(`${kind}Pick`).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addPick(kind); } });
+    // picking a name from the list adds it straight away, no need to press Add
+    $(`${kind}Pick`).addEventListener('change', () => addPick(kind, true));
   });
   $('resetSettings').addEventListener('click', () => { state.settings = { ...S.DEFAULTS, keep: [], avoid: [], forceIn: [], forceOut: [], forceGw: state.data.gws[0] }; saveSettings(); settingsForm(); });
   state.settings = loadSettings();
