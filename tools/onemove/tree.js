@@ -95,7 +95,7 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
     let dec = 0, raw = 0, ftNow = ft, used = [];
     const lines = [];
     weeks.forEach((w, t) => {
-      const sq = w.xi.concat(w.bench).map((i) => info(byId.get(P[i].id)) );
+      const sq = w.xi.concat(w.bench).map((i) => (byId.has(P[i].id) ? info(byId.get(P[i].id)) : squad0.find((p) => p.id === P[i].id)));
       const v = week(sq, t); raw += v; dec += Math.pow(DEC, t) * v;
       if (t < D) { used.push(w.ins.length); lines.push(`    GW${G[t]} (${w.freeTransfers} FT): ` + (w.ins.length ? w.outs.map((o, m) => `${P[o].name} -> ${P[w.ins[m]].name} (${P[w.ins[m]].team}) ${P[w.ins[m]].price}`).join(' + ') : 'Save') + `, bank ${w.bank}`); }
     });
