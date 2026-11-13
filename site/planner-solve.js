@@ -171,9 +171,29 @@
       // saves now and makes the same moves next week would get that value for nothing.)
       const fEnd = v('fend', 'I', 0, MAX_FT);
       nextFt(fEnd, depth - 1);
-      reserveValue('rend', [[1, fEnd]], w(depth));
+      reserveValue('rend', [[1, fEnd]], w(depth) * (input.ftMult ?? 1));
     }
-    if (set.bankValue && bankPrev) addObj(bankPrev, set.bankValue * w(depth));
+    if (input.bankSteps && bankPrev) {
+      // money left after the last transfer week, each £0.1m worth less than the one before (bankSteps: [width £m,
+      // points per £1m]): the least of the lines through the steps
+      const B = v('bankv', 'C', 0, 1000);
+      let start = 0, cum = 0;
+      input.bankSteps.concat([[1000, 0]]).forEach(([width, slope]) => {
+        row([[1, B], [-slope, bankPrev]], -Infinity, cum - slope * start);
+        cum += slope * width; start += width;
+      });
+      addObj(B, w(depth) * (input.bankMult ?? 1));
+    } else if (set.bankValue && bankPrev) addObj(bankPrev, set.bankValue * w(depth));
+    // only these players may be bought or sold (the route to a target squad)
+    if (input.allowBuy || input.allowSell) {
+      const okBuy = new Set(input.allowBuy || []), okSell = new Set(input.allowSell || []);
+      vars.forEach((d, name) => {
+        const m = /^([bs])(\d+)_(\d+)$/.exec(name);
+        if (!m) return;
+        const i = Number(m[3]);
+        if ((m[1] === 'b' && input.allowBuy && !okBuy.has(i)) || (m[1] === 's' && input.allowSell && !okSell.has(i))) row([[1, name]], 0, 0);
+      });
+    }
     // a branch: some weeks' transfers fixed, some excluded
     (input.fix || []).forEach((o) => {
       if (o.z) { for (let i = 0; i < n; i++) row([[1, `z${o.t}_${i}`]], o.z.includes(i) ? 1 : 0, o.z.includes(i) ? 1 : 0); return; }
