@@ -1,0 +1,14 @@
+name: One move check
+on:
+  push:
+    branches: [analysis-41]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: curl -sfL https://anonymous-309.github.io/FPL-xPoints/data.json -o /tmp/data.json
+      - run: node tools/onemove/run.js 41 /tmp/data.json
