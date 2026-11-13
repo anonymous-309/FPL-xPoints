@@ -56,6 +56,34 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
     res.push({ raw8: L.raw - L0.raw, dec8: L.dec - L0.dec, out: o.name, in: `${n.name} (${n.team}) ${n.price}`, gain, d8: n.xp8 - o.xp8, bank: +(o.sell + bank - n.price).toFixed(1) });
   }));
   res.sort((a, b) => b.dec8 - a.dec8);
+  // ---- two transfers: screen with a quick best-XI score, then score the best ones fully
+  const quick = (sq) => { let dec = 0; G8.forEach((x, t) => {
+    const by = (pos) => sq.filter((p) => p.position === pos).map((p) => p.xpw[t]).sort((a, b) => b - a);
+    const gk = by('GK'), de = by('DEF'), mi = by('MID'), fw = by('FWD'); let best = -1;
+    for (let d = 3; d <= 5; d++) for (let m = 2; m <= 5; m++) { const f = 10 - d - m; if (f < 1 || f > 3) continue;
+      const xi = [gk[0], ...de.slice(0, d), ...mi.slice(0, m), ...fw.slice(0, f)]; const v = xi.reduce((a, b) => a + b, 0) + Math.max(...xi); if (v > best) best = v; }
+    dec += Math.pow(0.85, t) * best; }); return dec; };
+  const q0 = quick(squad);
+  const decSum = (n) => n.xpw.reduce((a, x, t) => a + Math.pow(0.85, t) * x, 0);
+  const cand = {};
+  ['GK', 'DEF', 'MID', 'FWD'].forEach((pos) => { cand[pos] = data.players.filter((d) => d.position === pos && !owned.has(d.id)).map(info).sort((a, b) => decSum(b) - decSum(a)).slice(0, 25); });
+  const pairs = [];
+  for (let a = 0; a < squad.length; a++) for (let b = a + 1; b < squad.length; b++) {
+    const oa = squad[a], ob = squad[b], money = oa.sell + ob.sell + bank;
+    for (const na of cand[oa.position]) for (const nb of cand[ob.position]) {
+      if (na.id === nb.id || na.price + nb.price > money + 1e-9) continue;
+      const c = { ...clubs }; c[oa.team]--; c[ob.team]--; c[na.team] = (c[na.team] || 0) + 1; c[nb.team] = (c[nb.team] || 0) + 1;
+      if (c[na.team] > 3 || c[nb.team] > 3) continue;
+      if (oa.position === ob.position && na.id > nb.id) continue;
+      const sq = squad.slice(); sq[a] = na; sq[b] = nb;
+      pairs.push({ a, b, na, nb, q: quick(sq) - q0, itb: +(money - na.price - nb.price).toFixed(1) });
+    }
+  }
+  pairs.sort((x, y) => y.q - x.q);
+  const top = pairs.slice(0, 40).map((p) => { const sq = squad.slice(); sq[p.a] = p.na; sq[p.b] = p.nb; const L = long(sq);
+    return { ...p, dec8: L.dec - L0.dec, raw8: L.raw - L0.raw, g1: score(sq) - base }; }).sort((x, y) => y.dec8 - x.dec8);
+  console.log(`PAIRS (${pairs.length} checked)`);
+  top.slice(0, 25).forEach((p) => console.log(`dec ${p.dec8.toFixed(2)}\traw ${p.raw8.toFixed(2)}\tGW1 ${p.g1.toFixed(2)}\t${squad[p.a].name} -> ${p.na.name} (${p.na.team}) ${p.na.price} + ${squad[p.b].name} -> ${p.nb.name} (${p.nb.team}) ${p.nb.price}\tITB ${p.itb}`));
   console.log('RESULTS');
   res.slice(0, 30).forEach((r) => console.log(`dec ${r.dec8.toFixed(2)}\traw ${r.raw8.toFixed(2)}\tGW1 ${r.gain.toFixed(2)}\t${r.out} -> ${r.in}\t8GW raw diff ${r.d8.toFixed(1)}\tITB ${r.bank}`));
 })();
