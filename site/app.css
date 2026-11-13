@@ -340,3 +340,5 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .route-table td.muted { color: var(--muted); }
 .route-table small.hit { color: var(--warn); display: block; }
 .route-table td.route-moves span.muted { color: var(--muted); font-weight: 400; }
+.route-table td.route-moves, .route-table th { text-align: left; }
+.route-table td.route-moves span { text-align: left; }
