@@ -4,7 +4,7 @@ const fs = require('fs');
 const S = require('../../site/planner-solve.js');
 const highsLoader = require('highs');
 const entry = process.argv[2], data = JSON.parse(fs.readFileSync(process.argv[3]));
-const FTV = 4, DEC = 0.85, PER = 3;
+const FTV = 0, DEC = 0.85, PER = 1;
 const api = (p) => fetch('https://fantasy.premierleague.com/api/' + p, { headers: { 'User-Agent': 'Mozilla/5.0' } }).then((r) => r.json());
 const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
 (async () => {
@@ -47,7 +47,7 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
     st.squad.forEach((o) => { if (!all.some((p) => p.id === o.id)) all.push({ id: o.id, name: o.name, team: o.team, position: o.position, price: o.price, owned: true, sell: o.sell, xp: o.xpw.slice(st.t), p1: o.p1w.slice(st.t) }); });
     const P = S.pool(all, [...owned]);
     const hold = from(st.squad, st.t);
-    const base = { players: P, T: G.length - st.t, ft: st.ft, bank: st.bank, chips: {}, settings: { ...S.DEFAULTS, depth: 1, decay: DEC, reserve: [0, 0, 0, 0, 0], minGain: FTV, bankValue: 1 / DEC, maxHits: null } };
+    const base = { players: P, T: G.length - st.t, ft: st.ft, bank: st.bank, chips: {}, settings: { ...S.DEFAULTS, depth: 1, decay: DEC, reserve: [0, 0, 0, 0, 0], minGain: FTV, bankValue: 0, maxHits: null } };
     const out = [];
     for (let k = 0; k <= st.ft; k++) {
       const cuts = [];
@@ -65,19 +65,21 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
         const bankAfter = Math.round((st.bank + opt.sells.reduce((a, x) => a + P[x].sell, 0) - opt.buys.reduce((a, b) => a + P[b].price, 0)) * 10) / 10;
         const L = from(sq, st.t);
         out.push({ k, moves: moves.length ? moves.join(' + ') : 'Save', squad: sq, bank: bankAfter, ft: Math.min(5, st.ft - k + 1), t: st.t + 1,
-          dec: L.dec - hold.dec, raw: L.raw - hold.raw, itb: bankAfter - st.bank, score: L.dec - hold.dec - FTV * k + (bankAfter - st.bank) });
+          dec: L.dec - hold.dec, raw: L.raw - hold.raw, itb: bankAfter - st.bank, score: L.dec - hold.dec });
       }
     }
-    return out.sort((a, b) => b.score - a.score);
+    return out;
   }
   const show = (o, pad) => console.log(`${pad}${o.score >= 0 ? '+' : ''}${o.score.toFixed(2)}\t[${o.k}FT dec ${o.dec.toFixed(2)} raw ${o.raw.toFixed(2)} ITB ${o.bank} (${o.itb >= 0 ? '+' : ''}${o.itb.toFixed(1)})]\t${o.moves}`);
-  console.log(`TREE team ${entry}: ${ft} FT, bank ${bank}, GW${G[0]}-${G.at(-1)}, FT used costs ${FTV}, ITB 1 pt per £1m`);
+  console.log(`TREE team ${entry}: ${ft} FT, bank ${bank}, GW${G[0]}-${G.at(-1)}, best total decayed xP for each number of FT, then the same for GW${G[1]}`);
+  const T0 = Date.now();
   const l1 = await decide({ squad: squad0, bank, ft, t: 0 });
-  console.log(`GW${G[0]} (all choices):`); l1.forEach((o) => show(o, '  '));
-  for (const o of l1.slice(0, 3)) {
-    console.log(`\nAfter GW${G[0]}: ${o.moves} -> GW${G[1]} with ${o.ft} FT, bank ${o.bank}`);
+  const t1 = (Date.now() - T0) / 1000;
+  for (const o of l1) {
+    console.log(`\nGW${G[0]} ${o.k}FT  +${o.dec.toFixed(2)} dec (raw ${o.raw.toFixed(2)}), bank ${o.bank}: ${o.moves}  -> GW${G[1]} with ${o.ft} FT`);
     const l2 = await decide(o);
-    l2.slice(0, 8).forEach((x) => show(x, '    '));
+    l2.forEach((x) => console.log(`    GW${G[1]} ${x.k}FT  path +${(o.dec + DEC * x.dec).toFixed(2)} dec (raw ${(o.raw + x.raw).toFixed(2)}), GW${G[1]} step +${x.dec.toFixed(2)}, bank ${x.bank}: ${x.moves}`));
   }
+  console.log(`\nGW${G[0]} level: ${t1.toFixed(1)}s; all: ${((Date.now() - T0) / 1000).toFixed(1)}s`);
   console.log(`\n${solves} solves, ${secs.toFixed(1)}s solving`);
 })();
