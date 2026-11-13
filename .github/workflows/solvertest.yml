@@ -16,6 +16,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - run: npm view highs versions --json | tr -d '\n '; echo; npm pack highs@1.0.0 >/dev/null && tar tzf highs-1.0.0.tgz
       - run: curl -sfL https://anonymous-309.github.io/FPL-xPoints/data.json -o /tmp/data.json
       - run: |
           for v in ${{ inputs.versions }}; do
