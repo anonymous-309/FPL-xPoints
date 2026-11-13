@@ -21,14 +21,14 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
     const gk = by('GK'), de = by('DEF'), mi = by('MID'), fw = by('FWD'); let best = -1;
     for (let d = 3; d <= 5; d++) for (let m = 2; m <= 5; m++) { const f = 10 - d - m; if (f < 1 || f > 3) continue;
       let s = gk[0], mx = gk[0]; for (const v of [...de.slice(0, d), ...mi.slice(0, m), ...fw.slice(0, f)]) { s += v; if (v > mx) mx = v; } if (s + mx > best) best = s + mx; } return best; };
-  const ev = (sq) => { let dec = 0; const g1 = wk(sq, 0); for (let t = 0; t < G.length; t++) dec += Math.pow(DEC, t) * (t ? wk(sq, t) : g1); return { g1, dec }; };
-  const full = (sq) => { let dec = 0, g1 = 0; for (let t = 0; t < G.length; t++) { const ps = sq.map((p) => ({ position: p.position, xp: p.xpw[t], p1: p.p1w[t] }));
+  const ev = (sq) => { let dec = 0, raw = 0; const g1 = wk(sq, 0); for (let t = 0; t < G.length; t++) { const v = t ? wk(sq, t) : g1; raw += v; dec += Math.pow(DEC, t) * v; } return { g1, dec, raw }; };
+  const full = (sq) => { let dec = 0, g1 = 0, raw = 0; for (let t = 0; t < G.length; t++) { const ps = sq.map((p) => ({ position: p.position, xp: p.xpw[t], p1: p.p1w[t] }));
     const by = (pos) => sq.map((p, i) => i).filter((i) => sq[i].position === pos).sort((a, b) => ps[b].xp - ps[a].xp);
     const gk = by('GK'), de = by('DEF'), mi = by('MID'), fw = by('FWD'); let best = null;
     for (let d = 3; d <= 5; d++) for (let m = 2; m <= 5; m++) { const f = 10 - d - m; if (f < 1 || f > 3) continue; const xi = [gk[0], ...de.slice(0, d), ...mi.slice(0, m), ...fw.slice(0, f)]; const s = xi.reduce((a, i) => a + ps[i].xp, 0); if (!best || s > best.s) best = { s, xi }; }
     const rest = sq.map((p, i) => i).filter((i) => !best.xi.includes(i)), bg = rest.find((i) => sq[i].position === 'GK');
     const bench = [bg].concat(rest.filter((i) => i !== bg).sort((a, b) => ps[b].xp - ps[a].xp)), byXp = best.xi.slice().sort((a, b) => ps[b].xp - ps[a].xp);
-    const v = S.expectedWithSubs(ps, best.xi, bench, byXp[0], byXp[1], 2, false, 1500).xpts; if (!t) g1 = v; dec += Math.pow(DEC, t) * v; } return { g1, dec }; };
+    const v = S.expectedWithSubs(ps, best.xi, bench, byXp[0], byXp[1], 2, false, 1500).xpts; if (!t) g1 = v; raw += v; dec += Math.pow(DEC, t) * v; } return { g1, dec, raw }; };
   const base = ev(squad), baseF = full(squad);
   const owned = new Set(squad.map((p) => p.id));
   const decSum = (p) => p.xpw.reduce((a, x, t) => a + Math.pow(DEC, t) * x, 0);
@@ -49,8 +49,8 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
         if (j === k) {
           checked[k]++;
           const sq = squad.slice(); o.forEach((i, m) => { sq[i] = ins[m]; });
-          const e = ev(sq), g1 = e.g1 - base.g1, dec = e.dec - base.dec, itb = money - bank;
-          if (g1 > 1e-6 && dec > 1e-6 && dec + itb > FTV * k) found[k].push({ o, ins: ins.slice(), sq, g1, dec, itb, money });
+          const e = ev(sq), g1 = e.g1 - base.g1, dec = e.dec - base.dec, raw = e.raw - base.raw, itb = money - bank;
+          if (g1 > -0.3 && raw > FTV * k - 0.5) found[k].push({ o, ins: ins.slice(), sq, g1, dec, raw, itb, money });
           return;
         }
         const pos = squad[o[j]].position, list = cand[pos];
@@ -64,9 +64,9 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
   console.log(`COUNT team ${entry}: bank ${bank}; players to buy checked per position: 1FT all, 2FT top ${LIMIT[2]}, 3FT top ${LIMIT[3]}, 4FT top ${LIMIT[4]}`);
   for (const k of [1, 2, 3, 4]) {
     // confirm with the full score (auto-subs)
-    const ok = found[k].map((x) => { const f = full(x.sq); return { ...x, g1: f.g1 - baseF.g1, dec: f.dec - baseF.dec }; })
-      .filter((x) => x.g1 > 1e-6 && x.dec > 1e-6 && x.dec + x.itb > FTV * k).sort((a, b) => b.dec + b.itb - (a.dec + a.itb));
+    const ok = found[k].map((x) => { const f = full(x.sq); return { ...x, g1: f.g1 - baseF.g1, dec: f.dec - baseF.dec, raw: f.raw - baseF.raw }; })
+      .filter((x) => x.g1 >= 0 && x.raw > FTV * k).sort((a, b) => b.raw - a.raw);
     console.log(`\n${k}FT: ${ok.length} pass (of ${checked[k]} checked)`);
-    ok.slice(0, 15).forEach((x) => console.log(`  score ${(x.dec + x.itb - FTV * k).toFixed(2)}\tdec ${x.dec.toFixed(2)}\tITB ${(x.itb >= 0 ? '+' : '') + x.itb.toFixed(1)} -> ${x.money.toFixed(1)}\tGW1 ${x.g1.toFixed(2)}\t` + x.o.map((i, m) => `${squad[i].name} -> ${x.ins[m].name} (${x.ins[m].team}) ${x.ins[m].price}`).join(' + ')));
+    ok.slice(0, 15).forEach((x) => console.log(`  over ${(x.raw - FTV * k).toFixed(2)}\traw ${x.raw.toFixed(2)}\tdec ${x.dec.toFixed(2)}\tITB ${(x.itb >= 0 ? '+' : '') + x.itb.toFixed(1)} -> ${x.money.toFixed(1)}\tGW1 ${x.g1.toFixed(2)}\t` + x.o.map((i, m) => `${squad[i].name} -> ${x.ins[m].name} (${x.ins[m].team}) ${x.ins[m].price}`).join(' + ')));
   }
 })();
