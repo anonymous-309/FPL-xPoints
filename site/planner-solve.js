@@ -43,8 +43,8 @@
   //         benchW: [T], benchWgk: [T] (how much of a bench player's points count: the chance he is needed),
   //         fix: [{t, buys, sells, z}] (a week's transfers set exactly), cut: [{t, buys, sells, z}] (a week's
   //         transfers that must not be repeated), roll: [t] (weeks with no transfer)}
-  // The search weighs week t by decay^t. Free transfers kept after this gameweek's transfers, and those carried past
-  // the last transfer week, are worth the reserve values; money left in the bank bankValue per £1m. Points shown to the viewer are never discounted.
+  // The search weighs week t by decay^t. Free transfers carried past the last transfer week are worth the reserve
+  // values; money left in the bank bankValue per £1m. Points shown to the viewer are never discounted.
   function build(input) {
     const { players: P, T, ft, bank } = input;
     const set = { ...DEFAULTS, ...(input.settings || {}) };
@@ -80,8 +80,9 @@
           if (t) { terms.push([-1, xPrev(i)]); row(terms, 0, 0); } else row(terms, P[i].owned ? 1 : 0, P[i].owned ? 1 : 0);
           row([[1, `b${t}_${i}`], [1, `s${t}_${i}`]], -Infinity, 1);
           const paidWeek = !has('wildcard', t);
-          addObj(`b${t}_${i}`, -(paidWeek ? set.minGain : CHURN) * w(t));
-          if (paidWeek && urgent.has(i) && P[i].owned) addObj(`s${t}_${i}`, set.minGain * w(t));
+          // not discounted: putting a transfer off a week must not make it look cheaper
+          addObj(`b${t}_${i}`, -(paidWeek ? set.minGain : CHURN));
+          if (paidWeek && urgent.has(i) && P[i].owned) addObj(`s${t}_${i}`, set.minGain);
         } else if (t) row([[1, x(i)], [-1, xPrev(i)]], 0, 0);
         else row([[1, x(i)]], P[i].owned ? 1 : 0, P[i].owned ? 1 : 0);
         // players the viewer wants kept or left out (an owned one is sold at the first chance)
@@ -166,9 +167,8 @@
     // Free transfers carried past the transfer weeks, and money left in the bank, are worth something.
     const reserve = (set.reserve || []).slice(0, MAX_FT);
     if (reserve.some((x) => x > 0) && lastPaid >= 0 && ftVar) {
-      // free transfers kept right after this gameweek's transfers (the decision now)
-      if (vars.has('u0')) reserveValue('r0', [[1, 'f0'], [-1, 'u0']], 1);
-      // and those carried past the last transfer week
+      // the free transfers still in hand after the last transfer week. (Not those kept this week as well: a plan that
+      // saves now and makes the same moves next week would get that value for nothing.)
       const fEnd = v('fend', 'I', 0, MAX_FT);
       nextFt(fEnd, depth - 1);
       reserveValue('rend', [[1, fEnd]], w(depth));

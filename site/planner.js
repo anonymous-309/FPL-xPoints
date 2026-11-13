@@ -513,7 +513,7 @@
     });
     const top = (key) => options.reduce((bi, o, k) => (o[key] > options[bi][key] ? k : bi), 0);
     const pBest = options[top('pts')], wBest = options[top('win')];
-    const say = (o) => `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}: ${o.roll && !o.count ? 'save' : optionText(P, o)}`;
+    const say = (o) => (o.roll && !o.count ? 'Save the transfer' : `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}: ${optionText(P, o)}`);
     return el('section', { className: 'options' },
       el('h3', {}, `Options for GW${gws[0]}: tap one to see its plan`),
       el('p', { className: 'opt-verdict rec' }, 'Recommended: ', el('b', { textContent: say(state.plan.rec) }), '. ', recWhy(P)),
@@ -529,6 +529,7 @@
   // Why the recommended plan: in words, from the steps that picked it.
   function recWhy(P) {
     const { rec, top, steps, save, vsSave, urgent } = state.plan;
+    const options = () => state.plan.options;
     const n = (o) => (o.count === null ? 'this plan' : o.roll ? (o.count ? 'only the forced transfers' : 'saving the transfer') : `${o.count} transfer${o.count > 1 ? 's' : ''}`);
     const out = [];
     if (rec !== top) {
@@ -539,7 +540,12 @@
       const s = steps[0];
       if (s && s.to !== save) out.push(`It beats ${n(s.to)} in ${pct(s.p)} of the runs.`);
     } else if (rec === save) {
-      out.push('No transfer adds enough over the value of keeping the free transfer.');
+      // what the saving plan does next: often the same moves a week later
+      const later = rec.sol.weeks.slice(1).filter((w) => w.ins.length && w.chip !== 'freehit')
+        .map((w) => `GW${state.plan.gws[w.t]}: ${w.outs.map((o, k) => `${P[o].name} → ${w.ins[k] !== undefined ? P[w.ins[k]].name : ''}`).join(', ')}`);
+      const best = top === rec ? options().filter((o) => o !== rec).reduce((b, o) => (o.pts > b.pts ? o : b), options().find((o) => o !== rec)) : top;
+      out.push(`Making the moves now adds at most ${f1(Math.max(0, (best ? best.pts : rec.pts) - rec.pts))} xPts over ${state.plan.gws.length} gameweeks, not enough for the least gain per transfer and the value of the free transfers.`);
+      if (later.length) out.push(`The plan makes them later instead: ${later.join('; ')}.`);
     }
     const sold = urgent.filter((i) => rec.opt.sells && rec.opt.sells.includes(i)).map((i) => P[i].name);
     if (sold.length) out.push(`${sold.join(', ')} ${sold.length > 1 ? 'are' : 'is'} out for 3+ gameweeks: sold straight away.`);
