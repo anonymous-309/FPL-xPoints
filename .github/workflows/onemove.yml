@@ -11,4 +11,5 @@ jobs:
         with:
           node-version: 22
       - run: curl -sfL https://anonymous-309.github.io/FPL-xPoints/data.json -o /tmp/data.json
+      - run: npm install --no-save highs@1.15.4 >/dev/null 2>&1
       - run: node tools/onemove/run.js 41 /tmp/data.json
