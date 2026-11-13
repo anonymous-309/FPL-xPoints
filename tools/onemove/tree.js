@@ -71,15 +71,38 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
     return out;
   }
   const show = (o, pad) => console.log(`${pad}${o.score >= 0 ? '+' : ''}${o.score.toFixed(2)}\t[${o.k}FT dec ${o.dec.toFixed(2)} raw ${o.raw.toFixed(2)} ITB ${o.bank} (${o.itb >= 0 ? '+' : ''}${o.itb.toFixed(1)})]\t${o.moves}`);
-  console.log(`TREE team ${entry}: ${ft} FT, bank ${bank}, GW${G[0]}-${G.at(-1)}, best total decayed xP for each number of FT, then the same for GW${G[1]}`);
-  const T0 = Date.now();
-  const l1 = await decide({ squad: squad0, bank, ft, t: 0 });
-  const t1 = (Date.now() - T0) / 1000;
-  for (const o of l1) {
-    console.log(`\nGW${G[0]} ${o.k}FT  +${o.dec.toFixed(2)} dec (raw ${o.raw.toFixed(2)}), bank ${o.bank}: ${o.moves}  -> GW${G[1]} with ${o.ft} FT`);
-    const l2 = await decide(o);
-    l2.forEach((x) => console.log(`    GW${G[1]} ${x.k}FT  path +${(o.dec + DEC * x.dec).toFixed(2)} dec (raw ${(o.raw + x.raw).toFixed(2)}), GW${G[1]} step +${x.dec.toFixed(2)}, bank ${x.bank}: ${x.moves}`));
+  // ---- one model for GW1-3: GW1 transfers fixed in number, GW2 and GW3 free; each FT left at the end worth FTEND
+  const FTEND = 2, D = 3;
+  const owned = new Set(squad0.map((p) => p.id));
+  const all = data.players.map((d) => { const n = info(d); const o = squad0.find((p) => p.id === d.id);
+    return { id: d.id, name: d.name, team: d.team, position: d.position, price: d.price, owned: !!o, sell: o ? o.sell : undefined, xp: n.xpw, p1: n.p1w }; });
+  squad0.forEach((o) => { if (!all.some((p) => p.id === o.id)) all.push({ id: o.id, name: o.name, team: o.team, position: o.position, price: o.price, owned: true, sell: o.sell, xp: o.xpw, p1: o.p1w }); });
+  const P = S.pool(all, [...owned]);
+  const hold = from(squad0, 0);
+  const base = { players: P, T: G.length, ft, bank, chips: {}, ftMult: 1 / Math.pow(DEC, D),
+    settings: { ...S.DEFAULTS, depth: D, decay: DEC, reserve: Array(5).fill(FTEND), minGain: 0, bankValue: 0, maxHits: 0 } };
+  console.log(`TREE team ${entry}: ${ft} FT, bank ${bank}; GW${G[0]}-${G[D - 1]} planned in one model, FT left after GW${G[D - 1]} worth ${FTEND} each, no hits, xP GW${G[0]}-${G.at(-1)} decayed`);
+  const T0 = Date.now(), res = [];
+  for (const k of [0, 1, 2, 3, 4, null]) {
+    if (k !== null && k > ft) continue;
+    const input = { ...base, ...(k === null ? {} : { count: [{ t: 0, n: k }] }) };
+    const model = S.build(input);
+    const t0 = Date.now(); const highs = await highsLoader();
+    const sol = highs.solve(S.toLP(model), { time_limit: 120, mip_rel_gap: 0.0005 });
+    const secs1 = (Date.now() - t0) / 1000;
+    const values = Object.fromEntries(Object.entries(sol.Columns).map(([a, c]) => [a, c.Primal]));
+    const weeks = S.decode(input, model, values);
+    let dec = 0, raw = 0, ftNow = ft, used = [];
+    const lines = [];
+    weeks.forEach((w, t) => {
+      const sq = w.xi.concat(w.bench).map((i) => info(byId.get(P[i].id)) );
+      const v = week(sq, t); raw += v; dec += Math.pow(DEC, t) * v;
+      if (t < D) { used.push(w.ins.length); lines.push(`    GW${G[t]} (${w.freeTransfers} FT): ` + (w.ins.length ? w.outs.map((o, m) => `${P[o].name} -> ${P[w.ins[m]].name} (${P[w.ins[m]].team}) ${P[w.ins[m]].price}`).join(' + ') : 'Save') + `, bank ${w.bank}`); }
+    });
+    const left = weeks[D] ? weeks[D].freeTransfers : null;
+    res.push({ k, dec: dec - hold.dec, raw: raw - hold.raw, left, total: dec - hold.dec + FTEND * (left || 0), used, lines, secs1, status: sol.Status });
   }
-  console.log(`\nGW${G[0]} level: ${t1.toFixed(1)}s; all: ${((Date.now() - T0) / 1000).toFixed(1)}s`);
+  res.forEach((r) => { console.log(`\n${r.k === null ? 'FREE (solver picks GW' + G[0] + ')' : 'GW' + G[0] + ' ' + r.k + 'FT'}: total ${r.total.toFixed(2)} = dec ${r.dec.toFixed(2)} + ${FTEND} x ${r.left} FT left (raw ${r.raw.toFixed(2)}), FT used ${r.used.join('-')}, ${r.secs1}s ${r.status}`); r.lines.forEach((l) => console.log(l)); });
+  console.log(`\nall: ${((Date.now() - T0) / 1000).toFixed(1)}s`);
   console.log(`\n${solves} solves, ${secs.toFixed(1)}s solving`);
 })();
