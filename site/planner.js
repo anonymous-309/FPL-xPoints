@@ -98,7 +98,7 @@
         // with the viewer's own minutes he plays if they are above 0
         p1.push(!d ? 0 : d.edited && d.edited !== 'model' ? (d.mins.some((m) => m > 0) ? 1 : 0) : (d.pApp1 ?? 1));
       });
-      return { id: p.id, name: p.name, team: p.team, position: p.position, price: p.price, owned: own.has(p.id), sell: own.get(p.id)?.sell, xp, p1, opp };
+      return { id: p.id, name: p.name, team: p.team, position: p.position, price: p.price, owned: own.has(p.id), sell: own.get(p.id)?.sell, xp, p1, opp, status: p.status || 'a' };
     });
     // an owned player with no prediction (left the league): kept with no points
     own.forEach((s, id) => {
@@ -108,20 +108,41 @@
   }
 
   // Keeping the squad: best 11 and captain each week, no transfers or chips, with auto-subs.
+  function bestXI(P, squad, t) {
+    let best = null;
+    for (let d = 3; d <= 5; d++) for (let m = 2; m <= 5; m++) {
+      const f = 10 - d - m;
+      if (f < 1 || f > 3) continue;
+      let xi = [];
+      [['GK', 1], ['DEF', d], ['MID', m], ['FWD', f]].forEach(([pos, k]) => { xi = xi.concat(squad.filter((i) => P[i].position === pos).sort((a, b) => P[b].xp[t] - P[a].xp[t]).slice(0, k)); });
+      const s = xi.reduce((a, i) => a + P[i].xp[t], 0);
+      if (xi.length === 11 && (!best || s > best.s)) best = { xi, s };
+    }
+    return best;
+  }
+
+  // How much of a bench player's points the search counts each week: the chance he is needed, from how many of the
+  // squad's likely starters may not play (an outfield bench player covers a third of the expected absences).
+  function benchWeights(P, T) {
+    const squad = P.map((p, i) => i).filter((i) => P[i].owned);
+    const out = [], gk = [];
+    for (let t = 0; t < T; t++) {
+      const best = bestXI(P, squad, t);
+      if (!best) { out.push(0.1); gk.push(0.1); continue; }
+      const missing = best.xi.filter((i) => P[i].position !== 'GK').reduce((a, i) => a + (1 - Math.min(1, P[i].p1[t])), 0);
+      const keeper = best.xi.find((i) => P[i].position === 'GK');
+      out.push(Math.max(0.05, Math.min(0.8, missing / 3)));
+      gk.push(Math.max(0.02, Math.min(0.9, 1 - Math.min(1, P[keeper].p1[t]))));
+    }
+    return { out, gk };
+  }
+
   function holdPoints(P, T) {
     const squad = P.map((p, i) => i).filter((i) => P[i].owned);
     let total = 0;
     for (let t = 0; t < T; t++) {
       const ps = P.map((p) => ({ position: p.position, xp: p.xp[t], p1: p.p1[t] }));
-      let best = null;
-      for (let d = 3; d <= 5; d++) for (let m = 2; m <= 5; m++) {
-        const f = 10 - d - m;
-        if (f < 1 || f > 3) continue;
-        let xi = [];
-        [['GK', 1], ['DEF', d], ['MID', m], ['FWD', f]].forEach(([pos, k]) => { xi = xi.concat(squad.filter((i) => P[i].position === pos).sort((a, b) => P[b].xp[t] - P[a].xp[t]).slice(0, k)); });
-        const s = xi.reduce((a, i) => a + P[i].xp[t], 0);
-        if (xi.length === 11 && (!best || s > best.s)) best = { xi, s };
-      }
+      const best = bestXI(P, squad, t);
       if (!best) continue;
       const byXp = best.xi.slice().sort((a, b) => P[b].xp[t] - P[a].xp[t]);
       const rest = squad.filter((i) => !best.xi.includes(i));
@@ -133,13 +154,14 @@
   }
 
   // ---- settings ----
-  const SET_KEY = 'planner-settings-v4';  // v4: a saved transfer is worth 2 by default
+  const SET_KEY = 'planner-settings-v5';  // v5: kept free transfers worth less each, least gain per transfer
   function loadSettings() {
     let saved = {};
     try {
       saved = JSON.parse(localStorage.getItem(SET_KEY)) || null;
       // carry settings over from the previous version, apart from the old saved-transfer value
-      if (!saved) { saved = JSON.parse(localStorage.getItem('planner-settings-v3')) || {}; delete saved.ftValue; }
+      if (!saved) { saved = JSON.parse(localStorage.getItem('planner-settings-v4')) || JSON.parse(localStorage.getItem('planner-settings-v3')) || {}; }
+      delete saved.ftValue;
     } catch (e) { saved = {}; }
     const st = { ...S.DEFAULTS, keep: [], avoid: [], forceIn: [], forceOut: [], forceGw: null, ...saved };
     // forced transfers only hold for the gameweek they were set for
@@ -154,7 +176,8 @@
     $('depth').replaceChildren(...Array.from({ length: T }, (_, k) => el('option', { value: String(k + 1), textContent: String(k + 1) })));
     $('depth').value = String(Math.min(st.depth, T));
     $('decay').value = String(st.decay);
-    $('ftValue').value = String(st.ftValue);
+    $('reserve').value = st.reserve.join(', ');
+    $('minGain').value = String(st.minGain);
     $('bankValue').value = String(st.bankValue);
     $('maxHits').value = st.maxHits == null ? '' : String(st.maxHits);
     $('forceGw').textContent = `GW${state.data.gws[0]}`;
@@ -172,7 +195,9 @@
     const num = (id, lo, hi, dflt) => { const n = Number($(id).value); return Number.isFinite(n) && $(id).value !== '' ? Math.max(lo, Math.min(hi, n)) : dflt; };
     st.depth = Number($('depth').value) || S.DEFAULTS.depth;
     st.decay = num('decay', 0.5, 1, S.DEFAULTS.decay);
-    st.ftValue = num('ftValue', 0, 5, S.DEFAULTS.ftValue);
+    const list = $('reserve').value.split(/[,;\s]+/).filter(Boolean).map(Number).filter((x) => Number.isFinite(x) && x >= 0).slice(0, 5);
+    st.reserve = list.length ? list.concat(Array(5 - list.length).fill(0)) : S.DEFAULTS.reserve.slice();
+    st.minGain = num('minGain', 0, 6, S.DEFAULTS.minGain);
     st.bankValue = num('bankValue', 0, 1, S.DEFAULTS.bankValue);
     st.maxHits = $('maxHits').value === '' ? null : Number($('maxHits').value);
     saveSettings();
@@ -252,6 +277,11 @@
     const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
     const forcedN = Math.max(fIn.length, fOut.length);
     if (forcedN) base.force = { buys: fIn.map((id) => index.get(id)), sells: fOut.map((id) => index.get(id)) };
+    // an owned player injured, banned or unavailable for the next 3 gameweeks: selling him needs no minimum gain
+    base.urgent = P.map((p, i) => i).filter((i) => P[i].owned && !['a', 'd'].includes(P[i].status) && P[i].p1.slice(0, Math.min(3, T)).every((x) => x < 0.25));
+    const bw = benchWeights(P, T);
+    base.benchW = bw.out;
+    base.benchWgk = bw.gk;
     // The options this gameweek: the best 3 plans using each number of transfers, from all free transfers down to 1,
     // and the best plan saving them (or making only the forced ones). Later gameweeks follow each plan's own path.
     const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
@@ -285,7 +315,7 @@
       progress(`Working out the options: ${done} of ${planned} plans…`);
       if (!sol.values || !Object.keys(sol.values).length || /infeasible/i.test(sol.status)) return null;
       if (!/optimal/i.test(sol.status)) worst = sol.status;
-      return { input, model, values: sol.values, weeks: S.decode(input, model, sol.values) };
+      return { input, model, values: sol.values, score: sol.objective, weeks: S.decode(input, model, sol.values) };
     };
     try {
       const options = [];
@@ -322,9 +352,31 @@
       const groupOf = (o) => groups.findIndex((g) => g.count === o.count);
       options.sort((a, b) => groupOf(a) - groupOf(b) || b.pts - a.pts);
       options.forEach((o, k) => { o.rank = k > 0 && options[k - 1].count === o.count ? options[k - 1].rank + 1 : 1; });
-      state.plan = { gws, P, options, chips, skipped, force: base.force, status: worst, hold: holdPoints(P, T), pick: 0 };
-      // open the plan with the most expected points
-      state.plan.pick = options.reduce((bi, o, k) => (o.pts > options[bi].pts ? k : bi), 0);
+      // Recommended: the best score (xPts with decay, plus the value of the free transfers kept, less the least gain
+      // per transfer), unless it beats the best plan with fewer transfers in under 60% of the runs: then the safer one.
+      const pairWin = (a, b) => {
+        const A = res[options.indexOf(a)].total, B = res[options.indexOf(b)].total;
+        let w = 0;
+        for (let s = 0; s < N; s++) w += A[s] > B[s] + 1e-6 ? 1 : Math.abs(A[s] - B[s]) <= 1e-6 ? 0.5 : 0;
+        return w / N;
+      };
+      const byScore = (list) => list.reduce((b, o) => (o.sol.score > b.sol.score ? o : b), list[0]);
+      const top = byScore(options);
+      let rec = top;
+      const steps = [];
+      for (;;) {
+        const fewer = rec.count === null ? [] : options.filter((o) => o.count !== null && o.count < rec.count);
+        if (!fewer.length) break;
+        const safer = byScore(fewer);
+        const p = pairWin(rec, safer);
+        steps.push({ from: rec, to: safer, p });
+        if (p >= 0.6) break;
+        rec = safer;
+      }
+      const save = options.find((o) => o.roll);
+      state.plan = { gws, P, options, chips, skipped, force: base.force, status: worst, hold: holdPoints(P, T), pick: 0,
+        rec, top, steps, save, vsSave: save && rec !== save ? pairWin(rec, save) : null, urgent: base.urgent };
+      state.plan.pick = options.indexOf(rec);
       state.week = 0;
       render();
     } catch (e) {
@@ -450,7 +502,8 @@
       const w = o.sol.weeks[0];
       const tr = el('tr', { className: k === state.plan.pick ? 'on' : '', tabIndex: 0, onclick: () => { state.plan.pick = k; state.week = 0; render(); },
         onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); state.plan.pick = k; state.week = 0; render(); } } },
-        el('td', { className: 'opt-count' }, el('b', { textContent: label(o) }), o.rank > 1 ? el('small', { textContent: ` #${o.rank}` }) : ''),
+        el('td', { className: 'opt-count' }, el('b', { textContent: label(o) }), o.rank > 1 ? el('small', { textContent: ` #${o.rank}` }) : '',
+          o === state.plan.rec ? el('span', { className: 'rec-tag', textContent: 'Recommended' }) : ''),
         el('td', { className: 'opt-moves', textContent: (o.roll && !o.count ? 'Save the transfer' : optionText(P, o)) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
         el('td', { className: `num${o.pts === bestPts ? ' best' : ''}`, textContent: f1(o.pts) }),
         el('td', { className: `num${o.win === bestWin ? ' best' : ''}` }, el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(o.win * 100)}%` })), ' ', pctFine(o.win)),
@@ -463,6 +516,7 @@
     const say = (o) => `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}: ${o.roll && !o.count ? 'save' : optionText(P, o)}`;
     return el('section', { className: 'options' },
       el('h3', {}, `Options for GW${gws[0]}: tap one to see its plan`),
+      el('p', { className: 'opt-verdict rec' }, 'Recommended: ', el('b', { textContent: say(state.plan.rec) }), '. ', recWhy(P)),
       el('p', { className: 'opt-verdict' }, 'Most expected points: ', el('b', { textContent: say(pBest) }),
         pBest === wBest ? ' (also best most often).' : '. Best most often: ', pBest === wBest ? '' : el('b', { textContent: say(wBest) })),
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table' },
@@ -470,6 +524,26 @@
           el('th', { scope: 'col', className: 'num', textContent: 'xPts plan' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }),
           el('th', { scope: 'col', className: 'num', textContent: `GW${gws[0]}` }))),
         el('tbody', {}, ...rows))));
+  }
+
+  // Why the recommended plan: in words, from the steps that picked it.
+  function recWhy(P) {
+    const { rec, top, steps, save, vsSave, urgent } = state.plan;
+    const n = (o) => (o.count === null ? 'this plan' : o.roll ? (o.count ? 'only the forced transfers' : 'saving the transfer') : `${o.count} transfer${o.count > 1 ? 's' : ''}`);
+    const out = [];
+    if (rec !== top) {
+      const s = steps.find((x) => x.from === top) || steps[0];
+      out.push(`Using ${n(top)} scores ${f1(top.pts - rec.pts)} xPts more but beats ${n(s.to)} in only ${pct(s.p)} of the runs (under 60%), so keep the free transfers.`);
+    } else if (save && rec !== save) {
+      out.push(`${f1(rec.pts - save.pts)} xPts more than saving the transfer${vsSave != null ? `, ahead in ${pct(vsSave)} of the runs` : ''}, after the value of the free transfers used.`);
+      const s = steps[0];
+      if (s && s.to !== save) out.push(`It beats ${n(s.to)} in ${pct(s.p)} of the runs.`);
+    } else if (rec === save) {
+      out.push('No transfer adds enough over the value of keeping the free transfer.');
+    }
+    const sold = urgent.filter((i) => rec.opt.sells && rec.opt.sells.includes(i)).map((i) => P[i].name);
+    if (sold.length) out.push(`${sold.join(', ')} ${sold.length > 1 ? 'are' : 'is'} out for 3+ gameweeks: sold straight away.`);
+    return out.join(' ');
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
@@ -604,7 +678,7 @@
 
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
   $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); });
-  ['depth', 'decay', 'ftValue', 'bankValue', 'maxHits'].forEach((id) => $(id).addEventListener('change', readSettings));
+  ['depth', 'decay', 'reserve', 'minGain', 'bankValue', 'maxHits'].forEach((id) => $(id).addEventListener('change', readSettings));
   ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
     $(`${kind}Pick`).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addPick(kind); } });

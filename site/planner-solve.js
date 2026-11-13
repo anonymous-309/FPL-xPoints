@@ -32,15 +32,19 @@
   }
 
   // Default settings, as FPL Review's solver.
-  const DEFAULTS = { decay: 0.85, ftValue: 2, bankValue: 0.1, maxHits: null, depth: DEPTH };
+  // reserve: what each free transfer kept is worth (the 1st kept, 2nd, ... 5th), less for each one more; minGain: the
+  // least a transfer must add, in xPts, to be worth making (not for selling a player out for 3+ gameweeks)
+  const DEFAULTS = { decay: 0.85, reserve: [3, 2.5, 1.5, 0.5, 0], minGain: 1.5, bankValue: 0.1, maxHits: null, depth: DEPTH };
 
   // input: {players: [{id, position, team, price, sell (owned only), owned, xp: [T]}], T, ft, bank,
   //         chips: {wildcard: [t], freehit: [t], bboost: [t], '3xc': [t]} (week indexes),
-  //         settings: {decay, ftValue, bankValue, maxHits, depth}, keep: [i], avoid: [i] (player indexes),
+  //         settings: {decay, reserve, minGain, bankValue, maxHits, depth}, keep: [i], avoid: [i] (player indexes),
+  //         urgent: [i] (owned players out for 3+ gameweeks: selling them needs no minimum gain),
+  //         benchW: [T], benchWgk: [T] (how much of a bench player's points count: the chance he is needed),
   //         fix: [{t, buys, sells, z}] (a week's transfers set exactly), cut: [{t, buys, sells, z}] (a week's
   //         transfers that must not be repeated), roll: [t] (weeks with no transfer)}
-  // The search weighs week t by decay^t, adds ftValue for each free transfer saved past the last transfer week and
-  // bankValue for each £1m left in the bank then. Points shown to the viewer are never discounted.
+  // The search weighs week t by decay^t. Free transfers kept after this gameweek's transfers, and those carried past
+  // the last transfer week, are worth the reserve values; money left in the bank bankValue per £1m. Points shown to the viewer are never discounted.
   function build(input) {
     const { players: P, T, ft, bank } = input;
     const set = { ...DEFAULTS, ...(input.settings || {}) };
@@ -56,7 +60,7 @@
     const row = (terms, lo, hi) => rows.push({ terms: terms.filter(([c]) => c !== 0), lo, hi });
     const sellValue = (i) => (P[i].owned ? P[i].sell : P[i].price);
     const w = (t) => Math.pow(set.decay, t);
-    const keep = new Set(input.keep || []), avoid = new Set(input.avoid || []);
+    const keep = new Set(input.keep || []), avoid = new Set(input.avoid || []), urgent = new Set(input.urgent || []);
 
     const transferWeek = (t) => !has('freehit', t) && (t < depth || has('wildcard', t));
     let bankPrev = null;      // name of the bank variable after the last transfer week, null = starting bank
@@ -75,7 +79,9 @@
           const terms = [[1, x(i)], [-1, `b${t}_${i}`], [1, `s${t}_${i}`]];
           if (t) { terms.push([-1, xPrev(i)]); row(terms, 0, 0); } else row(terms, P[i].owned ? 1 : 0, P[i].owned ? 1 : 0);
           row([[1, `b${t}_${i}`], [1, `s${t}_${i}`]], -Infinity, 1);
-          addObj(`b${t}_${i}`, -CHURN);
+          const paidWeek = !has('wildcard', t);
+          addObj(`b${t}_${i}`, -(paidWeek ? set.minGain : CHURN) * w(t));
+          if (paidWeek && urgent.has(i) && P[i].owned) addObj(`s${t}_${i}`, set.minGain * w(t));
         } else if (t) row([[1, x(i)], [-1, xPrev(i)]], 0, 0);
         else row([[1, x(i)]], P[i].owned ? 1 : 0, P[i].owned ? 1 : 0);
         // players the viewer wants kept or left out (an owned one is sold at the first chance)
@@ -147,7 +153,8 @@
         row([[1, c], [-1, y]], -Infinity, 0);
         yTerms.push([1, y]); cTerms.push([1, c]);
         const xp = P[i].xp[t] * w(t);
-        const benchW = bb ? 1 : BENCH_W;
+        const bw = P[i].position === 'GK' ? (input.benchWgk || [])[t] : (input.benchW || [])[t];
+        const benchW = bb ? 1 : bw ?? BENCH_W;
         addObj(y, xp * (1 - benchW));
         addObj(sq(i), xp * benchW);
         addObj(c, xp * (tc ? 2 : 1));
@@ -157,10 +164,14 @@
       POS.forEach((pos) => row(P.map((p, i) => [p.position === pos ? 1 : 0, `y${t}_${i}`]), XI[pos][0], XI[pos][1]));
     }
     // Free transfers carried past the transfer weeks, and money left in the bank, are worth something.
-    if (set.ftValue && lastPaid >= 0 && ftVar) {
+    const reserve = (set.reserve || []).slice(0, MAX_FT);
+    if (reserve.some((x) => x > 0) && lastPaid >= 0 && ftVar) {
+      // free transfers kept right after this gameweek's transfers (the decision now)
+      if (vars.has('u0')) reserveValue('r0', [[1, 'f0'], [-1, 'u0']], 1);
+      // and those carried past the last transfer week
       const fEnd = v('fend', 'I', 0, MAX_FT);
       nextFt(fEnd, depth - 1);
-      addObj(fEnd, set.ftValue * w(depth));
+      reserveValue('rend', [[1, fEnd]], w(depth));
     }
     if (set.bankValue && bankPrev) addObj(bankPrev, set.bankValue * w(depth));
     // a branch: some weeks' transfers fixed, some excluded
@@ -186,6 +197,20 @@
       row(all.map((name) => [onSet.has(name) ? 1 : -1, name]), -Infinity, on.length - 1);
     });
     return { vars, obj, rows, depth, settings: set };
+
+    // value of k free transfers kept (expr), each one worth less than the one before: the least of the lines through
+    // the steps of the reserve list, which the search pushes up to the true value
+    function reserveValue(name, expr, weight) {
+      const R = v(name, 'C', 0, 1000);
+      let cum = 0;
+      for (let k = 0; k < MAX_FT; k++) {
+        const slope = reserve[k] || 0;
+        // R <= cum + slope * (expr - k)
+        row([[1, R]].concat(expr.map(([c, x]) => [-slope * c, x])), -Infinity, cum - slope * k);
+        cum += slope;
+      }
+      addObj(R, weight);
+    }
 
     // free transfers next week: +1 up to 5 after a normal week, unchanged after a wildcard or free hit
     function nextFt(fNext, tPrev) {

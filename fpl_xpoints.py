@@ -1377,15 +1377,37 @@ def return_date(news: str, news_added: str | None) -> pd.Timestamp | None:
     return None
 
 
+# Typical gameweeks out for an injury FPL gives no return date for, by the body part in the news (rough figures
+# for Premier League players; the first match back counts half). The first match listed wins.
+INJURY_WEEKS = [(("acl", "cruciate", "achilles"), 30, "a long-term injury"), (("surgery", "operation"), 10, "surgery"),
+                (("fracture", "broken"), 8, "a fracture"), (("knee",), 5, "a knee injury"), (("hamstring",), 4, "a hamstring injury"),
+                (("thigh", "muscle", "muscular"), 3, "a muscle injury"), (("calf",), 3, "a calf injury"), (("ankle",), 3, "an ankle injury"),
+                (("foot", "toe"), 3, "a foot injury"), (("groin", "adductor"), 3, "a groin injury"), (("hip",), 3, "a hip injury"),
+                (("shoulder",), 3, "a shoulder injury"), (("back",), 2, "a back injury"), (("concussion", "head"), 1, "a head injury"),
+                (("illness", " ill"), 1, "illness"), (("knock",), 1, "a knock")]
+INJURY_WEEKS_DEFAULT = (2, "an injury")
+
+
+def injury_weeks(news: str) -> tuple[int, str]:
+    """Typical gameweeks out for an injury, from the words in FPL's news."""
+    text = f" {(news or '').lower()}"
+    for words, weeks, label in INJURY_WEEKS:
+        if any(w in text for w in words):
+            return weeks, label
+    return INJURY_WEEKS_DEFAULT
+
+
 def minute_plan(status: str | None, news: str, news_added: str | None, chance: float | None,
-                fixtures: list[tuple[int, pd.Timestamp]], first: int, red_last: bool) -> tuple[list[float], bool, str, int | None]:
+                fixtures: list[tuple[int, pd.Timestamp]], first: int, red_last: bool, news_gw: int | None = None) -> tuple[list[float], bool, str, int | None]:
     """How much of his usual minutes a player is expected to play in each upcoming fixture (gameweek, kickoff in UK time).
 
     Returns the share per fixture, whether his minutes should come from the matches before his current absence,
     a short note, and the gameweek he is back.
     - A return date in the news (injury or ban): 0 before it, then his usual minutes from the 5-4-3-2-1 formula on
       the matches before the absence.
-    - Injured or unavailable with no return date: 0 in every gameweek.
+    - Injured with no return date: out for the typical time for that injury (see INJURY_WEEKS), counted from the
+      gameweek the news came out, at least the next gameweek; half his usual minutes in the first match back.
+    - Not available for another reason (left the club, on loan) with no return date: 0 in every gameweek.
     - Suspended with no date, or a red card in his last match before FPL has flagged it: out for one match.
     - Doubtful (25/50/75%): xMin times FPL's chance in the next gameweek, full after that.
     """
@@ -1400,8 +1422,16 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
         i = next((j for j, v in enumerate(out) if v > 0), n)
         note = f"Back GW{back(i)} ({when:%d %b})" if i < n else f"Out until {when:%d %b}, after these gameweeks"
         return out, True, note, back(i)
+    is_injury = status == "i" or (status == "n" and any(w in f" {(news or '').lower()}" for ws, _, _ in INJURY_WEEKS for w in ws))
+    if is_injury:
+        weeks, label = injury_weeks(news)
+        back_at = max(first + 1, (news_gw or first) + weeks)
+        out = [0.0 if gw < back_at else 0.5 if gw == back_at else 1.0 for gw, _ in fixtures]
+        i = next((j for j, v in enumerate(out) if v > 0), n)
+        # no return gameweek is passed on: the injury log and the site only show return dates FPL gave
+        return out, True, f"No return date: about {weeks} week{'s' if weeks > 1 else ''} out for {label}, back GW{back_at} (estimate)", None
     if status in ("i", "n"):
-        return [0.0] * n, False, "Injured, no return date: 0", None
+        return [0.0] * n, False, "Unavailable, no return date: 0", None
     if status == "s" or red_last:
         out = [0.0 if j == 0 else 1.0 for j in range(n)]
         why = "Suspended, no date given" if status == "s" else "Red card in his last match"
@@ -1461,7 +1491,7 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             kick = pd.Timestamp(f.get("kickoff_time") or deadlines[f["event"]]).tz_convert("Europe/London").tz_localize(None)
             mine.append((f, kick))
         share, from_return, note, back_gw = minute_plan(p.get("status"), p.get("news", ""), p.get("news_added"), p.get("chance_of_playing_next_round"),
-                                                       [(f["event"], k) for f, k in mine], first, red_last)
+                                                       [(f["event"], k) for f, k in mine], first, red_last, news_gw(p.get("news_added")))
         for (f, _), avail in zip(mine, share):
             home = f["team_h"] == p["team"]
             team_id = p["team"]
