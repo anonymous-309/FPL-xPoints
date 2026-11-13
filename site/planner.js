@@ -348,19 +348,34 @@
       };
       const tot = share((r) => r.total), first = share((r) => r.week[0]);
       options.forEach((o, k) => { o.win = tot[k]; o.winFirst = first[k]; o.pts = planPts(o.sol); });
+      // Net = xPts + value of the free transfers still in hand after the transfer weeks + value of the money left
+      // - the least gain per transfer for each paid transfer. The recommendation compares plans on this.
+      const depth = Math.min(st.depth, T);
+      options.forEach((o) => {
+        const v = o.sol.values;
+        o.ftEnd = v.fend !== undefined ? Math.round(v.fend) : null;
+        o.ftVal = o.ftEnd === null ? 0 : st.reserve.slice(0, o.ftEnd).reduce((a, x) => a + x, 0);
+        let bankEnd = state.team.bank;
+        for (let t = T - 1; t >= 0; t--) if (v[`bank${t}`] !== undefined) { bankEnd = Math.round(v[`bank${t}`] * 10) / 10; break; }
+        o.bankEnd = bankEnd;
+        o.bankVal = st.bankValue * bankEnd;
+        o.paid = o.sol.weeks.filter((w) => w.t < depth && !w.chip).reduce((a, w) => a + w.ins.length, 0);
+        o.cost = st.minGain * o.paid;
+        o.net = o.pts + o.ftVal + o.bankVal - o.cost;
+      });
       // within each number of transfers, list by expected points
       const groupOf = (o) => groups.findIndex((g) => g.count === o.count);
       options.sort((a, b) => groupOf(a) - groupOf(b) || b.pts - a.pts);
       options.forEach((o, k) => { o.rank = k > 0 && options[k - 1].count === o.count ? options[k - 1].rank + 1 : 1; });
-      // Recommended: the best score (xPts with decay, plus the value of the free transfers kept, less the least gain
-      // per transfer), unless it beats the best plan with fewer transfers in under 60% of the runs: then the safer one.
+      // Recommended: the best Net, unless it beats the best plan with fewer transfers in under 60% of the runs: then
+      // the safer one, and so on down.
       const pairWin = (a, b) => {
         const A = res[options.indexOf(a)].total, B = res[options.indexOf(b)].total;
         let w = 0;
         for (let s = 0; s < N; s++) w += A[s] > B[s] + 1e-6 ? 1 : Math.abs(A[s] - B[s]) <= 1e-6 ? 0.5 : 0;
         return w / N;
       };
-      const byScore = (list) => list.reduce((b, o) => (o.sol.score > b.sol.score ? o : b), list[0]);
+      const byScore = (list) => list.reduce((b, o) => (o.net > b.net ? o : b), list[0]);
       const top = byScore(options);
       let rec = top;
       const steps = [];
@@ -495,7 +510,7 @@
   // The options as a tree: each gameweek's options branch out from the one chosen before it.
   // The options in one table: each row is a plan; the best expected points and the most wins are marked.
   function optionsView(P, options, gws) {
-    const bestPts = Math.max(...options.map((o) => o.pts)), bestWin = Math.max(...options.map((o) => o.win));
+    const bestPts = Math.max(...options.map((o) => o.pts)), bestWin = Math.max(...options.map((o) => o.win)), bestNet = Math.max(...options.map((o) => o.net));
     const label = (o) => (o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
       : o.roll ? (o.count ? 'Forced only' : 'Save') : `${o.count} transfer${o.count > 1 ? 's' : ''}`);
     const rows = options.map((o, k) => {
@@ -506,8 +521,11 @@
           o === state.plan.rec ? el('span', { className: 'rec-tag', textContent: 'Recommended' }) : ''),
         el('td', { className: 'opt-moves', textContent: (o.roll && !o.count ? 'Save the transfer' : optionText(P, o)) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
         el('td', { className: `num${o.pts === bestPts ? ' best' : ''}`, textContent: f1(o.pts) }),
-        el('td', { className: `num${o.win === bestWin ? ' best' : ''}` }, el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(o.win * 100)}%` })), ' ', pctFine(o.win)),
-        el('td', { className: 'num muted', textContent: pctFine(o.winFirst) }));
+        el('td', { className: 'num kept' }, el('span', { textContent: o.ftEnd === null ? '–' : `${o.ftEnd} FT +${f1(o.ftVal)}` }),
+          el('small', { textContent: `£${o.bankEnd.toFixed(1)} +${f1(o.bankVal)}` })),
+        el('td', { className: 'num muted', textContent: o.cost ? `−${f1(o.cost)}` : '0' }),
+        el('td', { className: `num${o.net === bestNet ? ' best' : ''}`, textContent: f1(o.net) }),
+        el('td', { className: `num${o.win === bestWin ? ' best' : ''}`, title: `GW${gws[0]} alone: ${pctFine(o.winFirst)}` }, el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(o.win * 100)}%` })), ' ', pctFine(o.win)));
       tr.setAttribute('aria-selected', String(k === state.plan.pick));
       return tr;
     });
@@ -521,9 +539,11 @@
         pBest === wBest ? ' (also best most often).' : '. Best most often: ', pBest === wBest ? '' : el('b', { textContent: say(wBest) })),
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table' },
         el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses' }), el('th', { scope: 'col', textContent: 'Transfers' }),
-          el('th', { scope: 'col', className: 'num', textContent: 'xPts plan' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }),
-          el('th', { scope: 'col', className: 'num', textContent: `GW${gws[0]}` }))),
-        el('tbody', {}, ...rows))));
+          el('th', { scope: 'col', className: 'num', textContent: 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: 'Kept' }),
+          el('th', { scope: 'col', className: 'num', textContent: 'Gain rule' }), el('th', { scope: 'col', className: 'num', textContent: 'Net' }),
+          el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
+        el('tbody', {}, ...rows))),
+      el('p', { className: 'meta', textContent: `xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Kept: free transfers still in hand after the transfer weeks and what they are worth (${state.settings.reserve.join(' / ')} for the 1st to 5th), and the money left (${state.settings.bankValue} a £1m). Gain rule: ${state.settings.minGain} for each transfer made. Net = xPts + Kept − Gain rule; the recommendation compares Net. Best: share of the simulated runs in which the plan scores the most.` }));
   }
 
   // Why the recommended plan: in words, from the steps that picked it.
@@ -532,13 +552,15 @@
     const options = () => state.plan.options;
     const n = (o) => (o.count === null ? 'this plan' : o.roll ? (o.count ? 'only the forced transfers' : 'saving the transfer') : `${o.count} transfer${o.count > 1 ? 's' : ''}`);
     const out = [];
+    const p1 = (x) => `${(Math.round(x * 1000) / 10).toFixed(1)}%`;
     if (rec !== top) {
-      const s = steps.find((x) => x.from === top) || steps[0];
-      out.push(`Using ${n(top)} scores ${f1(top.pts - rec.pts)} xPts more but beats ${n(s.to)} in only ${pct(s.p)} of the runs (under 60%), so keep the free transfers.`);
+      steps.filter((x) => x.p < 0.6).forEach((x) => out.push(`${n(x.from)} has ${f1(x.from.net - x.to.net)} more Net than ${n(x.to)} but is ahead of it in only ${p1(x.p)} of the runs (needs 60%), so ${n(x.to)}.`));
+      const ok = steps.find((x) => x.p >= 0.6);
+      if (ok) out.push(`${n(ok.from)} beats ${n(ok.to)} in ${p1(ok.p)} of the runs, enough.`);
     } else if (save && rec !== save) {
-      out.push(`${f1(rec.pts - save.pts)} xPts more than saving the transfer${vsSave != null ? `, ahead in ${pct(vsSave)} of the runs` : ''}, after the value of the free transfers used.`);
+      out.push(`Net ${f1(rec.net - save.net)} more than saving the transfer (${f1(rec.pts - save.pts)} xPts more, less the value of the free transfers used and the gain rule)${vsSave != null ? `, ahead in ${p1(vsSave)} of the runs` : ''}.`);
       const s = steps[0];
-      if (s && s.to !== save) out.push(`It beats ${n(s.to)} in ${pct(s.p)} of the runs.`);
+      if (s && s.to !== save) out.push(`It beats ${n(s.to)} in ${p1(s.p)} of the runs.`);
     } else if (rec === save) {
       // what the saving plan does next: often the same moves a week later
       const later = rec.sol.weeks.slice(1).filter((w) => w.ins.length && w.chip !== 'freehit')
