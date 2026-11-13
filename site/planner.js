@@ -137,6 +137,27 @@
     return { out, gk };
   }
 
+  // The gameweeks after the transfer weeks, for a squad that stays: best 11, captain, vice and bench each week.
+  function heldWeeks(P, merged, from, T) {
+    const squad = merged.xi.concat(merged.bench);
+    let ft = merged.freeTransfers;
+    const out = [];
+    for (let t = from; t < T; t++) {
+      const ps = P.map((p) => ({ position: p.position, xp: p.xp[t], p1: p.p1[t] }));
+      const best = bestXI(P, squad, t) || { xi: merged.xi };
+      const xi = best.xi.slice().sort((a, b) => ['GK', 'DEF', 'MID', 'FWD'].indexOf(P[a].position) - ['GK', 'DEF', 'MID', 'FWD'].indexOf(P[b].position) || P[b].xp[t] - P[a].xp[t]);
+      const byXp = xi.slice().sort((a, b) => P[b].xp[t] - P[a].xp[t]);
+      const rest = squad.filter((i) => !xi.includes(i));
+      const gk = rest.find((i) => P[i].position === 'GK');
+      const bench = [gk].concat(rest.filter((i) => i !== gk).sort((a, b) => P[b].xp[t] - P[a].xp[t])).filter((i) => i !== undefined);
+      const r = S.expectedWithSubs(ps, xi, bench, byXp[0], byXp[1], 2, false);
+      ft = t === from ? ft : Math.min(S.MAX_FT, ft + 1);
+      out.push({ t, chip: null, transfersAllowed: false, freeTransfers: ft, hits: 0, bank: null, xi, bench, cap: byXp[0], vice: byXp[1],
+        ins: [], outs: [], mult: 2, xpts: r.xpts, subs: r.subs, raw: xi.reduce((a, i) => a + P[i].xp[t], 0) + P[byXp[0]].xp[t] });
+    }
+    return out;
+  }
+
   function holdPoints(P, T) {
     const squad = P.map((p, i) => i).filter((i) => P[i].owned);
     let total = 0;
@@ -259,15 +280,22 @@
     const st = state.settings;
     const P = S.pool(all, state.team.squad.map((s) => s.id).concat(st.keep, st.avoid, st.forceIn, st.forceOut));
     const index = new Map(P.map((p, i) => [p.id, i]));
-    const base = { players: P, T, ft: state.team.ft, bank: state.team.bank, chips, settings: { ...BASIC, depth: Math.min(BASIC.depth, T) },
+    // After the transfer weeks the squad stays, so those gameweeks are searched as one (their points summed, each
+    // weighed as usual) to keep the search small; their starting 11, captain and bench are picked afterwards.
+    const depth = Math.min(BASIC.depth, T);
+    const merge = T > depth + 1 && !Object.values(chips).some((arr) => (arr || []).some((t) => t >= depth));
+    const Tm = merge ? depth + 1 : T;
+    const Pm = merge ? P.map((p) => ({ ...p, xp: p.xp.slice(0, depth).concat([p.xp.slice(depth).reduce((a, x, j) => a + Math.pow(BASIC.decay, j) * x, 0)]),
+      p1: p.p1.slice(0, depth + 1) })) : P;
+    const base = { players: Pm, T: Tm, ft: state.team.ft, bank: state.team.bank, chips, settings: { ...BASIC, depth },
       keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
     const ownedIds = new Set(state.team.squad.map((x) => x.id));
     const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
     const forcedN = Math.max(fIn.length, fOut.length);
     if (forcedN) base.force = { buys: fIn.map((id) => index.get(id)), sells: fOut.map((id) => index.get(id)) };
     const bw = benchWeights(P, T);
-    base.benchW = bw.out;
-    base.benchWgk = bw.gk;
+    base.benchW = bw.out.slice(0, Tm);
+    base.benchWgk = bw.gk.slice(0, Tm);
     // The options this gameweek: the best 3 plans using each number of transfers, from all free transfers down to 1,
     // and the best plan saving them (or making only the forced ones). Later gameweeks follow each plan's own path.
     const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
@@ -301,7 +329,9 @@
       progress(`Working out the options: ${done} of ${planned} plans…`);
       if (!sol.values || !Object.keys(sol.values).length || /infeasible/i.test(sol.status)) return null;
       if (!/optimal/i.test(sol.status)) worst = sol.status;
-      return { input, model, values: sol.values, score: sol.objective, weeks: S.decode(input, model, sol.values) };
+      let weeks = S.decode(input, model, sol.values);
+      if (merge) weeks = weeks.slice(0, depth).concat(heldWeeks(P, weeks[depth], depth, T));
+      return { input, model, values: sol.values, score: sol.objective, weeks };
     };
     try {
       const options = [];

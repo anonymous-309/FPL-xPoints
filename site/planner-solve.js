@@ -28,7 +28,15 @@
         best = best.concat(tot).sort((a, b) => b - a).slice(0, k);
       });
     });
-    return players.filter((p) => keep.has(p.id) || owned.has(p.id));
+    // and no more than a few per position, the best by expected points: keeps the search small enough for a phone
+    const CAP = { GK: 6, DEF: 16, MID: 20, FWD: 12 };
+    const kept = new Set(ownedIds);
+    POS.forEach((pos) => {
+      players.filter((p) => p.position === pos && keep.has(p.id) && !owned.has(p.id))
+        .sort((a, b) => b.xp.reduce((x, y) => x + y, 0) - a.xp.reduce((x, y) => x + y, 0))
+        .slice(0, CAP[pos]).forEach((p) => kept.add(p.id));
+    });
+    return players.filter((p) => kept.has(p.id));
   }
 
   // Default settings, as FPL Review's solver.
