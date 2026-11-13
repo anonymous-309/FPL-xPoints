@@ -1,6 +1,6 @@
 // Solves the planner's LP text with HiGHS (WebAssembly) off the main thread, so the page stays responsive.
 'use strict';
-const HIGHS = 'https://cdn.jsdelivr.net/npm/highs@1.8.0/build/';
+const HIGHS = 'https://cdn.jsdelivr.net/npm/highs@1.15.4/build/';
 self.module = { exports: {} };
 self.exports = self.module.exports;
 importScripts(HIGHS + 'highs.js');

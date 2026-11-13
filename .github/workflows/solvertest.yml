@@ -7,7 +7,7 @@ on:
         default: "41"
       versions:
         description: highs versions to try
-        default: "1.8.0 1.7.0 1.5.0 1.2.0 1.0.0"
+        default: "1.15.4"
 jobs:
   test:
     runs-on: ubuntu-latest
