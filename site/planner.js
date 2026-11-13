@@ -173,13 +173,6 @@
   function settingsForm() {
     const st = state.settings;
     const T = Number($('horizon').value);
-    $('depth').replaceChildren(...Array.from({ length: T }, (_, k) => el('option', { value: String(k + 1), textContent: String(k + 1) })));
-    $('depth').value = String(Math.min(st.depth, T));
-    $('decay').value = String(st.decay);
-    $('reserve').value = st.reserve.join(', ');
-    $('minGain').value = String(st.minGain);
-    $('bankValue').value = String(st.bankValue);
-    $('maxHits').value = st.maxHits == null ? '' : String(st.maxHits);
     $('forceGw').textContent = `GW${state.data.gws[0]}`;
     ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
       $(`${kind}List`).replaceChildren(...st[kind].map((id) => {
@@ -192,14 +185,6 @@
 
   function readSettings() {
     const st = state.settings;
-    const num = (id, lo, hi, dflt) => { const n = Number($(id).value); return Number.isFinite(n) && $(id).value !== '' ? Math.max(lo, Math.min(hi, n)) : dflt; };
-    st.depth = Number($('depth').value) || S.DEFAULTS.depth;
-    st.decay = num('decay', 0.5, 1, S.DEFAULTS.decay);
-    const list = $('reserve').value.split(/[,;\s]+/).filter(Boolean).map(Number).filter((x) => Number.isFinite(x) && x >= 0).slice(0, 5);
-    st.reserve = list.length ? list.concat(Array(5 - list.length).fill(0)) : S.DEFAULTS.reserve.slice();
-    st.minGain = num('minGain', 0, 6, S.DEFAULTS.minGain);
-    st.bankValue = num('bankValue', 0, 1, S.DEFAULTS.bankValue);
-    st.maxHits = $('maxHits').value === '' ? null : Number($('maxHits').value);
     saveSettings();
   }
 
@@ -256,9 +241,12 @@
     };
   }
 
-  // transfer options at each gameweek (plus saving the transfer at every step); one path after these
-  // best plans for each number of transfers this gameweek: 3, or 2 when there are 3+ free transfers (more rows)
-  const perCount = (ft) => (ft >= 3 ? 2 : 3);
+  // Fixed for now: transfers planned for 3 gameweeks, each later gameweek weighed 0.85 times the one before, plans
+  // compared on expected points alone (no value for free transfers or money kept, no minimum gain per transfer).
+  const BASIC = { depth: 3, decay: 0.85, reserve: [0, 0, 0, 0, 0], minGain: 0, bankValue: 0, maxHits: null };
+  // plans for each number of transfers used this gameweek: with 4-5 free transfers, 1 plan for the most, the
+  // least (1) and all-but-one, 2 for 2 and 3; with 3, 2 each; with 1-2, 3 each; plus saving the transfer
+  const perCount = (ft, k) => (ft >= 4 ? (k === 2 || k === 3 ? 2 : 1) : ft === 3 ? 2 : 3);
 
   async function makePlan() {
     const { chips, clash } = chosenChips();
@@ -271,14 +259,12 @@
     const st = state.settings;
     const P = S.pool(all, state.team.squad.map((s) => s.id).concat(st.keep, st.avoid, st.forceIn, st.forceOut));
     const index = new Map(P.map((p, i) => [p.id, i]));
-    const base = { players: P, T, ft: state.team.ft, bank: state.team.bank, chips, settings: st,
+    const base = { players: P, T, ft: state.team.ft, bank: state.team.bank, chips, settings: { ...BASIC, depth: Math.min(BASIC.depth, T) },
       keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
     const ownedIds = new Set(state.team.squad.map((x) => x.id));
     const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
     const forcedN = Math.max(fIn.length, fOut.length);
     if (forcedN) base.force = { buys: fIn.map((id) => index.get(id)), sells: fOut.map((id) => index.get(id)) };
-    // an owned player injured, banned or unavailable for the next 3 gameweeks: selling him needs no minimum gain
-    base.urgent = P.map((p, i) => i).filter((i) => P[i].owned && !['a', 'd'].includes(P[i].status) && P[i].p1.slice(0, Math.min(3, T)).every((x) => x < 0.25));
     const bw = benchWeights(P, T);
     base.benchW = bw.out;
     base.benchWgk = bw.gk;
@@ -289,7 +275,7 @@
     if (week0Chip) groups.push({ count: null, n: 3 });
     else {
       const top = Math.max(state.team.ft, forcedN, 1);
-      for (let k = top; k > forcedN; k--) groups.push({ count: k, n: perCount(state.team.ft) });
+      for (let k = top; k > forcedN; k--) groups.push({ count: k, n: perCount(state.team.ft, k) });
       groups.push({ count: forcedN, n: 1 });
     }
     const planned = groups.reduce((a, g) => a + g.n, 0);
@@ -346,51 +332,21 @@
         }
         return out;
       };
-      const tot = share((r) => r.total), first = share((r) => r.week[0]);
-      options.forEach((o, k) => { o.win = tot[k]; o.winFirst = first[k]; o.pts = planPts(o.sol); });
-      // Net = xPts + value of the free transfers still in hand after the transfer weeks + value of the money left
-      // - the least gain per transfer for each paid transfer. The recommendation compares plans on this.
-      const depth = Math.min(st.depth, T);
-      options.forEach((o) => {
-        const v = o.sol.values;
-        o.ftEnd = v.fend !== undefined ? Math.round(v.fend) : null;
-        o.ftVal = o.ftEnd === null ? 0 : st.reserve.slice(0, o.ftEnd).reduce((a, x) => a + x, 0);
-        let bankEnd = state.team.bank;
-        for (let t = T - 1; t >= 0; t--) if (v[`bank${t}`] !== undefined) { bankEnd = Math.round(v[`bank${t}`] * 10) / 10; break; }
-        o.bankEnd = bankEnd;
-        o.bankVal = st.bankValue * bankEnd;
-        o.paid = o.sol.weeks.filter((w) => w.t < depth && !w.chip).reduce((a, w) => a + w.ins.length, 0);
-        o.cost = st.minGain * o.paid;
-        o.net = o.pts + o.ftVal + o.bankVal - o.cost;
+      // each run scored like the plans: every later gameweek weighed 0.85 times the one before
+      const wt = (t) => Math.pow(BASIC.decay, t);
+      const decayed = res.map((r) => { const out = new Float32Array(N); r.week.forEach((arr, t) => { for (let s = 0; s < N; s++) out[s] += wt(t) * arr[s]; }); return out; });
+      const tot = share((r) => decayed[res.indexOf(r)]), first = share((r) => r.week[0]);
+      options.forEach((o, k) => {
+        o.win = tot[k]; o.winFirst = first[k]; o.pts = planPts(o.sol);
+        o.dpts = o.sol.weeks.reduce((a, w, t) => a + wt(t) * w.xpts, 0);
       });
-      // within each number of transfers, list by expected points
+      // within each number of transfers, list by weighed expected points
       const groupOf = (o) => groups.findIndex((g) => g.count === o.count);
-      options.sort((a, b) => groupOf(a) - groupOf(b) || b.pts - a.pts);
+      options.sort((a, b) => groupOf(a) - groupOf(b) || b.dpts - a.dpts);
       options.forEach((o, k) => { o.rank = k > 0 && options[k - 1].count === o.count ? options[k - 1].rank + 1 : 1; });
-      // Recommended: the best Net, unless it beats the best plan with fewer transfers in under 60% of the runs: then
-      // the safer one, and so on down.
-      const pairWin = (a, b) => {
-        const A = res[options.indexOf(a)].total, B = res[options.indexOf(b)].total;
-        let w = 0;
-        for (let s = 0; s < N; s++) w += A[s] > B[s] + 1e-6 ? 1 : Math.abs(A[s] - B[s]) <= 1e-6 ? 0.5 : 0;
-        return w / N;
-      };
-      const byScore = (list) => list.reduce((b, o) => (o.net > b.net ? o : b), list[0]);
-      const top = byScore(options);
-      let rec = top;
-      const steps = [];
-      for (;;) {
-        const fewer = rec.count === null ? [] : options.filter((o) => o.count !== null && o.count < rec.count);
-        if (!fewer.length) break;
-        const safer = byScore(fewer);
-        const p = pairWin(rec, safer);
-        steps.push({ from: rec, to: safer, p });
-        if (p >= 0.6) break;
-        rec = safer;
-      }
-      const save = options.find((o) => o.roll);
-      state.plan = { gws, P, options, chips, skipped, force: base.force, status: worst, hold: holdPoints(P, T), pick: 0,
-        rec, top, steps, save, vsSave: save && rec !== save ? pairWin(rec, save) : null, urgent: base.urgent };
+      // best: the most weighed xPts
+      const rec = options.reduce((b, o) => (o.dpts > b.dpts ? o : b), options[0]);
+      state.plan = { gws, P, options, chips, skipped, force: base.force, status: worst, hold: holdPoints(P, T), pick: 0, rec, depth: Math.min(BASIC.depth, T) };
       state.plan.pick = options.indexOf(rec);
       state.week = 0;
       render();
@@ -507,264 +463,53 @@
   };
   const planPts = (sol) => sol.weeks.reduce((a, w) => a + w.xpts, 0);
 
-  // The options as a tree: each gameweek's options branch out from the one chosen before it.
-  // The options in one table: each row is a plan; the best expected points and the most wins are marked.
+  // The options in one table: what each plan does in each of the 3 transfer gameweeks, its expected points (as they
+  // are, and weighed 0.85 a week further ahead, which picks the best) and how often it scores the most.
   function optionsView(P, options, gws) {
-    const bestPts = Math.max(...options.map((o) => o.pts)), bestWin = Math.max(...options.map((o) => o.win)), bestNet = Math.max(...options.map((o) => o.net));
+    const depth = state.plan.depth;
+    const bestD = Math.max(...options.map((o) => o.dpts)), bestWin = Math.max(...options.map((o) => o.win));
     const label = (o) => (o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
-      : o.roll ? (o.count ? 'Forced only' : 'Save') : `${o.count} transfer${o.count > 1 ? 's' : ''}`);
+      : o.roll ? (o.count ? 'Forced only' : 'Save') : `${o.count} FT`);
+    const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
+    const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[b].price - P[a].price;
+    const moves = (w) => {
+      if (w.chip === 'freehit') return [el('span', { textContent: 'Free Hit' })];
+      if (!w.ins.length) return [el('span', { className: 'muted', textContent: 'Save' })];
+      const outs = w.outs.slice().sort(byPos), ins = w.ins.slice().sort(byPos);
+      return outs.map((x, k) => el('span', { textContent: `${P[x].name} → ${ins[k] !== undefined ? P[ins[k]].name : ''}` }))
+        .concat(w.hits ? [el('small', { className: 'hit', textContent: `−${w.hits * S.HIT}` })] : []);
+    };
     const rows = options.map((o, k) => {
-      const w = o.sol.weeks[0];
       const tr = el('tr', { className: k === state.plan.pick ? 'on' : '', tabIndex: 0, onclick: () => { state.plan.pick = k; state.week = 0; render(); },
         onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); state.plan.pick = k; state.week = 0; render(); } } },
         el('td', { className: 'opt-count' }, el('b', { textContent: label(o) }), o.rank > 1 ? el('small', { textContent: ` #${o.rank}` }) : '',
-          o === state.plan.rec ? el('span', { className: 'rec-tag', textContent: 'Recommended' }) : ''),
-        el('td', { className: 'opt-moves', textContent: (o.roll && !o.count ? 'Save the transfer' : optionText(P, o)) + (w.hits ? ` (−${w.hits * S.HIT})` : '') }),
-        el('td', { className: `num${o.pts === bestPts ? ' best' : ''}`, textContent: f1(o.pts) }),
-        el('td', { className: 'num kept' }, el('span', { textContent: o.ftEnd === null ? '–' : `${o.ftEnd} FT +${f1(o.ftVal)}` }),
-          el('small', { textContent: `£${o.bankEnd.toFixed(1)} +${f1(o.bankVal)}` })),
-        el('td', { className: 'num muted', textContent: o.cost ? `−${f1(o.cost)}` : '0' }),
-        el('td', { className: `num${o.net === bestNet ? ' best' : ''}`, textContent: f1(o.net) }),
-        el('td', { className: `num${o.win === bestWin ? ' best' : ''}`, title: `GW${gws[0]} alone: ${pctFine(o.winFirst)}` }, el('span', { className: 'tn-bar' }, el('span', { style: `width:${Math.round(o.win * 100)}%` })), ' ', pctFine(o.win)));
+          o === state.plan.rec ? el('span', { className: 'rec-tag', textContent: 'Best' }) : ''),
+        ...o.sol.weeks.slice(0, depth).map((w) => el('td', { className: 'route-moves' }, ...moves(w))),
+        el('td', { className: 'num', textContent: f1(o.pts) }),
+        el('td', { className: `num${o.dpts === bestD ? ' best' : ''}`, textContent: f1(o.dpts) }),
+        el('td', { className: `num${o.win === bestWin ? ' best' : ''}`, title: `GW${gws[0]} alone: ${pctFine(o.winFirst)}` }, pctFine(o.win)));
       tr.setAttribute('aria-selected', String(k === state.plan.pick));
       return tr;
     });
-    const top = (key) => options.reduce((bi, o, k) => (o[key] > options[bi][key] ? k : bi), 0);
-    const pBest = options[top('pts')], wBest = options[top('win')];
-    const say = (o) => (o.roll && !o.count ? 'Save the transfer' : `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}: ${optionText(P, o)}`);
+    const rec = state.plan.rec;
+    const mostWins = options.reduce((b, o) => (o.win > b.win ? o : b), options[0]);
+    const say = (o) => `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}`;
     return el('section', { className: 'options' },
-      el('h3', {}, `Options for GW${gws[0]}: tap one to see its plan`),
-      el('p', { className: 'opt-verdict rec' }, 'Recommended: ', el('b', { textContent: say(state.plan.rec) }), '. ', recWhy(P)),
-      el('p', { className: 'opt-verdict' }, 'Most expected points: ', el('b', { textContent: say(pBest) }),
-        pBest === wBest ? ' (also best most often).' : '. Best most often: ', pBest === wBest ? '' : el('b', { textContent: say(wBest) })),
-      el('div', { className: 'wrap' }, el('table', { className: 'opt-table' },
-        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses' }), el('th', { scope: 'col', textContent: 'Transfers' }),
-          el('th', { scope: 'col', className: 'num', textContent: 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: 'Kept' }),
-          el('th', { scope: 'col', className: 'num', textContent: 'Gain rule' }), el('th', { scope: 'col', className: 'num', textContent: 'Net' }),
+      el('h3', {}, `Plans from GW${gws[0]}: tap one to see it week by week`),
+      el('p', { className: 'opt-verdict rec' }, 'Most expected points: ', el('b', { textContent: say(rec) }), ` (${f1(rec.dpts)} weighed, ${f1(rec.pts)} as they are).`,
+        mostWins === rec ? ' It also scores the most most often.' : el('span', {}, ' Scores the most most often: ', el('b', { textContent: say(mostWins) }), ` (${pctFine(mostWins.win)}).`)),
+      el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' },
+        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses now' }),
+          ...gws.slice(0, depth).map((g) => el('th', { scope: 'col', textContent: `GW${g}` })),
+          el('th', { scope: 'col', className: 'num', textContent: 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: 'Weighed' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Kept: free transfers still in hand after the transfer weeks and what they are worth (${state.settings.reserve.join(' / ')} for the 1st to 5th), and the money left (${state.settings.bankValue} a £1m). Gain rule: ${state.settings.minGain} for each transfer made. Net = xPts + Kept − Gain rule; the recommendation compares Net. Best: share of the simulated runs in which the plan scores the most.` }));
-  }
-
-
-  // ---- Route to a target squad ----
-  // Find the squad you would want (target B: the best squad for the gameweeks after this one, with your budget and
-  // no limit on transfers), then the best way there from your squad with the free transfers you have: only moves
-  // towards B, one route for each number of moves made this gameweek. A route is scored on its xPts, every
-  // gameweek weighed by 0.85 a week, plus what is still in hand at its end: free transfers (3, 2.5, 1.5, 1, 0 for the
-  // 1st to 5th) and money (£0.1m worth 0.2 up to £0.5m, 0.1 up to £1m, 0.05 up to £2m, nothing more), weighed the
-  // same way, and less near the end of the season or a planned Wildcard.
-  const ROUTE = { decay: 0.85, reserve: [3, 2.5, 1.5, 1, 0], bankSteps: [[0.5, 2], [0.5, 1], [1, 0.5]], maxDepth: 5 };
-  const taper = (weeksLeft) => Math.max(0, Math.min(1, weeksLeft / 5));  // 4 weeks before: 80%, ... the week itself: 0
-
-  async function makeRoute() {
-    const { chips, clash } = chosenChips();
-    if (clash) { showError(clash); return; }
-    readSettings();
-    $('error').hidden = true;
-    let gws = horizonGws();
-    // a Wildcard ends the route: plan the gameweeks before it
-    const wcAt = (chips.wildcard || [])[0];
-    if (wcAt === 0) { showError('With a Wildcard this gameweek there is no route to plan: use This week’s options.'); return; }
-    if (wcAt !== undefined) gws = gws.slice(0, wcAt);
-    const T = gws.length;
-    const keepChips = {};
-    ['freehit', 'bboost', '3xc'].forEach((c) => { if (chips[c]) keepChips[c] = chips[c].filter((t) => t < T); });
-    const st = state.settings;
-    const all = players(gws);
-    const P = S.pool(all, state.team.squad.map((x) => x.id).concat(st.keep, st.avoid, st.forceIn, st.forceOut));
-    const index = new Map(P.map((p, i) => [p.id, i]));
-    const idx = (ids) => ids.filter((id) => index.has(id)).map((id) => index.get(id));
-    const owned = P.map((p, i) => i).filter((i) => P[i].owned);
-    const settings = { ...S.DEFAULTS, decay: ROUTE.decay, reserve: ROUTE.reserve, minGain: 0, bankValue: 0, maxHits: null };
-    const depth = Math.min(T, ROUTE.maxDepth);
-    const endGw = gws[depth - 1];
-    const ftMult = taper(38 - endGw);
-    const bankMult = Math.min(ftMult, wcAt !== undefined ? taper(horizonGws()[wcAt] - endGw) : 1);
-    const bw = benchWeights(P, T);
-    const base = { players: P, T, ft: state.team.ft, bank: state.team.bank, chips: keepChips, settings: { ...settings, depth },
-      keep: idx(st.keep.concat(st.forceIn)), avoid: idx(st.avoid.concat(st.forceOut)), benchW: bw.out, benchWgk: bw.gk,
-      ftMult, bankMult, bankSteps: ROUTE.bankSteps };
-    $('go').disabled = true;
-    const solver = openSolver();
-    const say = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }));
-    try {
-      // 1. the target: the best squad for the gameweeks after this one (this one counts too when planning 1 gameweek)
-      say('Finding your target squad…');
-      const later = P.map((p) => ({ ...p, xp: p.xp.map((x, t) => (t === 0 && T > 1 ? 0 : x)) }));
-      const tInput = { ...base, players: later, chips: { ...keepChips, wildcard: [0] }, settings: { ...settings, depth: 1 }, ftMult: 0, bankMult: 0 };
-      const tModel = S.build(tInput);
-      const tSol = await solver.solve(S.toLP(tModel));
-      if (!tSol.values || !Object.keys(tSol.values).length) throw new Error('No target squad fits these settings.');
-      const target = P.map((p, i) => i).filter((i) => Math.round(tSol.values[`x0_${i}`] || 0) === 1);
-      const ins = target.filter((i) => !P[i].owned), outs = owned.filter((i) => !target.includes(i));
-      const tWeeks = S.decode(tInput, tModel, tSol.values);
-      const targetPts = tWeeks.slice(T > 1 ? 1 : 0).reduce((a, w) => a + w.xpts, 0);
-      const nowPts = holdPoints(P, T) - (T > 1 ? holdPoints(P, 1) : 0);
-      if (!ins.length) {
-        state.plan = { mode: 'route', gws, P, routes: [], target, ins, outs, targetPts, nowPts, pick: 0 };
-        render();
-        return;
-      }
-      // 2. the routes: k moves towards the target this gameweek, the rest planned by the solver
-      const most = Math.min(ins.length, state.team.ft + 1);
-      const routes = [];
-      for (let k = 0; k <= most; k++) {
-        say(`Planning the routes to your target: ${k + 1} of ${most + 1}…`);
-        const input = { ...base, allowBuy: ins, allowSell: outs, count: [{ t: 0, n: k }] };
-        const model = S.build(input);
-        let sol;
-        try { sol = await solver.solve(S.toLP(model)); } catch (e) { if (!/abort|memory|unreachable|unable to solve/i.test(e.message)) throw e; continue; }
-        if (!sol.values || !Object.keys(sol.values).length || /infeasible/i.test(sol.status)) continue;
-        const weeks = S.decode(input, model, sol.values);
-        const v = sol.values;
-        const w = (t) => Math.pow(ROUTE.decay, t);
-        const ftEnd = v.fend !== undefined ? Math.round(v.fend) : null;
-        let bankEnd = state.team.bank;
-        for (let t = T - 1; t >= 0; t--) if (v[`bank${t}`] !== undefined) { bankEnd = Math.round(v[`bank${t}`] * 10) / 10; break; }
-        const ftRaw = v.rend || 0, itbRaw = v.bankv || 0;
-        const r = { k, sol: { weeks, values: v }, weeks, ftEnd, bankEnd,
-          pts: weeks.reduce((a, x) => a + x.xpts, 0), dpts: weeks.reduce((a, x, t) => a + w(t) * x.xpts, 0),
-          ftRaw, itbRaw, ftBonus: ftRaw * w(depth) * ftMult, itbBonus: itbRaw * w(depth) * bankMult };
-        r.score = r.dpts + r.ftBonus + r.itbBonus;
-        // how far along the route each week gets
-        let have = 0;
-        r.done = weeks.map((x) => { have += x.chip === 'freehit' ? 0 : x.ins.length; return have; });
-        r.reached = r.done.findIndex((d) => d >= ins.length);
-        routes.push(r);
-      }
-      if (!routes.length) throw new Error('No route to the target fits (check the budget and the players to keep).');
-      say('Simulating 5,000 scenarios to compare the routes…');
-      await new Promise((res) => setTimeout(res, 30));
-      const res = simulateAll(P, gws, routes.map((r) => r.sol));
-      const N = res[0].total.length;
-      const w = (t) => Math.pow(ROUTE.decay, t);
-      const scoreRun = (k, s) => res[k].week.reduce((a, arr, t) => a + w(t) * arr[s], 0) + routes[k].ftBonus + routes[k].itbBonus;
-      const wins = routes.map(() => 0);
-      for (let s = 0; s < N; s++) {
-        let best = -Infinity, win = [];
-        routes.forEach((r, k) => { const x = scoreRun(k, s); if (x > best + 1e-6) { best = x; win = [k]; } else if (Math.abs(x - best) <= 1e-6) win.push(k); });
-        win.forEach((k) => { wins[k] += 1 / win.length / N; });
-      }
-      routes.forEach((r, k) => { r.win = wins[k]; });
-      // recommended: the best score; if a route with fewer moves now is within 1 point and the faster one beats it in
-      // under 60% of the runs, the slower one (more free transfers kept for surprises)
-      let rec = routes.reduce((b, r) => (r.score > b.score ? r : b), routes[0]);
-      let why = '';
-      for (;;) {
-        const slower = routes.filter((r) => r.k < rec.k && rec.score - r.score < 1);
-        if (!slower.length) break;
-        const alt = slower.reduce((b, r) => (r.score > b.score ? r : b), slower[0]);
-        const a = routes.indexOf(rec), b = routes.indexOf(alt);
-        let p = 0;
-        for (let s = 0; s < N; s++) { const x = scoreRun(a, s), y = scoreRun(b, s); p += x > y + 1e-6 ? 1 : Math.abs(x - y) <= 1e-6 ? 0.5 : 0; }
-        p /= N;
-        if (p >= 0.6) break;
-        why = `${rec.k} move${rec.k === 1 ? '' : 's'} now scores only ${f1(rec.score - alt.score)} more and is ahead in ${(Math.round(p * 1000) / 10).toFixed(1)}% of the runs (needs 60%), so the slower route keeps more free transfers for surprises.`;
-        rec = alt;
-      }
-      state.plan = { mode: 'route', gws, P, routes, rec, why, target, ins, outs, targetPts, nowPts, depth, ftMult, bankMult,
-        hold: holdPoints(P, T), pick: routes.indexOf(rec), wcAt: wcAt !== undefined ? horizonGws()[wcAt] : null };
-      state.week = 0;
-      render();
-    } catch (e) {
-      showError(`Could not work out a route: ${e.message}`);
-      $('out').replaceChildren();
-    } finally {
-      solver.close();
-      $('go').disabled = false;
-    }
-  }
-
-  function renderRoute() {
-    const { gws, P, routes, target, ins, outs, targetPts, nowPts } = state.plan;
-    const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
-    const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[b].price - P[a].price;
-    const pairs = (o, i) => { const so = o.slice().sort(byPos), si = i.slice().sort(byPos); return so.map((x, k) => `${P[x].name} → ${si[k] !== undefined ? P[si[k]].name : ''}`); };
-    const targetBox = el('section', { className: 'options' },
-      el('h3', {}, 'Your target squad'),
-      ins.length
-        ? el('p', {}, `${ins.length} transfer${ins.length > 1 ? 's' : ''} from your squad: `, el('b', { textContent: pairs(outs, ins).join(', ') }),
-          `. Over GW${gws[Math.min(1, gws.length - 1)]}-${gws[gws.length - 1]} it is expected to score ${f1(targetPts)} xPts against ${f1(nowPts)} for your squad as it is (+${f1(targetPts - nowPts)}).`)
-        : el('p', { textContent: 'Your squad already is the best squad for these gameweeks: nothing to change.' }),
-      state.plan.wcAt ? el('p', { className: 'meta', textContent: `Planned up to your Wildcard in GW${state.plan.wcAt}.` }) : '',
-      ins.length > 6 && !state.plan.wcAt ? el('p', { className: 'meta', textContent: `That is a long way with free transfers: worth thinking about a Wildcard (set it above and plan again to compare).` }) : '');
-    if (!routes.length) { $('out').replaceChildren(targetBox); return; }
-    const pick = routes[Math.min(state.plan.pick, routes.length - 1)];
-    const bestScore = Math.max(...routes.map((r) => r.score)), bestWin = Math.max(...routes.map((r) => r.win));
-    const T = gws.length;
-    const head = [el('th', { scope: 'col', textContent: 'Moves now' })].concat(gws.slice(0, state.plan.depth).map((g) => el('th', { scope: 'col', textContent: `GW${g}` })),
-      [el('th', { scope: 'col', className: 'num', textContent: 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: 'Kept' }),
-        el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' })]);
-    const rows = routes.map((r, k) => {
-      const cells = gws.slice(0, state.plan.depth).map((g, t) => {
-        const wk = r.weeks[t];
-        if (!wk.ins.length) return el('td', { className: 'muted', textContent: t === 0 ? 'Save' : '–' });
-        return el('td', { className: 'route-moves' }, ...pairs(wk.outs, wk.ins).map((x) => el('span', { textContent: x })), wk.hits ? el('small', { textContent: `−${wk.hits * S.HIT}` }) : '');
-      });
-      const tr = el('tr', { className: r === pick ? 'on' : '', tabIndex: 0, onclick: () => { state.plan.pick = k; state.week = 0; render(); } },
-        el('td', { className: 'opt-count' }, el('b', { textContent: `${r.k}` }), el('small', { textContent: r.reached >= 0 ? ` · B by GW${gws[r.reached]}` : ` · ${r.done[r.done.length - 1]}/${ins.length}` }),
-          r === state.plan.rec ? el('span', { className: 'rec-tag', textContent: 'Recommended' }) : ''),
-        ...cells,
-        el('td', { className: 'num', textContent: f1(r.pts) }),
-        el('td', { className: 'num kept' }, el('span', { textContent: r.ftEnd === null ? '–' : `${r.ftEnd} FT +${f1(r.ftBonus)}` }), el('small', { textContent: `£${r.bankEnd.toFixed(1)} +${f1(r.itbBonus)}` })),
-        el('td', { className: `num${r.score === bestScore ? ' best' : ''}`, textContent: f1(r.score) }),
-        el('td', { className: `num${r.win === bestWin ? ' best' : ''}`, textContent: pctFine(r.win) }));
-      tr.setAttribute('aria-selected', String(r === pick));
-      return tr;
-    });
-    const rec = state.plan.rec;
-    const verdict = el('p', { className: 'opt-verdict rec' }, 'Recommended: ', el('b', { textContent: rec.k ? `${rec.k} move${rec.k > 1 ? 's' : ''} now (${pairs(rec.weeks[0].outs, rec.weeks[0].ins).join(', ')})` : 'save this week' }),
-      '. ', state.plan.why || `Best score: xPts along the way plus what is kept at the end${rec.win === bestWin ? ', and best most often' : ''}.`);
-    const table = el('section', { className: 'options' },
-      el('h3', {}, 'Routes there: how many moves to make now'),
-      verdict,
-      el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' }, el('thead', {}, el('tr', {}, ...head)), el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Only moves towards the target are made. xPts: expected points over GW${gws[0]}-${gws[T - 1]}, auto-subs and hits included. Kept: free transfers and money still in hand after GW${gws[state.plan.depth - 1]}, worth 3, 2.5, 1.5, 1 and 0 for the 1st to 5th free transfer and up to 2 for money (most for the first £0.5m), weighed like a gameweek that far ahead${state.plan.ftMult < 1 || state.plan.bankMult < 1 ? ', and less near the end of the season or before a Wildcard' : ''}. Score: xPts with each later gameweek weighed 0.85 times the one before, plus Kept. Best: share of 5,000 simulated runs in which the route has the highest score.` }));
-    const weeks = pick.weeks;
-    state.plan.weeks = weeks;
-    const tabs = el('div', { className: 'seg week-tabs', role: 'tablist' }, ...weeks.map((w, k) => {
-      const b = el('button', { type: 'button', role: 'tab', onclick: () => { state.week = k; render(); } },
-        el('span', { textContent: `GW${gws[k]}` }), el('small', { textContent: f1(w.xpts) + (w.chip ? ` · ${w.chip === '3xc' ? 'TC' : w.chip === 'bboost' ? 'BB' : 'FH'}` : '') }));
-      b.setAttribute('aria-selected', String(k === state.week));
-      b.setAttribute('aria-pressed', String(k === state.week));
-      return b;
-    }));
-    $('out').replaceChildren(targetBox, table, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
-  }
-
-  // Why the recommended plan: in words, from the steps that picked it.
-  function recWhy(P) {
-    const { rec, top, steps, save, vsSave, urgent } = state.plan;
-    const options = () => state.plan.options;
-    const n = (o) => (o.count === null ? 'this plan' : o.roll ? (o.count ? 'only the forced transfers' : 'saving the transfer') : `${o.count} transfer${o.count > 1 ? 's' : ''}`);
-    const out = [];
-    const p1 = (x) => `${(Math.round(x * 1000) / 10).toFixed(1)}%`;
-    if (rec !== top) {
-      steps.filter((x) => x.p < 0.6).forEach((x) => out.push(`${n(x.from)} has ${f1(x.from.net - x.to.net)} more Net than ${n(x.to)} but is ahead of it in only ${p1(x.p)} of the runs (needs 60%), so ${n(x.to)}.`));
-      const ok = steps.find((x) => x.p >= 0.6);
-      if (ok) out.push(`${n(ok.from)} beats ${n(ok.to)} in ${p1(ok.p)} of the runs, enough.`);
-    } else if (save && rec !== save) {
-      out.push(`Net ${f1(rec.net - save.net)} more than saving the transfer (${f1(rec.pts - save.pts)} xPts more, less the value of the free transfers used and the gain rule)${vsSave != null ? `, ahead in ${p1(vsSave)} of the runs` : ''}.`);
-      const s = steps[0];
-      if (s && s.to !== save) out.push(`It beats ${n(s.to)} in ${p1(s.p)} of the runs.`);
-    } else if (rec === save) {
-      // what the saving plan does next: often the same moves a week later
-      const later = rec.sol.weeks.slice(1).filter((w) => w.ins.length && w.chip !== 'freehit')
-        .map((w) => `GW${state.plan.gws[w.t]}: ${w.outs.map((o, k) => `${P[o].name} → ${w.ins[k] !== undefined ? P[w.ins[k]].name : ''}`).join(', ')}`);
-      const best = top === rec ? options().filter((o) => o !== rec).reduce((b, o) => (o.pts > b.pts ? o : b), options().find((o) => o !== rec)) : top;
-      out.push(`Making the moves now adds at most ${f1(Math.max(0, (best ? best.pts : rec.pts) - rec.pts))} xPts over ${state.plan.gws.length} gameweeks, not enough for the least gain per transfer and the value of the free transfers.`);
-      if (later.length) out.push(`The plan makes them later instead: ${later.join('; ')}.`);
-    }
-    const sold = urgent.filter((i) => rec.opt.sells && rec.opt.sells.includes(i)).map((i) => P[i].name);
-    if (sold.length) out.push(`${sold.join(', ')} ${sold.length > 1 ? 'are' : 'is'} out for 3+ gameweeks: sold straight away.`);
-    return out.join(' ');
+      el('p', { className: 'meta', textContent: `Each plan uses that many transfers in GW${gws[0]}, then the best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Weighed: the same with each later gameweek counting 0.85 times the one before; the plan with the most is marked Best. Best (last column): share of 5,000 simulated runs in which the plan has the most weighed points.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
 
   function render() {
-    if (state.plan.mode === 'route') { renderRoute(); return; }
     const { gws, options, hold, P } = state.plan;
     const pick = options[Math.min(state.plan.pick, options.length - 1)];
     const weeks = pick.sol.weeks;
@@ -884,7 +629,7 @@
       // a name typed in a Keep, Avoid or Force box counts even if Add was not pressed
       ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => addPick(kind));
       if (!$('error').hidden) return;
-      if ($('mode').value === 'route') await makeRoute(); else await makePlan();
+      await makePlan();
     } catch (e) {
       showError(e.message);
       $('status').textContent = 'Enter an FPL team ID';
@@ -893,10 +638,7 @@
   }
 
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
-  try { const m = localStorage.getItem('planner-mode'); if (m) $('mode').value = m; } catch (e) { /* fine */ }
-  $('mode').addEventListener('change', () => { try { localStorage.setItem('planner-mode', $('mode').value); } catch (e) { /* fine */ } });
   $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); });
-  ['depth', 'decay', 'reserve', 'minGain', 'bankValue', 'maxHits'].forEach((id) => $(id).addEventListener('change', readSettings));
   ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
     $(`${kind}Pick`).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addPick(kind); } });

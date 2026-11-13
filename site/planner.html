@@ -16,21 +16,13 @@
 </header>
 <form id="pick" class="filters plan-form" autocomplete="off">
   <label>FPL team ID <input id="entry" type="text" inputmode="numeric" pattern="[0-9]*" required></label>
-  <label>Plan <select id="mode"><option value="week">This week's options</option><option value="route">Route to target squad</option></select></label>
   <label>Gameweeks to plan
-    <select id="horizon"><option value="3">3</option><option value="5">5</option><option value="8" selected>8</option></select>
+    <select id="horizon"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option></select>
   </label>
   <div id="chips" class="chip-picks"></div>
   <button id="go" class="update" type="submit">Make plan</button>
   <details class="plan-settings">
     <summary>Settings</summary>
-    <div class="set-grid">
-      <label>Transfer gameweeks <select id="depth"></select><small>Gameweeks transfers are planned in</small></label>
-      <label>Decay <input id="decay" type="number" step="0.01" min="0.5" max="1" inputmode="decimal"><small>Weight of each later gameweek (0.85: next week 85%)</small></label>
-      <label>Value of free transfers kept <input id="reserve" type="text" inputmode="decimal" placeholder="3, 2.5, 1.5, 0.5, 0"><small>Points the 1st, 2nd … 5th free transfer you keep is worth</small></label>
-      <label>Least gain per transfer <input id="minGain" type="number" step="0.25" min="0" max="6" inputmode="decimal"><small>xPts a transfer must add (not when selling a player out 3+ weeks)</small></label>
-      <label>Max hits a gameweek <select id="maxHits"><option value="">No limit</option><option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select><small>Extra transfers at −4 each</small></label>
-    </div>
     <div class="set-picks">
       <div><label>Keep (always in the squad) <span class="pick-add"><input id="keepPick" list="playerNames" placeholder="Player"><button id="keepAdd" type="button">Add</button></span></label><div id="keepList" class="pick-list"></div></div>
       <div><label>Avoid (never in the squad) <span class="pick-add"><input id="avoidPick" list="playerNames" placeholder="Player"><button id="avoidAdd" type="button">Add</button></span></label><div id="avoidList" class="pick-list"></div></div>
@@ -40,10 +32,6 @@
       <div><label>Force in <span class="pick-add"><input id="forceInPick" list="playerNames" placeholder="Player to buy"><button id="forceInAdd" type="button">Add</button></span></label><div id="forceInList" class="pick-list"></div></div>
       <div><label>Force out <span class="pick-add"><input id="forceOutPick" list="playerNames" placeholder="Player to sell"><button id="forceOutAdd" type="button">Add</button></span></label><div id="forceOutList" class="pick-list"></div></div>
     </div>
-    <details class="advanced">
-      <summary>Advanced</summary>
-      <label>Bank value per £1m <input id="bankValue" type="number" step="0.05" min="0" max="1" inputmode="decimal"><small>Points £1m left in the bank is worth</small></label>
-    </details>
     <button id="resetSettings" type="button" class="link-btn">Back to defaults</button>
   </details>
   <datalist id="playerNames"></datalist>
@@ -51,7 +39,7 @@
 <div id="error" class="error" role="alert" hidden></div>
 <main id="out" class="planner"></main>
 <footer>
-  <p>The planner finds the best 3 transfer options for the first gameweek, 2 for the second and 1 for the third, with saving the transfer as a choice at every step, and one path after that; each picks the transfers, starting 11 and captain that give the most expected points over the gameweeks you choose (later gameweeks count a little less, by the decay setting), using the xPoints figures (with your own minutes edits from the Minutes page, if any). Transfers are planned for the first 3 gameweeks by default (Settings), since things change fast; after that the squad stays, apart from a Wildcard or Free Hit you set. Rules: a squad of 15 (2 GK, 5 DEF, 5 MID, 3 FWD), at most 3 per club, within your bank and selling prices; one free transfer a gameweek, up to 5 saved, 4 points for every extra one; a Wildcard or Free Hit keeps your saved transfers. Free transfers kept are worth points, each one less than the one before (Settings: 3, 2.5, 1.5, 0.5, 0), and a transfer must add at least 1.5 xPts, except selling a player injured, banned or unavailable for the next 3 gameweeks. Bench players count by the chance they are needed, from how many of your likely starters may not play. The recommended plan has the best score, unless it beats the best plan with fewer transfers in under 60% of the simulated runs; then the safer plan is recommended. Points shown include auto-subs: a starter who does not play is replaced by the first bench player who plays and keeps a legal formation, and the vice-captain takes the armband if the captain does not play. Prices are assumed not to change. Your team (squad, bank, free transfers, chips, transfers already made) is read from FPL when you make a plan, through the site's small proxy; if FPL cannot be reached, the copy saved at the last site update is used for the team IDs in planner_ids.txt. Not affiliated with the Premier League.</p>
+  <p>For the coming gameweek the planner works out plans for each number of free transfers you could use: with 1 or 2 free transfers the best 3 plans for each number, with 3 the best 2, with 4 or 5 the best 2 for using 2 or 3 and the best 1 otherwise, and saving the transfer. Each plan then makes the best moves for the next 2 gameweeks (transfers are planned for 3 gameweeks in all), and after that the squad stays, apart from a Wildcard or Free Hit you set. Plans are compared on expected points from the xPoints figures (with your own minutes edits from the Minutes page, if any), with each later gameweek counting 0.85 times the one before; free transfers or money kept are not given a value for now. Rules: a squad of 15 (2 GK, 5 DEF, 5 MID, 3 FWD), at most 3 per club, within your bank and selling prices; one free transfer a gameweek, up to 5 saved, 4 points for every extra one; a Wildcard or Free Hit keeps your saved transfers. Points include auto-subs: a starter who does not play is replaced by the first bench player who plays and keeps a legal formation, and the vice-captain takes the armband if the captain does not play; while planning, bench players count by the chance they are needed, from the appearance chances of your likely starters. "Best" is the share of 5,000 simulated runs of every match in which a plan scores the most. Prices are assumed not to change. Your team is read from FPL when you make a plan, through the site's small proxy. Not affiliated with the Premier League.</p>
 </footer>
 <script src="minutes-core.js"></script>
 <script src="planner-solve.js"></script>
