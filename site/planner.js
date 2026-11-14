@@ -605,7 +605,71 @@
       Object.keys(state.overrides).length ? el('p', { className: 'meta', textContent: `Uses your minutes edits from the Minutes page (${Object.keys(state.overrides).length} players).` }) : '',
       state.plan.skipped ? el('p', { className: 'meta', textContent: `${state.plan.skipped} of the plans could not be worked out (the solver ran out of memory on this device) and are left out.` }) : '',
       /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
-    $('out').replaceChildren(optionsView(P, options, gws), summary, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
+    $('out').replaceChildren(optionsView(P, options, gws), fhView(P, pick, gws), summary, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
+  }
+
+  // ---- Free Hit week ----
+  // For the plan picked: in each gameweek, the best squad for that week alone (within the plan's squad selling value
+  // and bank that week, at most 3 per club) against the plan's own squad that week. The best gain is the week to use it.
+  function fhView(P, pick, gws) {
+    const box = el('section', { className: 'options fh-box' });
+    const fh = (state.team.chipsAvailable || []).find((c) => c.name === 'freehit');
+    const fill = () => {
+      const res = pick.fh;
+      box.replaceChildren(el('h3', {}, 'Free Hit: best week for this plan'));
+      if (!res) {
+        box.append(el('p', { className: 'meta', textContent: fh ? `Free Hit available GW${fh.from}-${fh.to}.` : 'No Free Hit left this season (or none in these gameweeks); the gains are shown anyway.' }),
+          el('button', { type: 'button', className: 'update', onclick: () => run() }, 'Find the best Free Hit week'));
+        return;
+      }
+      if (res.working) { box.append(el('p', { className: 'working', textContent: res.working })); return; }
+      if (res.error) { box.append(el('p', { className: 'error', textContent: res.error })); return; }
+      const ok = (g) => !fh || (g >= fh.from && g <= fh.to);
+      const best = res.rows.filter((r) => ok(r.gw)).reduce((b, r) => (!b || r.gain > b.gain ? r : b), null);
+      box.append(
+        best ? el('p', { className: 'opt-verdict rec' }, 'Best week: ', el('b', { textContent: `GW${best.gw}` }), ` (+${f1(best.gain)} xPts on this plan's squad that week).`) : '',
+        el('div', { className: 'wrap' }, el('table', { className: 'opt-table' },
+          el('thead', {}, el('tr', {}, ...['GW', 'Plan squad', 'Free Hit squad', 'Gain', 'Free Hit starting 11'].map((h, k) => el('th', { scope: 'col', className: k && k < 4 ? 'num' : '', textContent: h })))),
+          el('tbody', {}, ...res.rows.map((r) => el('tr', { className: best && r.gw === best.gw ? 'on' : '' },
+            el('td', { textContent: `GW${r.gw}${ok(r.gw) ? '' : ' (not available)'}` }),
+            el('td', { className: 'num', textContent: f1(r.plan) }), el('td', { className: 'num', textContent: f1(r.fh) }),
+            el('td', { className: 'num' + (best && r.gw === best.gw ? ' best' : ''), textContent: `${r.gain >= 0 ? '+' : ''}${f1(r.gain)}` }),
+            el('td', { className: 'route-moves', textContent: r.xi.join(', ') })))))),
+        el('p', { className: 'meta', textContent: "Plan squad: this plan's expected points that week (hits not counted). Free Hit squad: the best 15 for that week alone, within the plan's squad selling value and bank that week, at most 3 per club, auto-subs included. Using the Free Hit puts that week's planned transfers off; this is not counted." }));
+    };
+    const run = async () => {
+      pick.fh = { working: 'Working out the best Free Hit squad for each gameweek…' };
+      fill();
+      const weeks = pick.sol.weeks;
+      const solver = openSolver();
+      const rows = [];
+      try {
+        let bank = state.team.bank;
+        for (let t = 0; t < weeks.length; t++) {
+          const w = weeks[t];
+          if (w.bank !== null && w.bank !== undefined) bank = w.bank;
+          const squad = new Set(w.chip === 'freehit' ? (t ? weeks[t - 1].xi.concat(weeks[t - 1].bench) : P.map((p, i) => i).filter((i) => P[i].owned)) : w.xi.concat(w.bench));
+          const Pt = P.map((p, i) => ({ ...p, owned: squad.has(i), sell: p.owned ? p.sell : p.price, xp: [p.xp[t]], p1: [p.p1[t]], opp: p.opp ? [p.opp[t]] : p.opp }));
+          const input = { players: Pt, T: 1, ft: 1, bank, chips: { freehit: [0] },
+            settings: { ...S.DEFAULTS, depth: 1, decay: 1, reserve: [0, 0, 0, 0, 0], minGain: 0, bankValue: 0, maxHits: 0 } };
+          const model = S.build(input);
+          pick.fh = { working: `Working out the best Free Hit squad: GW${gws[t]} (${t + 1} of ${weeks.length})…` };
+          fill();
+          const sol = await solver.solve(S.toLP(model));
+          const fw = S.decode(input, model, sol.values)[0];
+          const planPts = w.xpts + (w.hits || 0) * S.HIT;
+          rows.push({ gw: gws[t], plan: planPts, fh: fw.xpts, gain: fw.xpts - planPts, xi: fw.xi.map((i) => P[i].name) });
+        }
+        pick.fh = { rows };
+      } catch (e) {
+        pick.fh = { error: `Could not work out the Free Hit weeks: ${e.message}` };
+      } finally {
+        solver.close();
+      }
+      if (state.plan && state.plan.options.includes(pick)) fill();
+    };
+    fill();
+    return box;
   }
 
   function showError(text) { $('error').textContent = text; $('error').hidden = false; }
