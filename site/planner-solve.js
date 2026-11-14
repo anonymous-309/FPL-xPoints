@@ -89,7 +89,7 @@
           row([[1, `b${t}_${i}`], [1, `s${t}_${i}`]], -Infinity, 1);
           const paidWeek = !has('wildcard', t);
           // not discounted: putting a transfer off a week must not make it look cheaper
-          addObj(`b${t}_${i}`, -(paidWeek ? set.minGain : CHURN));
+          addObj(`b${t}_${i}`, -(paidWeek ? (input.buyCost && input.buyCost[t] != null ? input.buyCost[t] : set.minGain) : CHURN));
           if (paidWeek && urgent.has(i) && P[i].owned) addObj(`s${t}_${i}`, set.minGain);
         } else if (t) row([[1, x(i)], [-1, xPrev(i)]], 0, 0);
         else row([[1, x(i)]], P[i].owned ? 1 : 0, P[i].owned ? 1 : 0);
