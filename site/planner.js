@@ -288,10 +288,10 @@
 
   // How many plans to look at for each number of transfers used now: 1 for saving (or the forced ones only), 1 for
   // using all and all-but-one when there are 4-5 free transfers, 2 for the rest; with few free transfers, more for
-  // each and one hit as well (5 plans with 1 free transfer, 8 with 2-4, 9 with 5).
+  // each and one hit as well (7 plans with 1 free transfer, 8 with 2-4, 9 with 5).
   // Without forced transfers: [transfers used now, plans] for each number of free transfers (the last of 1-2 FT is a hit)
   const PLAN_COUNTS = {
-    1: [[0, 1], [1, 3], [2, 1]],
+    1: [[0, 1], [1, 4], [2, 2]],
     2: [[0, 1], [1, 3], [2, 3], [3, 1]],
     3: [[0, 1], [1, 2], [2, 3], [3, 2]],
     4: [[0, 1], [1, 2], [2, 2], [3, 2], [4, 1]],
