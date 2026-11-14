@@ -179,6 +179,23 @@
       row(P.map((p, i) => [1, `b${t}_${i}`]).concat(zs.map((z) => [-1, z])), -Infinity, 0);
       for (let j = 1; j < zs.length; j++) row([[1, zs[j - 1]], [-1, zs[j]]], 0, Infinity);
     });
+    // useCost: {x: [cost per week], steps: [m0, m1, ...]}: a transfer that leaves r free transfers in hand costs
+    // x[t] * steps[r] (the last free transfer costs the most). Total for week t: x[t] * (V(f) - V(f - u)), V(k) = sum of
+    // steps below k.
+    if (input.useCost) {
+      const m = input.useCost.steps, V = (k) => m.slice(0, k).reduce((a, b) => a + b, 0);
+      for (let t = 0; t < depth; t++) {
+        const c = input.useCost.x[t];
+        if (!c || !vars.has(`u${t}`)) continue;
+        const ys = [...Array(MAX_FT + 1).keys()].map((k) => { const y = v(`yf${t}_${k}`); addObj(y, -c * V(k)); return [k, y]; });
+        row(ys.map(([, y]) => [1, y]), 1, 1);
+        row(ys.map(([k, y]) => [k, y]).concat([[-1, `f${t}`]]), 0, 0);
+        const r = v(`rr${t}`, 'C', 0, MAX_FT), R = v(`rv${t}`, 'C', 0, 1000);
+        row([[1, r], [-1, `f${t}`], [1, `u${t}`]], 0, 0);
+        for (let k = 0; k < MAX_FT; k++) row([[1, R], [-(m[k] || 0), r]], -Infinity, V(k) - (m[k] || 0) * k);
+        addObj(R, c);
+      }
+    }
     // Free transfers carried past the transfer weeks, and money left in the bank, are worth something.
     const reserve = (set.reserve || []).slice(0, MAX_FT);
     if (reserve.some((x) => x > 0) && lastPaid >= 0 && ftVar) {
