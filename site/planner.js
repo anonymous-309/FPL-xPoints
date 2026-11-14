@@ -288,14 +288,17 @@
 
   // How many plans to look at for each number of transfers used now: 1 for saving (or the forced ones only), 1 for
   // using all and all-but-one when there are 4-5 free transfers, 2 for the rest; with few free transfers, more for
-  // each and one hit as well, so there are always 7-10 plans.
+  // each and one hit as well, so there are 7-10 plans (5 with a single free transfer).
   function planCounts(ft, forcedN) {
     const top = Math.max(ft, forcedN, 1);
     const out = [];
     for (let k = forcedN; k <= top; k++) out.push([k, k === forcedN ? 1 : top >= 4 && k >= top - 1 ? 1 : 2]);
     const total = () => out.reduce((a, [, n]) => a + n, 0);
-    for (let round = 0; total() < 7 && round < 2; round++) out.forEach((g) => { if (g[0] > forcedN && total() < 7) g[1]++; });
-    if (total() < 7 && top < S.MAX_FT) out.push([top + 1, 7 - total()]);
+    const want = top - forcedN <= 1 ? 5 : 7;
+    const fill = want === 5 ? 4 : want; // with a single free transfer, keep one plan for a hit
+    for (let round = 0; total() < fill && round < 2; round++) out.forEach((g) => { if (g[0] > forcedN && total() < fill) g[1]++; });
+    if (total() < want && top < S.MAX_FT) out.push([top + 1, want - total()]);
+    while (total() < want) out[out.length - 1][1]++;
     while (total() > 10) { const g = out.filter(([k, n]) => k > forcedN && n > 1).pop(); if (!g) break; g[1]--; }
     return out;
   }
