@@ -2111,7 +2111,7 @@ def main() -> None:
     elif a.command == "tune":
         tune(a.data_dir, a.seasons, a.step, a.offline)
     elif a.command == "site":
-        export_site(a.data_dir, a.seasons, 8, a.out, a.offline)
+        export_site(a.data_dir, a.seasons, 12, a.out, a.offline)
     else:
         predict(a.data_dir, a.seasons, a.horizon, a.data_dir / f"xpts_next_{a.horizon}.csv", a.offline)
 
