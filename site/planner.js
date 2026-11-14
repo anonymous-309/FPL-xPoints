@@ -286,6 +286,20 @@
     return { cost, left, kept: Y * stepSum(left) };
   }
 
+  // How many plans to look at for each number of transfers used now: 1 for saving (or the forced ones only), 1 for
+  // using all and all-but-one when there are 4-5 free transfers, 2 for the rest; with few free transfers, more for
+  // each and one hit as well, so there are always 7-10 plans.
+  function planCounts(ft, forcedN) {
+    const top = Math.max(ft, forcedN, 1);
+    const out = [];
+    for (let k = forcedN; k <= top; k++) out.push([k, k === forcedN ? 1 : top >= 4 && k >= top - 1 ? 1 : 2]);
+    const total = () => out.reduce((a, [, n]) => a + n, 0);
+    for (let round = 0; total() < 7 && round < 2; round++) out.forEach((g) => { if (g[0] > forcedN && total() < 7) g[1]++; });
+    if (total() < 7 && top < S.MAX_FT) out.push([top + 1, 7 - total()]);
+    while (total() > 10) { const g = out.filter(([k, n]) => k > forcedN && n > 1).pop(); if (!g) break; g[1]--; }
+    return out;
+  }
+
   async function makePlan() {
     const { chips, clash } = chosenChips();
     if (clash) { showError(clash); return; }
@@ -322,7 +336,7 @@
     const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
     const groups = [];
     if (week0Chip) groups.push({ count: null, n: 3 });
-    else for (let k = forcedN; k <= Math.max(state.team.ft, forcedN, 1); k++) groups.push({ count: k, n: 1 });
+    else planCounts(state.team.ft, forcedN).forEach(([k, n]) => groups.push({ count: k, n }));
     const planned = groups.reduce((a, g) => a + g.n, 0);
     let done = 0;
     const progress = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }),
@@ -510,7 +524,7 @@
     const depth = state.plan.depth;
     const bestT = Math.max(...options.map((o) => o.total)), bestWin = Math.max(...options.map((o) => o.win));
     const label = (o) => (o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
-      : o.roll ? (o.count ? 'Forced only' : 'Save') : `${o.count} FT`);
+      : o.roll ? (o.count ? 'Forced only' : 'Save') : o.count > state.team.ft ? `${state.team.ft} FT + ${o.count - state.team.ft} hit` : `${o.count} FT`);
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[b].price - P[a].price;
     const moves = (w) => {
@@ -540,16 +554,16 @@
     const say = (o) => `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}`;
     return el('section', { className: 'options' },
       el('h3', {}, `Plans from GW${gws[0]}: tap one to see it week by week`),
-      el('p', { className: 'opt-verdict rec' }, 'Best plan: ', el('b', { textContent: say(rec) }), ` (score ${f2(rec.total)}: ${f1(rec.dpts)} weighed xPts, transfer cost ${f2(rec.cost)}, ${rec.left} FT kept +${f2(rec.kept)}).`,
+      el('p', { className: 'opt-verdict rec' }, 'Best plan: ', el('b', { textContent: say(rec) }), ` (score ${f2(rec.total)}: ${f1(rec.dpts)} xPts decay, transfer cost ${f2(rec.cost)}, ${rec.left} FT kept +${f2(rec.kept)}).`,
         mostWins === rec ? ' It also scores the most most often.' : el('span', {}, ' Scores the most most often: ', el('b', { textContent: say(mostWins) }), ` (${pctFine(mostWins.win)}).`)),
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' },
         el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses now' }),
           ...gws.slice(0, depth).map((g) => el('th', { scope: 'col', textContent: `GW${g}` })),
-          el('th', { scope: 'col', className: 'num', textContent: 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: 'Weighed' }),
+          el('th', { scope: 'col', className: 'num', textContent: 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: 'xPts Decay' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Cost' }), el('th', { scope: 'col', className: 'num', textContent: 'FT kept' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Weighed: the same with each later gameweek counting ${PLAN.decay} times the one before. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: Weighed − Cost + FT kept; the plan with the most is marked Best. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
+      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
