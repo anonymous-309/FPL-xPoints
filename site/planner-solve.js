@@ -172,6 +172,13 @@
       row(cTerms, 1, 1);
       POS.forEach((pos) => row(P.map((p, i) => [p.position === pos ? 1 : 0, `y${t}_${i}`]), XI[pos][0], XI[pos][1]));
     }
+    // buySteps[t]: the cost of the 1st, 2nd, ... transfer made in week t (each one costing less than the one before)
+    (input.buySteps || []).forEach((steps, t) => {
+      if (!steps || !transferWeek(t) || has('wildcard', t)) return;
+      const zs = steps.map((c, j) => { const z = v(`q${t}_${j}`); addObj(z, -c); return z; });
+      row(P.map((p, i) => [1, `b${t}_${i}`]).concat(zs.map((z) => [-1, z])), -Infinity, 0);
+      for (let j = 1; j < zs.length; j++) row([[1, zs[j - 1]], [-1, zs[j]]], 0, Infinity);
+    });
     // Free transfers carried past the transfer weeks, and money left in the bank, are worth something.
     const reserve = (set.reserve || []).slice(0, MAX_FT);
     if (reserve.some((x) => x > 0) && lastPaid >= 0 && ftVar) {
