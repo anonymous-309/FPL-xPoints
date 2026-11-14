@@ -83,8 +83,9 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
   const base = { players: P, T: G.length, ft, bank, chips: {}, ftMult: 1 / Math.pow(DEC, D), buyCost: [0, 0, 0], useCost: { x: [0, 1, 2].map((t) => X * Math.pow(DEC, t)), steps: STEP.slice(0, 5) },
     settings: { ...S.DEFAULTS, depth: D, decay: DEC, reserve: RES, minGain: 0, bankValue: 0, maxHits: 0 } };
   console.log(`TREE team ${entry}: ${ft} FT, bank ${bank}; GW${G[0]}-${G[D - 1]} planned in one model, a transfer leaving 0/1/2/3/4 FT in hand costs: ${[0, 1, 2].map((t) => 'GW' + G[t] + ' ' + STEP.slice(0, 5).map((m) => (X * Math.pow(DEC, t) * m).toFixed(3)).join('/')).join(', ')}, FT left after GW${G[D - 1]} worth ${RES.map((x) => x.toFixed(2)).join('/')}, no hits, xP GW${G[0]}-${G.at(-1)} decayed`);
+  const Vf = (k) => STEP.slice(0, k).reduce((a, b) => a + b, 0);
   const T0 = Date.now(), res = [];
-  for (const k of [0, 1, 2, 3, 4, null]) {
+  for (const k of [null]) {
     if (k !== null && k > ft) continue;
     const input = { ...base, ...(k === null ? {} : { count: [{ t: 0, n: k }] }) };
     const model = S.build(input);
@@ -93,19 +94,19 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
     const secs1 = (Date.now() - t0) / 1000;
     const values = Object.fromEntries(Object.entries(sol.Columns).map(([a, c]) => [a, c.Primal]));
     const weeks = S.decode(input, model, values);
-    let dec = 0, raw = 0, ftNow = ft, used = [];
+    let dec = 0, raw = 0, ftNow = ft, used = []; const per = [];
     const lines = [];
     weeks.forEach((w, t) => {
       const sq = w.xi.concat(w.bench).map((i) => (byId.has(P[i].id) ? info(byId.get(P[i].id)) : squad0.find((p) => p.id === P[i].id)));
-      const v = week(sq, t); raw += v; dec += Math.pow(DEC, t) * v;
+      const v = week(sq, t); raw += v; dec += Math.pow(DEC, t) * v; per.push({ v, h: week(squad0, t), cost: t < D ? X * Math.pow(DEC, t) * (Vf(w.freeTransfers) - Vf(w.freeTransfers - w.ins.length)) : 0, ft: w.freeTransfers, n: w.ins.length });
       if (t < D) { used.push(w.ins.length); lines.push(`    GW${G[t]} (${w.freeTransfers} FT): ` + (w.ins.length ? w.outs.map((o, m) => `${P[o].name} -> ${P[w.ins[m]].name} (${P[w.ins[m]].team}) ${P[w.ins[m]].price}`).join(' + ') : 'Save') + `, bank ${w.bank}`); }
     });
     const left = weeks[D] ? weeks[D].freeTransfers : null;
-    const Vf = (k) => STEP.slice(0, k).reduce((a, b) => a + b, 0);
     const early = weeks.slice(0, D).reduce((a, w, t) => a + X * Math.pow(DEC, t) * (Vf(w.freeTransfers) - Vf(w.freeTransfers - w.ins.length)), 0);
-    res.push({ k, early, dec: dec - hold.dec, raw: raw - hold.raw, left, total: dec - hold.dec - early + keptValue(left || 0), used, lines, secs1, status: sol.Status });
+    res.push({ per, k, early, dec: dec - hold.dec, raw: raw - hold.raw, left, total: dec - hold.dec - early + keptValue(left || 0), used, lines, secs1, status: sol.Status });
   }
-  res.forEach((r) => { console.log(`\n${r.k === null ? 'FREE (solver picks GW' + G[0] + ')' : 'GW' + G[0] + ' ' + r.k + 'FT'}: total ${r.total.toFixed(2)} = dec ${r.dec.toFixed(2)} - transfer cost ${r.early.toFixed(2)} + kept ${keptValue(r.left || 0).toFixed(2)} (${r.left} FT left) (raw ${r.raw.toFixed(2)}), FT used ${r.used.join('-')}, ${r.secs1}s ${r.status}`); r.lines.forEach((l) => console.log(l)); });
+  res.forEach((r) => { console.log(`\n${r.k === null ? 'FREE (solver picks GW' + G[0] + ')' : 'GW' + G[0] + ' ' + r.k + 'FT'}: total ${r.total.toFixed(2)} = dec ${r.dec.toFixed(2)} - transfer cost ${r.early.toFixed(2)} + kept ${keptValue(r.left || 0).toFixed(2)} (${r.left} FT left) (raw ${r.raw.toFixed(2)}), FT used ${r.used.join('-')}, ${r.secs1}s ${r.status}`); r.lines.forEach((l) => console.log(l));
+    console.log('WEEKS'); r.per.forEach((p, t) => console.log(`GW${G[t]}\tplan ${p.v.toFixed(2)}\thold ${p.h.toFixed(2)}\tdiff ${(p.v - p.h).toFixed(2)}\tw ${Math.pow(DEC, t).toFixed(4)}\tdec diff ${(Math.pow(DEC, t) * (p.v - p.h)).toFixed(2)}\tFT ${p.ft} used ${p.n} cost ${p.cost.toFixed(3)}`)); });
   console.log(`\nall: ${((Date.now() - T0) / 1000).toFixed(1)}s`);
   console.log(`\n${solves} solves, ${secs.toFixed(1)}s solving`);
 })();
