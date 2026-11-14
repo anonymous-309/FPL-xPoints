@@ -72,7 +72,8 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
   }
   const show = (o, pad) => console.log(`${pad}${o.score >= 0 ? '+' : ''}${o.score.toFixed(2)}\t[${o.k}FT dec ${o.dec.toFixed(2)} raw ${o.raw.toFixed(2)} ITB ${o.bank} (${o.itb >= 0 ? '+' : ''}${o.itb.toFixed(1)})]\t${o.moves}`);
   // ---- one model for GW1-3: GW1 transfers fixed in number, GW2 and GW3 free; each FT left at the end worth FTEND
-  const X = 0.5, Y = 2.89, STEP = [1, 0.75, 0.5, 0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], RES = STEP.slice(0, 5).map((m) => m * Y), D = 3;
+  for (const D of [3, 4, 5]) {
+  const X = 0.5, Y = 4 * Math.pow(DEC, D - 1), STEP = [1, 0.75, 0.5, 0.25, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], RES = STEP.slice(0, 5).map((m) => m * Y);
   const keptValue = (n) => RES.slice(0, n).reduce((a, b) => a + b, 0);
   const owned = new Set(squad0.map((p) => p.id));
   const all = data.players.map((d) => { const n = info(d); const o = squad0.find((p) => p.id === d.id);
@@ -80,7 +81,7 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
   squad0.forEach((o) => { if (!all.some((p) => p.id === o.id)) all.push({ id: o.id, name: o.name, team: o.team, position: o.position, price: o.price, owned: true, sell: o.sell, xp: o.xpw, p1: o.p1w }); });
   const P = S.pool(all, [...owned]);
   const hold = from(squad0, 0);
-  const base = { players: P, T: G.length, ft, bank, chips: {}, ftMult: 1 / Math.pow(DEC, D), buyCost: [0, 0, 0], useCost: { x: [0, 1, 2].map((t) => X * Math.pow(DEC, t)), steps: STEP.slice(0, 5) },
+  const base = { players: P, T: G.length, ft, bank, chips: {}, ftMult: 1 / Math.pow(DEC, D),  useCost: { x: [...Array(D).keys()].map((t) => X * Math.pow(DEC, t)), steps: STEP.slice(0, 5) },
     settings: { ...S.DEFAULTS, depth: D, decay: DEC, reserve: RES, minGain: 0, bankValue: 0, maxHits: 0 } };
   console.log(`TREE team ${entry}: ${ft} FT, bank ${bank}; GW${G[0]}-${G[D - 1]} planned in one model, a transfer leaving 0/1/2/3/4 FT in hand costs: ${[0, 1, 2].map((t) => 'GW' + G[t] + ' ' + STEP.slice(0, 5).map((m) => (X * Math.pow(DEC, t) * m).toFixed(3)).join('/')).join(', ')}, FT left after GW${G[D - 1]} worth ${RES.map((x) => x.toFixed(2)).join('/')}, no hits, xP GW${G[0]}-${G.at(-1)} decayed`);
   const Vf = (k) => STEP.slice(0, k).reduce((a, b) => a + b, 0);
@@ -108,5 +109,6 @@ const POS = ['', 'GK', 'DEF', 'MID', 'FWD'];
   res.forEach((r) => { console.log(`\n${r.k === null ? 'FREE (solver picks GW' + G[0] + ')' : 'GW' + G[0] + ' ' + r.k + 'FT'}: total ${r.total.toFixed(2)} = dec ${r.dec.toFixed(2)} - transfer cost ${r.early.toFixed(2)} + kept ${keptValue(r.left || 0).toFixed(2)} (${r.left} FT left) (raw ${r.raw.toFixed(2)}), FT used ${r.used.join('-')}, ${r.secs1}s ${r.status}`); r.lines.forEach((l) => console.log(l));
     console.log('WEEKS'); r.per.forEach((p, t) => console.log(`GW${G[t]}\tplan ${p.v.toFixed(2)}\thold ${p.h.toFixed(2)}\tdiff ${(p.v - p.h).toFixed(2)}\tw ${Math.pow(DEC, t).toFixed(4)}\tdec diff ${(Math.pow(DEC, t) * (p.v - p.h)).toFixed(2)}\tFT ${p.ft} used ${p.n} cost ${p.cost.toFixed(3)}`)); });
   console.log(`\nall: ${((Date.now() - T0) / 1000).toFixed(1)}s`);
+  }
   console.log(`\n${solves} solves, ${secs.toFixed(1)}s solving`);
 })();
