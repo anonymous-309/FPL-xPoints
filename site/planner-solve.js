@@ -104,6 +104,12 @@
         for (let i = 0; i < n; i++) { terms.push([-sellValue(i), `s${t}_${i}`]); terms.push([P[i].price, `b${t}_${i}`]); }
         if (bankPrev) { terms.push([-1, bankPrev]); row(terms, 0, 0); } else row(terms, bank, bank);
         bankPrev = bk;
+        // bankBuffer: prices can move before a later week's transfers, so buying in week t leaves bankBuffer x t in the bank
+        if (input.bankBuffer && t > 0 && !has('freehit', t)) {
+          const a = v(`ab${t}`);
+          for (let i = 0; i < n; i++) row([[1, a], [-1, `b${t}_${i}`]], 0, Infinity);
+          row([[1, bk], [-input.bankBuffer * t, a]], 0, Infinity);
+        }
         // transfers the viewer has already made (or wants made) in the first gameweek
         const forced = t === 0 && input.force ? input.force : null;
         if (forced) {

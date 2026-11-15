@@ -268,6 +268,8 @@
   // are left in hand after it: 100% when it is the last one, then 75%, 50%, 25%, 0% (with 5 in hand one would be lost
   // anyway). So a move is only made early when it gains more than that. Free transfers left after the last transfer
   // week are worth Y each, the 1st 100%, then 75%, 50%, 25%, 0%; Y is 4 points weighed like that gameweek.
+  // Prices can change before a later week's transfers, so a buy in the n-th gameweek from now leaves 0.1m x n in the bank.
+  const BANK_BUFFER = 0.1;
   const PLAN = { depth: 4, decay: 0.85, X: 0.5, ftPts: 4, steps: [1, 0.75, 0.5, 0.25, 0] };
   const stepSum = (k) => PLAN.steps.slice(0, Math.max(0, k)).reduce((a, b) => a + b, 0);
 
@@ -334,6 +336,7 @@
     const base = { players: Pm, T: Tm, ft: state.team.ft, bank: state.team.bank, chips,
       settings: { ...S.DEFAULTS, depth, decay: PLAN.decay, reserve: PLAN.steps.map((m) => m * Y), minGain: 0, bankValue: 0, maxHits: null },
       ftMult: 1 / Math.pow(PLAN.decay, depth),
+      bankBuffer: BANK_BUFFER,
       useCost: { x: [...Array(depth).keys()].map((t) => PLAN.X * Math.pow(PLAN.decay, t)), steps: PLAN.steps },
       keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
     const ownedIds = new Set(state.team.squad.map((x) => x.id));
@@ -544,7 +547,8 @@
       if (!w.ins.length) return [el('span', { className: 'muted', textContent: 'Save' })];
       const outs = w.outs.slice().sort(byPos), ins = w.ins.slice().sort(byPos);
       return outs.map((x, k) => el('span', { textContent: `${P[x].name} → ${ins[k] !== undefined ? P[ins[k]].name : ''}` }))
-        .concat(w.hits ? [el('small', { className: 'hit', textContent: `−${w.hits * S.HIT}` })] : []);
+        .concat(w.hits ? [el('small', { className: 'hit', textContent: `−${w.hits * S.HIT}` })] : [])
+        .concat(w.t > 0 && w.bank !== null ? [el('small', { className: w.bank < BANK_BUFFER * (w.t + 1) - 1e-6 ? 'itb tight' : 'itb', textContent: `ITB ${f1(w.bank)}m` })] : []);
     };
     const rows = options.map((o, k) => {
       const tr = el('tr', { className: k === state.plan.pick ? 'on' : '', tabIndex: 0, onclick: () => { state.plan.pick = k; state.week = 0; render(); },
@@ -601,11 +605,19 @@
       el('p', {}, 'This plan: ', el('b', { textContent: `${f1(total)} xPts` }), ` over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs included: `,
         el('b', { textContent: `${gain >= 0 ? '+' : ''}${f1(gain)}` }), ` on keeping your squad without chips (${f1(hold)}). ${moves} transfer${moves === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''}` : 'no hits'}.`),
       el('p', { className: 'meta', textContent: '"Best" is the share of 5,000 simulated runs of every match in which that plan scores the most of all the plans in the table (they add up to 100%). A plan can have the most expected points and still be best less often, when its points come from rarer big hauls.' }),
+      tightNote(P, weeks, gws),
       state.team.madeAlready && state.team.madeAlready.length ? el('p', { className: 'meta', textContent: `Already made for GW${state.team.lastGw + 1}: ${state.team.madeAlready.join(', ')} (counted in your squad and free transfers).` }) : '',
       Object.keys(state.overrides).length ? el('p', { className: 'meta', textContent: `Uses your minutes edits from the Minutes page (${Object.keys(state.overrides).length} players).` }) : '',
       state.plan.skipped ? el('p', { className: 'meta', textContent: `${state.plan.skipped} of the plans could not be worked out (the solver ran out of memory on this device) and are left out.` }) : '',
       /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
     $('out').replaceChildren(optionsView(P, options, gws), fhView(P, pick, gws), summary, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
+  }
+
+  // Later-week transfers that leave little money: they fail if prices move by more than what is left.
+  function tightNote(P, weeks, gws) {
+    const tight = weeks.filter((w) => w.t > 0 && w.ins.length && w.chip !== 'freehit' && w.bank !== null && w.bank < BANK_BUFFER * (w.t + 1) - 1e-6);
+    if (!tight.length) return '';
+    return el('p', { className: 'meta warn-note', textContent: 'Tight money: ' + tight.map((w) => `GW${gws[w.t]} (${w.ins.map((i) => P[i].name).join(', ')}) leaves ${f1(w.bank)}m, so it no longer fits if ${w.ins.length > 1 ? 'their prices' : 'the price'} rise${w.ins.length > 1 ? '' : 's'} (or the players sold drop) by more than that before then`).join('; ') + '. Prices are taken as they are now.' });
   }
 
   // ---- Free Hit week ----
