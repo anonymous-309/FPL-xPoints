@@ -1826,6 +1826,17 @@ def congestion_check(data_dir: Path, seasons: list[str], offline: bool) -> None:
         diff = b.mean() - a.mean()
         se = np.sqrt(a.var() / len(a) + b.var() / len(b))
         print(f"  {role:28s} {a.mean():5.1%} -> {b.mean():5.1%}  rise {diff:+.1%}  (90%: {diff - 1.645 * se:+.1%} to {diff + 1.645 * se:+.1%})")
+    reg["month"] = reg["kick"].dt.tz_convert("Europe/London").dt.month
+    order = [8, 9, 10, 11, 12, 1, 2, 3, 4, 5]
+    names = {8: "Aug", 9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec", 1: "Jan", 2: "Feb", 3: "Mar", 4: "Apr", 5: "May"}
+    for label, d in [("Teams in Europe", reg[reg["in_eu"]]), ("Teams not in Europe", reg[~reg["in_eu"]]), ("All teams", reg)]:
+        print(f"\nBY MONTH, {label}: share of matches a regular starter did NOT start (n in brackets for the row total)")
+        print("  " + f"{'role':28s}" + "".join(f"{names[m]:>8s}" for m in order) + f"{'Nov-Jan':>9s}{'other':>8s}{'rise (90%)':>26s}")
+        for role, t in list(d.groupby("role")) + [("All roles", d)]:
+            row = "".join(f"{t[t['month'] == m]['benched'].mean():8.1%}" if (t['month'] == m).sum() >= 20 else f"{'-':>8s}" for m in order)
+            w, o = t[t["month"].isin([11, 12, 1])]["benched"], t[~t["month"].isin([11, 12, 1])]["benched"]
+            diff = w.mean() - o.mean(); se = np.sqrt(w.var() / len(w) + o.var() / len(o))
+            print(f"  {role:28s}{row}{w.mean():9.1%}{o.mean():8.1%}   {diff:+.1%} ({diff - 1.645 * se:+.1%} to {diff + 1.645 * se:+.1%})  n={len(w)}/{len(o)}")
     print("\nBy competition: benched share of regular starters, league match just after a European match vs the team's other league matches that season:")
     for comp in ["UCL", "UEL", "UECL"]:
         t = e[e["season_comp"] == comp]
