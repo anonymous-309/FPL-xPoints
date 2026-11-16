@@ -56,6 +56,31 @@
         p("FPL's xP column is shown for interest only: it may have been saved after some team news, so the comparison is not quite fair either way.")));
     }
 
+    // 1b. top scorers
+    const topKey = Object.keys(S).find((k) => k.startsWith('Top FPL scorers'));
+    if (topKey) {
+      const lines = S[topKey];
+      const head = lines.findIndex((l) => /\bgroup\b/.test(l) && /\bMAE\b/.test(l));
+      const rows = [];
+      for (let j = head + 1; head >= 0 && j < lines.length && lines[j].trim(); j++) rows.push(lines[j].split('|').map((x) => x.trim()));
+      const POS = { GK: 'Goalkeepers (top 10)', DEF: 'Defenders (top 20)', MID: 'Midfielders (top 20)', FWD: 'Forwards (top 10)', All: 'All 60' };
+      const groups = [...new Set(rows.map((r) => r[0]))];
+      const tIdx = lines.findIndex((l) => /^Top scorers, season totals/.test(l.trim()));
+      const tot = [];
+      for (let j = tIdx + 2; tIdx >= 0 && j < lines.length && lines[j].trim(); j++) tot.push(lines[j].split('|').map((x) => x.trim()));
+      out.push(card('The players who matter most',
+        p(`The top scorers of ${season}: 10 goalkeepers, 20 defenders, 20 midfielders and 10 forwards by FPL points. Every gameweek of theirs, `, b('Average miss'), ' (points), ', b('Bias'),
+          ' (above 0: predicted too high on average) and ', b('Order'), ' (how well the predictions follow their good and bad weeks, 0 to 1).'),
+        table(['Group', 'Way of guessing', 'Average miss', 'Bias', 'Order'],
+          groups.flatMap((g) => rows.filter((r) => r[0] === g).map((r) => [POS[g] || g, NAMES[r[1]] || r[1], f(num(r[3]), 2), `${num(r[4]) >= 0 ? '+' : ''}${f(num(r[4]), 2)}`, f(num(r[5]), 2)])),
+          { mark: (r) => r[1] === 'This site' }),
+        (() => { const all = rows.find((r) => r[0] === 'All' && r[1] === 'Model'); if (!all) return null; const bias = num(all[4]);
+          return p(bias < 0 ? `Over all 60, the predictions were ${f(-bias, 2)} points a gameweek below what they scored. Some of that is expected: these players were picked out after the season, partly for the good luck they had, which no forecast made beforehand can see.`
+            : `Over all 60, the predictions were ${f(bias, 2)} points a gameweek above what they scored.`); })(),
+        tot.length ? el('details', {}, el('summary', { textContent: 'Each of the 60: season points against the sum of the predictions' }),
+          table(['Pos', 'Player', 'Team', 'Real', 'Predicted', 'Difference', 'GWs'], tot.map((r) => [r[0], r[1], r[2], r[3], r[4], r[5], r[6]]))) : null));
+    }
+
     // 2. decisions
     const dec = (S['Decisions: mean actual points per GW'] || []).filter((l) => l.trim());
     if (dec.length > 1) {

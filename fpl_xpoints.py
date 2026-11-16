@@ -1392,6 +1392,9 @@ def chance_report(pred: pd.DataFrame) -> None:
         print(f"{title}: " + "; ".join(f"{r.predicted:.1%}->{r.actual:.1%}" for r in tab.itertuples()))
 
 
+TOP_SCORERS = {"GK": 10, "DEF": 20, "MID": 20, "FWD": 10}
+
+
 def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     pred = pred.copy()
     pred["pred_pts4"] = pred["pts4"].fillna(pred["ppg_all"]).fillna(0.0)
@@ -1416,6 +1419,30 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
 
     print("\n=== Regulars, by position (Model) ===")
     print(pd.DataFrame({p: _score(g["total_points"], g["xpts"]) for p, g in regular.groupby("position")}).T.round(3).to_string())
+
+    # The players who matter most in FPL: the top scorers of the test season (10 GK, 20 DEF, 20 MID, 10 FWD).
+    tot = gw.groupby(["pid", "position"], as_index=False).agg(total=("total_points", "sum"), name=("name", "last"), team=("team", "last"))
+    top = pd.concat([tot[tot["position"] == pos].nlargest(n, "total") for pos, n in TOP_SCORERS.items()])
+    tg = gw[gw["pid"].isin(top["pid"])]
+    print("\n=== Top FPL scorers (10 GK, 20 DEF, 20 MID, 10 FWD by points in the test season), every gameweek ===")
+    rows = []
+    for pos in list(TOP_SCORERS) + ["All"]:
+        d = tg if pos == "All" else tg[tg["position"] == pos]
+        for m, c in models.items():
+            sc = _score(d["total_points"], d[c])
+            rows.append({"group": pos, "way": m, "n": len(d), "MAE": sc["MAE"], "bias": float((d[c] - d["total_points"]).mean()), "Pearson": sc["Pearson"]})
+    print("group | way | n | MAE | bias | Pearson")
+    for r in rows:
+        print(f"{r['group']} | {r['way']} | {r['n']} | {r['MAE']:.3f} | {r['bias']:+.3f} | {r['Pearson']:.3f}")
+    season = tg.groupby("pid", as_index=False).agg(actual=("total_points", "sum"), predicted=("xpts", "sum"), gws=("GW", "nunique"))
+    season = season.merge(top[["pid", "name", "team", "position"]], on="pid")
+    season["diff"] = season["predicted"] - season["actual"]
+    order = {p: i for i, p in enumerate(TOP_SCORERS)}
+    season = season.sort_values(["position", "actual"], key=lambda c: c.map(order) if c.name == "position" else -c)
+    print("\nTop scorers, season totals (predicted = sum of the model's points for each gameweek, made before it)")
+    print("position | name | team | actual | predicted | diff | gws")
+    for r in season.itertuples():
+        print(f"{r.position} | {r.name} | {r.team} | {r.actual:.0f} | {r.predicted:.1f} | {r.diff:+.1f} | {r.gws}")
 
     print("\n=== Decisions: mean actual points per GW ===")
     rows = {}
