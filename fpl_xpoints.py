@@ -1645,7 +1645,8 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
 def goalkeeper_cover(target: pd.DataFrame) -> pd.DataFrame:
     """Only one goalkeeper plays. When a team's first-choice goalkeeper is out or flagged and expected back (60+
     usual minutes when fit), the stand-in's share of a match is cut by the starter's: 0 once the starter is fully
-    back, a quarter where the starter is 75% to play, half where he is expected to play half."""
+    back, a quarter where the starter is 75% to play, half where he is expected to play half. The stand-in himself
+    (45+ usual minutes) counts as a full 90 for the rest: his 0s from before the injury say nothing now."""
     t = target.copy()
     if "position" not in t or "from_return" not in t:
         return t
@@ -1667,6 +1668,15 @@ def goalkeeper_cover(target: pd.DataFrame) -> pd.DataFrame:
                 rows = t.index[(t["pid"] == op) & gk]
                 s_ = t.loc[rows, "fixture"].map(share)
                 factor = (1 - s_.fillna(0.0)).clip(0.0, 1.0)
+                # the one standing in now (45+ usual minutes, the 0s from his days on the bench before the injury
+                # still pull his average down): a full 90 when the first choice is out, for whatever share is left
+                if float(usual[rows].max()) >= 45:
+                    for col in ("w5_min", "ret_min"):
+                        if col in t:
+                            t.loc[rows, col] = 90.0
+                    for col in ("w5_p1", "w5_p60", "ret_p1", "ret_p60"):
+                        if col in t:
+                            t.loc[rows, col] = 1.0
                 t.loc[rows, "avail"] = t.loc[rows, "avail"].fillna(1.0) * factor
                 if (factor < 1).any():
                     cut += 1
