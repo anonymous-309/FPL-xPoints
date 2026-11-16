@@ -686,8 +686,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
     logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it), and a
-    cautionary rest on his return ("inj_rest": 0 in the first match back, then 90 in the next two, after playing 80+
-    on average before the injury)."""
+    cautionary rest on his return ("inj_rest": 0 in the first match back, then at least his usual minutes from before
+    the injury in the next two)."""
     df = df.copy()
     df["inj_skip"] = False
     df["inj_hurt"] = False
@@ -708,15 +708,17 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                 if int(df.at[last, "GW"]) not in (covered or set()) and 0 < float(df.at[last, "minutes"]) < 90:
                     df.at[last, "inj_skip"] = True
                     df.at[last, "inj_hurt"] = True
-        # Cautionary rest: back from an injury, a player who used to play the full 90 sits out his first match back
-        # (0 minutes) and then plays the full 90 in both of the next two. That 0 is a rest, not a sign he lost his place.
+        # Cautionary rest: back from an injury, a player sits out his first match back (0 minutes) and then plays at
+        # least his usual minutes (his average over his last 5 matches before the injury, 30+) in both of the next two.
+        # That 0 is a rest, not a sign he lost his place.
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
             mine = df.loc[season & (df["pid"] == r["pid"])].sort_values(["GW", "kickoff_time"])
-            pre = mine[(mine["GW"] < r["startGw"]) & ~mine["inj_skip"]]["minutes"].tail(3)
+            pre = mine[(mine["GW"] < r["startGw"]) & ~mine["inj_skip"]]["minutes"].tail(5)
             post = mine[mine["GW"] >= r["returnedGw"]]
-            if len(pre) >= 2 and pre.mean() >= 80 and len(post) >= 3:
+            usual = float(pre.mean()) if len(pre) >= 2 else 0.0
+            if usual >= 30 and len(post) >= 3:
                 first3 = post["minutes"].to_numpy(float)[:3]
-                if first3[0] == 0 and (first3[1:] >= 85).all():
+                if first3[0] == 0 and (first3[1:] >= usual - 0.5).all():
                     i = post.index[0]
                     df.at[i, "inj_skip"] = True
                     df.at[i, "inj_rest"] = True
