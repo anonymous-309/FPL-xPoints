@@ -159,10 +159,12 @@
     return out;
   }
 
-  function holdPoints(P, T) {
+  // Expected points of the squad as it is, each gameweek (best 11, captain, auto-subs).
+  function holdWeeks(P, T) {
     const squad = P.map((p, i) => i).filter((i) => P[i].owned);
-    let total = 0;
+    const out = [];
     for (let t = 0; t < T; t++) {
+      out.push(0);
       const ps = P.map((p) => ({ position: p.position, xp: p.xp[t], p1: p.p1[t] }));
       const best = bestXI(P, squad, t);
       if (!best) continue;
@@ -170,10 +172,11 @@
       const rest = squad.filter((i) => !best.xi.includes(i));
       const gk = rest.find((i) => P[i].position === 'GK');
       const bench = [gk].concat(rest.filter((i) => i !== gk).sort((a, b) => P[b].xp[t] - P[a].xp[t]));
-      total += S.expectedWithSubs(ps, best.xi, bench, byXp[0], byXp[1], 2, false, 2000).xpts;
+      out[t] = S.expectedWithSubs(ps, best.xi, bench, byXp[0], byXp[1], 2, false, 2000).xpts;
     }
-    return total;
+    return out;
   }
+  const holdPoints = (P, T) => holdWeeks(P, T).reduce((a, b) => a + b, 0);
 
   // ---- settings ----
   const SET_KEY = 'planner-settings-v5';  // v5: kept free transfers worth less each, least gain per transfer
@@ -461,7 +464,9 @@
       }
       options.forEach((o, k) => { o.win = wins[k]; });
       const rec = options.reduce((b, o) => (o.total > b.total ? o : b), options[0]);
-      state.plan = { gws, P, options, chips, skipped, force: base.force, status: worst, hold: holdPoints(P, T), pick: options.indexOf(rec), rec, depth };
+      const holdW = holdWeeks(P, T);
+      options.forEach((o) => { o.gainDecay = o.dpts - holdW.reduce((a, x, t) => a + wt(t) * x, 0); });
+      state.plan = { gws, P, options, chips, skipped, force: base.force, status: worst, hold: holdW.reduce((a, b) => a + b, 0), holdW, pick: options.indexOf(rec), rec, depth };
       state.week = 0;
       render();
     } catch (e) {
@@ -586,13 +591,22 @@
       : o.roll ? (o.count ? 'Forced only' : 'Save') : o.count > state.team.ft ? `${state.team.ft} FT + ${o.count - state.team.ft} hit` : `${o.count} FT`);
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[b].price - P[a].price;
+    const holdW = state.plan.holdW || [];
+    const sign = (x) => `${x >= 0 ? '+' : '−'}${f1(Math.abs(x))}`;
+    // under each gameweek's moves: money left, and that gameweek's expected points against keeping the squad
+    const facts = (w) => {
+      const out = [];
+      if (w.bank !== null && w.bank !== undefined) out.push(el('small', { className: w.t > 0 && w.bank < BANK_BUFFER * (w.t + 1) - 1e-6 ? 'itb tight' : 'itb', textContent: `ITB ${f1(w.bank)}m` }));
+      if (holdW[w.t] !== undefined) out.push(el('small', { className: 'itb gw-gain', textContent: `${sign(w.xpts - holdW[w.t])} xPts this GW` }));
+      return out;
+    };
     const moves = (w) => {
-      if (w.chip === 'freehit') return [el('span', { textContent: 'Free Hit' })];
-      if (!w.ins.length) return [el('span', { className: 'muted', textContent: 'Save' })];
+      if (w.chip === 'freehit') return [el('span', { textContent: 'Free Hit' })].concat(facts(w));
+      if (!w.ins.length) return [el('span', { className: 'muted', textContent: 'Save' })].concat(facts(w));
       const outs = w.outs.slice().sort(byPos), ins = w.ins.slice().sort(byPos);
       return outs.map((x, k) => el('span', { textContent: `${P[x].name} → ${ins[k] !== undefined ? P[ins[k]].name : ''}` }))
         .concat(w.hits ? [el('small', { className: 'hit', textContent: `−${w.hits * S.HIT}` })] : [])
-        .concat(w.t > 0 && w.bank !== null ? [el('small', { className: w.bank < BANK_BUFFER * (w.t + 1) - 1e-6 ? 'itb tight' : 'itb', textContent: `ITB ${f1(w.bank)}m` })] : []);
+        .concat(facts(w));
     };
     const rows = options.map((o, k) => {
       const tr = el('tr', { className: k === state.plan.pick ? 'on' : '', tabIndex: 0, onclick: () => { state.plan.pick = k; state.week = 0; render(); },
@@ -602,6 +616,7 @@
         ...o.sol.weeks.slice(0, depth).map((w) => el('td', { className: 'route-moves' }, ...moves(w))),
         el('td', { className: 'num', textContent: f1(o.pts) }),
         el('td', { className: 'num', textContent: f1(o.dpts) }),
+        el('td', { className: 'num', textContent: sign(o.gainDecay || 0) }),
         el('td', { className: 'num', textContent: o.cost ? `−${f2(o.cost)}` : '0' }),
         el('td', { className: 'num', textContent: `${o.left} (+${f2(o.kept)})` }),
         el('td', { className: `num${o.total === bestT ? ' best' : ''}`, textContent: f2(o.total) }),
@@ -619,11 +634,11 @@
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' },
         el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses now' }),
           ...gws.slice(0, depth).map((g) => el('th', { scope: 'col', textContent: `GW${g}` })),
-          el('th', { scope: 'col', className: 'num', textContent: 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: 'xPts Decay' }),
+          el('th', { scope: 'col', className: 'num', textContent: 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: 'xPts Decay' }), el('th', { scope: 'col', className: 'num', textContent: 'Gain Decay' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Cost' }), el('th', { scope: 'col', className: 'num', textContent: 'FT kept' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. ITB under a later gameweek's moves: money left after them; a buy n gameweeks ahead must leave 0.1m × n, in case prices move, and it shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
+      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Gain Decay: xPts Decay against keeping your squad as it is (same weighing). Under each gameweek: ITB, the money left after its moves, and that gameweek's expected points against keeping your squad (hits counted). Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
