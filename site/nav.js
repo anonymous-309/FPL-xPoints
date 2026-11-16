@@ -6,7 +6,7 @@
     ['Players', [['minutes.html', 'Minutes', 'Played minutes and xMin'], ['chances.html', 'Chance 90min', 'Goals, assists, clean sheets…'],
       ['setpieces.html', 'Set pieces', 'Penalty, free kick and corner takers'], ['oop.html', 'OOP', 'Out of position players'],
       ['injuries.html', 'Injuries', 'Absence log']]],
-    ['About', [['explain.html', 'How it works', 'The formula, step by step'], ['backtest.txt', 'Accuracy', 'Model against real results'],
+    ['About', [['explain.html', 'How it works', 'The formula, step by step'], ['accuracy.html', 'Accuracy', 'Model against real results'],
       ['admin.html', 'Admin', 'Minutes and absences']]],
   ];
   const nav = document.querySelector('nav.sitenav');

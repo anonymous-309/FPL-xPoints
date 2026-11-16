@@ -55,7 +55,7 @@ jobs:
         run: python planner.py --site _site --ids planner_ids.txt
       - name: Measure accuracy on last season
         continue-on-error: true
-        run: python fpl_xpoints.py backtest 2>&1 | tee _site/backtest.txt
+        run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest 2>&1 | tee _site/backtest.txt
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

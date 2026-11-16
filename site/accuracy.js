@@ -1,0 +1,127 @@
+// Accuracy page: reads backtest.txt (the model tested on a past season) and shows the main results in plain words.
+(function () {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props || {}); n.append(...kids.filter((k) => k !== null && k !== undefined && k !== '')); return n; };
+  const num = (s) => Number(String(s).replace('%', ''));
+  const f = (x, d = 1) => (Number.isFinite(x) ? x.toFixed(d) : '–');
+  const pct = (x) => `${Math.round(x)}%`;
+
+  // "=== Title ===" sections, each a list of lines
+  function sections(text) {
+    const out = {};
+    let cur = null;
+    text.split('\n').forEach((line) => {
+      const m = line.match(/^=== (.+?) ===/);
+      if (m) { cur = m[1]; out[cur] = []; return; }
+      if (cur) out[cur].push(line);
+    });
+    return out;
+  }
+  // rows of a block: the line after the title is the header; columns split on 2+ spaces
+  function block(lines, title) {
+    const i = lines.findIndex((l) => l.trim() === title);
+    if (i < 0) return [];
+    const rows = [];
+    for (let j = i + 2; j < lines.length && lines[j].trim(); j++) rows.push(lines[j].trim().split(/\s{2,}/));
+    return rows;
+  }
+  const table = (head, rows, opts = {}) => el('div', { className: 'wrap' }, el('table', { className: 'acc-table' },
+    el('thead', {}, el('tr', {}, ...head.map((h, k) => el('th', { scope: 'col', className: k ? 'num' : '', textContent: h })))),
+    el('tbody', {}, ...rows.map((r) => el('tr', { className: opts.mark && opts.mark(r) ? 'on' : '' }, ...r.map((c, k) => el('td', { className: k ? 'num' : '', textContent: c })))))));
+  const card = (title, ...kids) => el('section', { className: 'acc-card' }, el('h2', { textContent: title }), ...kids);
+  const p = (...kids) => el('p', {}, ...kids);
+  const b = (t) => el('b', { textContent: t });
+
+  function render(text) {
+    const season = (text.match(/training before (\d{4}-\d{2})/) || [])[1] || 'a past season';
+    const S = sections(text);
+    const out = [];
+    const NAMES = { 'Model': 'This site', 'Trailing 4 GW': 'Points in his last 4 GWs', 'Long-run PPG': 'Points per game, long run', 'FPL xP (may leak)': "FPL's own xP" };
+
+    // 1. points
+    const acc = S['Prediction accuracy'] || [];
+    const all = block(acc, 'All player-GWs'), reg = block(acc, 'Regulars (prior avg >=45 min)');
+    if (all.length) {
+      const row = (name) => all.find((r) => r[0] === name);
+      const m = row('Model'), t4 = row('Trailing 4 GW');
+      const better = m && t4 ? (1 - num(m[3]) / num(t4[3])) * 100 : NaN;
+      out.push(card('How close are the points?',
+        p(`Tested on every player in every gameweek of ${season}. `, b('Average miss'), ' is how far, on average, the prediction was from the points he really scored. ', b('Order'),
+          ' (0 to 1) is how well the predictions put players in the right order from best to worst: 1 would be perfect.'),
+        table(['Way of guessing', 'Average miss (points)', 'Order (all players)', 'Order (regular starters)'],
+          all.map((r) => { const rr = reg.find((x) => x[0] === r[0]); return [NAMES[r[0]] || r[0], f(num(r[3]), 2), f(num(r[5]), 2), rr ? f(num(rr[5]), 2) : '–']; }),
+          { mark: (r) => r[0] === 'This site' }),
+        Number.isFinite(better) ? p('This site misses by about ', b(`${f(better, 0)}% less`), ' than going by recent points, and puts players in a better order than every simple way. Any one gameweek is still very random: a regular starter is typically off by 2 to 3 points either way, from goals, assists and bonus nobody can call.') : null,
+        p("FPL's xP column is shown for interest only: it may have been saved after some team news, so the comparison is not quite fair either way.")));
+    }
+
+    // 2. decisions
+    const dec = (S['Decisions: mean actual points per GW'] || []).filter((l) => l.trim());
+    if (dec.length > 1) {
+      const rows = dec.slice(1).map((l) => l.trim().split(/\s{2,}/));
+      out.push(card('Would it have picked the right players?',
+        p('Each gameweek, the player each way rated highest as captain, and the 10 it rated highest: their ', b('real'), ' points per gameweek on average (captain not doubled).'),
+        table(['Way of guessing', 'Captain pick', 'Top 10 average'], rows.map((r) => [NAMES[r[0]] || r[0], f(num(r[1]), 2), f(num(r[2]), 2)]), { mark: (r) => r[0] === 'This site' })));
+    }
+
+    // 3. calibration
+    const cal = (S['Calibration, regulars'] || []).filter((l) => l.trim());
+    if (cal.length > 1) {
+      const rows = cal.slice(1).map((l) => l.trim().split(/\s+/));
+      out.push(card('Are the numbers too high or too low?',
+        p('Regular starters, split into 10 equal groups from the lowest predictions to the highest. In each group, the average prediction next to the average real points. Close together means the numbers can be taken at face value.'),
+        table(['Group', 'Predicted', 'Real', 'Player-GWs'], rows.map((r, k) => [String(k + 1), r[0], r[1], r[2]])),
+        p('The top groups come out a little high (about 0.2 to 0.4 points a gameweek), so treat the very biggest numbers as slightly generous.')));
+    }
+
+    // 4. minutes
+    const mins = (S['Minutes by weighted last-5 average: predicted vs actual, per match'] || []).filter((l) => /^\(/.test(l.trim()));
+    const minErr = (text.match(/Minutes MAE, regulars: ([\d.]+)/) || [])[1];
+    if (mins.length) {
+      out.push(card('How close are the minutes?',
+        p('Players grouped by their recent minutes (the 5-4-3-2-1 average). Predicted minutes and chance of 60+ next to what happened.'),
+        table(['Recent minutes', 'xMin', 'Real minutes', 'Chance of 60+', 'Real 60+', 'Matches'],
+          mins.map((l) => { const m = l.trim().match(/^\(([-\d.]+), ([\d.]+)\]\s+(.*)$/); if (!m) return null; const r = m[3].trim().split(/\s+/);
+            return [`${Math.max(0, num(m[1]))}–${m[2]}`, f(num(r[0]), 0), f(num(r[1]), 0), pct(num(r[2]) * 100), pct(num(r[3]) * 100), r[4]]; }).filter(Boolean)),
+        p(minErr ? `For regular starters xMin is off by about ${f(num(minErr), 0)} minutes a match on average. ` : '',
+          'Players on 85-90 minutes really average around 80: some go off injured, are rested or dropped without warning. The minutes rules (injuries, bans, rests) take care of what is known before the deadline.')));
+    }
+
+    // 5. chances
+    const ch = (S['Chance 90min: each chance against what happened (test season)'] || []).filter((l) => /\d/.test(l) && !/^Skill/.test(l.trim()));
+    if (ch.length) {
+      out.push(card('Chance 90min figures',
+        p('Each chance on the Chance 90min page: the average predicted chance next to how often it really happened, and how well it sorts players (', b('Sorting'), ': 0.5 is a coin flip, 1 is perfect; above 0.7 is good for football).'),
+        table(['Figure', 'Predicted', 'Happened', 'Sorting'], ch.map((l) => { const m = l.trim().match(/^(.+?)\s+(\d+)\s+([\d.]+%)\s+([\d.]+%)\s+[+-][\d.]+\s+[+-][\d.]+\s+([\d.]+)$/);
+          return m ? [m[1], m[3], m[4], m[5]] : null; }).filter(Boolean)),
+        p('Playing at all and playing 60+ minutes are predicted very well. Goals, assists and clean sheets are right on average but hard to call for any one match, as in every model. Penalty saves and red cards are too rare to call at all, so everyone gets about the average.')));
+    }
+
+    // 6. goals / assists by band
+    const ga = S['Chance to score / assist: predicted vs actual (players who played)'] || [];
+    const gl = block(ga, 'Goals'), as = block(ga, 'Assists');
+    if (gl.length) {
+      const fix = (rows) => rows.map((r) => [r[0].replace(/[(\]]/g, '').replace('-0.001', '0').split(', ').map((x) => pct(num(x) * 100)).join('–'), pct(num(r[1]) * 100), pct(num(r[2]) * 100), r[3]]);
+      out.push(card('Chance to score and to assist',
+        p('Players who played, grouped by their predicted chance; the real share who scored (or assisted) in each group.'),
+        el('h3', { textContent: 'Goals' }), table(['Predicted band', 'Predicted', 'Scored', 'Matches'], fix(gl)),
+        as.length ? el('h3', { textContent: 'Assists' }) : null, as.length ? table(['Predicted band', 'Predicted', 'Assisted', 'Matches'], fix(as)) : null));
+    }
+
+    // 7. the rest as text
+    const cards = S['Cards and DEFCON: predicted vs actual'] || [];
+    const lines = cards.filter((l) => /: predicted/.test(l));
+    if (lines.length) {
+      out.push(card('Cards, saves and goals conceded', el('ul', {}, ...lines.map((l) => el('li', { textContent: l.trim().replace('predicted', 'predicted').replace(/, n=\d+/, '') })))));
+    }
+    out.push(el('details', { className: 'acc-raw' }, el('summary', { textContent: 'Technical details (full output)' }), el('pre', { textContent: text })));
+    $('out').replaceChildren(...out);
+    $('status').textContent = `The model tested on ${season}, a season it was not trained on`;
+  }
+
+  fetch('backtest.txt', { cache: 'no-store' })
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+    .then((t) => render(t.split('\n').filter((l) => !/Warning|^\s+(df|self|tm|return)\b/.test(l)).join('\n')))
+    .catch(() => { $('error').hidden = false; $('error').textContent = 'Could not load the test results. They appear here once the GitHub update has run.'; $('status').textContent = ''; });
+})();
