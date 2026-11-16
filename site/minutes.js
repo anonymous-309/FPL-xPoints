@@ -84,7 +84,7 @@
       const WHY = {
         b: 'Banned: left out of the formula',
         i: 'Injured or unavailable: left out of the formula',
-        h: 'Got hurt in this match (injured right after): left out of the formula',
+        h: 'Taken off injured in this match: left out of the formula',
         m: 'In an absence set by the admin: left out of the formula',
         r: 'Cautionary rest on his return from injury (0, then the full 90 in the next two): left out of the formula',
         d: 'Flagged doubtful: the match he got hurt in, or missed since, left out of the formula',

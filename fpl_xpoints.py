@@ -581,7 +581,108 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
     return target
 
 
-def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) -> pd.DataFrame:
+# ---------------------------------------------------------------- substitutions for injury (FotMob)
+# FotMob's match events mark a substitution made because the player going off was hurt ("injuredPlayerOut"). Each
+# finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
+INJURY_SUBS = Path("injury_subs.json")
+FOTMOB_API = "https://www.fotmob.com/api/data"
+FOTMOB_LEAGUE = 47  # Premier League
+FOTMOB_TEAMS = {"AFC Bournemouth": "Bournemouth", "Brighton & Hove Albion": "Brighton", "Manchester City": "Man City", "Manchester United": "Man Utd",
+                "Tottenham Hotspur": "Spurs", "Nottingham Forest": "Nott'm Forest", "Newcastle United": "Newcastle", "Leeds United": "Leeds",
+                "Coventry City": "Coventry", "Hull City": "Hull", "Ipswich Town": "Ipswich", "Wolverhampton Wanderers": "Wolves",
+                "West Ham United": "West Ham", "Leicester City": "Leicester", "Sunderland AFC": "Sunderland", "Brentford FC": "Brentford"}
+
+
+def _fotmob_get(path: str, params: dict) -> dict:
+    url = f"{FOTMOB_API}/{path}?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+                                               "Accept": "application/json", "Referer": "https://www.fotmob.com/"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _name_key(s: str) -> str:
+    import unicodedata
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+    return " ".join(re.sub(r"[^a-z ]", "", re.sub(r"[-.']", " ", s)).split())
+
+
+def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
+    """(pid, gameweek) of every player taken off injured in a finished league match this season, and the gameweeks
+    whose matches were all read. Empty if FotMob cannot be read."""
+    folder = cache / "fotmob"
+    folder.mkdir(parents=True, exist_ok=True)
+    idx = folder / "league.json"
+    try:
+        if offline or (idx.exists() and time.time() - idx.stat().st_mtime < 6 * 3600):
+            league = json.loads(idx.read_text())
+        else:
+            league = _fotmob_get("leagues", {"id": FOTMOB_LEAGUE, "ccode3": "GBR"})
+            idx.write_text(json.dumps({"fixtures": league.get("fixtures"), "matches": league.get("matches")}))
+            league = json.loads(idx.read_text())
+    except Exception as e:  # never stop the site for this
+        print(f"FotMob not read ({e}); the match a player got hurt in is guessed from his minutes")
+        return set(), set()
+    matches = ((league.get("fixtures") or {}).get("allMatches") or (league.get("matches") or {}).get("allMatches") or [])
+    teams = {t["name"]: t["id"] for t in boot["teams"]}
+    by_team = {}
+    for p in boot["elements"]:
+        by_team.setdefault(p["team"], []).append(p)
+
+    def find(name: str, team: str):
+        tid = teams.get(FOTMOB_TEAMS.get(team, team))
+        n = _name_key(name)
+        pool = by_team.get(tid, [])
+        full = lambda p: _name_key(f'{p["first_name"]} {p["second_name"]}')
+        for test in (lambda p: full(p) == n, lambda p: _name_key(p["web_name"]) == n, lambda p: set(n.split()) <= set(full(p).split()),
+                     lambda p: set(_name_key(p["web_name"]).split()) <= set(n.split()), lambda p: n.split()[-1] == _name_key(p["second_name"]).split()[-1]):
+            hit = [p for p in pool if test(p)]
+            if len(hit) == 1:
+                return hit[0]
+        return None
+
+    store = json.loads(INJURY_SUBS.read_text(encoding="utf-8")) if INJURY_SUBS.exists() else {}
+    hurt, done, missing, fetched = set(), {}, [], 0
+    for m in matches:
+        if not (m.get("status") or {}).get("finished"):
+            continue
+        rnd = int(m.get("round") or 0)
+        if str(m["id"]) in store:
+            got = store[str(m["id"])]
+        elif offline:
+            done[rnd] = False
+            continue
+        else:
+            try:
+                d = _fotmob_get("matchDetails", {"matchId": m["id"]})
+                ev = (((d.get("content") or {}).get("matchFacts") or {}).get("events") or {}).get("events") or []
+                got = {"round": rnd, "home": m["home"]["name"], "away": m["away"]["name"],
+                       "injured": [{"name": e["swap"][1]["name"] if len(e.get("swap") or []) > 1 else None, "home": e.get("isHome"), "time": e.get("time")}
+                                   for e in ev if e.get("type") == "Substitution" and e.get("injuredPlayerOut")]}
+                store[str(m["id"])] = got
+                fetched += 1
+                time.sleep(0.4)
+            except Exception as e:
+                print(f"FotMob match {m['id']} not read ({e})")
+                done[rnd] = False
+                continue
+        done.setdefault(rnd, True)
+        for x in got["injured"]:
+            team = got["home"] if x["home"] else got["away"]
+            p = find(x["name"], team) if x["name"] else None
+            if p:
+                hurt.add((f"c{p['code']}", rnd))
+            else:
+                missing.append(f"{x['name']} ({team})")
+    if fetched:
+        INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
+    covered = {r for r, ok in done.items() if ok}
+    print(f"FotMob: {fetched} new matches read; {len(hurt)} players taken off injured in GW{min(covered, default=0)}-{max(covered, default=0)}"
+          + (f"; not matched to FPL: {', '.join(missing[:10])}" if missing else ""))
+    return hurt, covered
+
+
+def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, hurt: set | None = None, covered: set | None = None) -> pd.DataFrame:
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
     logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it), and a
@@ -603,7 +704,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) 
             before = df.index[season & (df["pid"] == r["pid"]) & (df["GW"] < r["startGw"])]
             if len(before):
                 last = df.loc[before].sort_values(["GW", "kickoff_time"]).index[-1]
-                if 0 < float(df.at[last, "minutes"]) < 90:
+                # with FotMob's match events for that gameweek, only a substitution for injury counts (below)
+                if int(df.at[last, "GW"]) not in (covered or set()) and 0 < float(df.at[last, "minutes"]) < 90:
                     df.at[last, "inj_skip"] = True
                     df.at[last, "inj_hurt"] = True
         # Cautionary rest: back from an injury, a player who used to play the full 90 sits out his first match back
@@ -618,6 +720,12 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) 
                     i = post.index[0]
                     df.at[i, "inj_skip"] = True
                     df.at[i, "inj_rest"] = True
+    # Taken off injured (FotMob): that match is left out, whatever came after.
+    if hurt:
+        keys = pd.Series(list(zip(df["pid"], df["GW"].fillna(-1).astype(int))), index=df.index)
+        rows = season & keys.isin(hurt)
+        df.loc[rows, "inj_skip"] = True
+        df.loc[rows, "inj_hurt"] = True
     print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, rests on return: {int(df['inj_rest'].sum())}")
     return df
 
@@ -1806,7 +1914,8 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
     df = yellow_bans(clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON]))
     log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
-    df = mark_injuries(df, log, load_admin_injuries())
+    hurt, covered = injury_subs(cache, offline, _api("bootstrap-static/", cache, offline))
+    df = mark_injuries(df, log, load_admin_injuries(), hurt, covered)
     feat = build_features(df)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
