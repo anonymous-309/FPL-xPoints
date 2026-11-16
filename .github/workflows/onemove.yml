@@ -11,6 +11,6 @@ jobs:
         with:
           node-version: 22
       - run: curl -sfL https://anonymous-309.github.io/FPL-xPoints/data.json -o /tmp/data.json
-      - run: bash tools/onemove/probe.sh
+      - run: pip install requests >/dev/null && python tools/onemove/fotmob_probe.py
       - run: npm install --no-save highs@1.15.4 >/dev/null 2>&1
       - run: node tools/onemove/fh.js 41 /tmp/data.json
