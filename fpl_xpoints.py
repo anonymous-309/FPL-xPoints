@@ -584,10 +584,13 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) -> pd.DataFrame:
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
-    logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it)."""
+    logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it), and a
+    cautionary rest on his return ("inj_rest": 0 in the first match back, then 90 in the next two, after playing 80+
+    on average before the injury)."""
     df = df.copy()
     df["inj_skip"] = False
     df["inj_hurt"] = False
+    df["inj_rest"] = False
     season = ~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()
     for r in merged_injuries(log, admin or {"manual": [], "startOverrides": {}}):
         if r.get("season") != CURRENT_SEASON:
@@ -603,7 +606,19 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) 
                 if 0 < float(df.at[last, "minutes"]) < 90:
                     df.at[last, "inj_skip"] = True
                     df.at[last, "inj_hurt"] = True
-    print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}")
+        # Cautionary rest: back from an injury, a player who used to play the full 90 sits out his first match back
+        # (0 minutes) and then plays the full 90 in both of the next two. That 0 is a rest, not a sign he lost his place.
+        if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
+            mine = df.loc[season & (df["pid"] == r["pid"])].sort_values(["GW", "kickoff_time"])
+            pre = mine[(mine["GW"] < r["startGw"]) & ~mine["inj_skip"]]["minutes"].tail(3)
+            post = mine[mine["GW"] >= r["returnedGw"]]
+            if len(pre) >= 2 and pre.mean() >= 80 and len(post) >= 3:
+                first3 = post["minutes"].to_numpy(float)[:3]
+                if first3[0] == 0 and (first3[1:] >= 85).all():
+                    i = post.index[0]
+                    df.at[i, "inj_skip"] = True
+                    df.at[i, "inj_rest"] = True
+    print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, rests on return: {int(df['inj_rest'].sum())}")
     return df
 
 
@@ -1859,6 +1874,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     why[played.get("yellow_ban", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "b"
     # "h": the match he got hurt in, before a logged injury; "m": a match in an absence the admin added by hand
     why[played.get("inj_hurt", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "h"
+    why[played.get("inj_rest", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "r"
     why[played["minutes"].fillna(0).gt(0) & played.get("inj_skip", pd.Series(False, index=played.index)).fillna(False).astype(bool) & why.eq("")] = "m"
     # "d": flagged doubtful now, the match he got hurt in and the ones since that he missed (see doubtful_minutes)
     cut = res.drop_duplicates("pid").set_index("pid")["flag_cut"] if "flag_cut" in res else pd.Series(dtype=object)
