@@ -79,15 +79,23 @@
       const m = pastMins(p, g);
       if (!m) return el('td', { className: 'past none', textContent: '–' });
       const opp = (p.pastOpp && p.pastOpp[g]) || [];
-      // A 0 for an injury or a ban is shown in red: that match is left out of the formula.
+      // Every match left out of the formula is shown in red, with the reason on hover.
       const why = (p.pastWhy && p.pastWhy[g]) || [];
+      const WHY = {
+        b: 'Banned: left out of the formula',
+        c: 'Sent off in this match: left out of the formula',
+        g: 'Came on for the injured goalkeeper: left out of the formula',
+        i: 'Injured or unavailable: left out of the formula',
+        h: 'Taken off injured in this match: left out of the formula',
+        m: 'In an absence set by the admin: left out of the formula',
+        r: 'Cautionary rest: 0 in his first match back from injury, left out of the formula',
+        d: 'Flagged doubtful: the match he got hurt in, or missed since, left out of the formula',
+      };
       const nums = el('span', {});
       m.forEach((x, i) => {
         if (i) nums.append('+');
         const w = why[i];
-        nums.append(w && Math.round(x) === 0
-          ? el('b', { className: 'out-zero', textContent: '0', title: w === 'b' ? 'Banned: left out of the formula' : 'Injured or unavailable: left out of the formula' })
-          : String(Math.round(x)));
+        nums.append(w ? el('b', { className: 'out-zero', textContent: String(Math.round(x)), title: WHY[w] || 'Left out of the formula' }) : String(Math.round(x)));
       });
       return el('td', { className: 'past' }, nums, opp.length ? el('small', { textContent: opp.join(', ') }) : '');
     });

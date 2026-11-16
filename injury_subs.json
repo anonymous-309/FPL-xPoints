@@ -1,0 +1,942 @@
+{
+"5795363": {
+"round": 1,
+"home": "Arsenal",
+"away": "Coventry City",
+"injured": []
+},
+"5795364": {
+"round": 1,
+"home": "Hull City",
+"away": "Manchester United",
+"injured": [
+{
+"name": "Nobel Mendy",
+"home": true,
+"time": 64
+},
+{
+"name": "Semi Ajayi",
+"home": true,
+"time": 64
+},
+{
+"name": "Lewie Coyle",
+"home": true,
+"time": 70
+}
+]
+},
+"5795365": {
+"round": 1,
+"home": "Everton",
+"away": "Crystal Palace",
+"injured": [
+{
+"name": "Chadi Riad",
+"home": false,
+"time": 72
+}
+]
+},
+"5795366": {
+"round": 1,
+"home": "Ipswich Town",
+"away": "Sunderland",
+"injured": [
+{
+"name": "Julio Enciso",
+"home": true,
+"time": 71
+}
+]
+},
+"5795367": {
+"round": 1,
+"home": "Nottingham Forest",
+"away": "Leeds United",
+"injured": []
+},
+"5795368": {
+"round": 1,
+"home": "Brentford",
+"away": "Tottenham Hotspur",
+"injured": []
+},
+"5795369": {
+"round": 1,
+"home": "Brighton & Hove Albion",
+"away": "Aston Villa",
+"injured": []
+},
+"5795370": {
+"round": 1,
+"home": "Manchester City",
+"away": "AFC Bournemouth",
+"injured": [
+{
+"name": "Elliot Anderson",
+"home": true,
+"time": 63
+}
+]
+},
+"5795371": {
+"round": 1,
+"home": "Newcastle United",
+"away": "Liverpool",
+"injured": []
+},
+"5795372": {
+"round": 1,
+"home": "Fulham",
+"away": "Chelsea",
+"injured": []
+},
+"5795429": {
+"round": 2,
+"home": "Crystal Palace",
+"away": "Manchester City",
+"injured": []
+},
+"5795431": {
+"round": 2,
+"home": "Liverpool",
+"away": "Nottingham Forest",
+"injured": []
+},
+"5795425": {
+"round": 2,
+"home": "AFC Bournemouth",
+"away": "Everton",
+"injured": []
+},
+"5795428": {
+"round": 2,
+"home": "Coventry City",
+"away": "Hull City",
+"injured": []
+},
+"5795434": {
+"round": 2,
+"home": "Tottenham Hotspur",
+"away": "Newcastle United",
+"injured": []
+},
+"5795427": {
+"round": 2,
+"home": "Chelsea",
+"away": "Brighton & Hove Albion",
+"injured": [
+{
+"name": "Moisés Caicedo",
+"home": true,
+"time": 82
+}
+]
+},
+"5795430": {
+"round": 2,
+"home": "Leeds United",
+"away": "Brentford",
+"injured": [
+{
+"name": "Joe Rodon",
+"home": true,
+"time": 34
+}
+]
+},
+"5795433": {
+"round": 2,
+"home": "Sunderland",
+"away": "Fulham",
+"injured": [
+{
+"name": "Habib Diarra",
+"home": true,
+"time": 83
+}
+]
+},
+"5795432": {
+"round": 2,
+"home": "Manchester United",
+"away": "Ipswich Town",
+"injured": []
+},
+"5795426": {
+"round": 2,
+"home": "Aston Villa",
+"away": "Arsenal",
+"injured": [
+{
+"name": "Cristhian Mosquera",
+"home": false,
+"time": 79
+}
+]
+},
+"5795441": {
+"round": 3,
+"home": "Ipswich Town",
+"away": "Liverpool",
+"injured": []
+},
+"5795443": {
+"round": 3,
+"home": "Newcastle United",
+"away": "AFC Bournemouth",
+"injured": []
+},
+"5795436": {
+"round": 3,
+"home": "Brentford",
+"away": "Sunderland",
+"injured": [
+{
+"name": "Nathan Collins",
+"home": true,
+"time": 17
+}
+]
+},
+"5795437": {
+"round": 3,
+"home": "Brighton & Hove Albion",
+"away": "Leeds United",
+"injured": []
+},
+"5795439": {
+"round": 3,
+"home": "Fulham",
+"away": "Crystal Palace",
+"injured": []
+},
+"5795442": {
+"round": 3,
+"home": "Manchester City",
+"away": "Coventry City",
+"injured": [
+{
+"name": "Iliman Ndiaye",
+"home": true,
+"time": 87
+}
+]
+},
+"5795444": {
+"round": 3,
+"home": "Nottingham Forest",
+"away": "Tottenham Hotspur",
+"injured": [
+{
+"name": "Murillo",
+"home": true,
+"time": 90
+}
+]
+},
+"5795440": {
+"round": 3,
+"home": "Hull City",
+"away": "Aston Villa",
+"injured": []
+},
+"5795438": {
+"round": 3,
+"home": "Everton",
+"away": "Manchester United",
+"injured": [
+{
+"name": "James Garner",
+"home": true,
+"time": 77
+}
+]
+},
+"5795435": {
+"round": 3,
+"home": "Arsenal",
+"away": "Chelsea",
+"injured": []
+},
+"5795445": {
+"round": 4,
+"home": "AFC Bournemouth",
+"away": "Brentford",
+"injured": [
+{
+"name": "Tyler Adams",
+"home": true,
+"time": 82
+}
+]
+},
+"5795446": {
+"round": 4,
+"home": "Aston Villa",
+"away": "Nottingham Forest",
+"injured": [
+{
+"name": "Pau Torres",
+"home": true,
+"time": 25
+}
+]
+},
+"5795447": {
+"round": 4,
+"home": "Chelsea",
+"away": "Hull City",
+"injured": [
+{
+"name": "Nobel Mendy",
+"home": false,
+"time": 59
+},
+{
+"name": "Malo Gusto",
+"home": true,
+"time": 78
+}
+]
+},
+"5795449": {
+"round": 4,
+"home": "Crystal Palace",
+"away": "Ipswich Town",
+"injured": [
+{
+"name": "Emersonn",
+"home": false,
+"time": 63
+}
+]
+},
+"5795451": {
+"round": 4,
+"home": "Liverpool",
+"away": "Fulham",
+"injured": []
+},
+"5795454": {
+"round": 4,
+"home": "Tottenham Hotspur",
+"away": "Everton",
+"injured": []
+},
+"5795453": {
+"round": 4,
+"home": "Sunderland",
+"away": "Arsenal",
+"injured": [
+{
+"name": "Ben White",
+"home": false,
+"time": 46
+}
+]
+},
+"5795448": {
+"round": 4,
+"home": "Coventry City",
+"away": "Brighton & Hove Albion",
+"injured": [
+{
+"name": "Frank Onyeka",
+"home": true,
+"time": 73
+}
+]
+},
+"5795452": {
+"round": 4,
+"home": "Manchester United",
+"away": "Manchester City",
+"injured": []
+},
+"5795450": {
+"round": 4,
+"home": "Leeds United",
+"away": "Newcastle United",
+"injured": [
+{
+"name": "Nico González",
+"home": false,
+"time": 19
+}
+]
+},
+"5795456": {
+"round": 5,
+"home": "Brentford",
+"away": "Chelsea",
+"injured": []
+},
+"5795464": {
+"round": 5,
+"home": "Tottenham Hotspur",
+"away": "Aston Villa",
+"injured": [
+{
+"name": "Pedro Porro",
+"home": true,
+"time": 19
+}
+]
+},
+"5795457": {
+"round": 5,
+"home": "Brighton & Hove Albion",
+"away": "Arsenal",
+"injured": []
+},
+"5795458": {
+"round": 5,
+"home": "Everton",
+"away": "Ipswich Town",
+"injured": [
+{
+"name": "Emersonn",
+"home": false,
+"time": 81
+}
+]
+},
+"5795462": {
+"round": 5,
+"home": "Newcastle United",
+"away": "Hull City",
+"injured": [
+{
+"name": "Sean Steur",
+"home": true,
+"time": 66
+},
+{
+"name": "Matias Fernandez-Pardo",
+"home": true,
+"time": 74
+}
+]
+},
+"5795463": {
+"round": 5,
+"home": "Nottingham Forest",
+"away": "Coventry City",
+"injured": []
+},
+"5795455": {
+"round": 5,
+"home": "AFC Bournemouth",
+"away": "Liverpool",
+"injured": []
+},
+"5795460": {
+"round": 5,
+"home": "Leeds United",
+"away": "Crystal Palace",
+"injured": []
+},
+"5795461": {
+"round": 5,
+"home": "Manchester City",
+"away": "Sunderland",
+"injured": []
+},
+"5795459": {
+"round": 5,
+"home": "Fulham",
+"away": "Manchester United",
+"injured": []
+},
+"5795465": {
+"round": 6,
+"home": "Arsenal",
+"away": "Leeds United",
+"injured": []
+},
+"5795466": {
+"round": 6,
+"home": "Aston Villa",
+"away": "Brentford",
+"injured": [
+{
+"name": "Kevin Schade",
+"home": false,
+"time": 52
+}
+]
+},
+"5795467": {
+"round": 6,
+"home": "Chelsea",
+"away": "AFC Bournemouth",
+"injured": []
+},
+"5795471": {
+"round": 6,
+"home": "Ipswich Town",
+"away": "Fulham",
+"injured": []
+},
+"5795474": {
+"round": 6,
+"home": "Sunderland",
+"away": "Brighton & Hove Albion",
+"injured": [
+{
+"name": "Thomas Meunier",
+"home": true,
+"time": 34
+}
+]
+},
+"5795473": {
+"round": 6,
+"home": "Manchester United",
+"away": "Tottenham Hotspur",
+"injured": []
+},
+"5795469": {
+"round": 6,
+"home": "Crystal Palace",
+"away": "Nottingham Forest",
+"injured": []
+},
+"5795470": {
+"round": 6,
+"home": "Hull City",
+"away": "Everton",
+"injured": []
+},
+"5795472": {
+"round": 6,
+"home": "Liverpool",
+"away": "Manchester City",
+"injured": []
+},
+"5795468": {
+"round": 6,
+"home": "Coventry City",
+"away": "Newcastle United",
+"injured": [
+{
+"name": "Bazoumana Touré",
+"home": false,
+"time": 90
+}
+]
+},
+"5795478": {
+"round": 7,
+"home": "Everton",
+"away": "Chelsea",
+"injured": [
+{
+"name": "Emiliano Martínez",
+"home": false,
+"time": 75
+}
+]
+},
+"5795476": {
+"round": 7,
+"home": "Brentford",
+"away": "Liverpool",
+"injured": [
+{
+"name": "Dominik Szoboszlai",
+"home": false,
+"time": 32
+},
+{
+"name": "Jeremie Frimpong",
+"home": false,
+"time": 52
+}
+]
+},
+"5795479": {
+"round": 7,
+"home": "Fulham",
+"away": "Hull City",
+"injured": [
+{
+"name": "Oscar Bobb",
+"home": true,
+"time": 78
+},
+{
+"name": "Joshua King",
+"home": true,
+"time": 78
+}
+]
+},
+"5795481": {
+"round": 7,
+"home": "Manchester City",
+"away": "Ipswich Town",
+"injured": [
+{
+"name": "Mateo Kovačić",
+"home": true,
+"time": 50
+},
+{
+"name": "Matheus Nunes",
+"home": true,
+"time": 76
+}
+]
+},
+"5795482": {
+"round": 7,
+"home": "Newcastle United",
+"away": "Aston Villa",
+"injured": [
+{
+"name": "Aaron Wan-Bissaka",
+"home": false,
+"time": 77
+}
+]
+},
+"5795475": {
+"round": 7,
+"home": "AFC Bournemouth",
+"away": "Sunderland",
+"injured": [
+{
+"name": "Chris Rigg",
+"home": false,
+"time": 65
+}
+]
+},
+"5795477": {
+"round": 7,
+"home": "Brighton & Hove Albion",
+"away": "Crystal Palace",
+"injured": []
+},
+"5795480": {
+"round": 7,
+"home": "Leeds United",
+"away": "Manchester United",
+"injured": []
+},
+"5795483": {
+"round": 7,
+"home": "Nottingham Forest",
+"away": "Arsenal",
+"injured": []
+},
+"5795484": {
+"round": 7,
+"home": "Tottenham Hotspur",
+"away": "Coventry City",
+"injured": [
+{
+"name": "Andrew Robertson",
+"home": true,
+"time": 69
+},
+{
+"name": "Tosin Adarabioyo",
+"home": true,
+"time": 71
+},
+{
+"name": "Omar Marmoush",
+"home": true,
+"time": 87
+}
+]
+},
+"5795491": {
+"round": 8,
+"home": "Ipswich Town",
+"away": "Nottingham Forest",
+"injured": [
+{
+"name": "Neco Williams",
+"home": false,
+"time": 84
+}
+]
+},
+"5795486": {
+"round": 8,
+"home": "Aston Villa",
+"away": "Manchester City",
+"injured": []
+},
+"5795485": {
+"round": 8,
+"home": "Arsenal",
+"away": "Everton",
+"injured": [
+{
+"name": "Vitaliy Mykolenko",
+"home": false,
+"time": 74
+}
+]
+},
+"5795488": {
+"round": 8,
+"home": "Coventry City",
+"away": "Fulham",
+"injured": [
+{
+"name": "Bobby Thomas",
+"home": true,
+"time": 60
+}
+]
+},
+"5795487": {
+"round": 8,
+"home": "Chelsea",
+"away": "Tottenham Hotspur",
+"injured": [
+{
+"name": "James Maddison",
+"home": false,
+"time": 51
+}
+]
+},
+"5795489": {
+"round": 8,
+"home": "Crystal Palace",
+"away": "Newcastle United",
+"injured": []
+},
+"5795490": {
+"round": 8,
+"home": "Hull City",
+"away": "Brentford",
+"injured": []
+},
+"5795492": {
+"round": 8,
+"home": "Liverpool",
+"away": "Brighton & Hove Albion",
+"injured": [
+{
+"name": "Ferdi Kadıoğlu",
+"home": false,
+"time": 6
+},
+{
+"name": "Chema Andrés",
+"home": false,
+"time": 54
+},
+{
+"name": "Florian Wirtz",
+"home": true,
+"time": 65
+}
+]
+},
+"5795493": {
+"round": 8,
+"home": "Manchester United",
+"away": "AFC Bournemouth",
+"injured": []
+},
+"5795494": {
+"round": 8,
+"home": "Sunderland",
+"away": "Leeds United",
+"injured": [
+{
+"name": "Nordi Mukiele",
+"home": true,
+"time": 52
+}
+]
+},
+"5795498": {
+"round": 9,
+"home": "Chelsea",
+"away": "Manchester United",
+"injured": [
+{
+"name": "Amad Diallo",
+"home": false,
+"time": 77
+}
+]
+},
+"5795495": {
+"round": 9,
+"home": "AFC Bournemouth",
+"away": "Leeds United",
+"injured": []
+},
+"5795497": {
+"round": 9,
+"home": "Brentford",
+"away": "Nottingham Forest",
+"injured": []
+},
+"5795499": {
+"round": 9,
+"home": "Coventry City",
+"away": "Sunderland",
+"injured": []
+},
+"5795500": {
+"round": 9,
+"home": "Hull City",
+"away": "Ipswich Town",
+"injured": []
+},
+"5795502": {
+"round": 9,
+"home": "Manchester City",
+"away": "Brighton & Hove Albion",
+"injured": []
+},
+"5795504": {
+"round": 9,
+"home": "Tottenham Hotspur",
+"away": "Crystal Palace",
+"injured": []
+},
+"5795496": {
+"round": 9,
+"home": "Aston Villa",
+"away": "Fulham",
+"injured": []
+},
+"5795501": {
+"round": 9,
+"home": "Liverpool",
+"away": "Arsenal",
+"injured": []
+},
+"5795503": {
+"round": 9,
+"home": "Newcastle United",
+"away": "Everton",
+"injured": [
+{
+"name": "Jarrad Branthwaite",
+"home": false,
+"time": 82
+}
+]
+},
+"5795508": {
+"round": 10,
+"home": "Everton",
+"away": "Coventry City",
+"injured": []
+},
+"5795511": {
+"round": 10,
+"home": "Leeds United",
+"away": "Tottenham Hotspur",
+"injured": [
+{
+"name": "Mathys Tel",
+"home": false,
+"time": 43
+}
+]
+},
+"5795505": {
+"round": 10,
+"home": "Arsenal",
+"away": "Hull City",
+"injured": [
+{
+"name": "Semi Ajayi",
+"home": false,
+"time": 69
+},
+{
+"name": "Elliot Stroud",
+"home": false,
+"time": 75
+}
+]
+},
+"5795509": {
+"round": 10,
+"home": "Fulham",
+"away": "Newcastle United",
+"injured": [
+{
+"name": "Joshua King",
+"home": true,
+"time": 72
+},
+{
+"name": "Malick Thiaw",
+"home": false,
+"time": 85
+}
+]
+},
+"5795513": {
+"round": 10,
+"home": "Nottingham Forest",
+"away": "Manchester City",
+"injured": []
+},
+"5795506": {
+"round": 10,
+"home": "Brighton & Hove Albion",
+"away": "Brentford",
+"injured": []
+},
+"5795507": {
+"round": 10,
+"home": "Crystal Palace",
+"away": "Liverpool",
+"injured": []
+},
+"5795510": {
+"round": 10,
+"home": "Ipswich Town",
+"away": "AFC Bournemouth",
+"injured": []
+},
+"5795514": {
+"round": 10,
+"home": "Sunderland",
+"away": "Chelsea",
+"injured": [
+{
+"name": "Granit Xhaka",
+"home": true,
+"time": 4
+},
+{
+"name": "Brian Brobbey",
+"home": true,
+"time": 67
+}
+]
+},
+"5795512": {
+"round": 10,
+"home": "Manchester United",
+"away": "Aston Villa",
+"injured": [
+{
+"name": "Harry Maguire",
+"home": true,
+"time": 46
+}
+]
+}
+}
