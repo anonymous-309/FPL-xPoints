@@ -1643,9 +1643,9 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
 
 
 def goalkeeper_cover(target: pd.DataFrame) -> pd.DataFrame:
-    """Only one goalkeeper plays. When a team's first-choice goalkeeper is out and expected back (minutes taken from
-    before his absence, 60+ usual), the stand-in's share of a match is cut by the starter's: 0 once the starter is
-    fully back, half in a match where the starter is expected to play half."""
+    """Only one goalkeeper plays. When a team's first-choice goalkeeper is out or flagged and expected back (60+
+    usual minutes when fit), the stand-in's share of a match is cut by the starter's: 0 once the starter is fully
+    back, a quarter where the starter is 75% to play, half where he is expected to play half."""
     t = target.copy()
     if "position" not in t or "from_return" not in t:
         return t
@@ -1653,7 +1653,9 @@ def goalkeeper_cover(target: pd.DataFrame) -> pd.DataFrame:
     gk = t["position"] == "GK"
     cut = 0
     for team, g in t[gk].groupby("team"):
-        starters = g.loc[g["from_return"].fillna(False).astype(bool) & (usual[g.index] >= 60), "pid"].unique()
+        # the first choice: out or flagged now (absent, doubtful, back from an absence), 60+ usual minutes when fit
+        away = g["from_return"].fillna(False).astype(bool) | g["status"].fillna("a").isin(["d", "i", "s", "n"])
+        starters = g.loc[away & (usual[g.index] >= 60), "pid"].unique()
         for sp in starters:
             share = g[g["pid"] == sp].set_index("fixture")["avail"].fillna(0.0)
             share = share[~share.index.duplicated()]
