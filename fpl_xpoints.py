@@ -1665,9 +1665,7 @@ def euro_rotation_rates(hist: pd.DataFrame, current: str = CURRENT_SEASON) -> tu
 
 
 def european_rotation(target: pd.DataFrame, df: pd.DataFrame, cache: Path, offline: bool) -> pd.DataFrame:
-    """Upcoming league matches just after a European match: availability scaled by the player's rate (his own,
-    pulled to his team's and the league's). Other matches of a team in Europe get the matching small lift, so that
-    over a season his minutes stay where his recent average puts them."""
+    """Flags upcoming league matches that come just after a European match (shown on the Minutes page)."""
     target = target.copy()
     seasons = sorted(set(df["season"].dropna().astype(str)) | {CURRENT_SEASON})
     try:
@@ -1683,26 +1681,13 @@ def european_rotation(target: pd.DataFrame, df: pd.DataFrame, cache: Path, offli
     players, teams, league, tab = euro_rotation_rates(hist)
     flags = euro_flags(target, euro)
     target["euro_gap"], target["euro_comp"] = flags["euro_gap"], flags["euro_comp"]
-    in_europe = set(euro.loc[euro["season"] == CURRENT_SEASON, "team"])
     post = target["euro_gap"].notna()
-    rate = target["pid"].map(lambda p: players.get(p, (np.nan, 0))[0])
-    rate = rate.fillna(target["team"].map(teams)).fillna(league)
-    # share of a team's league matches that come just after a European match this season
-    share = {}
-    cur = hist[(hist["season"] == CURRENT_SEASON)].drop_duplicates(["team", "fixture"])
-    for team in in_europe:
-        t = cur[cur["team"] == team]
-        share[team] = float(t["euro_gap"].notna().mean()) if len(t) else 0.3
-    s = target["team"].map(share).fillna(0.0)
-    lift = ((1 - s * rate) / (1 - s).clip(lower=0.2)).clip(1.0, 1.15)
-    factor = np.where(post, rate, np.where(target["team"].isin(in_europe), lift, 1.0))
-    target["euro_factor"] = factor
-    target["avail"] = target["avail"].fillna(1.0) * factor
-    note = np.where(post, target["euro_comp"].astype(str) + " " + target["euro_gap"].round(0).astype("Int64").astype(str) + " days before: minutes x" + pd.Series(rate, index=target.index).round(2).astype(str), "")
-    old = target["min_note"].fillna("") if "min_note" in target else pd.Series("", index=target.index)
-    target["min_note"] = np.where(post & (old != ""), old + "; " + note, np.where(post, note, old))
-    print(f"European weeks: league-wide minutes after a European match x{league:.3f}; {int(post.sum())} upcoming player matches adjusted; "
-          + ", ".join(f"{t} x{teams.get(t, league):.2f}" for t in sorted(in_europe)))
+    # Shown only: measured over 2023-27, minutes in these matches were about the same as usual (x0.996), and scaling
+    # them made the forecasts slightly worse (see euro-check), so xMin is not changed.
+    days = target["euro_gap"].round(0).astype("Int64").astype(str)
+    target["euro_note"] = np.where(post, target["euro_comp"].astype(str) + " " + days + "d", "")
+    print(f"European weeks: {target.loc[post].drop_duplicates(['team', 'fixture']).shape[0]} upcoming league matches just after a European match flagged "
+          f"(league-wide minutes in such matches x{league:.3f} of usual; not applied)")
     return target
 
 
@@ -1802,7 +1787,10 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     target = doubtful_minutes(target, df)
     target = admin_minutes(target)
     target = manual_absences(target, load_admin_injuries())
-    target = european_rotation(target, df, cache, offline)
+    try:
+        target = european_rotation(target, df, cache, offline)
+    except Exception as e:  # a display flag only: never stop the site for it
+        print(f"European weeks not flagged ({e})")
     target["pen_cond"] = penalty_shares(target)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res
@@ -1897,6 +1885,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g.setdefault("fx", []).append(int(r["fixture"]))
         g.setdefault("pc", []).append(round(float(r["pen_cond_used"]), 4))
         g.setdefault("tp", []).append(round(float(r["team_pens"]), 4))
+        if isinstance(r.get("euro_note"), str) and r["euro_note"]:
+            g.setdefault("euro", []).append(r["euro_note"])  # e.g. "UCL 3d": a European match 3 days before
         for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "penmiss", "own", "defcon", "cards"):
             g["full"][name] = round(g["full"].get(name, 0.0) + float(r[f"full_{name}"]), 3)
         g["full"]["xg"] = round(g["full"].get("xg", 0.0) + float(r["g90"]), 3)

@@ -346,3 +346,5 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .route-moves .itb { display: block; color: var(--muted, #667); font-size: 0.78em; }
 .route-moves .itb.tight { color: #b45309; font-weight: 600; }
 .warn-note { color: #b45309; }
+
+.euro-tag { display: block; color: #1d4ed8; font-weight: 600; font-size: 0.72em; letter-spacing: 0.02em; }
