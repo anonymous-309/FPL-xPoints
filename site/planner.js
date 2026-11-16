@@ -352,7 +352,7 @@
     const groups = [];
     if (week0Chip) groups.push({ count: null, n: 3 });
     else planCounts(state.team.ft, forcedN).forEach(([k, n]) => groups.push({ count: k, n }));
-    let planned = groups.reduce((a, g) => a + g.n, 0);
+    let planned = groups.reduce((a, g) => a + g.n, 0) + (depth > 1 && !week0Chip ? 1 : 0);
     let done = 0;
     const progress = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }),
       el('div', { className: 'progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(planned), 'aria-valuenow': String(done) }, el('span', { style: `width:${Math.round((100 * done) / planned)}%` })));
@@ -393,37 +393,15 @@
           options.push({ t: 0, opt, sol, count: g.count, rank: r + 1, roll: g.count !== null && g.count === forcedN });
           cuts.push(opt);
         }
+        // Saving now: a second branch with different moves next gameweek, so one strong move there does not hide
+        // the rest.
+        const save = options.find((o) => o.roll && o.count === g.count && o.rank === 1);
+        if (save && g.count === forcedN && depth > 1) {
+          const sol = await solveWith({ count: [{ t: 0, n: g.count }], cut: [S.option(save.sol.input, save.sol.values, 1)] });
+          if (sol) options.push({ t: 0, opt: S.option(sol.input, sol.values, 0), sol, count: g.count, rank: 2, roll: true });
+        }
       }
       if (!options.length) throw new Error(skipped ? 'The solver ran out of memory on this device. Try fewer gameweeks to plan.' : 'No plan fits these settings (check the players to keep and the chips).');
-      // Good long-term moves no plan makes (each plan only takes the best moves under its own transfer count, so a
-      // strong move can be crowded out every week): the 2 best by expected points over the whole horizon, each
-      // weighed like the plans, are each made the core of one more plan, done in whichever transfer week suits.
-      if (!week0Chip) {
-        const bought = new Set(options.flatMap((o) => o.sol.weeks.slice(0, depth).flatMap((w) => w.ins)));
-        const sold = new Set(options.flatMap((o) => o.sol.weeks.slice(0, depth).flatMap((w) => w.outs)));
-        const dsum = (p) => p.xp.reduce((a, x, t) => a + Math.pow(PLAN.decay, t) * x, 0);
-        const owned = P.map((p, i) => i).filter((i) => P[i].owned);
-        const cands = [];
-        owned.forEach((o) => P.forEach((p, i) => {
-          if (p.owned || p.position !== P[o].position || bought.has(i) || base.avoid.includes(i) || base.keep.includes(o)) return;
-          if (p.price > (P[o].sell ?? P[o].price) + state.team.bank + 0.5) return;
-          cands.push({ o, i, gain: dsum(p) - dsum(P[o]) });
-        }));
-        cands.sort((a, b) => b.gain - a.gain);
-        const picked = [];
-        for (const c of cands) {
-          if (picked.length >= 2) break;
-          if (picked.some((x) => x.i === c.i || x.o === c.o) || c.gain < 2) continue;
-          picked.push(c);
-        }
-        for (const c of picked) {
-          planned++;
-          const sol = await solveWith({ mustMove: [{ buy: c.i, sell: c.o }] });
-          if (!sol) continue;
-          const opt = S.option(sol.input, sol.values, 0);
-          options.push({ t: 0, opt, sol, count: null, rank: 1, explore: `${P[c.o].name} → ${P[c.i].name}`, notNow: !sold.has(c.o) });
-        }
-      }
       const wt = (t) => Math.pow(PLAN.decay, t);
       options.forEach((o) => {
         o.pts = planPts(o.sol);
@@ -567,7 +545,7 @@
   function optionsView(P, options, gws) {
     const depth = state.plan.depth;
     const bestT = Math.max(...options.map((o) => o.total)), bestWin = Math.max(...options.map((o) => o.win));
-    const label = (o) => (o.explore ? `With ${o.explore}` : o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
+    const label = (o) => (o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
       : o.roll ? (o.count ? 'Forced only' : 'Save') : o.count > state.team.ft ? `${state.team.ft} FT + ${o.count - state.team.ft} hit` : `${o.count} FT`);
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[b].price - P[a].price;
@@ -608,7 +586,7 @@
           el('th', { scope: 'col', className: 'num', textContent: 'Cost' }), el('th', { scope: 'col', className: 'num', textContent: 'FT kept' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. "With A → B": a move with high expected points over the whole plan that none of the other plans makes (crowded out by better moves each week), made the core of a plan of its own, in whichever transfer week suits it best. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
+      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. Save #2: saving now as well, with different moves in the next gameweek than Save. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
