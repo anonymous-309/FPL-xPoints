@@ -1545,6 +1545,206 @@ def penalty_shares(target: pd.DataFrame) -> np.ndarray:
     return out
 
 
+# ---------------------------------------------------------------- European weeks
+# Clubs in the Champions League, Europa League or Conference League rest players in the league match just after a
+# European match. Fixture lists come from fixturedownload.com (one JSON feed per competition and season).
+EURO_COMPS = {"champions-league": "UCL", "europa-league": "UEL", "conference-league": "UECL"}
+EURO_FEED = "https://fixturedownload.com/feed/json/{comp}-{year}"
+EURO_DAYS = 4.5           # a league match up to this many days after a European match counts as "just after"
+EURO_K_PLAYER = 6.0       # post-European matches a player needs before his own rate counts as much as his team's
+EURO_K_TEAM = 10.0        # the same for a team against the league-wide rate
+EURO_SEASON_W = {0: 1.0, 1: 0.5, 2: 0.25}  # weight by seasons back from the current one
+# Names in the fixture feeds of English clubs (lower case, no punctuation) -> FPL team names.
+EURO_ALIASES = {
+    "arsenal": "Arsenal", "aston villa": "Aston Villa", "chelsea": "Chelsea", "liverpool": "Liverpool",
+    "man city": "Man City", "manchester city": "Man City", "man utd": "Man Utd", "man united": "Man Utd", "manchester united": "Man Utd",
+    "newcastle": "Newcastle", "newcastle united": "Newcastle", "newcastle utd": "Newcastle", "tottenham": "Spurs", "tottenham hotspur": "Spurs", "spurs": "Spurs",
+    "brighton": "Brighton", "brighton  hove albion": "Brighton", "brighton and hove albion": "Brighton", "west ham": "West Ham", "west ham united": "West Ham",
+    "nottm forest": "Nott'm Forest", "nott m forest": "Nott'm Forest", "nottingham forest": "Nott'm Forest", "nott forest": "Nott'm Forest", "crystal palace": "Crystal Palace",
+    "fulham": "Fulham", "brentford": "Brentford", "bournemouth": "Bournemouth", "afc bournemouth": "Bournemouth", "everton": "Everton",
+    "wolves": "Wolves", "wolverhampton": "Wolves", "wolverhampton wanderers": "Wolves", "leeds": "Leeds", "leeds united": "Leeds",
+    "sunderland": "Sunderland", "leicester": "Leicester", "leicester city": "Leicester", "southampton": "Southampton", "burnley": "Burnley",
+    "ipswich": "Ipswich", "ipswich town": "Ipswich", "hull": "Hull", "hull city": "Hull", "coventry": "Coventry", "coventry city": "Coventry",
+}
+
+
+def _euro_key(name: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z ]", " ", (name or "").lower().replace("&", " "))).strip()
+
+
+def euro_fixtures(cache: Path, seasons: list[str], offline: bool) -> pd.DataFrame:
+    """European matches of English clubs: team (FPL name), kickoff (UTC), competition. Cached for a day."""
+    rows = []
+    for season in seasons:
+        year = int(season[:4])
+        for comp, short in EURO_COMPS.items():
+            f = cache / f"euro_{comp}_{year}.json"
+            fresh = f.exists() and (season != CURRENT_SEASON or time.time() - f.stat().st_mtime < 86400)
+            data = None
+            if offline or fresh:
+                data = json.loads(f.read_text()) if f.exists() else None
+            else:
+                try:
+                    data = json.loads(_get(EURO_FEED.format(comp=comp, year=year)))
+                    cache.mkdir(parents=True, exist_ok=True)
+                    f.write_text(json.dumps(data))
+                except (urllib.error.URLError, ValueError, OSError) as e:
+                    print(f"European fixtures {comp} {year} not read ({e})")
+                    data = json.loads(f.read_text()) if f.exists() else None
+            for m in data or []:
+                for side in ("HomeTeam", "AwayTeam"):
+                    team = EURO_ALIASES.get(_euro_key(m.get(side)))
+                    if team and m.get("DateUtc"):
+                        rows.append({"team": team, "euro_time": pd.Timestamp(m["DateUtc"].replace("Z", "+00:00")), "comp": short, "season": season})
+    out = pd.DataFrame(rows, columns=["team", "euro_time", "comp", "season"]).drop_duplicates(["team", "euro_time"])
+    if len(out):
+        out["euro_time"] = pd.to_datetime(out["euro_time"], utc=True)
+    return out
+
+
+def euro_flags(df: pd.DataFrame, euro: pd.DataFrame) -> pd.DataFrame:
+    """For each league match: days since the team's last European match ("euro_gap", NaN if none within EURO_DAYS),
+    and which competition."""
+    out = pd.DataFrame(index=df.index, data={"euro_gap": np.nan, "euro_comp": ""})
+    if euro.empty:
+        return out
+    kick = pd.to_datetime(df["kickoff_time"], utc=True, errors="coerce", format="ISO8601")
+    for team, g in euro.groupby("team"):
+        times = np.sort(g["euro_time"].values.astype("datetime64[ns]"))
+        comps = g.sort_values("euro_time")["comp"].to_numpy()
+        rows = df.index[(df["team"] == team).to_numpy() & kick.notna().to_numpy()]
+        if not len(rows):
+            continue
+        k = kick.loc[rows].dt.tz_convert(None).values.astype("datetime64[ns]")
+        j = np.searchsorted(times, k, side="left") - 1
+        ok = j >= 0
+        gap = np.full(len(rows), np.nan)
+        gap[ok] = (k[ok] - times[j[ok]]) / np.timedelta64(1, "h") / 24
+        hit = ok & (gap > 0) & (gap <= EURO_DAYS)
+        out.loc[rows[hit], "euro_gap"] = gap[hit]
+        out.loc[rows[hit], "euro_comp"] = comps[j[hit]]
+    return out
+
+
+def euro_rotation_rates(hist: pd.DataFrame, current: str = CURRENT_SEASON) -> tuple[dict, dict, float, pd.DataFrame]:
+    """Minutes in the league match just after a European match, against the player's usual minutes that season.
+
+    Only players who usually play (30+ minutes a match in the season, counting matches he was available for) and
+    seasons when the team was in Europe. Returns player rates (pid -> (rate, matches)), team rates, the league-wide
+    rate, and the per player-season table."""
+    h = hist[hist["minutes"].notna()].copy()
+    if "inj_skip" in h:
+        h = h[~h["inj_skip"].fillna(False).astype(bool)]
+    h["post"] = h["euro_gap"].notna()
+    seasons_in_europe = h.groupby(["season", "team"])["post"].transform("any")
+    h = h[seasons_in_europe]
+    g = h.groupby(["pid", "season", "team"])
+    tab = g.agg(m_all=("minutes", "mean"), n=("minutes", "size")).reset_index()
+    post = h[h["post"]].groupby(["pid", "season", "team"]).agg(m_post=("minutes", "mean"), n_post=("minutes", "size")).reset_index()
+    tab = tab.merge(post, on=["pid", "season", "team"], how="inner")
+    tab = tab[(tab["m_all"] >= 30) & (tab["n"] >= 8)]
+    if tab.empty:
+        return {}, {}, 1.0, tab
+    order = sorted(set(tab["season"]) | {current})
+    back = {s: len(order) - 1 - order.index(s) for s in order}
+    tab["w"] = tab["season"].map(lambda s: EURO_SEASON_W.get(back[s], 0.0)) * tab["n_post"]
+    tab["ratio"] = tab["m_post"] / tab["m_all"]
+    tab = tab[tab["w"] > 0]
+    league = float((tab["ratio"] * tab["w"]).sum() / tab["w"].sum())
+    teams = {}
+    for team, t in tab.groupby("team"):
+        w = t["w"].sum()
+        teams[team] = float(((t["ratio"] * t["w"]).sum() + EURO_K_TEAM * league) / (w + EURO_K_TEAM))
+    players = {}
+    for pid, t in tab.groupby("pid"):
+        team = t.sort_values("season")["team"].iloc[-1]
+        w = t["w"].sum()
+        base = teams.get(team, league)
+        players[pid] = (float(((t["ratio"] * t["w"]).sum() + EURO_K_PLAYER * base) / (w + EURO_K_PLAYER)), float(t["n_post"].sum()))
+    return players, teams, league, tab
+
+
+def european_rotation(target: pd.DataFrame, df: pd.DataFrame, cache: Path, offline: bool) -> pd.DataFrame:
+    """Flags upcoming league matches that come just after a European match (shown on the Minutes page)."""
+    target = target.copy()
+    seasons = sorted(set(df["season"].dropna().astype(str)) | {CURRENT_SEASON})
+    try:
+        euro = euro_fixtures(cache, seasons, offline)
+    except Exception as e:  # never stop the site for this
+        print(f"European fixtures not used ({e})")
+        return target
+    if euro.empty:
+        print("European fixtures: none found")
+        return target
+    hist = df[~df["future"]].copy()
+    hist = hist.join(euro_flags(hist, euro))
+    players, teams, league, tab = euro_rotation_rates(hist)
+    flags = euro_flags(target, euro)
+    target["euro_gap"], target["euro_comp"] = flags["euro_gap"], flags["euro_comp"]
+    post = target["euro_gap"].notna()
+    # Shown only: measured over 2023-27, minutes in these matches were about the same as usual (x0.996), and scaling
+    # them made the forecasts slightly worse (see euro-check), so xMin is not changed.
+    days = target["euro_gap"].round(0).astype("Int64").astype(str)
+    target["euro_note"] = np.where(post, target["euro_comp"].astype(str) + " " + days + "d", "")
+    print(f"European weeks: {target.loc[post].drop_duplicates(['team', 'fixture']).shape[0]} upcoming league matches just after a European match flagged "
+          f"(league-wide minutes in such matches x{league:.3f} of usual; not applied)")
+    return target
+
+
+def euro_check(data_dir: Path, seasons: list[str], offline: bool) -> None:
+    """How much minutes drop in the league match after a European match, by season and team, and whether the rates
+    from earlier seasons predict the next season's better than no change."""
+    cache = data_dir / "api_cache"
+    hist, fut, first = live_frames(cache, offline, 1)
+    old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
+    df = clean(pd.concat([old, hist, fut], ignore_index=True), seasons + [CURRENT_SEASON])
+    log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
+    df = mark_injuries(df, log, load_admin_injuries())
+    all_seasons = seasons + [CURRENT_SEASON]
+    euro = euro_fixtures(cache, all_seasons, offline)
+    print(f"European matches of English clubs found: {len(euro)}")
+    print(euro.groupby(["season", "comp"])["team"].apply(lambda x: ", ".join(sorted(set(x)))).to_string())
+    names = set()
+    for fpath in cache.glob("euro_*.json"):
+        for m in json.loads(fpath.read_text()):
+            for side in ("HomeTeam", "AwayTeam"):
+                names.add(m.get(side) or "")
+    hints = ("man", "united", "utd", "city", "ham", "forest", "palace", "villa", "spurs", "tott", "brigh", "chel", "liver", "newc", "arse", "fulh", "brent", "bourn", "evert", "wolv", "leeds", "sunder", "hull", "covent", "ipsw", "leic")
+    print("Feed names that look English but are not matched:", sorted(n for n in names if any(h in n.lower() for h in hints) and _euro_key(n) not in EURO_ALIASES))
+    h = df[~df["future"]].copy().join(euro_flags(df[~df["future"]], euro))
+    players, teams, league, tab = euro_rotation_rates(h)
+    print(f"\nLeague-wide: minutes after a European match = x{league:.3f} of usual (regular players, weighted to recent seasons)")
+    by = tab.groupby("season").apply(lambda t: pd.Series({"players": len(t), "post matches": t["n_post"].sum(), "ratio": (t["ratio"] * t["n_post"]).sum() / t["n_post"].sum()}))
+    print(by.to_string())
+    print("\nBy team and season (minutes ratio, post matches):")
+    tt = tab.groupby(["team", "season"]).apply(lambda t: f'{(t["ratio"] * t["n_post"]).sum() / t["n_post"].sum():.2f} ({int(t["n_post"].max())})').unstack()
+    print(tt.to_string())
+    print("\nTeam rates used:", ", ".join(f"{k} {v:.2f}" for k, v in sorted(teams.items())))
+    top = sorted(((v[0], v[1], p) for p, v in players.items() if v[1] >= 4))[:20]
+    names_by_pid = df.drop_duplicates("pid", keep="last").set_index("pid")["name"].to_dict() if "name" in df else {}
+    print("Most rested (rate, post matches):", "; ".join(f"{names_by_pid.get(p, p)} {r:.2f} ({int(n)})" for r, n, p in top))
+    # Next season from earlier ones: per player-season, predicted post-European minutes = his season mean x rate.
+    print("\nPredicting each season from the ones before (post-European matches of regular players):")
+    hh = h[h["minutes"].notna() & ~h.get("inj_skip", pd.Series(False, index=h.index)).fillna(False).astype(bool)]
+    for i, s in enumerate(all_seasons[1:], 1):
+        prior = h[h["season"].isin(all_seasons[:i])]
+        pl, tm, lg, _ = euro_rotation_rates(prior, current=s)
+        cur = hh[hh["season"] == s]
+        m_all = cur.groupby("pid")["minutes"].transform("mean")
+        n_all = cur.groupby("pid")["minutes"].transform("size")
+        sel = cur["euro_gap"].notna() & (m_all >= 30) & (n_all >= 8)
+        c = cur[sel]
+        if c.empty:
+            continue
+        rate = c["pid"].map(lambda p: pl.get(p, (np.nan, 0))[0]).fillna(c["team"].map(tm)).fillna(lg)
+        base = m_all[sel]
+        e0 = (c["minutes"] - base).abs().mean()
+        e1 = (c["minutes"] - base * rate).abs().mean()
+        e2 = (c["minutes"] - base * lg).abs().mean()
+        print(f"  {s}: {len(c)} player matches, actual/usual {c['minutes'].sum() / base.sum():.3f}; error in minutes: no change {e0:.2f}, "
+              f"league rate {e2:.2f}, player/team rate {e1:.2f}")
+
+
 ADMIN_FILE = Path("admin_minutes.json")  # set on the Admin page: {"c<code>": {"min": 90, "name": "..."}}
 
 
@@ -1587,6 +1787,10 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     target = doubtful_minutes(target, df)
     target = admin_minutes(target)
     target = manual_absences(target, load_admin_injuries())
+    try:
+        target = european_rotation(target, df, cache, offline)
+    except Exception as e:  # a display flag only: never stop the site for it
+        print(f"European weeks not flagged ({e})")
     target["pen_cond"] = penalty_shares(target)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res
@@ -1681,6 +1885,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g.setdefault("fx", []).append(int(r["fixture"]))
         g.setdefault("pc", []).append(round(float(r["pen_cond_used"]), 4))
         g.setdefault("tp", []).append(round(float(r["team_pens"]), 4))
+        if isinstance(r.get("euro_note"), str) and r["euro_note"]:
+            g.setdefault("euro", []).append(r["euro_note"])  # e.g. "UCL 3d": a European match 3 days before
         for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "penmiss", "own", "defcon", "cards"):
             g["full"][name] = round(g["full"].get(name, 0.0) + float(r[f"full_{name}"]), 3)
         g["full"]["xg"] = round(g["full"].get("xg", 0.0) + float(r["g90"]), 3)
@@ -2079,7 +2285,7 @@ def home_away(data_dir: Path, seasons: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune", "euro-check"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -2106,6 +2312,8 @@ def main() -> None:
         cs_tune(a.data_dir, a.seasons, a.step, a.offline, a.modes)
     elif a.command == "home-away":
         home_away(a.data_dir, a.seasons)
+    elif a.command == "euro-check":
+        euro_check(a.data_dir, a.seasons, a.offline)
     elif a.command == "rare-tune":
         rare_tune(a.data_dir, HIST_SEASONS)
     elif a.command == "tune":

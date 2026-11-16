@@ -98,7 +98,8 @@
       const own = o.gw && o.gw[g] !== undefined;
       const td = el('td', { className: `fut ${m.source !== 'model' ? 'edited' : ''} ${sum(m.mins) === 0 ? 'zero' : ''}` },
         input(own ? o.gw[g] : undefined, XMin.join(m.source === 'all' ? m.mins : model.mins), `Minutes per match for ${p.name} in gameweek ${g}`, { gw: String(g) }),
-        el('small', { textContent: p.byGw[g].opp.join(', ') }));
+        el('small', { textContent: p.byGw[g].opp.join(', ') }),
+        p.byGw[g].euro ? el('small', { className: 'euro-tag', title: p.byGw[g].euro.map((e) => `${e.replace(/ (\d+)d$/, ' match $1 days before')}`).join('; ') + ' (shown only: minutes are not changed for it)', textContent: p.byGw[g].euro.join(', ') }) : '');
       return td;
     });
     const note = el('td', { className: 'note', textContent: p.minNote || '', title: p.news || '' });
