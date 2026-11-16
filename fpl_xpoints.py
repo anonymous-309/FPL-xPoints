@@ -686,8 +686,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
     logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it), and a
-    cautionary rest on his return ("inj_rest": 0 in the first match back, then at least his usual minutes from before
-    the injury in the next two)."""
+    cautionary rest on his return ("inj_rest": 0 in his first match back)"""
     df = df.copy()
     df["inj_skip"] = False
     df["inj_hurt"] = False
@@ -708,20 +707,14 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                 if int(df.at[last, "GW"]) not in (covered or set()) and 0 < float(df.at[last, "minutes"]) < 90:
                     df.at[last, "inj_skip"] = True
                     df.at[last, "inj_hurt"] = True
-        # Cautionary rest: back from an injury, a player sits out his first match back (0 minutes) and then plays at
-        # least his usual minutes (his average over his last 5 matches before the injury, 30+) in both of the next two.
-        # That 0 is a rest, not a sign he lost his place.
+        # Cautionary rest: a 0 in his first match back from an injury is a rest, not a sign he lost his place
+        # (one match only).
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
-            mine = df.loc[season & (df["pid"] == r["pid"])].sort_values(["GW", "kickoff_time"])
-            pre = mine[(mine["GW"] < r["startGw"]) & ~mine["inj_skip"]]["minutes"].tail(5)
-            post = mine[mine["GW"] >= r["returnedGw"]]
-            usual = float(pre.mean()) if len(pre) >= 2 else 0.0
-            if usual >= 30 and len(post) >= 3:
-                first3 = post["minutes"].to_numpy(float)[:3]
-                if first3[0] == 0 and (first3[1:] >= usual - 0.5).all():
-                    i = post.index[0]
-                    df.at[i, "inj_skip"] = True
-                    df.at[i, "inj_rest"] = True
+            post = df.loc[season & (df["pid"] == r["pid"]) & (df["GW"] >= r["returnedGw"])].sort_values(["GW", "kickoff_time"])
+            if len(post) and float(post["minutes"].iloc[0]) == 0:
+                i = post.index[0]
+                df.at[i, "inj_skip"] = True
+                df.at[i, "inj_rest"] = True
     # gameweeks whose matches FotMob's events cover (there, only a substitution for injury counts as getting hurt)
     df["fm_cov"] = season & df["GW"].isin(list(covered or []))
     # Taken off injured (FotMob): that match is left out, whatever came after.
