@@ -1530,15 +1530,16 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
 
 
 def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
-    """For a player flagged doubtful, xMin leaves out the match he got hurt in (see flag_cut) and the matches since
-    in which he did not play. A match he played while flagged (a 25% flag but he still started) counts as usual."""
+    """For a player flagged doubtful, xMin leaves out the match he got hurt in (see flag_cut; not if he still played
+    the full 90) and the matches since in which he did not play. A match he played while flagged (a 25% flag but he still started) counts as usual."""
     if "flag_cut" not in target:
         return target
     target = target.copy()
     obs = df[~df["future"] & df["minutes"].notna()]
     for pid, cut in target.loc[target["flag_cut"].notna(), ["pid", "flag_cut"]].drop_duplicates("pid").itertuples(index=False):
         g = obs[obs["pid"] == pid]
-        knock = g["kickoff_time"] == pd.Timestamp(cut)
+        # the match he got hurt in counts as usual if he still played the full 90
+        knock = (g["kickoff_time"] == pd.Timestamp(cut)) & (g["minutes"].fillna(0) < 90)
         after = g["kickoff_time"] > pd.Timestamp(cut)
         g = g[~knock & ~(after & (g["minutes"].fillna(0) == 0))].sort_values(["kickoff_time", "fixture"])
         if g.empty:
@@ -1882,7 +1883,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     if len(cut):
         kick = pd.to_datetime(played["kickoff_time"], utc=True, errors="coerce", format="ISO8601")
         cutt = pd.to_datetime(played["pid"].map(cut), utc=True, errors="coerce", format="ISO8601")
-        dmask = cutt.notna() & ((kick == cutt) | ((kick > cutt) & played["minutes"].fillna(0).eq(0))) & why.eq("")
+        dmask = cutt.notna() & (((kick == cutt) & played["minutes"].fillna(0).lt(90)) | ((kick > cutt) & played["minutes"].fillna(0).eq(0))) & why.eq("")
         why[dmask] = "d"
     for _, g in played.groupby("pid"):
         left = 0
