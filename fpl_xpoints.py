@@ -720,6 +720,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                     i = post.index[0]
                     df.at[i, "inj_skip"] = True
                     df.at[i, "inj_rest"] = True
+    # gameweeks whose matches FotMob's events cover (there, only a substitution for injury counts as getting hurt)
+    df["fm_cov"] = season & df["GW"].isin(list(covered or []))
     # Taken off injured (FotMob): that match is left out, whatever came after.
     if hurt:
         keys = pd.Series(list(zip(df["pid"], df["GW"].fillna(-1).astype(int))), index=df.index)
@@ -1646,8 +1648,11 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
     obs = df[~df["future"] & df["minutes"].notna()]
     for pid, cut in target.loc[target["flag_cut"].notna(), ["pid", "flag_cut"]].drop_duplicates("pid").itertuples(index=False):
         g = obs[obs["pid"] == pid]
-        # the match he got hurt in counts as usual if he still played the full 90
-        knock = (g["kickoff_time"] == pd.Timestamp(cut)) & (g["minutes"].fillna(0) < 90)
+        # the match he got hurt in is left out only if FotMob shows him taken off injured (or, for a gameweek FotMob
+        # does not cover, if he did not play the full 90)
+        cov = g["fm_cov"].fillna(False).astype(bool) if "fm_cov" in g else pd.Series(False, index=g.index)
+        hurt = g["inj_hurt"].fillna(False).astype(bool) if "inj_hurt" in g else pd.Series(False, index=g.index)
+        knock = (g["kickoff_time"] == pd.Timestamp(cut)) & (hurt | (~cov & (g["minutes"].fillna(0) < 90)))
         after = g["kickoff_time"] > pd.Timestamp(cut)
         g = g[~knock & ~(after & (g["minutes"].fillna(0) == 0))].sort_values(["kickoff_time", "fixture"])
         if g.empty:
@@ -1992,7 +1997,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     if len(cut):
         kick = pd.to_datetime(played["kickoff_time"], utc=True, errors="coerce", format="ISO8601")
         cutt = pd.to_datetime(played["pid"].map(cut), utc=True, errors="coerce", format="ISO8601")
-        dmask = cutt.notna() & (((kick == cutt) & played["minutes"].fillna(0).lt(90)) | ((kick > cutt) & played["minutes"].fillna(0).eq(0))) & why.eq("")
+        cov = played.get("fm_cov", pd.Series(False, index=played.index)).fillna(False).astype(bool)
+        dmask = cutt.notna() & (((kick == cutt) & ~cov & played["minutes"].fillna(0).lt(90)) | ((kick > cutt) & played["minutes"].fillna(0).eq(0))) & why.eq("")
         why[dmask] = "d"
     for _, g in played.groupby("pid"):
         left = 0
