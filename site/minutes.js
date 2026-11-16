@@ -83,6 +83,7 @@
       const why = (p.pastWhy && p.pastWhy[g]) || [];
       const WHY = {
         b: 'Banned: left out of the formula',
+        c: 'Sent off in this match: left out of the formula',
         i: 'Injured or unavailable: left out of the formula',
         h: 'Taken off injured in this match: left out of the formula',
         m: 'In an absence set by the admin: left out of the formula',

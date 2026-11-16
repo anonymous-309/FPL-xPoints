@@ -2000,6 +2000,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         for i, mins, red in zip(g.index, g["minutes"].fillna(0), g["red_cards"].fillna(0)):
             if red > 0:
                 left = MAX_BAN_MATCHES
+                if why[i] == "":
+                    why[i] = "c"  # sent off: the match itself is left out of the formula too (see ai_minutes)
             elif left > 0 and mins == 0:
                 why[i], left = "b", left - 1
             else:
