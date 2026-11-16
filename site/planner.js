@@ -452,6 +452,35 @@
       if (merge) weeks = weeks.slice(0, depth).concat(heldWeeks(P, weeks[depth], depth, T));
       return { input, model, values: sol.values, score: sol.objective, weeks };
     };
+    // The rule for each gameweek's moves: what they gain that gameweek (hits taken off) must be at least what the
+    // free transfers they use cost (0.5 for the last one in hand, 75% with 1 left, ...). A later gameweek that breaks
+    // it is planned again with no transfers that week; a plan whose first-gameweek moves break it is left out.
+    const weekCost = (w) => {
+      if (w.chip === 'wildcard' || w.chip === 'freehit') return 0;
+      const used = Math.min(w.ins.length, w.freeTransfers);
+      return PLAN.X * (stepSum(w.freeTransfers) - stepSum(w.freeTransfers - used));
+    };
+    const breaks = (sol, from) => {
+      const g = moveGains(P, sol.weeks, depth, T);
+      for (let t = from; t < depth; t++) if (g[t] && g[t].now < weekCost(sol.weeks[t]) - 1e-6) return t;
+      return -1;
+    };
+    const solveRule = async (extra) => {
+      let x = { ...extra };
+      let sol = await solveWith(x);
+      for (let k = 0; sol && k < depth; k++) {
+        const t = breaks(sol, 1);
+        if (t < 0) break;
+        planned++;
+        x = { ...x, roll: [...(x.roll || []), t] };
+        const again = await solveWith(x);
+        if (!again) break;
+        sol = again;
+      }
+      if (sol) sol.firstBreaks = breaks(sol, 0) === 0;
+      return sol;
+    };
+    let dropped = 0;
     try {
       const options = [];
       for (const g of groups) {
@@ -459,12 +488,13 @@
         for (let r = 0; r < g.n; r++) {
           const extra = { cut: cuts.slice() };
           if (g.count !== null) extra.count = [{ t: 0, n: g.count }];
-          const sol = await solveWith(extra);
+          const sol = await solveRule(extra);
           if (!sol) continue;
           const opt = S.option(sol.input, sol.values, 0);
-          if (options.some((o) => S.sameOption(o.opt, opt))) continue;
-          options.push({ t: 0, opt, sol, count: g.count, rank: r + 1, roll: g.count !== null && g.count === forcedN });
           cuts.push(opt);
+          if (options.some((o) => S.sameOption(o.opt, opt))) continue;
+          if (sol.firstBreaks && g.count !== null && g.count > forcedN) { dropped++; continue; }
+          options.push({ t: 0, opt, sol, count: g.count, rank: options.filter((o) => o.count === g.count).length + 1, roll: g.count !== null && g.count === forcedN });
         }
         // Saving now: more branches with different moves next gameweek, so one strong move there does not hide the
         // rest (3 with 1-2 free transfers, 2 with 3, none more with 4-5).
@@ -472,7 +502,7 @@
         if (save && g.count === forcedN && depth > 1) {
           const nextCuts = [S.option(save.sol.input, save.sol.values, 1)];
           for (let r = 2; r <= saveBranches; r++) {
-            const sol = await solveWith({ count: [{ t: 0, n: g.count }], cut: nextCuts.slice() });
+            const sol = await solveRule({ count: [{ t: 0, n: g.count }], cut: nextCuts.slice() });
             if (!sol) break;
             options.push({ t: 0, opt: S.option(sol.input, sol.values, 0), sol, count: g.count, rank: r, roll: true });
             nextCuts.push(S.option(sol.input, sol.values, 1));
@@ -504,7 +534,7 @@
       const rec = options.reduce((b, o) => (o.total > b.total ? o : b), options[0]);
       const holdW = holdWeeks(P, T);
       options.forEach((o) => { o.gainDecay = o.dpts - holdW.reduce((a, x, t) => a + wt(t) * x, 0); });
-      state.plan = { gws, P, options, chips, skipped, force: base.force, status: worst, hold: holdW.reduce((a, b) => a + b, 0), holdW, pick: options.indexOf(rec), rec, depth };
+      state.plan = { gws, P, options, chips, skipped, dropped, force: base.force, status: worst, hold: holdW.reduce((a, b) => a + b, 0), holdW, pick: options.indexOf(rec), rec, depth };
       state.week = 0;
       render();
     } catch (e) {
@@ -689,7 +719,7 @@
           el('th', { scope: 'col', className: 'num', textContent: 'Cost' }), el('th', { scope: 'col', className: 'num', textContent: 'FT kept' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Gain Decay: the plan's expected points against keeping your squad as it is, weighed the same way; it is the sum of the decay figures under each gameweek's moves. Under each gameweek's moves: ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan, weighed like xPts Decay (0.85 a week from the first gameweek), against the squad before them. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers left unused at the end of GW${gws[depth - 1]} (not the new one the next gameweek brings), the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
+      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Gain Decay: the plan's expected points against keeping your squad as it is, weighed the same way; it is the sum of the decay figures under each gameweek's moves. Under each gameweek's moves: ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan, weighed like xPts Decay (0.85 a week from the first gameweek), against the squad before them. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers left unused at the end of GW${gws[depth - 1]} (not the new one the next gameweek brings), the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. Rule for every gameweek: its moves must gain at least their transfer cost that same gameweek (hits taken off); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
@@ -718,6 +748,7 @@
       tightNote(P, weeks, gws),
       state.team.madeAlready && state.team.madeAlready.length ? el('p', { className: 'meta', textContent: `Already made for GW${state.team.lastGw + 1}: ${state.team.madeAlready.join(', ')} (counted in your squad and free transfers).` }) : '',
       Object.keys(state.overrides).length ? el('p', { className: 'meta', textContent: `Uses your minutes edits from the Minutes page (${Object.keys(state.overrides).length} players).` }) : '',
+      state.plan.dropped ? el('p', { className: 'meta', textContent: `${state.plan.dropped} plan${state.plan.dropped > 1 ? 's were' : ' was'} left out: ${state.plan.dropped > 1 ? 'their' : 'its'} GW${gws[0]} moves gain less that gameweek than the free transfers they use cost.` }) : '',
       state.plan.skipped ? el('p', { className: 'meta', textContent: `${state.plan.skipped} of the plans could not be worked out (the solver ran out of memory on this device) and are left out.` }) : '',
       /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
     $('out').replaceChildren(optionsView(P, options, gws), fhView(P, pick, gws), summary, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
