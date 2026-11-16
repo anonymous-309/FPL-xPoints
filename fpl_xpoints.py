@@ -723,6 +723,14 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         rows = season & keys.isin(hurt)
         df.loc[rows, "inj_skip"] = True
         df.loc[rows, "inj_hurt"] = True
+    # A goalkeeper who came on for his injured team-mate: that part match says nothing of his role, left out too.
+    df["gk_cover"] = False
+    if "position" in df and df["inj_hurt"].any():
+        gk = season & (df["position"] == "GK")
+        hurt_fx = set(zip(df.loc[gk & df["inj_hurt"], "fixture"], df.loc[gk & df["inj_hurt"], "team"]))
+        cover = gk & ~df["inj_hurt"] & (df["minutes"] > 0) & (df["minutes"] < 90) & pd.Series(list(zip(df["fixture"], df["team"])), index=df.index).isin(hurt_fx)
+        df.loc[cover, "inj_skip"] = True
+        df.loc[cover, "gk_cover"] = True
     print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, rests on return: {int(df['inj_rest'].sum())}")
     return df
 
@@ -1634,6 +1642,40 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
     return pd.DataFrame(hist), pd.DataFrame(fut), first
 
 
+def goalkeeper_cover(target: pd.DataFrame) -> pd.DataFrame:
+    """Only one goalkeeper plays. When a team's first-choice goalkeeper is out and expected back (minutes taken from
+    before his absence, 60+ usual), the stand-in's share of a match is cut by the starter's: 0 once the starter is
+    fully back, half in a match where the starter is expected to play half."""
+    t = target.copy()
+    if "position" not in t or "from_return" not in t:
+        return t
+    usual = pd.Series(usual_minutes(t)["min"], index=t.index)
+    gk = t["position"] == "GK"
+    cut = 0
+    for team, g in t[gk].groupby("team"):
+        starters = g.loc[g["from_return"].fillna(False).astype(bool) & (usual[g.index] >= 60), "pid"].unique()
+        for sp in starters:
+            share = g[g["pid"] == sp].set_index("fixture")["avail"].fillna(0.0)
+            share = share[~share.index.duplicated()]
+            if not (share > 0).any():
+                continue
+            back_gw = int(g.loc[(g["pid"] == sp) & (g["avail"].fillna(0) > 0), "GW"].min())
+            sp_name = str(g.loc[g["pid"] == sp, "web_name"].iloc[0]) if "web_name" in g else str(sp)
+            for op in g.loc[g["pid"] != sp, "pid"].unique():
+                rows = t.index[(t["pid"] == op) & gk]
+                s_ = t.loc[rows, "fixture"].map(share)
+                factor = (1 - s_.fillna(0.0)).clip(0.0, 1.0)
+                t.loc[rows, "avail"] = t.loc[rows, "avail"].fillna(1.0) * factor
+                if (factor < 1).any():
+                    cut += 1
+                    old = t.loc[rows, "min_note"].fillna("") if "min_note" in t else pd.Series("", index=rows)
+                    note = f"{sp_name} expected back GW{back_gw}: his minutes go to him from then"
+                    t.loc[rows, "min_note"] = np.where(old != "", old + "; " + note, note)
+    if cut:
+        print(f"Stand-in goalkeepers cut for a returning first choice: {cut}")
+    return t
+
+
 def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
     """For a player flagged doubtful, xMin leaves out the match he got hurt in (see flag_cut; not if he still played
     the full 90) and the matches since in which he did not play. A match he played while flagged (a 25% flag but he still started) counts as usual."""
@@ -1922,6 +1964,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     target = doubtful_minutes(target, df)
     target = admin_minutes(target)
     target = manual_absences(target, load_admin_injuries())
+    target = goalkeeper_cover(target)
     try:
         target = european_rotation(target, df, cache, offline)
     except Exception as e:  # a display flag only: never stop the site for it
@@ -1985,6 +2028,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     # "h": the match he got hurt in, before a logged injury; "m": a match in an absence the admin added by hand
     why[played.get("inj_hurt", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "h"
     why[played.get("inj_rest", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "r"
+    why[played.get("gk_cover", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "g"
     why[played["minutes"].fillna(0).gt(0) & played.get("inj_skip", pd.Series(False, index=played.index)).fillna(False).astype(bool) & why.eq("")] = "m"
     # "d": flagged doubtful now, the match he got hurt in and the ones since that he missed (see doubtful_minutes)
     cut = res.drop_duplicates("pid").set_index("pid")["flag_cut"] if "flag_cut" in res else pd.Series(dtype=object)
