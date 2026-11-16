@@ -1767,9 +1767,10 @@ def congestion_check(data_dir: Path, seasons: list[str], offline: bool) -> None:
     allm = pd.concat([lg, eu], ignore_index=True).sort_values("kick")
     times = {t: np.sort(g["kick"].dt.tz_convert(None).values.astype("datetime64[ns]")) for t, g in allm.groupby("team")}
     eut = {t: np.sort(g["kick"].dt.tz_convert(None).values.astype("datetime64[ns]")) for t, g in eu.groupby("team")}
+    euc = {t: g.sort_values("euro_time")["comp"].to_numpy() for t, g in euro.groupby("team")}
     k = h["kick"].dt.tz_convert(None).values.astype("datetime64[ns]")
     day = np.timedelta64(1, "D")
-    n15, eu_prev = np.zeros(len(h)), np.zeros(len(h), bool)
+    n15, eu_prev, eu_comp = np.zeros(len(h)), np.zeros(len(h), bool), np.full(len(h), "", dtype=object)
     for i, (team, kk) in enumerate(zip(h["team"].to_numpy(), k)):
         tt = times.get(team)
         if tt is None:
@@ -1779,7 +1780,10 @@ def congestion_check(data_dir: Path, seasons: list[str], offline: bool) -> None:
         if e is not None:
             j = np.searchsorted(e, kk, "left") - 1
             eu_prev[i] = j >= 0 and (kk - e[j]) / day <= 4.5
-    h["n15"], h["eu_prev"] = n15, eu_prev
+            if eu_prev[i]:
+                eu_comp[i] = euc[team][j]
+    h["n15"], h["eu_prev"], h["eu_comp"] = n15, eu_prev, eu_comp
+    h["season_comp"] = h.groupby(["season", "team"])["eu_comp"].transform(lambda x: max(x, key=lambda c: {"UCL": 3, "UEL": 2, "UECL": 1}.get(c, 0)))
     h["in_eu"] = h.groupby(["season", "team"])["eu_prev"].transform("any")
     g = h.groupby(["pid", "season", "team"])
     h["start_rate"] = g["started"].transform("mean")
@@ -1822,6 +1826,18 @@ def congestion_check(data_dir: Path, seasons: list[str], offline: bool) -> None:
         diff = b.mean() - a.mean()
         se = np.sqrt(a.var() / len(a) + b.var() / len(b))
         print(f"  {role:28s} {a.mean():5.1%} -> {b.mean():5.1%}  rise {diff:+.1%}  (90%: {diff - 1.645 * se:+.1%} to {diff + 1.645 * se:+.1%})")
+    print("\nBy competition: benched share of regular starters, league match just after a European match vs the team's other league matches that season:")
+    for comp in ["UCL", "UEL", "UECL"]:
+        t = e[e["season_comp"] == comp]
+        if t.empty:
+            continue
+        a_, b_ = t[~t["eu_prev"]]["benched"], t[t["eu_prev"]]["benched"]
+        teams_ = ", ".join(sorted({f"{x} {y[2:4]}-{y[5:7]}" for x, y in zip(t["team"], t["season"])}))
+        diff = b_.mean() - a_.mean(); se = np.sqrt(a_.var() / max(len(a_), 1) + b_.var() / max(len(b_), 1))
+        print(f"  {comp:5s} other: {a_.mean():5.1%} (n={len(a_)})  just after: {b_.mean():5.1%} (n={len(b_)})  rise {diff:+.1%} (90%: {diff - 1.645 * se:+.1%} to {diff + 1.645 * se:+.1%})  [{teams_}]")
+        for role, r in t.groupby("role"):
+            x, y = r[~r["eu_prev"]]["benched"], r[r["eu_prev"]]["benched"]
+            print(f"        {role:28s} {x.mean():5.1%} -> {y.mean():5.1%} (n={len(y)})")
     print("\nTeams in Europe: match just after a European match vs not (benched share, n):")
     for role, t in e.groupby("role"):
         a, b = t[~t["eu_prev"]]["benched"], t[t["eu_prev"]]["benched"]
