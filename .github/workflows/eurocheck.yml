@@ -18,4 +18,4 @@ jobs:
           path: fpl_data/20*
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
-      - run: python fpl_xpoints.py congestion-check
+      - run: python tools_debug_gk.py
