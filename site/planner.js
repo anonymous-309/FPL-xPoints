@@ -192,7 +192,40 @@
   }
   function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(state.settings)); } catch (e) { /* fine */ } }
 
+  function countsForm() {
+    const box = $('planCounts');
+    if (!box) return;
+    const st = state.settings;
+    const total = (arr) => arr.reduce((a, b) => a + b, 0);
+    box.replaceChildren(...[1, 2, 3, 4, 5].map((ft) => {
+      const arr = countsFor(ft);
+      const sum = el('b', { className: 'pc-total', textContent: String(total(arr)) });
+      const row = el('div', { className: 'pc-row' }, el('span', { className: 'pc-ft', textContent: `${ft} FT` }));
+      arr.forEach((n, k) => {
+        const name = k === 0 ? 'Save' : k <= ft ? `${k} FT` : `${ft} FT + ${k - ft} hit`;
+        const input = el('input', { type: 'number', min: k === 0 ? '1' : '0', max: '5', step: '1', value: String(n), 'aria-label': `${ft} free transfers: plans for ${name}` });
+        input.addEventListener('change', () => {
+          const cur = countsFor(ft);
+          let v = Math.max(k === 0 ? 1 : 0, Math.min(5, Math.round(Number(input.value) || 0)));
+          const rest = total(cur) - cur[k];
+          let warn = '';
+          if (rest + v > MAX_PLANS) { v = Math.max(k === 0 ? 1 : 0, MAX_PLANS - rest); warn = `Up to ${MAX_PLANS} plans in all: each one takes a few seconds to work out, so more would make the planner slow (about a minute for 10 on a phone).`; }
+          cur[k] = v;
+          st.planCounts = { ...(st.planCounts || {}), [ft]: cur };
+          saveSettings();
+          countsForm();
+          $('pcWarn').textContent = warn;
+          $('pcWarn').hidden = !warn;
+        });
+        row.append(el('label', { className: 'pc-cell' }, el('span', { textContent: name }), input));
+      });
+      row.append(el('span', { className: 'pc-sum' }, 'Total ', sum));
+      return row;
+    }));
+  }
+
   function settingsForm() {
+    countsForm();
     const st = state.settings;
     const T = Number($('horizon').value);
     $('forceGw').textContent = `GW${state.data.gws[0]}`;
@@ -288,19 +321,17 @@
     return { cost, left, kept: Y * stepSum(left) };
   }
 
-  // How many plans to look at for each number of transfers used now: 1 for saving (or the forced ones only), 1 for
-  // using all and all-but-one when there are 4-5 free transfers, 2 for the rest; with few free transfers, more for
-  // each and one hit as well (7 plans with 1 free transfer, 8 with 2-4, 9 with 5).
-  // Without forced transfers: [transfers used now, plans] for each number of free transfers (the last of 1-2 FT is a hit)
-  const PLAN_COUNTS = {
-    1: [[0, 1], [1, 4], [2, 2]],
-    2: [[0, 1], [1, 3], [2, 3], [3, 1]],
-    3: [[0, 1], [1, 2], [2, 3], [3, 2]],
-    4: [[0, 1], [1, 2], [2, 2], [3, 2], [4, 1]],
-    5: [[0, 1], [1, 2], [2, 2], [3, 2], [4, 1], [5, 1]],
+  // How many plans to look at, by free transfers in hand: plans for saving now (each with different moves the next
+  // gameweek), for using 1, 2, ... free transfers now, and for one more with a hit. Set in Settings, 10 at most.
+  const DEFAULT_COUNTS = { 1: [3, 3, 2], 2: [2, 2, 2, 2], 3: [2, 2, 2, 2, 1], 4: [1, 2, 2, 2, 1], 5: [1, 2, 2, 2, 1, 1] };
+  const MAX_PLANS = 10;
+  const countsFor = (ft) => {
+    const own = state.settings.planCounts && state.settings.planCounts[ft];
+    const def = DEFAULT_COUNTS[ft] || DEFAULT_COUNTS[1];
+    return own && own.length === def.length ? own.slice() : def.slice();
   };
   function planCounts(ft, forcedN) {
-    if (!forcedN && PLAN_COUNTS[ft]) return PLAN_COUNTS[ft].map((g) => g.slice());
+    if (!forcedN && DEFAULT_COUNTS[ft]) return countsFor(ft).map((n, k) => [k, k === 0 ? 1 : n]).filter(([k, n]) => n > 0);
     const top = Math.max(ft, forcedN, 1);
     const out = [];
     for (let k = forcedN; k <= top; k++) out.push([k, k === forcedN ? 1 : top >= 4 && k >= top - 1 ? 1 : 2]);
@@ -352,7 +383,7 @@
     const groups = [];
     if (week0Chip) groups.push({ count: null, n: 3 });
     else planCounts(state.team.ft, forcedN).forEach(([k, n]) => groups.push({ count: k, n }));
-    const saveBranches = depth > 1 && !week0Chip ? (state.team.ft <= 2 ? 3 : state.team.ft === 3 ? 2 : 1) : 1;
+    const saveBranches = depth > 1 && !week0Chip && !forcedN ? Math.max(1, countsFor(state.team.ft)[0]) : 1;
     let planned = groups.reduce((a, g) => a + g.n, 0) + saveBranches - 1;
     let done = 0;
     const progress = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }),
@@ -592,7 +623,7 @@
           el('th', { scope: 'col', className: 'num', textContent: 'Cost' }), el('th', { scope: 'col', className: 'num', textContent: 'FT kept' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. Save #2, #3: saving now as well, with different moves in the next gameweek. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
+      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. xPts: expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. xPts Decay: the same with each later gameweek counting ${PLAN.decay} times the one before. Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts Decay − Cost + FT kept; the plan with the most is marked Best. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
@@ -806,7 +837,7 @@
     // picking a name from the list adds it straight away, no need to press Add
     $(`${kind}Pick`).addEventListener('change', () => addPick(kind, true));
   });
-  $('resetSettings').addEventListener('click', () => { state.settings = { ...S.DEFAULTS, keep: [], avoid: [], forceIn: [], forceOut: [], forceGw: state.data.gws[0] }; saveSettings(); settingsForm(); });
+  $('resetSettings').addEventListener('click', () => { state.settings = { ...S.DEFAULTS, keep: [], avoid: [], forceIn: [], forceOut: [], forceGw: state.data.gws[0] }; saveSettings(); settingsForm(); $('pcWarn').hidden = true; });
   state.settings = loadSettings();
   $('entry').addEventListener('change', () => { if ($('entry').value.trim() !== state.entry) { state.team = null; state.entry = null; chipChoices(); } });
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') state.overrides = XMin.load(); });
