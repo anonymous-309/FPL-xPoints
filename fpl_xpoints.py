@@ -630,7 +630,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         by_team.setdefault(p["team"], []).append(p)
 
     def find(name: str, team: str):
-        tid = teams.get(FOTMOB_TEAMS.get(team, team))
+        tid = teams.get(FOTMOB_TEAMS.get(team, team)) or next((i for nm, i in teams.items() if _name_key(nm).split()[0] == _name_key(team).split()[0]), None)
         n = _name_key(name)
         pool = by_team.get(tid, [])
         full = lambda p: _name_key(f'{p["first_name"]} {p["second_name"]}')
