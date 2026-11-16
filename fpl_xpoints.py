@@ -1745,6 +1745,89 @@ def euro_check(data_dir: Path, seasons: list[str], offline: bool) -> None:
               f"league rate {e2:.2f}, player/team rate {e1:.2f}")
 
 
+def congestion_check(data_dir: Path, seasons: list[str], offline: bool) -> None:
+    """Do regular starters get benched more often when the fixtures pile up (league + European matches), and more so
+    full-backs and wide attackers? Counts only league and European matches (no domestic cups in the data)."""
+    cache = data_dir / "api_cache"
+    hist, fut, first = live_frames(cache, offline, 1)
+    old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
+    all_seasons = seasons + [CURRENT_SEASON]
+    df = clean(pd.concat([old, hist, fut], ignore_index=True), all_seasons)
+    log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
+    df = mark_injuries(df, log, load_admin_injuries())
+    euro = euro_fixtures(cache, all_seasons, offline)
+    h = df[~df["future"] & df["minutes"].notna()].copy()
+    h["kick"] = pd.to_datetime(h["kickoff_time"], utc=True, errors="coerce", format="ISO8601")
+    h = h[h["kick"].notna()]
+    if "inj_skip" in h:
+        h = h[~h["inj_skip"].fillna(False).astype(bool)]
+    h["started"] = h["starts"].where(h["starts"].notna(), (h["minutes"] >= 60).astype(float)) if "starts" in h else (h["minutes"] >= 60).astype(float)
+    lg = h.drop_duplicates(["team", "fixture", "season"])[["team", "kick"]]
+    eu = euro.rename(columns={"euro_time": "kick"})[["team", "kick"]]
+    allm = pd.concat([lg, eu], ignore_index=True).sort_values("kick")
+    times = {t: np.sort(g["kick"].dt.tz_convert(None).values.astype("datetime64[ns]")) for t, g in allm.groupby("team")}
+    eut = {t: np.sort(g["kick"].dt.tz_convert(None).values.astype("datetime64[ns]")) for t, g in eu.groupby("team")}
+    k = h["kick"].dt.tz_convert(None).values.astype("datetime64[ns]")
+    day = np.timedelta64(1, "D")
+    n15, eu_prev = np.zeros(len(h)), np.zeros(len(h), bool)
+    for i, (team, kk) in enumerate(zip(h["team"].to_numpy(), k)):
+        tt = times.get(team)
+        if tt is None:
+            continue
+        n15[i] = np.searchsorted(tt, kk, "left") - np.searchsorted(tt, kk - 15 * day, "left")  # matches in the 15 days before
+        e = eut.get(team)
+        if e is not None:
+            j = np.searchsorted(e, kk, "left") - 1
+            eu_prev[i] = j >= 0 and (kk - e[j]) / day <= 4.5
+    h["n15"], h["eu_prev"] = n15, eu_prev
+    h["in_eu"] = h.groupby(["season", "team"])["eu_prev"].transform("any")
+    g = h.groupby(["pid", "season", "team"])
+    h["start_rate"] = g["started"].transform("mean")
+    h["n_season"] = g["started"].transform("size")
+    reg = h[(h["start_rate"] >= 0.75) & (h["n_season"] >= 10) & (h["position"] != "GK")].copy()
+    sums = reg.groupby(["pid", "season"]).agg(xa=("expected_assists", "sum"), xg=("expected_goals", "sum"), m=("minutes", "sum")).reset_index()
+    sums["xa90"] = sums["xa"] / sums["m"].clip(lower=1) * 90
+    sums["xgi90"] = (sums["xa"] + sums["xg"]) / sums["m"].clip(lower=1) * 90
+    reg = reg.merge(sums[["pid", "season", "xa90", "xgi90"]], on=["pid", "season"], how="left")
+    first_rows = reg.drop_duplicates(["pid", "season"])
+    dq = first_rows.loc[first_rows["position"] == "DEF", "xa90"].quantile(0.55)
+    mq = first_rows.loc[first_rows["position"] == "MID", "xgi90"].quantile(0.5)
+    reg["role"] = np.select(
+        [(reg["position"] == "DEF") & (reg["xa90"] >= dq), reg["position"] == "DEF",
+         (reg["position"] == "MID") & (reg["xgi90"] >= mq), reg["position"] == "MID"],
+        ["Full-back (DEF, high xA)", "Centre-back (DEF, low xA)", "Wide/attacking MID", "Central MID"], "Forward")
+    reg["benched"] = 1 - reg["started"].clip(0, 1)
+    reg["dense"] = np.select([reg["n15"] >= 4, reg["n15"] == 3], ["4+", "3"], "<=2")
+    print(f"Regular starters (75%+ starts): {reg['pid'].nunique()} players, {len(reg)} player matches, seasons {sorted(reg['season'].unique())}")
+    print(f"Cut-offs: full-back xA/90 >= {dq:.3f}; wide/attacking MID xG+xA/90 >= {mq:.3f}")
+
+    def table(d, title):
+        print(f"\n{title}: share of matches a regular starter did NOT start, by matches in the 15 days before (league + Europe)")
+        for role, t in d.groupby("role"):
+            parts = []
+            for c in ["<=2", "3", "4+"]:
+                x = t[t["dense"] == c]["benched"]
+                parts.append(f"{c:>3s}: {x.mean():5.1%} (n={len(x)})" if len(x) else f"{c:>3s}: -")
+            print(f"  {role:28s} " + "  ".join(parts))
+        print("  All roles:                   " + "  ".join(f"{c:>3s}: {d[d['dense'] == c]['benched'].mean():5.1%} (n={(d['dense'] == c).sum()})" for c in ["<=2", "3", "4+"]))
+
+    table(reg[reg["in_eu"]], "Teams in Europe that season")
+    table(reg[~reg["in_eu"]], "Teams not in Europe")
+    e = reg[reg["in_eu"]]
+    print("\nTeams in Europe: rise from <=2 to 4+ matches in 15 days, with 90% interval:")
+    for role, t in list(e.groupby("role")) + [("All roles", e)]:
+        a, b = t[t["n15"] <= 2]["benched"], t[t["n15"] >= 4]["benched"]
+        if len(a) < 30 or len(b) < 30:
+            print(f"  {role}: too few matches"); continue
+        diff = b.mean() - a.mean()
+        se = np.sqrt(a.var() / len(a) + b.var() / len(b))
+        print(f"  {role:28s} {a.mean():5.1%} -> {b.mean():5.1%}  rise {diff:+.1%}  (90%: {diff - 1.645 * se:+.1%} to {diff + 1.645 * se:+.1%})")
+    print("\nTeams in Europe: match just after a European match vs not (benched share, n):")
+    for role, t in e.groupby("role"):
+        a, b = t[~t["eu_prev"]]["benched"], t[t["eu_prev"]]["benched"]
+        print(f"  {role:28s} not after: {a.mean():5.1%} (n={len(a)})  just after: {b.mean():5.1%} (n={len(b)})")
+
+
 ADMIN_FILE = Path("admin_minutes.json")  # set on the Admin page: {"c<code>": {"min": 90, "name": "..."}}
 
 
@@ -2285,7 +2368,7 @@ def home_away(data_dir: Path, seasons: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune", "euro-check"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune", "euro-check", "congestion-check"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -2312,6 +2395,8 @@ def main() -> None:
         cs_tune(a.data_dir, a.seasons, a.step, a.offline, a.modes)
     elif a.command == "home-away":
         home_away(a.data_dir, a.seasons)
+    elif a.command == "congestion-check":
+        congestion_check(a.data_dir, a.seasons, a.offline)
     elif a.command == "euro-check":
         euro_check(a.data_dir, a.seasons, a.offline)
     elif a.command == "rare-tune":
