@@ -178,6 +178,14 @@
       row(cTerms, 1, 1);
       POS.forEach((pos) => row(P.map((p, i) => [p.position === pos ? 1 : 0, `y${t}_${i}`]), XI[pos][0], XI[pos][1]));
     }
+    // mustMove: [{buy, sell}]: that player is bought, and that one sold, in one of the transfer weeks (any of them)
+    (input.mustMove || []).forEach(({ buy, sell }) => {
+      const tw = [...Array(depth).keys()];
+      const bs = tw.filter((t) => vars.has(`b${t}_${buy}`)).map((t) => [1, `b${t}_${buy}`]);
+      const ss = tw.filter((t) => vars.has(`s${t}_${sell}`)).map((t) => [1, `s${t}_${sell}`]);
+      if (bs.length) row(bs, 1, Infinity);
+      if (ss.length) row(ss, 1, Infinity);
+    });
     // useCost: {x: [cost per week], steps: [m0, m1, ...]}: a free transfer used that leaves r free transfers in hand
     // costs x[t] * steps[r] (the last free transfer costs the most). Week t in all: x[t] * (V(f) - V(f - u)), V(k) the
     // sum of the steps below k. A plan has no reason to use a transfer early unless it gains more than that.
