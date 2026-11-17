@@ -87,8 +87,7 @@
       s.days.add(ukDay(m.date));
       map.set(m.slot.key, s);
     }));
-    // Every weekend in the range (with or without matches), plus each midweek that has matches or is in an
-    // international break, so a gap shows as the rounds it takes.
+    // Every weekend and midweek in the range, with or without matches, so a gap shows as the rounds it takes.
     const keys = [...map.keys()].sort((x, y) => x - y);
     if (!keys.length) return [];
     let k = from != null ? slotOf(new Date(Math.max(+from, 0))).key : keys[0];
@@ -100,7 +99,6 @@
       const lastDay = k + (kind === 'mid' ? 2 : 3) * 864e5;
       const s = map.get(k);
       const intl = brk.some(([x, y]) => k <= y && lastDay >= x) && !(s && Object.keys(s.gws).length);
-      if (!s && kind === 'mid' && !intl) continue;
       if (s) {
         s.main = Number(Object.entries(s.gws).sort((x, y) => y[1] - x[1])[0]?.[0]) || null;
         const d = [...s.days].sort((x, y) => x - y);
@@ -130,7 +128,7 @@
         el('span', { className: 'gwn', textContent: s.kind === 'mid' ? 'Midweek' : 'Weekend' }),
         el('span', { className: 'gwd', textContent: s.first === s.last ? dShort(s.first) : `${dShort(s.first)} – ${dShort(s.last)}` }),
         Object.keys(s.gws).length ? el('span', { className: 'gwt', textContent: Object.keys(s.gws).map((g) => 'GW' + g).join(' + ') })
-          : s.intl ? el('span', { className: 'gwb', textContent: 'International break' }) : s.kind === 'wkd' ? el('span', { className: 'gwb', textContent: 'No league matches' }) : null)));
+          : s.intl ? el('span', { className: 'gwb', textContent: 'International break' }) : s.empty ? el('span', { className: 'gwb', textContent: 'No matches' }) : s.kind === 'wkd' ? el('span', { className: 'gwb', textContent: 'No league matches' }) : null)));
     $('.fx-grid thead').replaceChildren(head);
     const rows = teams.map((t) => {
       const cells = ss.map((s) => {
