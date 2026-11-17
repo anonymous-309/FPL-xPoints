@@ -203,6 +203,16 @@
         addObj(R, c);
       }
     }
+    // ftBonus: {x: [points per free transfer left after week t's transfers], cap}: every week, each free transfer still
+    // in hand after the week's transfers (up to cap) is worth x[t].
+    if (input.ftBonus) {
+      for (let t = 0; t < depth; t++) {
+        if (!vars.has(`f${t}`) || !input.ftBonus.x[t]) continue;
+        const B = v(`ftb${t}`, 'C', 0, input.ftBonus.cap);
+        row(vars.has(`u${t}`) ? [[1, B], [-1, `f${t}`], [1, `u${t}`]] : [[1, B], [-1, `f${t}`]], -Infinity, 0);
+        addObj(B, input.ftBonus.x[t]);
+      }
+    }
     // Free transfers carried past the transfer weeks, and money left in the bank, are worth something.
     const reserve = (set.reserve || []).slice(0, MAX_FT);
     if (reserve.some((x) => x > 0) && lastPaid >= 0 && ftVar) {

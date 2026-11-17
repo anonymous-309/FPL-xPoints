@@ -347,9 +347,22 @@
   const BANK_BUFFER = 0.1;
   const PLAN = { depth: 4, decay: 0.85, X: 0.5, ftPts: 4, steps: [1, 0.75, 0.5, 0.25, 0] };
   const stepSum = (k) => PLAN.steps.slice(0, Math.max(0, k)).reduce((a, b) => a + b, 0);
+  // Trial (planner.html?ftbonus=1): no transfer cost and no end value; instead every week each free transfer left
+  // after that week's transfers is worth 0.5 (4 at most, so 2 points), weighed like its gameweek. A week's moves must
+  // still gain 0.5 per free transfer they use.
+  const FTB = (() => { try { return new URLSearchParams(location.search).has('ftbonus'); } catch (e) { return false; } })();
+  const FTB_X = 0.5, FTB_CAP = 4;
+  const ftLeft = (w) => (w.chip === 'wildcard' || w.chip === 'freehit' ? w.freeTransfers : Math.max(w.freeTransfers - Math.min(w.ins.length, w.freeTransfers), 0));
 
   // the transfer cost and the value of free transfers kept, for a plan's weeks
   function planExtras(weeks, depth) {
+    if (FTB) {
+      let kept = 0, keptRaw = 0;
+      weeks.slice(0, depth).forEach((w, t) => { const b = FTB_X * Math.min(ftLeft(w), FTB_CAP); kept += Math.pow(PLAN.decay, t) * b; keptRaw += b; });
+      const last = weeks[depth - 1];
+      const left = weeks[depth] ? weeks[depth].freeTransfers : Math.min(S.MAX_FT, ftLeft(last) + (last.chip === 'wildcard' || last.chip === 'freehit' ? 0 : 1));
+      return { cost: 0, left, kept, costRaw: 0, keptRaw };
+    }
     let cost = 0, costRaw = 0;
     weeks.slice(0, depth).forEach((w, t) => {
       if (w.chip === 'wildcard' || w.chip === 'freehit') return;
@@ -410,10 +423,11 @@
       p1: p.p1.slice(0, depth + 1) })) : P;
     const Y = PLAN.ftPts * Math.pow(PLAN.decay, depth - 1);
     const base = { players: Pm, T: Tm, ft: state.team.ft, bank: state.team.bank, chips,
-      settings: { ...S.DEFAULTS, depth, decay: PLAN.decay, reserve: PLAN.steps.map((m) => m * Y), minGain: 0, bankValue: 0, maxHits: null },
+      settings: { ...S.DEFAULTS, depth, decay: PLAN.decay, reserve: FTB ? [0, 0, 0, 0, 0] : PLAN.steps.map((m) => m * Y), minGain: 0, bankValue: 0, maxHits: null },
       ftMult: 1 / Math.pow(PLAN.decay, depth),
       bankBuffer: BANK_BUFFER,
-      useCost: { x: [...Array(depth).keys()].map((t) => PLAN.X * Math.pow(PLAN.decay, t)), steps: PLAN.steps },
+      useCost: FTB ? null : { x: [...Array(depth).keys()].map((t) => PLAN.X * Math.pow(PLAN.decay, t)), steps: PLAN.steps },
+      ftBonus: FTB ? { x: [...Array(depth).keys()].map((t) => FTB_X * Math.pow(PLAN.decay, t)), cap: FTB_CAP } : null,
       keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
     const ownedIds = new Set(state.team.squad.map((x) => x.id));
     const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
@@ -462,6 +476,7 @@
     const weekCost = (w) => {
       if (w.chip === 'wildcard' || w.chip === 'freehit') return 0;
       const used = Math.min(w.ins.length, w.freeTransfers);
+      if (FTB) return FTB_X * used;
       return PLAN.X * (stepSum(w.freeTransfers) - stepSum(w.freeTransfers - used));
     };
     const breaks = (sol, from) => {
