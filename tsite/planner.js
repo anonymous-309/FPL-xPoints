@@ -352,13 +352,22 @@
   // still gain 0.5 per free transfer they use.
   const FTB = (() => { try { return new URLSearchParams(location.search).has('ftbonus'); } catch (e) { return false; } })();
   const FTB_X = 0.5, FTB_CAP = 4;
+  // The weight of each transfer week's bonus. The free transfers left after the last transfer week also earn it in every
+  // gameweek after (no transfers then); the free transfers gained in those weeks are the same for every plan, so they
+  // are left out.
+  const ftbWeights = (depth, T) => [...Array(depth).keys()].map((t) => FTB_X * (t < depth - 1 ? Math.pow(PLAN.decay, t)
+    : [...Array(Math.max(1, T - t)).keys()].reduce((a, j) => a + Math.pow(PLAN.decay, t + j), 0)));
   const ftLeft = (w) => (w.chip === 'wildcard' || w.chip === 'freehit' ? w.freeTransfers : Math.max(w.freeTransfers - Math.min(w.ins.length, w.freeTransfers), 0));
 
   // the transfer cost and the value of free transfers kept, for a plan's weeks
   function planExtras(weeks, depth) {
     if (FTB) {
       let kept = 0, keptRaw = 0;
-      weeks.slice(0, depth).forEach((w, t) => { const b = FTB_X * Math.min(ftLeft(w), FTB_CAP); kept += Math.pow(PLAN.decay, t) * b; keptRaw += b; });
+      const wts = ftbWeights(depth, weeks.length);
+      weeks.slice(0, depth).forEach((w, t) => {
+        const n = Math.min(ftLeft(w), FTB_CAP), weeksCounted = t < depth - 1 ? 1 : Math.max(1, weeks.length - t);
+        kept += wts[t] * n; keptRaw += FTB_X * n * weeksCounted;
+      });
       const last = weeks[depth - 1];
       const left = weeks[depth] ? weeks[depth].freeTransfers : Math.min(S.MAX_FT, ftLeft(last) + (last.chip === 'wildcard' || last.chip === 'freehit' ? 0 : 1));
       return { cost: 0, left, kept, costRaw: 0, keptRaw };
@@ -427,7 +436,7 @@
       ftMult: 1 / Math.pow(PLAN.decay, depth),
       bankBuffer: BANK_BUFFER,
       useCost: FTB ? null : { x: [...Array(depth).keys()].map((t) => PLAN.X * Math.pow(PLAN.decay, t)), steps: PLAN.steps },
-      ftBonus: FTB ? { x: [...Array(depth).keys()].map((t) => FTB_X * Math.pow(PLAN.decay, t)), cap: FTB_CAP } : null,
+      ftBonus: FTB ? { x: ftbWeights(depth, T), cap: FTB_CAP } : null,
       keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
     const ownedIds = new Set(state.team.squad.map((x) => x.id));
     const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
