@@ -11,6 +11,6 @@ b=f._api('bootstrap-static/', c, False)
 ev=[e for e in b['events'] if e.get('is_next')][0]['id']
 tn=f.team_news(c, False, players, ev)
 open('/tmp/tn.json','w').write(json.dumps(tn,ensure_ascii=False))
-for t in tn['teams'][:20]: print(t['short'], t['formation'], t['lastXi'], [(x['name'], x['for']) for x in t['xi'] if x['new']])
+for t in tn['teams'][:20]: print(t['short'], t['formation'], [(x['name'], x['xmin'], x['for']) for x in t['xi'] if x['new']])
 "
 echo FXSTART; gzip -c /tmp/tn.json | base64 -w0; echo; echo FXEND

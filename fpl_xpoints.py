@@ -800,6 +800,7 @@ YELLOW_LIMITS = ((19, 5), (32, 10), (38, 15))  # yellow cards by the end of thes
 
 
 XI_KEEP = 45  # a player from the last line-up keeps his place if we expect at least this many minutes from him
+XI_SWAP = 10  # a player outside it comes in for a starter of his position we expect at least this many fewer minutes from
 
 
 def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dict], str | None, dict | None]:
@@ -854,6 +855,22 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
             used.add(alt["id"])
             same = p is not None and alt["id"] == p["id"]  # he is still the best we have for the place
             out.append(row(alt, st["x"], st["y"], not same, None if same else (p["name"] if p else st["name"])))
+    # A player back from injury (or otherwise expected to play more) takes the place of the starter of the same FPL
+    # position we expect the fewest minutes from, when he is expected at least XI_SWAP minutes more.
+    by_name = {q["name"]: q for q in squad}
+    for pos in ("GK", "DEF", "MID", "FWD"):
+        while True:
+            inside = [o for o in out if o["pos"] == pos]
+            names = {o["name"] for o in out}
+            best = next((q for q in sorted(squad, key=xmin, reverse=True) if q["position"] == pos and q["name"] not in names), None)
+            if not inside or not best:
+                break
+            low = min(inside, key=lambda o: o["xmin"])
+            if xmin(best) < low["xmin"] + XI_SWAP:
+                break
+            low.update({"name": best["name"], "xmin": round(xmin(best)), "new": True, "for": low["for"] or low["name"]})
+            if by_name.get(low["for"]) is not None and low["for"] == best["name"]:
+                low.update({"new": False, "for": None})
     m = lineup.get("match") or {}
     return out, lineup.get("formation"), {"home": m.get("home"), "away": m.get("away"), "t": m.get("t")}
 
@@ -1753,26 +1770,6 @@ def return_date(news: str, news_added: str | None) -> pd.Timestamp | None:
     return None
 
 
-# Typical gameweeks out for an injury FPL gives no return date for, by the body part in the news (rough figures
-# for Premier League players; the first match back counts half). The first match listed wins.
-INJURY_WEEKS = [(("acl", "cruciate", "achilles"), 30, "a long-term injury"), (("surgery", "operation"), 10, "surgery"),
-                (("fracture", "broken"), 8, "a fracture"), (("knee",), 5, "a knee injury"), (("hamstring",), 4, "a hamstring injury"),
-                (("thigh", "muscle", "muscular"), 3, "a muscle injury"), (("calf",), 3, "a calf injury"), (("ankle",), 3, "an ankle injury"),
-                (("foot", "toe"), 3, "a foot injury"), (("groin", "adductor"), 3, "a groin injury"), (("hip",), 3, "a hip injury"),
-                (("shoulder",), 3, "a shoulder injury"), (("back",), 2, "a back injury"), (("concussion", "head"), 1, "a head injury"),
-                (("illness", " ill"), 1, "illness"), (("knock",), 1, "a knock")]
-INJURY_WEEKS_DEFAULT = (2, "an injury")
-
-
-def injury_weeks(news: str) -> tuple[int, str]:
-    """Typical gameweeks out for an injury, from the words in FPL's news."""
-    text = f" {(news or '').lower()}"
-    for words, weeks, label in INJURY_WEEKS:
-        if any(w in text for w in words):
-            return weeks, label
-    return INJURY_WEEKS_DEFAULT
-
-
 def minute_plan(status: str | None, news: str, news_added: str | None, chance: float | None,
                 fixtures: list[tuple[int, pd.Timestamp]], first: int, red_last: bool, news_gw: int | None = None) -> tuple[list[float], bool, str, int | None]:
     """How much of his usual minutes a player is expected to play in each upcoming fixture (gameweek, kickoff in UK time).
@@ -1781,9 +1778,8 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
     a short note, and the gameweek he is back.
     - A return date in the news (injury or ban): 0 before it, then his usual minutes from the 5-4-3-2-1 formula on
       the matches before the absence.
-    - Injured with no return date: out for the typical time for that injury (see INJURY_WEEKS), counted from the
-      gameweek the news came out, at least the next gameweek; half his usual minutes in the first match back.
-    - Not available for another reason (left the club, on loan) with no return date: 0 in every gameweek.
+    - Injured or not available with no return date: 0 in every gameweek. Only FPL's own return date is used, never
+      a guess at how long an injury lasts; he comes back into the numbers when FPL gives a date or clears him.
     - Suspended with no date, or a red card in his last match before FPL has flagged it: out for one match.
     - Doubtful (25/50/75%): xMin times FPL's chance in the next gameweek, full after that.
     """
@@ -1798,16 +1794,8 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
         i = next((j for j, v in enumerate(out) if v > 0), n)
         note = f"Back GW{back(i)} ({when:%d %b})" if i < n else f"Out until {when:%d %b}, after these gameweeks"
         return out, True, note, back(i)
-    is_injury = status == "i" or (status == "n" and any(w in f" {(news or '').lower()}" for ws, _, _ in INJURY_WEEKS for w in ws))
-    if is_injury:
-        weeks, label = injury_weeks(news)
-        back_at = max(first + 1, (news_gw or first) + weeks)
-        out = [0.0 if gw < back_at else 0.5 if gw == back_at else 1.0 for gw, _ in fixtures]
-        i = next((j for j, v in enumerate(out) if v > 0), n)
-        # no return gameweek is passed on: the injury log and the site only show return dates FPL gave
-        return out, True, f"No return date: about {weeks} week{'s' if weeks > 1 else ''} out for {label}, back GW{back_at} (estimate)", None
     if status in ("i", "n"):
-        return [0.0] * n, False, "Unavailable, no return date: 0", None
+        return [0.0] * n, True, ("Injured" if status == "i" else "Unavailable") + ", no return date from FPL: 0", None
     if status == "s" or red_last:
         out = [0.0 if j == 0 else 1.0 for j in range(n)]
         why = "Suspended, no date given" if status == "s" else "Red card in his last match"
