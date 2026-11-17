@@ -817,7 +817,10 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
             hit = [p for p in squad if test(p)]
             if len(hit) == 1:
                 return hit[0]
-        return None
+        # spelling differs (Yeremi / Yeremy): closest short name to any word of his name
+        import difflib
+        best = max(((max(difflib.SequenceMatcher(None, _name_key(p["name"]), w).ratio() for w in n.split() + [n]), p) for p in squad), key=lambda x: x[0], default=(0, None))
+        return best[1] if best[0] >= 0.8 else None
 
     def slot_pos(pid):
         pid = int(pid or 0)
@@ -849,7 +852,8 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
         alt = next((q for q in sorted(squad, key=xmin, reverse=True) if q["position"] == pos and q["id"] not in used), None)
         if alt:
             used.add(alt["id"])
-            out.append(row(alt, st["x"], st["y"], True, p["name"] if p else st["name"]))
+            same = p is not None and alt["id"] == p["id"]  # he is still the best we have for the place
+            out.append(row(alt, st["x"], st["y"], not same, None if same else (p["name"] if p else st["name"])))
     m = lineup.get("match") or {}
     return out, lineup.get("formation"), {"home": m.get("home"), "away": m.get("away"), "t": m.get("t")}
 
