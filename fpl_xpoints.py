@@ -682,6 +682,100 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     return hurt, covered
 
 
+# ---------------------------------------------------------------- every club's fixtures in all competitions
+# League matches come from FPL (its gameweek and kickoff); every other competition from FotMob's team pages.
+CLUB_COMPS = {"Champions League": "UCL", "Europa League": "UEL", "Conference League": "UECL", "EFL Cup": "EFL",
+              "FA Cup": "FAC", "Community Shield": "CS", "Club Friendlies": "FR"}
+
+
+_CLUB_FILLER = {"fc", "ac", "as", "sc", "cf", "fk", "sk", "afc", "real", "club", "athletic", "olympique", "rb", "us", "ss", "ssc", "vfb", "vfl", "bayer", "borussia", "fsv", "tsg", "sv", "ogc", "rc", "rcd", "cd", "ud", "sd", "kv", "krc", "rsc", "royal"}
+
+
+def _club_short(name: str) -> str:
+    """Three letters for a club outside the league: "Real Madrid" MAD, "Paris Saint-Germain" PSG, "Sabah FK" SAB."""
+    words = _name_key(name).split()
+    if not words:
+        return "TBC"
+    fixed = {"paris saint": "PSG", "atletico madrid": "ATM", "union st": "USG", "inter": "INT", "ac milan": "MIL", "psv eindhoven": "PSV", "sporting cp": "SCP"}
+    for k, v in fixed.items():
+        if " ".join(words).startswith(k):
+            return v
+    rest = [w for w in words if w not in _CLUB_FILLER] or words
+    return rest[0][:3].upper()
+
+
+def club_fixtures(cache: Path, offline: bool) -> dict:
+    """{"gws": [{gw, deadline}], "teams": [{name, short, matches: [{t, comp, opp, oppShort, home, score, gw, stage}]}]}"""
+    boot = _api("bootstrap-static/", cache, offline)
+    fpl_fx = _api("fixtures/", cache, offline)
+    teams = {t["id"]: t for t in boot["teams"]}
+    by_name = {t["name"]: t for t in boot["teams"]}
+    key_short = {_euro_key(t["name"]): t["short_name"] for t in boot["teams"]}
+    key_short.update({_euro_key(k): by_name[v]["short_name"] for k, v in EURO_ALIASES.items() if v in by_name})
+    key_short.update({_euro_key(k): by_name[v]["short_name"] for k, v in FOTMOB_TEAMS.items() if v in by_name})
+    out = {t["id"]: [] for t in boot["teams"]}
+    for f in fpl_fx:
+        for side, opp, home in (("team_h", "team_a", True), ("team_a", "team_h", False)):
+            o = teams[f[opp]]
+            score = f"{f['team_h_score']} - {f['team_a_score']}" if f.get("finished") and f.get("team_h_score") is not None else None
+            out[f[side]].append({"t": f.get("kickoff_time"), "comp": "PL", "opp": o["name"], "oppShort": o["short_name"], "home": home,
+                                 "score": score, "gw": f.get("event")})
+    folder = cache / "fotmob"
+    folder.mkdir(parents=True, exist_ok=True)
+    note = ""
+    try:
+        idx = folder / "league_table.json"
+        if offline or (idx.exists() and time.time() - idx.stat().st_mtime < 6 * 3600):
+            table = json.loads(idx.read_text())
+        else:
+            table = [(t["id"], t["name"]) for t in _fotmob_get("leagues", {"id": FOTMOB_LEAGUE, "ccode3": "GBR"})["table"][0]["data"]["table"]["all"]]
+            idx.write_text(json.dumps(table))
+    except Exception as e:
+        table, note = [], f"FotMob not read ({e}): only league matches are shown"
+        print(note)
+    missed = []
+    for fm_id, fm_name in table:
+        t = by_name.get(FOTMOB_TEAMS.get(fm_name, fm_name)) or next((x for x in boot["teams"] if _name_key(x["name"]).split()[0] == _name_key(fm_name).split()[0]), None)
+        if not t:
+            missed.append(fm_name)
+            continue
+        f = folder / f"team_{fm_id}.json"
+        data = None
+        if offline or (f.exists() and time.time() - f.stat().st_mtime < 6 * 3600):
+            data = json.loads(f.read_text()) if f.exists() else None
+        else:
+            try:
+                d = _fotmob_get("teams", {"id": fm_id, "ccode3": "GBR"})
+                data = ((d.get("fixtures") or {}).get("allFixtures") or {}).get("fixtures") or []
+                f.write_text(json.dumps(data))
+                time.sleep(0.4)
+            except Exception as e:
+                print(f"FotMob team {fm_name} not read ({e})")
+                data = json.loads(f.read_text()) if f.exists() else None
+                if data is None:
+                    missed.append(fm_name)
+        for m in data or []:
+            tour = (m.get("tournament") or {}).get("name") or ""
+            st = m.get("status") or {}
+            if tour == "Premier League" or st.get("cancelled"):
+                continue
+            home = (m.get("home") or {}).get("id") == fm_id
+            opp = (m.get("away") if home else m.get("home")) or {}
+            name = opp.get("name") or "TBC"
+            short = key_short.get(_euro_key(name)) or _club_short(name)
+            out[t["id"]].append({"t": st.get("utcTime"), "comp": CLUB_COMPS.get(tour, tour), "opp": name, "oppShort": short, "home": home,
+                                 "score": st.get("scoreStr") if st.get("finished") else None, "stage": (m.get("tournament") or {}).get("stage") or ""})
+    if missed:
+        print(f"Club fixtures: no cup matches for {', '.join(missed)}")
+    for ms in out.values():
+        ms.sort(key=lambda m: m["t"] or "9999")
+    n = sum(len(v) for v in out.values())
+    print(f"Club fixtures: {n} matches for {len(out)} teams, " + ", ".join(f"{c} {sum(m['comp'] == c for v in out.values() for m in v)}" for c in ["PL", *dict.fromkeys(CLUB_COMPS.values())]))
+    return {"updatedAt": int(time.time() * 1000), "note": note,
+            "gws": [{"gw": e["id"], "deadline": e["deadline_time"], "current": bool(e.get("is_current")), "next": bool(e.get("is_next"))} for e in boot["events"]],
+            "teams": [{"name": t["name"], "short": t["short_name"], "matches": out[t["id"]]} for t in sorted(boot["teams"], key=lambda t: t["name"])]}
+
+
 def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, hurt: set | None = None, covered: set | None = None) -> pd.DataFrame:
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
@@ -2169,6 +2263,10 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
         (out_dir / "injury_log.json").write_text(json.dumps(merged_injuries(log, load_admin_injuries()), ensure_ascii=False), encoding="utf-8")
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
+    try:
+        (out_dir / "fixtures.json").write_text(json.dumps(club_fixtures(data_dir / "api_cache", offline), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    except Exception as e:  # never stop the site for this page
+        print(f"Club fixtures not written ({e})")
     first = str(payload["gws"][0])
     top = sorted((p for p in players.values() if first in p["byGw"]), key=lambda p: -p["byGw"][first]["pScore"])[:5]
     for p in top:

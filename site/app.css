@@ -375,3 +375,56 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .decay-toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: left .15s; }
 .decay-toggle input:checked { background: var(--green, #0f6b45); }
 .decay-toggle input:checked::after { left: 18px; }
+
+/* Fixtures */
+.fx-comps { display: flex; flex-wrap: wrap; gap: 6px; align-self: end; }
+.fx-tog { height: 30px; font-size: 12.5px; }
+.fx-tog[aria-pressed="false"] { opacity: .55; text-decoration: line-through; }
+.fx-grid th.fx-gw { min-width: 96px; padding: 6px 6px 5px; text-align: left; vertical-align: bottom; line-height: 1.15; }
+.fx-grid th.fx-gw.now { background: #eef4ec; }
+.fx-grid .gwn { display: block; font: 700 15px/1.1 var(--display); }
+.fx-grid .gwd { display: block; color: var(--muted); font-size: 11.5px; font-weight: 400; }
+.fx-grid .gwb { display: inline-block; margin-top: 2px; padding: 0 4px; background: var(--flag); border-radius: 2px; font-size: 10.5px; font-weight: 650; }
+.fx-grid th.fx-team { text-align: left; padding: 6px 10px; }
+.fx-grid td.fx-team { min-width: 150px; }
+.linkish { padding: 0; background: none; border: 0; color: var(--turf); font: inherit; font-weight: 600; text-align: left; cursor: pointer; }
+.linkish:hover { text-decoration: underline; }
+td.fx-cell { min-width: 96px; height: auto; padding: 4px 5px; vertical-align: top; text-align: left; white-space: normal; border-left: 1px solid var(--line); }
+td.fx-cell.n2 { background: #e6efe3; }
+td.fx-cell.n3 { background: #c9dcc4; }
+td.fx-cell.blank { background: #fbe3df; }
+td.fx-cell.double { box-shadow: inset 0 0 0 2px var(--flag); }
+.fx-none { color: var(--warn); font-size: 12px; font-weight: 650; }
+.fx-m { display: inline-flex; align-items: baseline; gap: 3px; margin: 1px 0; padding: 1px 5px; border-radius: 3px; background: var(--paper); border: 1px solid var(--line);
+  font: 650 12.5px/17px var(--body); white-space: nowrap; }
+td.fx-cell .fx-m { display: flex; width: max-content; }
+.fx-m b { font-size: 10px; font-weight: 700; letter-spacing: .02em; }
+.fx-m i { color: inherit; opacity: .7; font-style: normal; font-weight: 400; font-size: 11px; }
+.fx-m.past { opacity: .6; }
+.fx-m.c-UCL { background: #1d3f8f; border-color: #1d3f8f; color: #fff; }
+.fx-m.c-UEL { background: #c7620a; border-color: #c7620a; color: #fff; }
+.fx-m.c-UECL { background: #1e7a46; border-color: #1e7a46; color: #fff; }
+.fx-m.c-EFL { background: #5e3a94; border-color: #5e3a94; color: #fff; }
+.fx-m.c-FAC { background: #a3241b; border-color: #a3241b; color: #fff; }
+.fx-m.c-CS, .fx-m.c-FR { background: #e9ece8; color: var(--muted); }
+.fx-key { display: inline-block; padding: 0 6px; border: 1px solid var(--line); border-radius: 2px; }
+.fx-key.n2 { background: #e6efe3; } .fx-key.n3 { background: #c9dcc4; }
+.fx-list td { text-align: left; }
+.fx-list th { text-align: left; padding: 8px 10px; }
+.fx-list tr.past td { color: var(--muted); }
+.fx-list .fx-opp { font-weight: 600; }
+.fx-list .fx-stage { color: var(--muted); font-size: 12px; }
+.fx-list td.fx-short { color: var(--warn); font-weight: 650; }
+#fx-next td { border-top: 2px solid var(--turf); }
+.filters label[hidden] { display: none; }
+.fx-tog.c-UCL[aria-pressed="true"] { background: #1d3f8f; border-color: #1d3f8f; }
+.fx-tog.c-UEL[aria-pressed="true"] { background: #c7620a; border-color: #c7620a; }
+.fx-tog.c-UECL[aria-pressed="true"] { background: #1e7a46; border-color: #1e7a46; }
+.fx-tog.c-EFL[aria-pressed="true"] { background: #5e3a94; border-color: #5e3a94; }
+.fx-tog.c-FAC[aria-pressed="true"] { background: #a3241b; border-color: #a3241b; }
+.fx-tog.c-PL[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
+.fx-tog.c-CS[aria-pressed="true"], .fx-tog.c-FR[aria-pressed="true"] { background: #6b766f; border-color: #6b766f; }
+@media (max-width: 600px) {
+  .fx-grid td.fx-team { min-width: 92px; max-width: 92px; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
+  .fx-grid th.fx-gw, td.fx-cell { min-width: 84px; }
+}

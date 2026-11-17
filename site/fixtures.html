@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixtures FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Fixtures</h1>
+    <p id="status" role="status">Loading fixtures</p>
+  </div>
+  <nav class="sitenav" aria-label="Pages"></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <div class="seg" role="group" aria-label="View">
+    <button type="button" data-view="grid" aria-pressed="true">All teams</button>
+    <button type="button" data-view="team" aria-pressed="false">One team</button>
+  </div>
+  <label>Team <select id="team"></select></label>
+  <label>Gameweeks <select id="range">
+    <option value="8">Next 8</option><option value="12" selected>Next 12</option><option value="all">Whole season</option>
+  </select></label>
+  <div class="fx-comps" role="group" aria-label="Competitions"></div>
+</form>
+<main>
+  <div id="grid" class="wrap" tabindex="0" aria-label="Fixtures by gameweek">
+    <table class="minutes fx-grid"><thead></thead><tbody></tbody></table>
+  </div>
+  <div id="list" class="wrap" tabindex="0" aria-label="Fixtures of one team" hidden>
+    <table class="minutes fx-list"><thead><tr>
+      <th scope="col">Date</th><th scope="col">GW</th><th scope="col">Competition</th><th scope="col">Opponent</th><th scope="col">Venue</th><th scope="col">Result</th><th scope="col">Rest</th>
+    </tr></thead><tbody></tbody></table>
+  </div>
+</main>
+<footer>
+  <p>Each column runs from one FPL deadline to the next, so a match in a column is played before that next deadline. Opponents in capitals are at home, in lower case away. Shading shows how many matches a club plays in the column: <span class="fx-key n2">2</span> <span class="fx-key n3">3+</span>. A red cell is a <b>blank</b> (no league match), a yellow border a <b>double</b>. A long column holds an international break. League matches and gameweeks come from FPL; every other competition from FotMob. A cup tie shows up once it is drawn: Premier League clubs enter the FA Cup in the third round in January. Dates and times are in your own time zone. <b>Rest</b> is the days since the club's previous match. Not affiliated with the Premier League.</p>
+</footer>
+<script src="fixtures.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>
