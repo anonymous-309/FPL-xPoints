@@ -347,10 +347,10 @@
   const BANK_BUFFER = 0.1;
   const PLAN = { depth: 4, decay: 0.85, X: 0.5, ftPts: 4, steps: [1, 0.75, 0.5, 0.25, 0] };
   const stepSum = (k) => PLAN.steps.slice(0, Math.max(0, k)).reduce((a, b) => a + b, 0);
-  // Trial (planner.html?ftbonus=1): no transfer cost and no end value; instead every week each free transfer left
-  // after that week's transfers is worth 0.5 (4 at most, so 2 points), weighed like its gameweek. A week's moves must
-  // still gain 0.5 per free transfer they use.
-  const FTB = (() => { try { return new URLSearchParams(location.search).has('ftbonus'); } catch (e) { return false; } })();
+  // FT bonus: every transfer week, each free transfer left after that week's transfers is worth 0.5 (4 at most, so 2
+  // points), weighed like its gameweek; those left after the last transfer week earn it in every gameweek to the end.
+  // A week's moves must still gain 0.5 per free transfer they use.
+  const FTB = true; // the FT bonus way of judging plans (the older transfer cost and end value are kept below for reference)
   const FTB_X = 0.5, FTB_CAP = 4;
   // The weight of each transfer week's bonus. The free transfers left after the last transfer week also earn it in every
   // gameweek after (no transfers then); the free transfers gained in those weeks are the same for every plan, so they
@@ -701,6 +701,7 @@
     // under each gameweek's moves: money left, what the moves gain that gameweek and over the rest of the plan
     const facts = (w, g) => {
       const out = [];
+      if (w.chip !== 'wildcard' && w.chip !== 'freehit') out.push(el('small', { className: 'itb ft-saved', textContent: `FT saved: ${ftLeft(w)}` }));
       if (w.bank !== null && w.bank !== undefined) out.push(el('small', { className: w.t > 0 && w.bank < BANK_BUFFER * (w.t + 1) - 1e-6 ? 'itb tight' : 'itb', textContent: `ITB ${f1(w.bank)}m` }));
       if (g) {
         out.push(el('small', { className: 'itb gw-gain', textContent: `${sign(g.now)} GW${gws[w.t]}` }));
@@ -734,8 +735,7 @@
         })(),
         el('td', { className: 'num', textContent: f1(decayOn ? o.dpts : o.pts) }),
         el('td', { className: 'num', textContent: sign((decayOn ? o.gainDecay : o.gainRaw) || 0) }),
-        el('td', { className: 'num', textContent: (decayOn ? o.cost : o.costRaw) ? `−${f2(decayOn ? o.cost : o.costRaw)}` : '0' }),
-        el('td', { className: 'num', textContent: `${o.left} (+${f2(decayOn ? o.kept : o.keptRaw)})` }),
+        el('td', { className: 'num', textContent: `+${f2(decayOn ? o.kept : o.keptRaw)}` }),
         el('td', { className: `num${(decayOn ? o.total === bestT : o.totalRaw === bestRaw) ? ' best' : ''}`, textContent: f2(decayOn ? o.total : o.totalRaw) }),
         el('td', { className: `num${o.win === bestWin ? ' best' : ''}` }, pctFine(o.win)));
       tr.setAttribute('aria-selected', String(k === state.plan.pick));
@@ -747,17 +747,17 @@
     return el('section', { className: 'options' },
       el('div', { className: 'opt-head' }, el('h3', {}, `Plans from GW${gws[0]}: tap one to see it week by week`),
         el('label', { className: 'decay-toggle' }, el('input', { type: 'checkbox', checked: decayOn, onchange: (e) => { state.decayView = e.target.checked; try { localStorage.setItem('planner-decay', e.target.checked ? '1' : '0'); } catch (err) { /* ignore */ } render(); } }), ' Decay')),
-      el('p', { className: 'opt-verdict rec' }, 'Best plan: ', el('b', { textContent: say(rec) }), (decayOn ? ` (score ${f2(rec.total)}: ${f1(rec.dpts)} xPts decay, transfer cost ${f2(rec.cost)}, ${rec.left} FT kept +${f2(rec.kept)}).`
-          : ` (score ${f2(rec.totalRaw)}: ${f1(rec.pts)} xPts, transfer cost ${f2(rec.costRaw)}, ${rec.left} FT kept +${f2(rec.keptRaw)}; picked on the weighed score).`),
+      el('p', { className: 'opt-verdict rec' }, 'Best plan: ', el('b', { textContent: say(rec) }), (decayOn ? ` (score ${f2(rec.total)}: ${f1(rec.dpts)} xPts decay + ${f2(rec.kept)} FT bonus).`
+          : ` (score ${f2(rec.totalRaw)}: ${f1(rec.pts)} xPts + ${f2(rec.keptRaw)} FT bonus; picked on the weighed score).`),
         mostWins === rec ? ' It is also the top scorer most often.' : el('span', {}, ' Top scorer most often: ', el('b', { textContent: say(mostWins) }), ` (${pctFine(mostWins.win)}).`)),
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' },
         el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses now' }),
           ...gws.slice(0, depth).map((g) => el('th', { scope: 'col', textContent: `GW${g}` })),
           el('th', { scope: 'col', className: 'num', textContent: decayOn ? 'xPts Decay' : 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: decayOn ? 'Gain Decay' : 'Gain' }),
-          el('th', { scope: 'col', className: 'num', textContent: 'Cost' }), el('th', { scope: 'col', className: 'num', textContent: 'FT kept' }),
+          el('th', { scope: 'col', className: 'num', textContent: 'FT bonus' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. Decay switch (on by default): every figure (xPts, Gain, Cost, FT kept, Score) with each later gameweek counting ${PLAN.decay} times the one before; off: plain sums (cost 0.5 a free transfer, kept free transfers worth ${PLAN.ftPts} each). The Best plan is always picked on the weighed Score. xPts (Decay): expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Gain (Decay): the plan's expected points against keeping your squad as it is; it is the sum of the figures under each gameweek's moves. Under each gameweek's moves: ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan against the squad before them (weighed 0.85 a week from the first gameweek when Decay is on). Cost: each free transfer used costs ${PLAN.X} (weighed like its gameweek) when it is the last one in hand, 75% with 1 left, 50% with 2, 25% with 3, nothing with 4. FT kept: free transfers in hand after GW${gws[depth - 1]}, the 1st worth ${f2(PLAN.ftPts * Math.pow(PLAN.decay, depth - 1))} (${PLAN.ftPts} points weighed like that gameweek), then 75%, 50%, 25%, 0% of that. Score: xPts − Cost + FT kept; the plan with the most is marked Best. Rule for every gameweek without a hit: its moves must gain at least their transfer cost that same gameweek (a week with a hit is exempt, since a hit pays back over the weeks after); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out and the next best takes its place. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
+      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. Decay switch (on by default): every figure (xPts, Gain, FT bonus, Score) with each later gameweek counting ${PLAN.decay} times the one before; off: plain sums. The Best plan is always picked on the weighed Score. xPts (Decay): expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Gain (Decay): the plan's expected points against keeping your squad as it is; it is the sum of the figures under each gameweek's moves. Under each gameweek's moves: FT saved, the free transfers left after that gameweek's transfers; ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan against the squad before them (weighed 0.85 a week from the first gameweek when Decay is on). FT bonus: in every transfer gameweek each free transfer saved is worth ${FTB_X} (${FTB_CAP} at most, so ${FTB_X * FTB_CAP} points), and those saved after GW${gws[depth - 1]} earn it again in every gameweek to GW${gws[gws.length - 1]} (not the free transfers gained in those weeks, which are the same for every plan). Score: xPts + FT bonus; the plan with the most is marked Best. Rule for every gameweek without a hit: its moves must gain at least ${FTB_X} for each free transfer they use, in that same gameweek (a week with a hit is exempt, since a hit pays back over the weeks after); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out and the next best takes its place. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
