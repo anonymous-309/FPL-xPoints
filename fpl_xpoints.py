@@ -872,6 +872,7 @@ def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
         nm = [{"gw": f["event"], "t": f.get("kickoff_time"), "home": f["team_h"] == tid,
                "opp": teams[f["team_a"] if f["team_h"] == tid else f["team_h"]]["short_name"]} for f in nxt if f["event"] == (nxt[0]["event"] if nxt else None)]
         squad = [p for p in players.values() if p["team"] == t["short_name"]]
+        xmin = lambda p: float((p["byGw"].get(str(first_gw)) or {}).get("xmin") or 0)
         xi, formation, last = likely_xi(squad, lineups.get(t["short_name"]), first_gw)
         news, watch = [], []
         for e in boot["elements"]:
