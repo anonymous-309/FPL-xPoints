@@ -487,3 +487,17 @@ td.fx-cell.blank { background: #fbe3df; }
 .tn-none { margin: 0; padding: 10px 14px; color: var(--muted); }
 .tn-watch { margin: 0; padding: 8px 14px 12px; font-size: 12.5px; color: var(--muted); }
 .tn-watch b { color: var(--ink); font-weight: 650; }
+.tn-pitch { position: relative; aspect-ratio: 4 / 4.6; margin: 4px 0 6px; overflow: hidden; border-radius: 4px;
+  background: repeating-linear-gradient(180deg, #2f7d4f 0 11%, #2a7348 11% 22%); }
+.tn-pitch > .tn-box, .tn-pitch > .tn-half, .tn-pitch > .tn-circle { position: absolute; border: 1.5px solid rgba(255,255,255,.35); pointer-events: none; }
+.tn-box { left: 25%; width: 50%; height: 14%; } .tn-box.top { top: -2px; } .tn-box.bottom { bottom: -2px; }
+.tn-half { left: 0; right: 0; top: 50%; height: 0; border-width: 1.5px 0 0; }
+.tn-circle { left: 50%; top: 50%; width: 22%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; }
+.tn-p { position: absolute; display: flex; flex-direction: column; align-items: center; width: 25%; transform: translate(-50%, -50%); text-align: center; line-height: 1.1; }
+.tn-shirt { position: relative; display: block; width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid rgba(0,0,0,.25); }
+.tn-shirt.GK { background: #ffd23f; }
+.tn-p.new .tn-shirt { box-shadow: 0 0 0 3px #7fd4ff; }
+.tn-shirt em { position: absolute; top: -8px; right: -18px; padding: 0 3px; border-radius: 3px; background: #ffe94d; color: var(--ink); font: 700 9.5px/13px var(--body); font-style: normal; }
+.tn-p b { max-width: 100%; margin-top: 2px; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(10,40,25,.78); border-radius: 3px; color: #fff; font-size: 11.5px; font-weight: 600; }
+.tn-p small { color: rgba(255,255,255,.85); font-size: 10px; }
+.tn-changes { margin: 0; color: var(--muted); font-size: 12px; }

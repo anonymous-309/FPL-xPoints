@@ -37,15 +37,29 @@
   function card(t) {
     const news = t.news.filter(match);
     const nx = t.next.length ? t.next.map((m) => `${m.opp} (${m.home ? "H" : "A"})${m.t ? ' ' + gmt(m.t) : ''}`).join(' + ') : 'No league match this gameweek';
-    const lines = ['GK', 'DEF', 'MID', 'FWD'].map((p) => t.xi.filter((x) => x.pos === p)).filter((l) => l.length);
-    const flagged = new Set(t.news.filter((n) => ['i', 'n', 's', 'd'].includes(n.status)).map((n) => n.name));
+    const chance = new Map(t.news.filter((n) => n.status === 'd').map((n) => [n.name, n.chance]));
+    const changes = t.xi.filter((x) => x.new && x.for);
+    const vs = t.lastXi ? (t.lastXi.home && t.lastXi.away ? `${t.lastXi.home} ${t.lastXi.away ? 'v ' + t.lastXi.away : ''}` : '') : '';
+    const pitch = t.xi.length ? el('div', { className: 'tn-xi' },
+      el('h3', { textContent: `Likely XI${t.formation ? ' · ' + t.formation : ''}` }),
+      el('div', { className: 'tn-pitch', role: 'img', ariaLabel: `Likely line-up: ${t.xi.map((x) => x.name).join(', ')}` },
+        el('span', { className: 'tn-box top' }), el('span', { className: 'tn-box bottom' }), el('span', { className: 'tn-half' }), el('span', { className: 'tn-circle' }),
+        ...t.xi.map((x) => {
+          const c = chance.get(x.name);
+          const node = el('span', { className: `tn-p${x.new ? ' new' : ''}${c != null ? ' doubt' : ''}`, title: `${x.name} · ${x.xmin} expected minutes${x.new && x.for ? ' · in for ' + x.for : ''}${c != null ? ' · ' + c + '% chance of playing' : ''}` },
+            el('i', { className: `tn-shirt ${x.pos}` }, c != null ? el('em', { textContent: `${c}%` }) : null),
+            el('b', { textContent: x.name }), el('small', { textContent: `${x.xmin}'` }));
+          node.style.left = `${((1 - x.x) * 100).toFixed(1)}%`;
+          node.style.top = `${((1 - x.y) * 100).toFixed(1)}%`;
+          return node;
+        })),
+      el('p', { className: 'tn-changes' }, changes.length ? `Changes from the last league XI${vs ? ' (' + vs + ')' : ''}: ` + changes.map((x) => `${x.name} for ${x.for}`).join(', ') : t.formation ? `Same XI as the last league match${vs ? ' (' + vs + ')' : ''}` : 'No recent line-up: the players with the most expected minutes')) : null;
     return el('article', { className: 'sp-card tn-card' },
       el('div', { className: 'sp-head' },
         el('h2', { textContent: t.name }),
         el('p', {}, `Next: ${nx}`),
         t.lastNews ? el('p', { className: 'tn-upd', textContent: `News last changed ${ago(t.lastNews)}` }) : null),
-      lines.length ? el('div', { className: 'tn-xi' }, el('h3', { textContent: 'Likely XI (our xMin)' }),
-        ...lines.map((l) => el('div', { className: 'tn-line' }, ...l.map((x) => el('span', { className: `tn-pl${flagged.has(x.name) ? ' flagged' : ''}`, title: `${x.xmin} expected minutes` }, x.name, el('small', { textContent: ` ${x.xmin}'` })))))) : null,
+      pitch,
       block('Out', news.filter((n) => kind(n) === 'out'), 'out'),
       block('Doubts', news.filter((n) => kind(n) === 'doubt'), 'doubt'),
       block('Banned', news.filter((n) => kind(n) === 'banned'), 'banned'),
