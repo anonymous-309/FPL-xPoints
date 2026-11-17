@@ -874,45 +874,44 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
             if ROLE_OF(st["pid"]) not in roles[q["id"]]:
                 roles[q["id"]].append(ROLE_OF(st["pid"]))
 
-    def fit(q, role):
-        """2: the role is one of his, 1: a neighbouring role (RB and RWB, CM and DM...), 0: no."""
-        rs = roles.get(q["id"])
-        if rs is None:  # no FotMob roles: any place of his FPL position
-            return 1 if slot_pos_role(role) == q["position"] else 0
-        if role in rs:
-            return 2
-        return 1 if any(role in ROLE_NEAR.get(r, ()) for r in rs) else 0
+    last_slot = {q["id"]: ROLE_OF(st["pid"]) for st, q in starters if q}
 
-    keep = {q["id"] for st, q in starters if q and xmin(q) >= XI_KEEP}
-    used = set(keep)
+    def fit(q, role):
+        """How well he suits a place: 1 for his main FotMob position, a little less for each later one, 0.6 for a
+        neighbouring role (RB and RWB, CM and DM...), 0 for none; without FotMob positions, 0.8 for any place of his FPL
+        position. A little more for the very place he played last time."""
+        rs = roles.get(q["id"])
+        if rs is None:
+            f = 0.8 if slot_pos_role(role) == q["position"] else 0
+        elif role in rs:
+            f = max(0.75, 1 - 0.07 * rs.index(role))
+        else:
+            f = 0.6 if any(role in ROLE_NEAR.get(r, ()) for r in rs) else 0
+        if role == "GK" or q["position"] == "GK":
+            f = f if role == "GK" and q["position"] == "GK" else 0
+        return f * (1.08 if last_slot.get(q["id"]) == role else 1)
+
+    # The XI: every place of the last line-up filled so that expected minutes times fit add up to the most (an
+    # assignment problem), so a centre back's injury can move the right back inside and bring in another right back.
+    from scipy.optimize import linear_sum_assignment
+    cands = [q for q in squad if xmin(q) > 0]
+    slot_roles = [ROLE_OF(st["pid"]) for st, _ in starters]
+    value = np.array([[xmin(q) * fit(q, r) for q in cands] for r in slot_roles]) if cands else np.zeros((len(slot_roles), 0))
     out = []
-    for st, q in starters:
-        role = ROLE_OF(st["pid"])
-        if q and q["id"] in keep and not any(o["id"] == q["id"] for o in out):
-            out.append(dict(row(q, st["x"], st["y"], False), id=q["id"], role=role))
-            continue
-        pool = [c for c in squad if c["id"] not in used]
-        alt = (max((c for c in pool if fit(c, role)), key=lambda c: (xmin(c), fit(c, role)), default=None)
-               or max((c for c in pool if c["position"] == (q["position"] if q else slot_pos_role(role))), key=xmin, default=None))
-        if alt:
-            used.add(alt["id"])
-            same = q is not None and alt["id"] == q["id"]
-            out.append(dict(row(alt, st["x"], st["y"], not same, None if same else (q["name"] if q else st["name"])), id=alt["id"], role=role))
-    # A player back from injury (or anyone outside the XI expected to play more) takes the place, in a role of his, of
-    # the starter we expect the fewest minutes from, when we expect him to play at least XI_SWAP minutes more.
-    for c in sorted(squad, key=xmin, reverse=True):
-        if any(o["id"] == c["id"] for o in out) or xmin(c) < XI_KEEP:
-            continue
-        spots = [o for o in out if fit(c, o["role"]) == 2] or [o for o in out if fit(c, o["role"]) == 1 and o["pos"] == c["position"]]
-        if not spots:
-            continue
-        low = min(spots, key=lambda o: o["xmin"])
-        if xmin(c) >= low["xmin"] + XI_SWAP:
-            low.update({"name": c["name"], "pos": c["position"], "xmin": round(xmin(c)), "new": True, "for": low["for"] or low["name"], "id": c["id"]})
-    for o in out:
-        o.pop("id", None)
+    if value.size:
+        rows_i, cols_i = linear_sum_assignment(-value)
+        pick = dict(zip(rows_i, cols_i))
+        before = {q["id"] for _, q in starters if q}
+        for k, (st, q) in enumerate(starters):
+            j = pick.get(k)
+            if j is None or value[k, j] <= 0:
+                continue
+            c = cands[j]
+            out.append(dict(row(c, st["x"], st["y"], c["id"] not in before, None), role=slot_roles[k]))
+    chosen = {o["name"] for o in out}
+    gone = [q["name"] if q else st["name"] for st, q in starters if (q["name"] if q else st["name"]) not in chosen]
     m = lineup.get("match") or {}
-    return out, lineup.get("formation"), {"home": m.get("home"), "away": m.get("away"), "t": m.get("t")}
+    return out, lineup.get("formation"), {"home": m.get("home"), "away": m.get("away"), "t": m.get("t"), "out": gone}
 
 
 def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
