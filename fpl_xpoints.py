@@ -823,7 +823,7 @@ def ROLE_OF(pid) -> str:
 
 
 ROLE_NEAR = {"RB": ("RWB",), "RWB": ("RB", "RM"), "LB": ("LWB",), "LWB": ("LB", "LM"), "DM": ("CM",), "CM": ("DM", "AM"),
-             "AM": ("CM",), "RM": ("RW", "RWB"), "LM": ("LW", "LWB"), "RW": ("RM",), "LW": ("LM",)}
+             "AM": ("CM",), "RM": ("RW", "RWB"), "LM": ("LW", "LWB"), "RW": ("RM", "LW"), "LW": ("LM", "RW")}
 
 
 def slot_pos_role(role: str) -> str:
@@ -831,10 +831,9 @@ def slot_pos_role(role: str) -> str:
 
 
 def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dict], str | None, dict | None]:
-    """The club's last line-up (FotMob: formation and each starter's place on the pitch), with every starter we do not
-    expect to play (fewer than XI_KEEP expected minutes: injured, banned, rotated) replaced by the player of the same
-    FPL position with the most expected minutes. Without a line-up: the keeper and ten outfield players with the
-    most expected minutes, in rows by position."""
+    """The club's last league line-up (FotMob: formation and each starter's place), every place filled with the
+    players that make expected minutes times fit for the place add up to the most. Without a line-up: the keeper and
+    ten outfield players with the most expected minutes, in rows by position."""
     xmin = lambda p: float((p["byGw"].get(str(gw)) or {}).get("xmin") or 0)
     full = lambda p: _name_key(p.get("fullName") or p["name"])
 
@@ -867,14 +866,22 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
         q = find(nm)
         if q:
             roles[q["id"]] = [ROLE_OF(int(x)) for x in str(ids).split(",") if x.strip().isdigit()]
+    def slot_role(st):
+        """The role of a place in the line-up. FotMob gives wide forwards in a front three a striker's id, so in the
+        front line the place's side decides: FotMob's x runs from the team's right (0) to its left (1)."""
+        r = ROLE_OF(st["pid"])
+        if r == "ST" and st.get("x") is not None and sum(1 for o in lineup["starters"] if int(o.get("pid") or 0) >= 100) >= 3:
+            return "RW" if st["x"] < 0.35 else "LW" if st["x"] > 0.65 else "ST"
+        return r
+
     starters = [(st, find(st["name"] or "")) for st in lineup["starters"]]
     for st, q in starters:  # what he played last time is a role of his too
         if q:
             roles.setdefault(q["id"], [])
-            if ROLE_OF(st["pid"]) not in roles[q["id"]]:
-                roles[q["id"]].append(ROLE_OF(st["pid"]))
+            if slot_role(st) not in roles[q["id"]]:
+                roles[q["id"]].append(slot_role(st))
 
-    last_slot = {q["id"]: ROLE_OF(st["pid"]) for st, q in starters if q}
+    last_slot = {q["id"]: slot_role(st) for st, q in starters if q}
 
     def fit(q, role):
         """How well he suits a place: 1 for his main FotMob position, a little less for each later one, 0.6 for a
@@ -895,7 +902,7 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
     # assignment problem), so a centre back's injury can move the right back inside and bring in another right back.
     from scipy.optimize import linear_sum_assignment
     cands = [q for q in squad if xmin(q) > 0]
-    slot_roles = [ROLE_OF(st["pid"]) for st, _ in starters]
+    slot_roles = [slot_role(st) for st, _ in starters]
     value = np.array([[xmin(q) * fit(q, r) for q in cands] for r in slot_roles]) if cands else np.zeros((len(slot_roles), 0))
     out = []
     if value.size:
