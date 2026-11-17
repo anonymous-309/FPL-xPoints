@@ -587,7 +587,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 INJURY_SUBS = Path("injury_subs.json")
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
 OOP_MIN_SHARE = 0.25  # below this he counts as a defender
-OOP_MID_ROLES = {"DM", "CM", "AM", "RM", "LM", "RW", "LW", "ST"}
+OOP_MID_ROLES = {"AM", "RM", "LM", "RW", "LW", "ST"}  # wing, wide or attacking midfield (not holding/central midfield, not wing-back)
 FM_SHARE: dict = {}  # pid -> share of recent starts further forward
 FM_PLACES: dict = {}  # pid -> roles in his last league starts, for defenders playing further forward (filled each run)
 FOTMOB_API = "https://www.fotmob.com/api/data"
