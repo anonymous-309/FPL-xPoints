@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import re
 import shutil
 import time
@@ -72,7 +73,7 @@ TEAM_CARRY = 1.0   # share of a team's record kept when a new season starts
 TEAM_WINDOW = 0    # if above 0, use only this many latest matches, equally weighted
 MAX_BAN_MATCHES = 4
 HIST_PEN_SHARE = {1: 0.85, 2: 0.12, 3: 0.03}  # share of team penalties by FPL order, used for past seasons
-PEN_TAKE_ON_PITCH = 0.95  # chance the listed taker steps up when he is on the pitch
+PEN_TAKE_ON_PITCH = 1.0  # the listed taker takes every penalty while he is on the pitch (being on it is already in xMin)
 PEN_CONVERSION, PEN_XG = 0.78, 0.76
 PEN_SAVE_SHARE = 0.12  # share of penalties saved, used until penalties are counted
 SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_order", "corners_and_indirect_freekicks_order": "corner_order"}
@@ -1277,7 +1278,27 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     df["is_DEF"] -= df["oop_share"]
     df["is_MID"] += df["oop_share"]
     df["pos_code"] = df["position"].map({p: i for i, p in enumerate(POSITIONS)})
+    mins = df["minutes"].where(~df["future"], df["min_long"]) if "minutes" in df else df["min_long"]
+    df["lu_team"], df["lu_opp"] = lineup_feats(df, mins)
     return df
+
+
+def lineup_feats(df: pd.DataFrame, mins) -> tuple[np.ndarray, np.ndarray]:
+    """Log of a side's attacking strength on the day against its usual one: the sum over its players of npxG + xA
+    per 90 times the minutes they play, against the same with their usual minutes. lu_team for his own side, lu_opp
+    for the other side in the same match."""
+    rate = (df["r_xg"].fillna(0) + df["r_xa"].fillna(0)).clip(lower=0).to_numpy(float)
+    m = np.clip(np.nan_to_num(np.asarray(mins, float)), 0, 90) / 90
+    m0 = np.clip(df["min_long"].fillna(0).to_numpy(float), 0, 90) / 90
+    key = [df["season"].to_numpy(), df["fixture"].to_numpy(), df["team"].to_numpy()]
+    t = pd.DataFrame({"season": key[0], "fixture": key[1], "team": key[2], "a": rate * m, "a0": rate * m0})
+    g = t.groupby(["season", "fixture", "team"], as_index=False)[["a", "a0"]].sum()
+    g["lu"] = np.log((g["a"] / g["a0"].replace(0, np.nan)).clip(0.5, 1.5)).fillna(0.0)
+    g["lu_fix"] = g.groupby(["season", "fixture"])["lu"].transform("sum")
+    g["n"] = g.groupby(["season", "fixture"])["lu"].transform("size")
+    g["lu_opp"] = np.where(g["n"] == 2, g["lu_fix"] - g["lu"], 0.0)
+    j = t[["season", "fixture", "team"]].merge(g[["season", "fixture", "team", "lu", "lu_opp"]], on=["season", "fixture", "team"], how="left")
+    return j["lu"].fillna(0).to_numpy(float), j["lu_opp"].fillna(0).to_numpy(float)
 
 
 # ---------------------------------------------------------------- model
@@ -1293,6 +1314,13 @@ TEAM_FEATS_LEARNED = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", 
 # Clean sheets and goals conceded: real goals weighted 70%, xG 30%, with one home/away factor for all teams.
 TEAM_FEATS_DEFAULT = ["cs_def_mix70", "cs_att_mix70", "was_home"]
 TEAM_FEATS = TEAM_FEATS_DEFAULT
+# Trial: who plays. XP_LINEUP=xmin (expected minutes) or actual (the minutes really played, past matches only) adds
+# each side's attacking strength on the day against its usual one: lu_team to his goals and assists, lu_opp to
+# goals conceded and clean sheets.
+LINEUP = os.environ.get("XP_LINEUP", "")
+if LINEUP:
+    TEAM_FEATS = TEAM_FEATS + ["lu_opp"]
+    GLMS = {k: (y, f + ["lu_team"]) if k in ("goals", "assists") else (y, f) for k, (y, f) in GLMS.items()}
 # Expected BPS and defensive actions per 90 (shown on Chance 90min; they feed bonus and DefCon%).
 BPS_FEATS = ["l_bps", "form_bps", "rel_bps", "l_team_att", "gap_team_att", "l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM
 DC_FEATS = ["l_dc", "l_opp_att", "gap_opp_att", "l_team_att", "gap_team_att", "was_home", "is_MID", "is_FWD"]
@@ -1469,6 +1497,11 @@ class XPointsModel:
         p_60 = np.clip(base["p60"] * avail, 0, 1)
         pos = df["position"]
         n90 = xmin / 90
+        if LINEUP and (LINEUP == "xmin" or df["future"].any()):
+            # who is expected to play: expected minutes for coming matches (and, in the "xmin" trial, past ones too)
+            df = df.copy()
+            use = np.where(df["future"].to_numpy() | (LINEUP == "xmin"), xmin, df["minutes"].fillna(0).to_numpy(float) if "minutes" in df else xmin)
+            df["lu_team"], df["lu_opp"] = lineup_feats(df, use)
         rate90 = {k: self.rates[k].predict(df[f]) for k, (_, f) in GLMS.items()}
         # Penalties on top of open-play goals: his share of team penalties while on the pitch x team penalties per match.
         pen_cond = df["pen_cond"].to_numpy(float) if "pen_cond" in df else df["pen_share_hist"].fillna(0).to_numpy(float)

@@ -5,6 +5,9 @@ jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      matrix:
+        lineup: ["", "actual", "xmin"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,5 +19,5 @@ jobs:
         with:
           path: fpl_data/20*
           key: fpl-history-v1
-      - run: python fpl_xpoints.py download --seasons 2023-24 2024-25 2025-26 2026-27 || python fpl_xpoints.py download
-      - run: PYTHONPATH=. PYTHONWARNINGS=ignore python tools/onemove/cs_vs_bookies.py 2>&1 | grep -v "^Finishing\|^Fitting\|^  " | tail -60
+      - run: python fpl_xpoints.py download
+      - run: XP_LINEUP="${{ matrix.lineup }}" PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; echo "LINEUP=[${{ matrix.lineup }}]"; sed -n '/=== /,$p' bt.txt | head -120
