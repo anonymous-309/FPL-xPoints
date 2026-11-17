@@ -2077,16 +2077,24 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
 def penalty_shares(target: pd.DataFrame) -> np.ndarray:
     """Share of his team's penalties a player takes while on the pitch, per future match.
 
-    The FPL number 1 takes them when on the pitch; each next taker gets the ones left while those above him are off."""
+    The FPL number 1 takes them when on the pitch; each next taker gets the ones left while those above him are off;
+    any left while all the listed takers are off go to the other outfield players, evenly over their time on the pitch."""
     out = np.zeros(len(target))
     on_pitch = pd.Series(usual_minutes(target)["min"] * target["avail"].fillna(1).to_numpy(), index=target.index).clip(0, 90) / 90
     order = pd.to_numeric(target["pen_order"], errors="coerce")
     frame = pd.DataFrame({"fixture": target["fixture"].to_numpy(), "team": target["team"].to_numpy(), "order": order.to_numpy(), "m": on_pitch.to_numpy()})
-    for _, g in frame[frame["order"].notna()].groupby(["fixture", "team"]):
+    frame["gk"] = (target["position"] == "GK").to_numpy()
+    for _, g in frame.groupby(["fixture", "team"]):
         left = 1.0
-        for i in g.sort_values("order").index:
+        listed = g[g["order"].notna()]
+        for i in listed.sort_values("order").index:
             out[i] = PEN_TAKE_ON_PITCH * left
             left *= 1 - g.at[i, "m"]
+        # Penalties given while none of the listed takers is on the pitch go to the other outfield players, evenly
+        # over the time each is on it: each gets the same share while on the pitch.
+        others = g[g["order"].isna() & ~g["gk"] & (g["m"] > 0)]
+        if len(others) and left > 0:
+            out[others.index] = left / others["m"].sum()
     return out
 
 
