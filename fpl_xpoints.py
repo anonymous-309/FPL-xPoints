@@ -581,11 +581,194 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
     return target
 
 
-def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) -> pd.DataFrame:
+# ---------------------------------------------------------------- substitutions for injury (FotMob)
+# FotMob's match events mark a substitution made because the player going off was hurt ("injuredPlayerOut"). Each
+# finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
+INJURY_SUBS = Path("injury_subs.json")
+FOTMOB_API = "https://www.fotmob.com/api/data"
+FOTMOB_LEAGUE = 47  # Premier League
+FOTMOB_TEAMS = {"AFC Bournemouth": "Bournemouth", "Brighton & Hove Albion": "Brighton", "Manchester City": "Man City", "Manchester United": "Man Utd",
+                "Tottenham Hotspur": "Spurs", "Nottingham Forest": "Nott'm Forest", "Newcastle United": "Newcastle", "Leeds United": "Leeds",
+                "Coventry City": "Coventry", "Hull City": "Hull", "Ipswich Town": "Ipswich", "Wolverhampton Wanderers": "Wolves",
+                "West Ham United": "West Ham", "Leicester City": "Leicester", "Sunderland AFC": "Sunderland", "Brentford FC": "Brentford"}
+
+
+def _fotmob_get(path: str, params: dict) -> dict:
+    url = f"{FOTMOB_API}/{path}?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36",
+                                               "Accept": "application/json", "Referer": "https://www.fotmob.com/"})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.loads(r.read().decode("utf-8"))
+
+
+def _name_key(s: str) -> str:
+    import unicodedata
+    s = unicodedata.normalize("NFKD", s or "").encode("ascii", "ignore").decode().lower()
+    return " ".join(re.sub(r"[^a-z ]", "", re.sub(r"[-.']", " ", s)).split())
+
+
+def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
+    """(pid, gameweek) of every player taken off injured in a finished league match this season, and the gameweeks
+    whose matches were all read. Empty if FotMob cannot be read."""
+    folder = cache / "fotmob"
+    folder.mkdir(parents=True, exist_ok=True)
+    idx = folder / "league.json"
+    try:
+        if offline or (idx.exists() and time.time() - idx.stat().st_mtime < 6 * 3600):
+            league = json.loads(idx.read_text())
+        else:
+            league = _fotmob_get("leagues", {"id": FOTMOB_LEAGUE, "ccode3": "GBR"})
+            idx.write_text(json.dumps({"fixtures": league.get("fixtures"), "matches": league.get("matches")}))
+            league = json.loads(idx.read_text())
+    except Exception as e:  # never stop the site for this
+        print(f"FotMob not read ({e}); the match a player got hurt in is guessed from his minutes")
+        return set(), set()
+    matches = ((league.get("fixtures") or {}).get("allMatches") or (league.get("matches") or {}).get("allMatches") or [])
+    teams = {t["name"]: t["id"] for t in boot["teams"]}
+    by_team = {}
+    for p in boot["elements"]:
+        by_team.setdefault(p["team"], []).append(p)
+
+    def find(name: str, team: str):
+        tid = teams.get(FOTMOB_TEAMS.get(team, team)) or next((i for nm, i in teams.items() if _name_key(nm).split()[0] == _name_key(team).split()[0]), None)
+        n = _name_key(name)
+        pool = by_team.get(tid, [])
+        full = lambda p: _name_key(f'{p["first_name"]} {p["second_name"]}')
+        for test in (lambda p: full(p) == n, lambda p: _name_key(p["web_name"]) == n, lambda p: set(n.split()) <= set(full(p).split()),
+                     lambda p: set(_name_key(p["web_name"]).split()) <= set(n.split()), lambda p: n.split()[-1] == _name_key(p["second_name"]).split()[-1]):
+            hit = [p for p in pool if test(p)]
+            if len(hit) == 1:
+                return hit[0]
+        return None
+
+    store = json.loads(INJURY_SUBS.read_text(encoding="utf-8")) if INJURY_SUBS.exists() else {}
+    hurt, done, missing, fetched = set(), {}, [], 0
+    for m in matches:
+        if not (m.get("status") or {}).get("finished"):
+            continue
+        rnd = int(m.get("round") or 0)
+        if str(m["id"]) in store:
+            got = store[str(m["id"])]
+        elif offline:
+            done[rnd] = False
+            continue
+        else:
+            try:
+                d = _fotmob_get("matchDetails", {"matchId": m["id"]})
+                ev = (((d.get("content") or {}).get("matchFacts") or {}).get("events") or {}).get("events") or []
+                got = {"round": rnd, "home": m["home"]["name"], "away": m["away"]["name"],
+                       "injured": [{"name": e["swap"][1]["name"] if len(e.get("swap") or []) > 1 else None, "home": e.get("isHome"), "time": e.get("time")}
+                                   for e in ev if e.get("type") == "Substitution" and e.get("injuredPlayerOut")]}
+                store[str(m["id"])] = got
+                fetched += 1
+                time.sleep(0.4)
+            except Exception as e:
+                print(f"FotMob match {m['id']} not read ({e})")
+                done[rnd] = False
+                continue
+        done.setdefault(rnd, True)
+        for x in got["injured"]:
+            team = got["home"] if x["home"] else got["away"]
+            p = find(x["name"], team) if x["name"] else None
+            if p:
+                hurt.add((f"c{p['code']}", rnd))
+            else:
+                missing.append(f"{x['name']} ({team})")
+    if fetched:
+        INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
+    covered = {r for r, ok in done.items() if ok}
+    print(f"FotMob: {fetched} new matches read; {len(hurt)} players taken off injured in GW{min(covered, default=0)}-{max(covered, default=0)}"
+          + (f"; not matched to FPL: {', '.join(missing[:10])}" if missing else ""))
+    return hurt, covered
+
+
+# ---------------------------------------------------------------- every club's fixtures in all competitions
+# League matches come from FPL (its gameweek and kickoff); every other competition from FotMob's team pages.
+CLUB_COMPS = {"Champions League": "UCL", "Europa League": "UEL", "Conference League": "UECL", "EFL Cup": "EFL",
+              "FA Cup": "FAC", "Community Shield": "CS", "Club Friendlies": "FR"}
+
+
+def club_fixtures(cache: Path, offline: bool) -> dict:
+    """{"gws": [{gw, deadline}], "teams": [{name, short, matches: [{t, comp, opp, oppShort, home, score, gw, stage}]}]}"""
+    boot = _api("bootstrap-static/", cache, offline)
+    fpl_fx = _api("fixtures/", cache, offline)
+    teams = {t["id"]: t for t in boot["teams"]}
+    by_name = {t["name"]: t for t in boot["teams"]}
+    key_short = {_euro_key(t["name"]): t["short_name"] for t in boot["teams"]}
+    key_short.update({_euro_key(k): by_name[v]["short_name"] for k, v in EURO_ALIASES.items() if v in by_name})
+    key_short.update({_euro_key(k): by_name[v]["short_name"] for k, v in FOTMOB_TEAMS.items() if v in by_name})
+    out = {t["id"]: [] for t in boot["teams"]}
+    for f in fpl_fx:
+        for side, opp, home in (("team_h", "team_a", True), ("team_a", "team_h", False)):
+            o = teams[f[opp]]
+            score = f"{f['team_h_score']} - {f['team_a_score']}" if f.get("finished") and f.get("team_h_score") is not None else None
+            out[f[side]].append({"t": f.get("kickoff_time"), "comp": "PL", "opp": o["name"], "oppShort": o["short_name"], "home": home,
+                                 "score": score, "gw": f.get("event")})
+    folder = cache / "fotmob"
+    folder.mkdir(parents=True, exist_ok=True)
+    note = ""
+    try:
+        idx = folder / "league_table.json"
+        if offline or (idx.exists() and time.time() - idx.stat().st_mtime < 6 * 3600):
+            table = json.loads(idx.read_text())
+        else:
+            table = [(t["id"], t["name"]) for t in _fotmob_get("leagues", {"id": FOTMOB_LEAGUE, "ccode3": "GBR"})["table"][0]["data"]["table"]["all"]]
+            idx.write_text(json.dumps(table))
+    except Exception as e:
+        table, note = [], f"FotMob not read ({e}): only league matches are shown"
+        print(note)
+    missed = []
+    for fm_id, fm_name in table:
+        t = by_name.get(FOTMOB_TEAMS.get(fm_name, fm_name)) or next((x for x in boot["teams"] if _name_key(x["name"]).split()[0] == _name_key(fm_name).split()[0]), None)
+        if not t:
+            missed.append(fm_name)
+            continue
+        f = folder / f"team_{fm_id}.json"
+        data = None
+        if offline or (f.exists() and time.time() - f.stat().st_mtime < 6 * 3600):
+            data = json.loads(f.read_text()) if f.exists() else None
+        else:
+            try:
+                d = _fotmob_get("teams", {"id": fm_id, "ccode3": "GBR"})
+                data = ((d.get("fixtures") or {}).get("allFixtures") or {}).get("fixtures") or []
+                f.write_text(json.dumps(data))
+                time.sleep(0.4)
+            except Exception as e:
+                print(f"FotMob team {fm_name} not read ({e})")
+                data = json.loads(f.read_text()) if f.exists() else None
+                if data is None:
+                    missed.append(fm_name)
+        for m in data or []:
+            tour = (m.get("tournament") or {}).get("name") or ""
+            st = m.get("status") or {}
+            if tour == "Premier League" or st.get("cancelled"):
+                continue
+            home = (m.get("home") or {}).get("id") == fm_id
+            opp = (m.get("away") if home else m.get("home")) or {}
+            name = opp.get("name") or "TBC"
+            short = key_short.get(_euro_key(name)) or re.sub(r"[^A-Z]", "", _name_key(name).upper().replace(" ", ""))[:3] or "TBC"
+            out[t["id"]].append({"t": st.get("utcTime"), "comp": CLUB_COMPS.get(tour, tour), "opp": name, "oppShort": short, "home": home,
+                                 "score": st.get("scoreStr") if st.get("finished") else None, "stage": (m.get("tournament") or {}).get("stage") or ""})
+    if missed:
+        print(f"Club fixtures: no cup matches for {', '.join(missed)}")
+    for ms in out.values():
+        ms.sort(key=lambda m: m["t"] or "9999")
+    n = sum(len(v) for v in out.values())
+    print(f"Club fixtures: {n} matches for {len(out)} teams, " + ", ".join(f"{c} {sum(m['comp'] == c for v in out.values() for m in v)}" for c in ["PL", *dict.fromkeys(CLUB_COMPS.values())]))
+    return {"updatedAt": int(time.time() * 1000), "note": note,
+            "gws": [{"gw": e["id"], "deadline": e["deadline_time"], "current": bool(e.get("is_current")), "next": bool(e.get("is_next"))} for e in boot["events"]],
+            "teams": [{"name": t["name"], "short": t["short_name"], "matches": out[t["id"]]} for t in sorted(boot["teams"], key=lambda t: t["name"])]}
+
+
+def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, hurt: set | None = None, covered: set | None = None) -> pd.DataFrame:
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
-    logged absence, every match for one the admin added by hand (he may have gone off injured early)."""
+    logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
+    logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it), and a
+    cautionary rest on his return ("inj_rest": 0 in his first match back)"""
     df = df.copy()
     df["inj_skip"] = False
+    df["inj_hurt"] = False
+    df["inj_rest"] = False
     season = ~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()
     for r in merged_injuries(log, admin or {"manual": [], "startOverrides": {}}):
         if r.get("season") != CURRENT_SEASON:
@@ -593,7 +776,40 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None) 
         end = r["endGw"] if r.get("manual") and r.get("endGw") is not None else (r["returnedGw"] - 1) if r.get("returnedGw") else 99
         rows = season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end)
         df.loc[rows if r.get("manual") else rows & (df["minutes"] == 0), "inj_skip"] = True
-    print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}")
+        # The match he got hurt in: his last match before an injury absence, if he did not play all of it, is left out too.
+        if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur"):
+            before = df.index[season & (df["pid"] == r["pid"]) & (df["GW"] < r["startGw"])]
+            if len(before):
+                last = df.loc[before].sort_values(["GW", "kickoff_time"]).index[-1]
+                # with FotMob's match events for that gameweek, only a substitution for injury counts (below)
+                if int(df.at[last, "GW"]) not in (covered or set()) and 0 < float(df.at[last, "minutes"]) < 90:
+                    df.at[last, "inj_skip"] = True
+                    df.at[last, "inj_hurt"] = True
+        # Cautionary rest: a 0 in his first match back from an injury is a rest, not a sign he lost his place
+        # (one match only).
+        if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
+            post = df.loc[season & (df["pid"] == r["pid"]) & (df["GW"] >= r["returnedGw"])].sort_values(["GW", "kickoff_time"])
+            if len(post) and float(post["minutes"].iloc[0]) == 0:
+                i = post.index[0]
+                df.at[i, "inj_skip"] = True
+                df.at[i, "inj_rest"] = True
+    # gameweeks whose matches FotMob's events cover (there, only a substitution for injury counts as getting hurt)
+    df["fm_cov"] = season & df["GW"].isin(list(covered or []))
+    # Taken off injured (FotMob): that match is left out, whatever came after.
+    if hurt:
+        keys = pd.Series(list(zip(df["pid"], df["GW"].fillna(-1).astype(int))), index=df.index)
+        rows = season & keys.isin(hurt)
+        df.loc[rows, "inj_skip"] = True
+        df.loc[rows, "inj_hurt"] = True
+    # A goalkeeper who came on for his injured team-mate: that part match says nothing of his role, left out too.
+    df["gk_cover"] = False
+    if "position" in df and df["inj_hurt"].any():
+        gk = season & (df["position"] == "GK")
+        hurt_fx = set(zip(df.loc[gk & df["inj_hurt"], "fixture"], df.loc[gk & df["inj_hurt"], "team"]))
+        cover = gk & ~df["inj_hurt"] & (df["minutes"] > 0) & (df["minutes"] < 90) & pd.Series(list(zip(df["fixture"], df["team"])), index=df.index).isin(hurt_fx)
+        df.loc[cover, "inj_skip"] = True
+        df.loc[cover, "gk_cover"] = True
+    print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, rests on return: {int(df['inj_rest'].sum())}")
     return df
 
 
@@ -1254,17 +1470,16 @@ def chance_report(pred: pd.DataFrame) -> None:
         print(f"{title}: " + "; ".join(f"{r.predicted:.1%}->{r.actual:.1%}" for r in tab.itertuples()))
 
 
+TOP_SCORERS = {"GK": 10, "DEF": 20, "MID": 20, "FWD": 10}
+
+
 def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     pred = pred.copy()
     pred["pred_pts4"] = pred["pts4"].fillna(pred["ppg_all"]).fillna(0.0)
     pred["pred_ppg"] = pred["ppg_all"].fillna(0.0)
     pred["pred_w5"] = pred["w5_min"].fillna(0.0)
     models = {"Model": "xpts", "Trailing 4 GW": "pred_pts4", "Long-run PPG": "pred_ppg"}
-    if pred["xP"].notna().any():
-        models["FPL xP (may leak)"] = "xP"
     agg = {c: "sum" for c in ["total_points", "minutes", "xpts", "pred_pts4", "pred_ppg", "xmin", "pred_w5"]}
-    if "xP" in models.get("FPL xP (may leak)", ""):
-        agg["xP"] = "sum"
     agg |= {"name": "last", "team": "last", "position": "last", "min_long": "last"}
     gw = pred.groupby(["season", "GW", "pid"], as_index=False).agg(agg)
     gw.to_csv(out_csv, index=False)
@@ -1278,6 +1493,30 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
 
     print("\n=== Regulars, by position (Model) ===")
     print(pd.DataFrame({p: _score(g["total_points"], g["xpts"]) for p, g in regular.groupby("position")}).T.round(3).to_string())
+
+    # The players who matter most in FPL: the top scorers of the test season (10 GK, 20 DEF, 20 MID, 10 FWD).
+    tot = gw.groupby(["pid", "position"], as_index=False).agg(total=("total_points", "sum"), name=("name", "last"), team=("team", "last"))
+    top = pd.concat([tot[tot["position"] == pos].nlargest(n, "total") for pos, n in TOP_SCORERS.items()])
+    tg = gw[gw["pid"].isin(top["pid"])]
+    print("\n=== Top FPL scorers (10 GK, 20 DEF, 20 MID, 10 FWD by points in the test season), every gameweek ===")
+    rows = []
+    for pos in list(TOP_SCORERS) + ["All"]:
+        d = tg if pos == "All" else tg[tg["position"] == pos]
+        for m, c in models.items():
+            sc = _score(d["total_points"], d[c])
+            rows.append({"group": pos, "way": m, "n": len(d), "MAE": sc["MAE"], "bias": float((d[c] - d["total_points"]).mean()), "Pearson": sc["Pearson"]})
+    print("group | way | n | MAE | bias | Pearson")
+    for r in rows:
+        print(f"{r['group']} | {r['way']} | {r['n']} | {r['MAE']:.3f} | {r['bias']:+.3f} | {r['Pearson']:.3f}")
+    season = tg.groupby("pid", as_index=False).agg(actual=("total_points", "sum"), predicted=("xpts", "sum"), gws=("GW", "nunique"))
+    season = season.merge(top[["pid", "name", "team", "position"]], on="pid")
+    season["diff"] = season["predicted"] - season["actual"]
+    order = {p: i for i, p in enumerate(TOP_SCORERS)}
+    season = season.sort_values(["position", "actual"], key=lambda c: c.map(order) if c.name == "position" else -c)
+    print("\nTop scorers, season totals (predicted = sum of the model's points for each gameweek, made before it)")
+    print("position | name | team | actual | predicted | diff | gws")
+    for r in season.itertuples():
+        print(f"{r.position} | {r.name} | {r.team} | {r.actual:.0f} | {r.predicted:.1f} | {r.diff:+.1f} | {r.gws}")
 
     print("\n=== Decisions: mean actual points per GW ===")
     rows = {}
@@ -1504,16 +1743,56 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
     return pd.DataFrame(hist), pd.DataFrame(fut), first
 
 
+def goalkeeper_cover(target: pd.DataFrame) -> pd.DataFrame:
+    """Only one goalkeeper plays. When a team's first-choice goalkeeper is out or flagged and expected back (60+
+    usual minutes when fit), the stand-in's share of a match is cut by the starter's: 0 once the starter is fully
+    back, a quarter where the starter is 75% to play, half where he is expected to play half."""
+    t = target.copy()
+    if "position" not in t or "from_return" not in t:
+        return t
+    usual = pd.Series(usual_minutes(t)["min"], index=t.index)
+    gk = t["position"] == "GK"
+    cut = 0
+    for team, g in t[gk].groupby("team"):
+        # the first choice: out or flagged now (absent, doubtful, back from an absence), 60+ usual minutes when fit
+        away = g["from_return"].fillna(False).astype(bool) | g["status"].fillna("a").isin(["d", "i", "s", "n"])
+        starters = g.loc[away & (usual[g.index] >= 60), "pid"].unique()
+        for sp in starters:
+            share = g[g["pid"] == sp].set_index("fixture")["avail"].fillna(0.0)
+            share = share[~share.index.duplicated()]
+            if not (share > 0).any():
+                continue
+            back_gw = int(g.loc[(g["pid"] == sp) & (g["avail"].fillna(0) > 0), "GW"].min())
+            sp_name = str(g.loc[g["pid"] == sp, "web_name"].iloc[0]) if "web_name" in g else str(sp)
+            for op in g.loc[g["pid"] != sp, "pid"].unique():
+                rows = t.index[(t["pid"] == op) & gk]
+                s_ = t.loc[rows, "fixture"].map(share)
+                factor = (1 - s_.fillna(0.0)).clip(0.0, 1.0)
+                t.loc[rows, "avail"] = t.loc[rows, "avail"].fillna(1.0) * factor
+                if (factor < 1).any():
+                    cut += 1
+                    old = t.loc[rows, "min_note"].fillna("") if "min_note" in t else pd.Series("", index=rows)
+                    note = f"{sp_name} expected back GW{back_gw}: his minutes go to him from then"
+                    t.loc[rows, "min_note"] = np.where(old != "", old + "; " + note, note)
+    if cut:
+        print(f"Stand-in goalkeepers cut for a returning first choice: {cut}")
+    return t
+
+
 def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
-    """For a player flagged doubtful, xMin leaves out the match he got hurt in (see flag_cut) and the matches since
-    in which he did not play. A match he played while flagged (a 25% flag but he still started) counts as usual."""
+    """For a player flagged doubtful, xMin leaves out the match he got hurt in (see flag_cut; not if he still played
+    the full 90) and the matches since in which he did not play. A match he played while flagged (a 25% flag but he still started) counts as usual."""
     if "flag_cut" not in target:
         return target
     target = target.copy()
     obs = df[~df["future"] & df["minutes"].notna()]
     for pid, cut in target.loc[target["flag_cut"].notna(), ["pid", "flag_cut"]].drop_duplicates("pid").itertuples(index=False):
         g = obs[obs["pid"] == pid]
-        knock = g["kickoff_time"] == pd.Timestamp(cut)
+        # the match he got hurt in is left out only if FotMob shows him taken off injured (or, for a gameweek FotMob
+        # does not cover, if he did not play the full 90)
+        cov = g["fm_cov"].fillna(False).astype(bool) if "fm_cov" in g else pd.Series(False, index=g.index)
+        hurt = g["inj_hurt"].fillna(False).astype(bool) if "inj_hurt" in g else pd.Series(False, index=g.index)
+        knock = (g["kickoff_time"] == pd.Timestamp(cut)) & (hurt | (~cov & (g["minutes"].fillna(0) < 90)))
         after = g["kickoff_time"] > pd.Timestamp(cut)
         g = g[~knock & ~(after & (g["minutes"].fillna(0) == 0))].sort_values(["kickoff_time", "fixture"])
         if g.empty:
@@ -1543,6 +1822,206 @@ def penalty_shares(target: pd.DataFrame) -> np.ndarray:
             out[i] = PEN_TAKE_ON_PITCH * left
             left *= 1 - g.at[i, "m"]
     return out
+
+
+# ---------------------------------------------------------------- European weeks
+# Clubs in the Champions League, Europa League or Conference League rest players in the league match just after a
+# European match. Fixture lists come from fixturedownload.com (one JSON feed per competition and season).
+EURO_COMPS = {"champions-league": "UCL", "europa-league": "UEL", "conference-league": "UECL"}
+EURO_FEED = "https://fixturedownload.com/feed/json/{comp}-{year}"
+EURO_DAYS = 4.5           # a league match up to this many days after a European match counts as "just after"
+EURO_K_PLAYER = 6.0       # post-European matches a player needs before his own rate counts as much as his team's
+EURO_K_TEAM = 10.0        # the same for a team against the league-wide rate
+EURO_SEASON_W = {0: 1.0, 1: 0.5, 2: 0.25}  # weight by seasons back from the current one
+# Names in the fixture feeds of English clubs (lower case, no punctuation) -> FPL team names.
+EURO_ALIASES = {
+    "arsenal": "Arsenal", "aston villa": "Aston Villa", "chelsea": "Chelsea", "liverpool": "Liverpool",
+    "man city": "Man City", "manchester city": "Man City", "man utd": "Man Utd", "man united": "Man Utd", "manchester united": "Man Utd",
+    "newcastle": "Newcastle", "newcastle united": "Newcastle", "newcastle utd": "Newcastle", "tottenham": "Spurs", "tottenham hotspur": "Spurs", "spurs": "Spurs",
+    "brighton": "Brighton", "brighton  hove albion": "Brighton", "brighton and hove albion": "Brighton", "west ham": "West Ham", "west ham united": "West Ham",
+    "nottm forest": "Nott'm Forest", "nott m forest": "Nott'm Forest", "nottingham forest": "Nott'm Forest", "nott forest": "Nott'm Forest", "crystal palace": "Crystal Palace",
+    "fulham": "Fulham", "brentford": "Brentford", "bournemouth": "Bournemouth", "afc bournemouth": "Bournemouth", "everton": "Everton",
+    "wolves": "Wolves", "wolverhampton": "Wolves", "wolverhampton wanderers": "Wolves", "leeds": "Leeds", "leeds united": "Leeds",
+    "sunderland": "Sunderland", "leicester": "Leicester", "leicester city": "Leicester", "southampton": "Southampton", "burnley": "Burnley",
+    "ipswich": "Ipswich", "ipswich town": "Ipswich", "hull": "Hull", "hull city": "Hull", "coventry": "Coventry", "coventry city": "Coventry",
+}
+
+
+def _euro_key(name: str) -> str:
+    return re.sub(r"\s+", " ", re.sub(r"[^a-z ]", " ", (name or "").lower().replace("&", " "))).strip()
+
+
+def euro_fixtures(cache: Path, seasons: list[str], offline: bool) -> pd.DataFrame:
+    """European matches of English clubs: team (FPL name), kickoff (UTC), competition. Cached for a day."""
+    rows = []
+    for season in seasons:
+        year = int(season[:4])
+        for comp, short in EURO_COMPS.items():
+            f = cache / f"euro_{comp}_{year}.json"
+            fresh = f.exists() and (season != CURRENT_SEASON or time.time() - f.stat().st_mtime < 86400)
+            data = None
+            if offline or fresh:
+                data = json.loads(f.read_text()) if f.exists() else None
+            else:
+                try:
+                    data = json.loads(_get(EURO_FEED.format(comp=comp, year=year)))
+                    cache.mkdir(parents=True, exist_ok=True)
+                    f.write_text(json.dumps(data))
+                except (urllib.error.URLError, ValueError, OSError) as e:
+                    print(f"European fixtures {comp} {year} not read ({e})")
+                    data = json.loads(f.read_text()) if f.exists() else None
+            for m in data or []:
+                for side in ("HomeTeam", "AwayTeam"):
+                    team = EURO_ALIASES.get(_euro_key(m.get(side)))
+                    if team and m.get("DateUtc"):
+                        rows.append({"team": team, "euro_time": pd.Timestamp(m["DateUtc"].replace("Z", "+00:00")), "comp": short, "season": season})
+    out = pd.DataFrame(rows, columns=["team", "euro_time", "comp", "season"]).drop_duplicates(["team", "euro_time"])
+    if len(out):
+        out["euro_time"] = pd.to_datetime(out["euro_time"], utc=True)
+    return out
+
+
+def euro_flags(df: pd.DataFrame, euro: pd.DataFrame) -> pd.DataFrame:
+    """For each league match: days since the team's last European match ("euro_gap", NaN if none within EURO_DAYS),
+    and which competition."""
+    out = pd.DataFrame(index=df.index, data={"euro_gap": np.nan, "euro_comp": ""})
+    if euro.empty:
+        return out
+    kick = pd.to_datetime(df["kickoff_time"], utc=True, errors="coerce", format="ISO8601")
+    for team, g in euro.groupby("team"):
+        times = np.sort(g["euro_time"].values.astype("datetime64[ns]"))
+        comps = g.sort_values("euro_time")["comp"].to_numpy()
+        rows = df.index[(df["team"] == team).to_numpy() & kick.notna().to_numpy()]
+        if not len(rows):
+            continue
+        k = kick.loc[rows].dt.tz_convert(None).values.astype("datetime64[ns]")
+        j = np.searchsorted(times, k, side="left") - 1
+        ok = j >= 0
+        gap = np.full(len(rows), np.nan)
+        gap[ok] = (k[ok] - times[j[ok]]) / np.timedelta64(1, "h") / 24
+        hit = ok & (gap > 0) & (gap <= EURO_DAYS)
+        out.loc[rows[hit], "euro_gap"] = gap[hit]
+        out.loc[rows[hit], "euro_comp"] = comps[j[hit]]
+    return out
+
+
+def euro_rotation_rates(hist: pd.DataFrame, current: str = CURRENT_SEASON) -> tuple[dict, dict, float, pd.DataFrame]:
+    """Minutes in the league match just after a European match, against the player's usual minutes that season.
+
+    Only players who usually play (30+ minutes a match in the season, counting matches he was available for) and
+    seasons when the team was in Europe. Returns player rates (pid -> (rate, matches)), team rates, the league-wide
+    rate, and the per player-season table."""
+    h = hist[hist["minutes"].notna()].copy()
+    if "inj_skip" in h:
+        h = h[~h["inj_skip"].fillna(False).astype(bool)]
+    h["post"] = h["euro_gap"].notna()
+    seasons_in_europe = h.groupby(["season", "team"])["post"].transform("any")
+    h = h[seasons_in_europe]
+    g = h.groupby(["pid", "season", "team"])
+    tab = g.agg(m_all=("minutes", "mean"), n=("minutes", "size")).reset_index()
+    post = h[h["post"]].groupby(["pid", "season", "team"]).agg(m_post=("minutes", "mean"), n_post=("minutes", "size")).reset_index()
+    tab = tab.merge(post, on=["pid", "season", "team"], how="inner")
+    tab = tab[(tab["m_all"] >= 30) & (tab["n"] >= 8)]
+    if tab.empty:
+        return {}, {}, 1.0, tab
+    order = sorted(set(tab["season"]) | {current})
+    back = {s: len(order) - 1 - order.index(s) for s in order}
+    tab["w"] = tab["season"].map(lambda s: EURO_SEASON_W.get(back[s], 0.0)) * tab["n_post"]
+    tab["ratio"] = tab["m_post"] / tab["m_all"]
+    tab = tab[tab["w"] > 0]
+    league = float((tab["ratio"] * tab["w"]).sum() / tab["w"].sum())
+    teams = {}
+    for team, t in tab.groupby("team"):
+        w = t["w"].sum()
+        teams[team] = float(((t["ratio"] * t["w"]).sum() + EURO_K_TEAM * league) / (w + EURO_K_TEAM))
+    players = {}
+    for pid, t in tab.groupby("pid"):
+        team = t.sort_values("season")["team"].iloc[-1]
+        w = t["w"].sum()
+        base = teams.get(team, league)
+        players[pid] = (float(((t["ratio"] * t["w"]).sum() + EURO_K_PLAYER * base) / (w + EURO_K_PLAYER)), float(t["n_post"].sum()))
+    return players, teams, league, tab
+
+
+def european_rotation(target: pd.DataFrame, df: pd.DataFrame, cache: Path, offline: bool) -> pd.DataFrame:
+    """Flags upcoming league matches that come just after a European match (shown on the Minutes page)."""
+    target = target.copy()
+    seasons = sorted(set(df["season"].dropna().astype(str)) | {CURRENT_SEASON})
+    try:
+        euro = euro_fixtures(cache, seasons, offline)
+    except Exception as e:  # never stop the site for this
+        print(f"European fixtures not used ({e})")
+        return target
+    if euro.empty:
+        print("European fixtures: none found")
+        return target
+    hist = df[~df["future"]].copy()
+    hist = hist.join(euro_flags(hist, euro))
+    players, teams, league, tab = euro_rotation_rates(hist)
+    flags = euro_flags(target, euro)
+    target["euro_gap"], target["euro_comp"] = flags["euro_gap"], flags["euro_comp"]
+    post = target["euro_gap"].notna()
+    # Shown only: measured over 2023-27, minutes in these matches were about the same as usual (x0.996), and scaling
+    # them made the forecasts slightly worse (see euro-check), so xMin is not changed.
+    days = target["euro_gap"].round(0).astype("Int64").astype(str)
+    target["euro_note"] = np.where(post, target["euro_comp"].astype(str) + " " + days + "d", "")
+    print(f"European weeks: {target.loc[post].drop_duplicates(['team', 'fixture']).shape[0]} upcoming league matches just after a European match flagged "
+          f"(league-wide minutes in such matches x{league:.3f} of usual; not applied)")
+    return target
+
+
+def euro_check(data_dir: Path, seasons: list[str], offline: bool) -> None:
+    """How much minutes drop in the league match after a European match, by season and team, and whether the rates
+    from earlier seasons predict the next season's better than no change."""
+    cache = data_dir / "api_cache"
+    hist, fut, first = live_frames(cache, offline, 1)
+    old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
+    df = clean(pd.concat([old, hist, fut], ignore_index=True), seasons + [CURRENT_SEASON])
+    log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
+    df = mark_injuries(df, log, load_admin_injuries())
+    all_seasons = seasons + [CURRENT_SEASON]
+    euro = euro_fixtures(cache, all_seasons, offline)
+    print(f"European matches of English clubs found: {len(euro)}")
+    print(euro.groupby(["season", "comp"])["team"].apply(lambda x: ", ".join(sorted(set(x)))).to_string())
+    names = set()
+    for fpath in cache.glob("euro_*.json"):
+        for m in json.loads(fpath.read_text()):
+            for side in ("HomeTeam", "AwayTeam"):
+                names.add(m.get(side) or "")
+    hints = ("man", "united", "utd", "city", "ham", "forest", "palace", "villa", "spurs", "tott", "brigh", "chel", "liver", "newc", "arse", "fulh", "brent", "bourn", "evert", "wolv", "leeds", "sunder", "hull", "covent", "ipsw", "leic")
+    print("Feed names that look English but are not matched:", sorted(n for n in names if any(h in n.lower() for h in hints) and _euro_key(n) not in EURO_ALIASES))
+    h = df[~df["future"]].copy().join(euro_flags(df[~df["future"]], euro))
+    players, teams, league, tab = euro_rotation_rates(h)
+    print(f"\nLeague-wide: minutes after a European match = x{league:.3f} of usual (regular players, weighted to recent seasons)")
+    by = tab.groupby("season").apply(lambda t: pd.Series({"players": len(t), "post matches": t["n_post"].sum(), "ratio": (t["ratio"] * t["n_post"]).sum() / t["n_post"].sum()}))
+    print(by.to_string())
+    print("\nBy team and season (minutes ratio, post matches):")
+    tt = tab.groupby(["team", "season"]).apply(lambda t: f'{(t["ratio"] * t["n_post"]).sum() / t["n_post"].sum():.2f} ({int(t["n_post"].max())})').unstack()
+    print(tt.to_string())
+    print("\nTeam rates used:", ", ".join(f"{k} {v:.2f}" for k, v in sorted(teams.items())))
+    top = sorted(((v[0], v[1], p) for p, v in players.items() if v[1] >= 4))[:20]
+    names_by_pid = df.drop_duplicates("pid", keep="last").set_index("pid")["name"].to_dict() if "name" in df else {}
+    print("Most rested (rate, post matches):", "; ".join(f"{names_by_pid.get(p, p)} {r:.2f} ({int(n)})" for r, n, p in top))
+    # Next season from earlier ones: per player-season, predicted post-European minutes = his season mean x rate.
+    print("\nPredicting each season from the ones before (post-European matches of regular players):")
+    hh = h[h["minutes"].notna() & ~h.get("inj_skip", pd.Series(False, index=h.index)).fillna(False).astype(bool)]
+    for i, s in enumerate(all_seasons[1:], 1):
+        prior = h[h["season"].isin(all_seasons[:i])]
+        pl, tm, lg, _ = euro_rotation_rates(prior, current=s)
+        cur = hh[hh["season"] == s]
+        m_all = cur.groupby("pid")["minutes"].transform("mean")
+        n_all = cur.groupby("pid")["minutes"].transform("size")
+        sel = cur["euro_gap"].notna() & (m_all >= 30) & (n_all >= 8)
+        c = cur[sel]
+        if c.empty:
+            continue
+        rate = c["pid"].map(lambda p: pl.get(p, (np.nan, 0))[0]).fillna(c["team"].map(tm)).fillna(lg)
+        base = m_all[sel]
+        e0 = (c["minutes"] - base).abs().mean()
+        e1 = (c["minutes"] - base * rate).abs().mean()
+        e2 = (c["minutes"] - base * lg).abs().mean()
+        print(f"  {s}: {len(c)} player matches, actual/usual {c['minutes'].sum() / base.sum():.3f}; error in minutes: no change {e0:.2f}, "
+              f"league rate {e2:.2f}, player/team rate {e1:.2f}")
 
 
 ADMIN_FILE = Path("admin_minutes.json")  # set on the Admin page: {"c<code>": {"min": 90, "name": "..."}}
@@ -1580,13 +2059,19 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
     df = yellow_bans(clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON]))
     log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
-    df = mark_injuries(df, log, load_admin_injuries())
+    hurt, covered = injury_subs(cache, offline, _api("bootstrap-static/", cache, offline))
+    df = mark_injuries(df, log, load_admin_injuries(), hurt, covered)
     feat = build_features(df)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
     target = doubtful_minutes(target, df)
     target = admin_minutes(target)
     target = manual_absences(target, load_admin_injuries())
+    target = goalkeeper_cover(target)
+    try:
+        target = european_rotation(target, df, cache, offline)
+    except Exception as e:  # a display flag only: never stop the site for it
+        print(f"European weeks not flagged ({e})")
     target["pen_cond"] = penalty_shares(target)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res
@@ -1643,11 +2128,27 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     why = pd.Series("", index=played.index)
     why[played["minutes"].fillna(0).eq(0) & played.get("inj_skip", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "i"
     why[played.get("yellow_ban", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "b"
+    # "h": the match he got hurt in, before a logged injury; "m": a match in an absence the admin added by hand
+    why[played.get("inj_hurt", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "h"
+    why[played.get("inj_rest", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "r"
+    why[played.get("gk_cover", pd.Series(False, index=played.index)).fillna(False).astype(bool)] = "g"
+    why[played["minutes"].fillna(0).gt(0) & played.get("inj_skip", pd.Series(False, index=played.index)).fillna(False).astype(bool) & why.eq("")] = "m"
+    # "d": flagged doubtful now, the match he got hurt in and the ones since that he missed (see doubtful_minutes)
+    cut = res.drop_duplicates("pid").set_index("pid")["flag_cut"] if "flag_cut" in res else pd.Series(dtype=object)
+    cut = cut[cut.notna()]
+    if len(cut):
+        kick = pd.to_datetime(played["kickoff_time"], utc=True, errors="coerce", format="ISO8601")
+        cutt = pd.to_datetime(played["pid"].map(cut), utc=True, errors="coerce", format="ISO8601")
+        cov = played.get("fm_cov", pd.Series(False, index=played.index)).fillna(False).astype(bool)
+        dmask = cutt.notna() & (((kick == cutt) & ~cov & played["minutes"].fillna(0).lt(90)) | ((kick > cutt) & played["minutes"].fillna(0).eq(0))) & why.eq("")
+        why[dmask] = "d"
     for _, g in played.groupby("pid"):
         left = 0
         for i, mins, red in zip(g.index, g["minutes"].fillna(0), g["red_cards"].fillna(0)):
             if red > 0:
                 left = MAX_BAN_MATCHES
+                if why[i] == "":
+                    why[i] = "c"  # sent off: the match itself is left out of the formula too (see ai_minutes)
             elif left > 0 and mins == 0:
                 why[i], left = "b", left - 1
             else:
@@ -1681,6 +2182,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g.setdefault("fx", []).append(int(r["fixture"]))
         g.setdefault("pc", []).append(round(float(r["pen_cond_used"]), 4))
         g.setdefault("tp", []).append(round(float(r["team_pens"]), 4))
+        if isinstance(r.get("euro_note"), str) and r["euro_note"]:
+            g.setdefault("euro", []).append(r["euro_note"])  # e.g. "UCL 3d": a European match 3 days before
         for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "penmiss", "own", "defcon", "cards"):
             g["full"][name] = round(g["full"].get(name, 0.0) + float(r[f"full_{name}"]), 3)
         g["full"]["xg"] = round(g["full"].get("xg", 0.0) + float(r["g90"]), 3)
@@ -1744,6 +2247,10 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
         (out_dir / "injury_log.json").write_text(json.dumps(merged_injuries(log, load_admin_injuries()), ensure_ascii=False), encoding="utf-8")
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
+    try:
+        (out_dir / "fixtures.json").write_text(json.dumps(club_fixtures(data_dir / "api_cache", offline), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    except Exception as e:  # never stop the site for this page
+        print(f"Club fixtures not written ({e})")
     first = str(payload["gws"][0])
     top = sorted((p for p in players.values() if first in p["byGw"]), key=lambda p: -p["byGw"][first]["pScore"])[:5]
     for p in top:
@@ -2079,7 +2586,7 @@ def home_away(data_dir: Path, seasons: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune", "euro-check"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -2106,12 +2613,14 @@ def main() -> None:
         cs_tune(a.data_dir, a.seasons, a.step, a.offline, a.modes)
     elif a.command == "home-away":
         home_away(a.data_dir, a.seasons)
+    elif a.command == "euro-check":
+        euro_check(a.data_dir, a.seasons, a.offline)
     elif a.command == "rare-tune":
         rare_tune(a.data_dir, HIST_SEASONS)
     elif a.command == "tune":
         tune(a.data_dir, a.seasons, a.step, a.offline)
     elif a.command == "site":
-        export_site(a.data_dir, a.seasons, 8, a.out, a.offline)
+        export_site(a.data_dir, a.seasons, 12, a.out, a.offline)
     else:
         predict(a.data_dir, a.seasons, a.horizon, a.data_dir / f"xpts_next_{a.horizon}.csv", a.offline)
 
