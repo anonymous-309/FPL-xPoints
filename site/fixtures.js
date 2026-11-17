@@ -257,7 +257,7 @@
     let saved = null;
     try { saved = JSON.parse(store.get('fx-view') || 'null'); } catch (e) { saved = null; }
     state.on = new Set(saved && Array.isArray(saved.on) ? saved.on : comps.map(([c]) => c).filter((c) => !OFF_BY_DEFAULT.has(c)));
-    if (saved) Object.assign(state, { view: saved.view === 'team' ? 'team' : 'grid', team: saved.team || '', range: ['8', '12', 'rest', 'all'].includes(saved.range2) ? saved.range2 : 'rest', tz: ZONES.some(([z]) => z === saved.tz) ? saved.tz : 'UTC' });
+    if (saved) Object.assign(state, { view: saved.view === 'team' ? 'team' : 'grid', team: saved.team || '', range: ['rest', 'all'].includes(saved.range2) ? saved.range2 : 'rest', tz: ZONES.some(([z]) => z === saved.tz) ? saved.tz : 'UTC' });
     $('#tz').replaceChildren(...ZONES.map(([z, n]) => el('option', { value: z, textContent: n })));
     $('#tz').addEventListener('change', (e) => { state.tz = e.target.value; sync(); });
     $('.fx-comps').replaceChildren(...comps.map(([c, n]) => {
