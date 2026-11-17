@@ -6,7 +6,7 @@ import fpl_xpoints as f
 from pathlib import Path
 
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"}
-NAMES = {"Tottenham": "Spurs", "Nott'm Forest": "Nott'm Forest"}
+NAMES = {"Tottenham": "Spurs", "Coventry": "Coventry City", "Hull": "Hull City", "Ipswich": "Ipswich Town"}
 book = []
 for g in range(1, 11):
     h = urllib.request.urlopen(urllib.request.Request(f"https://checkthechance.com/fpl-clean-sheet-gameweek-{g}/", headers=UA), timeout=30).read().decode("utf-8", "replace")
