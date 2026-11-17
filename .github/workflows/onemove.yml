@@ -20,4 +20,4 @@ jobs:
           path: fpl_data/20*
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
-      - run: XP_LINEUP="${{ matrix.lineup }}" PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; echo "LINEUP=[${{ matrix.lineup }}]"; sed -n '/=== /,$p' bt.txt | head -120
+      - run: XP_LINEUP="${{ matrix.lineup }}" PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; echo "LINEUP=[${{ matrix.lineup }}]"; grep -a -A16 'figure     n predicted' bt.txt; grep -a 'Penalty goals:\|R2 \|anytime AUC' bt.txt | head; sed -n '/=== /,$p' bt.txt | head -40
