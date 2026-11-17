@@ -585,8 +585,10 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # FotMob's match events mark a substitution made because the player going off was hurt ("injuredPlayerOut"). Each
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
-OOP_LAST, OOP_NEED = 5, 3  # a defender who started in midfield or on a wing in 3 of his last 5 league starts plays as a midfielder
-OOP_MID_ROLES = {"DM", "CM", "AM", "RM", "LM", "RW", "LW", "ST"}
+OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
+OOP_KNOWN = 3  # with at least this many league starts known to FotMob, his places decide (not his stats)
+OOP_MID_ROLES = {"AM", "RM", "LM", "RW", "LW", "ST"}  # wing, wide or attacking midfield (not holding/central midfield, not wing-back)
+FM_SHARE: dict = {}  # pid -> share of recent starts further forward
 FM_PLACES: dict = {}  # pid -> roles in his last league starts, for defenders playing further forward (filled each run)
 FOTMOB_API = "https://www.fotmob.com/api/data"
 FOTMOB_LEAGUE = 47  # Premier League
@@ -703,9 +705,14 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     fm_oop = {}
     for pid, lst in starts.items():
         last = [r for _, r in sorted(lst)[-OOP_LAST:]]
-        if pos_of.get(pid) == 2 and len(last) >= OOP_NEED and sum(role_base(r) in OOP_MID_ROLES for r in last) >= OOP_NEED:
-            fm_oop[pid] = last
-    print(f"FotMob places: {len(starts)} players; defenders starting in midfield or on a wing: {len(fm_oop)}")
+        if pos_of.get(pid) != 2 or len(last) < OOP_KNOWN:
+            continue
+        # share of his recent starts further forward, the newest weighted most (5-4-3-2-1)
+        w = list(range(1, len(last) + 1))
+        share = sum(wi for wi, r in zip(w, last) if role_base(r) in OOP_MID_ROLES) / sum(w)
+        fm_oop[pid] = {"share": round(share, 3), "last": last}  # share 0: a plain defender, whatever his stats say
+    print(f"FotMob places: {len(starts)} players; defenders starting in midfield or on a wing: "
+          + ", ".join(f"{pid} {v['share']:.0%}" for pid, v in fm_oop.items() if v["share"] > 0))
     print(f"FotMob: {fetched} new matches read; {len(hurt)} players taken off injured in GW{min(covered, default=0)}-{max(covered, default=0)}"
           + (f"; not matched to FPL: {', '.join(missing[:10])}" if missing else ""))
     return hurt, covered, fm_oop
@@ -932,11 +939,11 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
 
     def fit(q, role):
         """How well he suits a place: 1 for his main FotMob position, a little less for each later one, 0.6 for a
-        neighbouring role (RB and RWB, CM and DM...), 0 for none; without FotMob positions, 0.8 for any place of his FPL
+        neighbouring role (RB and RWB, CM and DM...), 0 for none; without FotMob positions, 0.5 for any place of his FPL
         position. A little more for the very place he played last time."""
         rs = roles.get(q["id"])
         if rs is None:
-            f = 0.8 if slot_pos_role(role) == q["position"] else 0
+            f = 0.5 if slot_pos_role(role) == q["position"] else 0  # unknown to FotMob: only when no one suits better
         elif role in rs:
             f = max(0.75, 1 - 0.07 * rs.index(role))
         elif any(role_base(r) == role_base(role) for r in rs):
@@ -1173,11 +1180,11 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         if played in med.index:
             up = (p["position"] == listed) & (p["role_box90"] >= med.at[played, "role_box90"]) & (p["role_xgi90"] >= med.at[played, "role_xgi90"])
             p.loc[up, "role"] = played
-    # Or FotMob's line-ups show him starting in midfield or on a wing in most recent league matches (current form only)
+    # Where FotMob's line-ups know his recent places, they decide instead (coming gameweeks): the share below.
     if fm_oop:
         fut_tf = df.loc[df["future"], "tf"].max() if df["future"].any() else None
         if fut_tf is not None:
-            p.loc[(p["position"] == "DEF") & p["pid"].isin(list(fm_oop)) & (p["tf"] == fut_tf), "role"] = "MID"
+            p.loc[(p["position"] == "DEF") & p["pid"].isin(list(fm_oop)) & (p["tf"] == fut_tf), "role"] = "DEF"
     for played in ("MID", "FWD"):
         for c in ("role_box90", "role_xgi90"):
             p[f"med_{c}_{played}"] = med.at[played, c] if played in med.index else np.nan
@@ -1202,6 +1209,17 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     by_role = priors("role").drop(columns="p_dh").rename(columns={"role": "role"})
     by_position = priors("position")[["position", "tf", "p_dh"]]  # noqa: keep p_dc from role  # DefCon thresholds follow the FPL position
     df = df.merge(by_role, on=["role", "tf"], how="left").merge(by_position, on=["position", "tf"], how="left")
+    # Partly out of position (FotMob line-ups, coming gameweeks only): a defender who starts some matches in midfield or
+    # on a wing gets the defender and midfielder averages mixed by that share (his own record is used as for anyone).
+    df["oop_share"] = 0.0
+    if fm_oop:
+        rows = df["future"] & (df["position"] == "DEF") & (df["role"] == "DEF") & df["pid"].isin(list(fm_oop))
+        if rows.any():
+            sh = df.loc[rows, "pid"].map(lambda q: fm_oop[q]["share"]).astype(float)
+            mid = by_role[by_role["role"] == "MID"].set_index("tf")
+            for c in [c for c in by_role.columns if c.startswith("p_")]:
+                df.loc[rows, c] = (1 - sh) * df.loc[rows, c] + sh * df.loc[rows, "tf"].map(mid[c]).astype(float)
+            df.loc[rows, "oop_share"] = sh
 
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         k = K_RED if c == "rc" else K_PEN if c in ("ps", "pm", "og") else K_FINISH if c in ("g", "a") else K_PLAYER
@@ -1253,7 +1271,9 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         df[f"cs_def_{mode}"] = w * ln(dg.fillna(1.0)) + (1 - w) * df["l_team_def"]
         df[f"cs_att_{mode}"] = w * ln(ag.fillna(1.0)) + (1 - w) * df["l_opp_att"]
     for pos_name in POSITIONS[1:]:
-        df[f"is_{pos_name}"] = (df["role"] == pos_name).astype(int)  # how he plays; points still follow the FPL position
+        df[f"is_{pos_name}"] = (df["role"] == pos_name).astype(float)  # how he plays; points still follow the FPL position
+    df["is_DEF"] -= df["oop_share"]
+    df["is_MID"] += df["oop_share"]
     df["pos_code"] = df["position"].map({p: i for i, p in enumerate(POSITIONS)})
     return df
 
@@ -1819,6 +1839,15 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
         att = known["core_pen_scored"].fillna(0) + known["core_pen_missed"].fillna(0)
         print(f"Penalties taken per player match: predicted {(known['pen90'] * known['minutes'] / 90).mean():.4f}, actual {att.mean():.4f}, "
               f"missed predicted {(known['pm90'] * known['minutes'] / 90).mean():.4f}, actual {known['core_pen_missed'].fillna(0).mean():.4f}, n={len(known)}")
+        k2 = known.assign(att=att, pexp=known["pen90"] * known["minutes"] / 90)
+        print("DIAG league_pen_rate", known["team_pens"].mean(), "team pens per team-match actual", att.sum() / k2.drop_duplicates(["season", "fixture", "team"]).shape[0])
+        print("DIAG pens by players with share 0:", k2.loc[k2["pen_cond_used"] <= 0, "att"].sum(), "of", att.sum())
+        tk = k2[k2["att"] > 0]
+        print("DIAG takers: share used", tk["pen_cond_used"].describe().round(3).to_dict())
+        g = k2.groupby(["team"]).agg(pred=("pexp", "sum"), act=("att", "sum")).round(1)
+        print("DIAG per team", g.to_dict("index"))
+        top = k2.groupby("name" if "name" in k2 else "pid").agg(pred=("pexp", "sum"), act=("att", "sum"), share=("pen_cond_used", "mean")).sort_values("act", ascending=False).head(25).round(2)
+        print("DIAG takers", top.to_string())
     gks = played[played["position"] == "GK"]
     share = gks["minutes"] / 90
     print(f"Saves per GK match: predicted {(gks['saves90'] * share).mean():.3f}, actual {gks['saves'].mean():.3f}, n={len(gks)}")
@@ -2288,7 +2317,9 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
     hurt, covered, fm_oop = injury_subs(cache, offline, _api("bootstrap-static/", cache, offline))
     FM_PLACES.clear()
-    FM_PLACES.update(fm_oop)
+    FM_PLACES.update({k: v["last"] for k, v in fm_oop.items() if v["share"] > 0})
+    FM_SHARE.clear()
+    FM_SHARE.update({k: v["share"] for k, v in fm_oop.items() if v["share"] > 0})
     df = mark_injuries(df, log, load_admin_injuries(), hurt, covered)
     feat = build_features(df, fm_oop)
     model = XPointsModel().fit(feat)
@@ -2394,7 +2425,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "price": float(r["value"]) / 10, "status": r["status"] if isinstance(r["status"], str) else "a",
             "news": r["news"] if isinstance(r["news"], str) else "",
             "w5Min": None if pd.isna(r["w5_min"]) else round(float(r["w5_min"]), 1),
-            "role": r["role"], "places": FM_PLACES.get(r["pid"]), "box90": None if pd.isna(r["role_box90"]) else round(float(r["role_box90"]), 2),
+            "role": r["role"], "places": FM_PLACES.get(r["pid"]), "oopShare": FM_SHARE.get(r["pid"]), "box90": None if pd.isna(r["role_box90"]) else round(float(r["role_box90"]), 2),
             "xgi90": None if pd.isna(r["role_xgi90"]) else round(float(r["role_xgi90"]), 3),
             "minUsual": round(float(r["min_usual"]), 1),
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
