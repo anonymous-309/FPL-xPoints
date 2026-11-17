@@ -16,5 +16,5 @@ jobs:
         with:
           path: fpl_data/20*
           key: fpl-history-v1
-      - run: python fpl_xpoints.py download
-      - run: PYTHONWARNINGS=ignore python tools/onemove/cs_vs_bookies.py 2>&1 | grep -v "^Finishing\|^Fitting\|^  " | tail -60
+      - run: python fpl_xpoints.py download --seasons 2023-24 2024-25 2025-26 2026-27 || python fpl_xpoints.py download
+      - run: PYTHONPATH=. PYTHONWARNINGS=ignore python tools/onemove/cs_vs_bookies.py 2>&1 | grep -v "^Finishing\|^Fitting\|^  " | tail -60
