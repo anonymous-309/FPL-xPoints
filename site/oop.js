@@ -28,8 +28,8 @@
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((d) => {
       const gws = d.gws.slice(0, 5), first = d.gws[0];
-      state.rows = d.players.filter((p) => p.role && p.role !== p.position).map((p) => ({
-        name: p.name, team: p.team, position: p.position, role: p.role, places: (p.places || []).join(' '), price: p.price, box90: p.box90, xgi90: p.xgi90,
+      state.rows = d.players.filter((p) => (p.role && p.role !== p.position) || p.oopShare).map((p) => ({
+        name: p.name, team: p.team, position: p.position, role: p.role !== p.position ? p.role : `MID ${Math.round(p.oopShare * 100)}% of the time`, share: p.role !== p.position ? 1 : p.oopShare, places: (p.places || []).join(' '), price: p.price, box90: p.box90, xgi90: p.xgi90,
         score: p.byGw[first] ? p.byGw[first].pScore : 0, assist: p.byGw[first] ? p.byGw[first].pAssist : 0,
         xpts: gws.reduce((s, g) => s + (p.byGw[g] ? p.byGw[g].xpts : 0), 0),
       }));
