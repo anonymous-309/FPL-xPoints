@@ -15,7 +15,16 @@
   <nav class="sitenav" aria-label="Pages"></nav>
 </header>
 <form id="pick" class="filters plan-form" autocomplete="off">
-  <label>FPL team ID <input id="entry" type="text" inputmode="numeric" pattern="[0-9]*" required></label>
+  <label>FPL team ID <input id="entry" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 1234567" required></label>
+  <details class="id-help">
+    <summary>Where do I find my ID?</summary>
+    <ol>
+      <li>Open <a href="https://fantasy.premierleague.com/" target="_blank" rel="noopener">fantasy.premierleague.com</a> in a browser and sign in.</li>
+      <li>Go to the <b>Points</b> tab.</li>
+      <li>Look at the address bar: it reads <code>fantasy.premierleague.com/entry/<b>1234567</b>/event/11</code>. The number after <code>/entry/</code> is your team ID.</li>
+    </ol>
+    <p>The FPL phone app does not show it, so use a browser (on your phone is fine). The ID is public and only lets the planner read your team; it cannot change anything.</p>
+  </details>
   <label>Gameweeks to plan
     <select id="horizon"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select>
   </label>

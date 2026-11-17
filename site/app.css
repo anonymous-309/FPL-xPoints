@@ -428,3 +428,9 @@ td.fx-cell .fx-m { display: flex; width: max-content; }
   .fx-grid td.fx-team { min-width: 92px; max-width: 92px; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
   .fx-grid th.fx-gw, td.fx-cell { min-width: 84px; }
 }
+.id-help { flex-basis: 100%; max-width: 640px; color: var(--muted); font-size: 13px; }
+.id-help summary { cursor: pointer; color: var(--turf); font-weight: 600; }
+.id-help ol { margin: 6px 0 4px; padding-left: 20px; }
+.id-help li { margin: 2px 0; }
+.id-help p { margin: 4px 0 0; }
+.id-help code { padding: 0 3px; background: var(--paper); border: 1px solid var(--line); border-radius: 2px; font-size: 12px; overflow-wrap: anywhere; }

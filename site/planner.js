@@ -955,7 +955,7 @@
 
   let saved = '';
   try { saved = localStorage.getItem(KEY) || ''; } catch (e) { saved = ''; }
-  $('entry').value = new URLSearchParams(location.search).get('id') || saved || '11081';
+  $('entry').value = new URLSearchParams(location.search).get('id') || saved || '';
   fetch('data.json', { cache: 'no-store' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((data) => {
@@ -966,7 +966,8 @@
       settingsForm();
       // read the team so its chips show, but only plan when asked: a plan takes a while
       const entry = $('entry').value.trim();
-      $('out').replaceChildren(el('p', { className: 'working', textContent: 'Choose the gameweeks, chips and settings, then press Make plan.' }));
+      $('out').replaceChildren(el('p', { className: 'working', textContent: entry ? 'Choose the gameweeks, chips and settings, then press Make plan.' : 'Enter your FPL team ID to start. Not sure what it is? Open "Where do I find my ID?" above.' }));
+      if (!entry) { const h = document.querySelector('.id-help'); if (h) h.open = true; }
       if (/^\d+$/.test(entry)) loadTeam(entry).catch((e) => { showError(e.message); $('status').textContent = 'Enter an FPL team ID'; });
     })
     .catch(() => showError('Could not load the xPoints data. Reload the page to try again.'));
