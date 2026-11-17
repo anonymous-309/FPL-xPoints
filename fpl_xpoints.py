@@ -747,7 +747,8 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
             try:
                 d = _fotmob_get("teams", {"id": fm_id, "ccode3": "GBR"})
                 fxs = ((d.get("fixtures") or {}).get("allFixtures") or {}).get("fixtures") or []
-                data = {"fixtures": fxs, "lineup": None}
+                data = {"fixtures": fxs, "lineup": None,
+                        "roles": {m["name"]: m.get("positionIds") or "" for g in ((d.get("squad") or {}).get("squad") or []) for m in g.get("members") or [] if m.get("name")}}
                 # the line-up of the club's last league match (a cup side is often rotated)
                 lm = [m for m in fxs if (m.get("tournament") or {}).get("name") == "Premier League" and (m.get("status") or {}).get("finished")]
                 if lm:
@@ -770,7 +771,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
                     missed.append(fm_name)
         if isinstance(data, dict):
             if (data.get("lineup") or {}).get("starters"):
-                lineups[t["short_name"]] = data["lineup"]
+                lineups[t["short_name"]] = dict(data["lineup"], roles=data.get("roles") or {})
             data = data.get("fixtures")
         for m in data or []:
             tour = (m.get("tournament") or {}).get("name") or ""
@@ -800,7 +801,33 @@ YELLOW_LIMITS = ((19, 5), (32, 10), (38, 15))  # yellow cards by the end of thes
 
 
 XI_KEEP = 45  # a player from the last line-up keeps his place if we expect at least this many minutes from him
-XI_SWAP = 10  # a player outside it comes in for a starter of his position we expect at least this many fewer minutes from
+XI_SWAP = 10
+# FotMob position ids -> role. Ids on the pitch from the keeper out: 32 right back ... 38 left back, 51-59 / 62, 68
+# wing-backs, 63-67 holding midfield, 71-72 right midfield, 73-77 central midfield, 78-79 left midfield, 82-83 right
+# wing, 84-86 attacking midfield, 87-88 left wing, 100+ strikers.
+
+
+def ROLE_OF(pid) -> str:
+    pid = int(pid or 0)
+    if pid <= 11:
+        return "GK"
+    if pid < 40:
+        return {32: "RB", 38: "LB"}.get(pid, "CB")
+    if pid < 70:
+        return "RWB" if pid in (51, 52, 62) else "LWB" if pid in (58, 59, 68) else "DM"
+    if pid < 80:
+        return "RM" if pid in (71, 72) else "LM" if pid in (78, 79) else "CM"
+    if pid < 100:
+        return "RW" if pid in (81, 82, 83) else "LW" if pid in (87, 88, 89) else "AM"
+    return "ST"
+
+
+ROLE_NEAR = {"RB": ("RWB",), "RWB": ("RB", "RM"), "LB": ("LWB",), "LWB": ("LB", "LM"), "DM": ("CM",), "CM": ("DM", "AM"),
+             "AM": ("CM",), "RM": ("RW", "RWB"), "LM": ("LW", "LWB"), "RW": ("RM",), "LW": ("LM",)}
+
+
+def slot_pos_role(role: str) -> str:
+    return {"GK": "GK", "RB": "DEF", "LB": "DEF", "CB": "DEF", "RWB": "DEF", "LWB": "DEF", "ST": "FWD"}.get(role, "MID")  # a player outside it comes in for a starter of his position we expect at least this many fewer minutes from
 
 
 def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dict], str | None, dict | None]:
@@ -823,10 +850,6 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
         best = max(((max(difflib.SequenceMatcher(None, _name_key(p["name"]), w).ratio() for w in n.split() + [n]), p) for p in squad), key=lambda x: x[0], default=(0, None))
         return best[1] if best[0] >= 0.8 else None
 
-    def slot_pos(pid):
-        pid = int(pid or 0)
-        return "GK" if pid <= 11 else "DEF" if pid < 60 else "MID" if pid < 100 else "FWD"
-
     row = lambda p, x, y, new, was=None: {"name": p["name"], "pos": p["position"], "xmin": round(xmin(p)), "x": x, "y": y, "new": new, "for": was}
     if not lineup or not lineup.get("starters"):
         order = {"GK": 0, "DEF": 1, "MID": 2, "FWD": 3}
@@ -838,39 +861,56 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
             line = [p for p in pick if p["position"] == pos]
             out += [row(p, (i + .5) / len(line), y, False) for i, p in enumerate(line)]
         return out, None, None
-    slots, used = [], set()
-    for st in lineup["starters"]:
-        p = find(st["name"] or "")
-        slots.append((st, p))
-        if p and xmin(p) >= XI_KEEP:
-            used.add(p["id"])
+    # Roles from FotMob's squad list (each player's positions, best first), matched to FPL players by name.
+    roles = {}
+    for nm, ids in (lineup.get("roles") or {}).items():
+        q = find(nm)
+        if q:
+            roles[q["id"]] = [ROLE_OF(int(x)) for x in str(ids).split(",") if x.strip().isdigit()]
+    starters = [(st, find(st["name"] or "")) for st in lineup["starters"]]
+    for st, q in starters:  # what he played last time is a role of his too
+        if q:
+            roles.setdefault(q["id"], [])
+            if ROLE_OF(st["pid"]) not in roles[q["id"]]:
+                roles[q["id"]].append(ROLE_OF(st["pid"]))
+
+    def fit(q, role):
+        """2: the role is one of his, 1: a neighbouring role (RB and RWB, CM and DM...), 0: no."""
+        rs = roles.get(q["id"])
+        if rs is None:  # no FotMob roles: any place of his FPL position
+            return 1 if slot_pos_role(role) == q["position"] else 0
+        if role in rs:
+            return 2
+        return 1 if any(role in ROLE_NEAR.get(r, ()) for r in rs) else 0
+
+    keep = {q["id"] for st, q in starters if q and xmin(q) >= XI_KEEP}
+    used = set(keep)
     out = []
-    for st, p in slots:
-        if p and p["id"] in used and not any(o["name"] == p["name"] for o in out):
-            out.append(row(p, st["x"], st["y"], False))
+    for st, q in starters:
+        role = ROLE_OF(st["pid"])
+        if q and q["id"] in keep and not any(o["id"] == q["id"] for o in out):
+            out.append(dict(row(q, st["x"], st["y"], False), id=q["id"], role=role))
             continue
-        pos = p["position"] if p else slot_pos(st["pid"])
-        alt = next((q for q in sorted(squad, key=xmin, reverse=True) if q["position"] == pos and q["id"] not in used), None)
+        pool = [c for c in squad if c["id"] not in used]
+        alt = (max((c for c in pool if fit(c, role)), key=lambda c: (xmin(c), fit(c, role)), default=None)
+               or max((c for c in pool if c["position"] == (q["position"] if q else slot_pos_role(role))), key=xmin, default=None))
         if alt:
             used.add(alt["id"])
-            same = p is not None and alt["id"] == p["id"]  # he is still the best we have for the place
-            out.append(row(alt, st["x"], st["y"], not same, None if same else (p["name"] if p else st["name"])))
-    # A player back from injury (or otherwise expected to play more) takes the place of the starter of the same FPL
-    # position we expect the fewest minutes from, when he is expected at least XI_SWAP minutes more.
-    by_name = {q["name"]: q for q in squad}
-    for pos in ("GK", "DEF", "MID", "FWD"):
-        while True:
-            inside = [o for o in out if o["pos"] == pos]
-            names = {o["name"] for o in out}
-            best = next((q for q in sorted(squad, key=xmin, reverse=True) if q["position"] == pos and q["name"] not in names), None)
-            if not inside or not best:
-                break
-            low = min(inside, key=lambda o: o["xmin"])
-            if xmin(best) < low["xmin"] + XI_SWAP:
-                break
-            low.update({"name": best["name"], "xmin": round(xmin(best)), "new": True, "for": low["for"] or low["name"]})
-            if by_name.get(low["for"]) is not None and low["for"] == best["name"]:
-                low.update({"new": False, "for": None})
+            same = q is not None and alt["id"] == q["id"]
+            out.append(dict(row(alt, st["x"], st["y"], not same, None if same else (q["name"] if q else st["name"])), id=alt["id"], role=role))
+    # A player back from injury (or anyone outside the XI expected to play more) takes the place, in a role of his, of
+    # the starter we expect the fewest minutes from, when we expect him to play at least XI_SWAP minutes more.
+    for c in sorted(squad, key=xmin, reverse=True):
+        if any(o["id"] == c["id"] for o in out) or xmin(c) < XI_KEEP:
+            continue
+        spots = [o for o in out if fit(c, o["role"]) == 2] or [o for o in out if fit(c, o["role"]) == 1 and o["pos"] == c["position"]]
+        if not spots:
+            continue
+        low = min(spots, key=lambda o: o["xmin"])
+        if xmin(c) >= low["xmin"] + XI_SWAP:
+            low.update({"name": c["name"], "pos": c["position"], "xmin": round(xmin(c)), "new": True, "for": low["for"] or low["name"], "id": c["id"]})
+    for o in out:
+        o.pop("id", None)
     m = lineup.get("match") or {}
     return out, lineup.get("formation"), {"home": m.get("home"), "away": m.get("away"), "t": m.get("t")}
 
