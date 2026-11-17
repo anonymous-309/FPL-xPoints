@@ -800,6 +800,7 @@ YELLOW_LIMITS = ((19, 5), (32, 10), (38, 15))  # yellow cards by the end of thes
 
 
 XI_KEEP = 45  # a player from the last line-up keeps his place if we expect at least this many minutes from him
+XI_SWAP = 10  # a player outside it comes in for a starter of his position we expect at least this many fewer minutes from
 
 
 def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dict], str | None, dict | None]:
@@ -854,6 +855,22 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
             used.add(alt["id"])
             same = p is not None and alt["id"] == p["id"]  # he is still the best we have for the place
             out.append(row(alt, st["x"], st["y"], not same, None if same else (p["name"] if p else st["name"])))
+    # A player back from injury (or otherwise expected to play more) takes the place of the starter of the same FPL
+    # position we expect the fewest minutes from, when he is expected at least XI_SWAP minutes more.
+    by_name = {q["name"]: q for q in squad}
+    for pos in ("GK", "DEF", "MID", "FWD"):
+        while True:
+            inside = [o for o in out if o["pos"] == pos]
+            names = {o["name"] for o in out}
+            best = next((q for q in sorted(squad, key=xmin, reverse=True) if q["position"] == pos and q["name"] not in names), None)
+            if not inside or not best:
+                break
+            low = min(inside, key=lambda o: o["xmin"])
+            if xmin(best) < low["xmin"] + XI_SWAP:
+                break
+            low.update({"name": best["name"], "xmin": round(xmin(best)), "new": True, "for": low["for"] or low["name"]})
+            if by_name.get(low["for"]) is not None and low["for"] == best["name"]:
+                low.update({"new": False, "for": None})
     m = lineup.get("match") or {}
     return out, lineup.get("formation"), {"home": m.get("home"), "away": m.get("away"), "t": m.get("t")}
 
