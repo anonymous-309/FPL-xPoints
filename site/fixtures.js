@@ -52,7 +52,7 @@
 
   // Times are shown in the chosen zone (UTC unless changed); matches are grouped into weekend (Fri-Mon) and midweek
   // (Tue-Thu) slots by the date in England, so a slot means the same round of matches wherever you are.
-  const ZONES = [['UTC', 'GMT+0 (UTC)'], ['Europe/London', 'UK time'], ['Europe/Paris', 'Central Europe'], ['Asia/Bangkok', 'GMT+7 (Vietnam, Thailand)'],
+  const ZONES = [['UTC', 'GMT+0 (UTC)'], ['Europe/London', 'UK time'], ['Europe/Paris', 'Central Europe'], ['Asia/Kolkata', 'GMT+5:30 (India)'], ['Asia/Bangkok', 'GMT+7 (Vietnam, Thailand)'],
     ['Asia/Singapore', 'GMT+8 (Singapore, Malaysia)'], ['Asia/Tokyo', 'GMT+9 (Japan, Korea)'], ['Australia/Sydney', 'Sydney'],
     ['America/New_York', 'US Eastern'], ['America/Los_Angeles', 'US Pacific'], ['local', 'This device']];
   const tz = () => (state.tz === 'local' ? undefined : state.tz);
