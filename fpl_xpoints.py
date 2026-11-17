@@ -586,6 +586,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
+OOP_MIN_SHARE = 0.10  # at or below this share he counts as a plain defender
 OOP_KNOWN = 3  # with at least this many league starts known to FotMob, his places decide (not his stats)
 OOP_MID_ROLES = {"AM", "RM", "LM", "RW", "LW", "ST"}  # wing, wide or attacking midfield (not holding/central midfield, not wing-back)
 FM_SHARE: dict = {}  # pid -> share of recent starts further forward
@@ -710,6 +711,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         # share of his recent starts further forward, the newest weighted most (5-4-3-2-1)
         w = list(range(1, len(last) + 1))
         share = sum(wi for wi, r in zip(w, last) if role_base(r) in OOP_MID_ROLES) / sum(w)
+        share = share if share > OOP_MIN_SHARE else 0.0  # too little to matter: a plain defender
         fm_oop[pid] = {"share": round(share, 3), "last": last}  # share 0: a plain defender, whatever his stats say
     print(f"FotMob places: {len(starts)} players; defenders starting in midfield or on a wing: "
           + ", ".join(f"{pid} {v['share']:.0%}" for pid, v in fm_oop.items() if v["share"] > 0))
