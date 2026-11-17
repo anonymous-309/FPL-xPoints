@@ -117,11 +117,21 @@
     // 5. chances
     const ch = (S['Chance 90min: each chance against what happened (test season)'] || []).filter((l) => /\d/.test(l) && !/^Skill/.test(l.trim()));
     if (ch.length) {
+      // Sorting is judged against the best a model could do (its ceiling), averages against what happened.
+      const sortGrade = (auc, top) => { if (!(auc > 0) || !(top > 0.5)) return '–'; const r = (auc - 0.5) / (top - 0.5);
+        return r >= 0.95 ? 'Excellent' : r >= 0.85 ? 'Good' : r >= 0.7 ? 'Average' : 'Weak'; };
+      const avgGrade = (pr, ha) => { const e = Math.abs(pr - ha) / Math.max(ha, 1e-9);
+        return e <= 0.05 ? 'Excellent' : e <= 0.1 ? 'Good' : e <= 0.2 ? 'Average' : 'Off'; };
+      const pc = (x) => parseFloat(x) / 100;
       out.push(card('Chance 90min figures',
-        p('Each chance on the Chance 90min page: the average predicted chance next to how often it really happened, and how well it sorts players (', b('Sorting'), ': 0.5 is a coin flip, 1 is perfect; above 0.7 is good for football).'),
-        table(['Figure', 'Predicted', 'Happened', 'Sorting'], ch.map((l) => { const m = l.trim().match(/^(.+?)\s+(\d+)\s+([\d.]+%)\s+([\d.]+%)\s+[+-][\d.]+\s+[+-][\d.]+\s+([\d.]+)$/);
-          return m ? [m[1], m[3], m[4], m[5]] : null; }).filter(Boolean)),
-        p('Playing at all and playing 60+ minutes are predicted very well. Goals, assists and clean sheets are right on average but hard to call for any one match, as in every model. Penalty saves and red cards are too rare to call at all, so everyone gets about the average.')));
+        p('Each chance on the Chance 90min page, judged two ways.'),
+        p(b('On average'), ': the average predicted chance next to how often it really happened. Excellent when they are within 5% of each other (26.1% against 25.5% is 2% apart), Good within 10%, Average within 20%, Off beyond that.'),
+        p(b('Sorting'), ': how often a match where it happened was rated above one where it did not (0.5 is a coin flip, 1 is perfect). How high it can go depends on the event, not only on the model: a clean sheet is close to a coin flip even for the best team, so even exactly right chances would only reach about 0.65, while whether a player starts can be called much better. ',
+          b('Best possible'), ' is the score the chances would get if each one were exactly right, and the grade compares the two: Excellent at 95% or more of the way from a coin flip to the best possible, Good from 85%, Average from 70%, Weak below. Above the best possible means the chances were too cautious: the players rated high did even better than said.'),
+        table(['Figure', 'Predicted', 'Happened', 'On average', 'Sorting', 'Best possible', 'Sorting grade'], ch.map((l) => {
+          const m = l.trim().match(/^(.+?)\s+(\d+)\s+([\d.]+%)\s+([\d.]+%)\s+\S+\s+\S+\s+([\d.]+|nan)\s+([\d.]+|nan)$/);
+          return m ? [m[1], m[3], m[4], avgGrade(pc(m[3]), pc(m[4])), m[5], m[6], sortGrade(parseFloat(m[5]), parseFloat(m[6]))] : null; }).filter(Boolean)),
+        p('Playing at all and playing 60+ minutes are predicted very well. Goals, assists and clean sheets are right on average and sort about as well as such chancy events allow. Penalty saves and red cards are too rare to call at all, so everyone gets about the average.')));
     }
 
     // 6. goals / assists by band

@@ -1596,6 +1596,22 @@ def _auc(score: np.ndarray, hit: np.ndarray) -> float:
     return float((ranks[hit == 1].sum() - pos * (pos + 1) / 2) / (pos * (n - pos)))
 
 
+def _auc_ceiling(prob: np.ndarray) -> float:
+    """The AUC the chances would get on average if each were exactly right: every match then happens with its own
+    chance, and the score is how often one where it happened is rated above one where it did not. A rare or near
+    coin-flip event cannot be sorted well even by perfect chances, so this is the most to expect from each row."""
+    p = np.sort(np.asarray(prob, float))
+    q = 1 - p
+    # weight of "it happened" pairs above "it did not": for each match, its p times the (1 - p) of every match below
+    # it, ties counting half, leaving out the match paired with itself
+    s = pd.Series(q).groupby(p).sum()
+    below = s.cumsum() - s
+    tie = pd.Series(p).groupby(p).sum() * s - pd.Series(p * q).groupby(p).sum()
+    num = float((pd.Series(p).groupby(p).sum() * below).sum() + 0.5 * tie.sum())
+    den = float(p.sum() * q.sum() - (p * q).sum())
+    return num / den if den > 0 else float("nan")
+
+
 def chance_report(pred: pd.DataFrame) -> None:
     """How good each Chance 90min figure was on the test season, against what happened.
 
@@ -1615,7 +1631,8 @@ def chance_report(pred: pd.DataFrame) -> None:
         ll0 = -np.mean(hit * np.log(base) + (1 - hit) * np.log(1 - base))
         none = hit.sum() == 0 or hit.sum() == len(hit)
         rows.append({"figure": title, "n": len(hit), "predicted": prob.mean(), "actual": hit.mean(),
-                     "Brier skill": np.nan if none else 1 - brier / brier0, "log-loss skill": np.nan if none else 1 - ll / ll0, "AUC": _auc(prob, hit)})
+                     "Brier skill": np.nan if none else 1 - brier / brier0, "log-loss skill": np.nan if none else 1 - ll / ll0, "AUC": _auc(prob, hit),
+                     "AUC ceiling": _auc_ceiling(prob)})
         return prob, hit
 
     def per90(title, rate, actual, frame, cap_one=True):
@@ -1642,9 +1659,9 @@ def chance_report(pred: pd.DataFrame) -> None:
     p, h = per90("Yellow card", "y90", "yellow_cards", played); calib["Yellow card"] = (p, h)
     t = pd.DataFrame(rows)
     print("\n=== Chance 90min: each chance against what happened (test season) ===")
-    print("Skill: 1 - error / error of the position average (0 = no better, 1 = perfect). AUC: 0.5 = coin flip, 1 = perfect order.")
+    print("Skill: 1 - error / error of the position average (0 = no better, 1 = perfect). AUC: 0.5 = coin flip, 1 = perfect order; ceiling: the AUC if every chance were exactly right.")
     print(t.to_string(index=False, formatters={"predicted": "{:.2%}".format, "actual": "{:.2%}".format, "Brier skill": "{:+.3f}".format,
-                                                 "log-loss skill": "{:+.3f}".format, "AUC": "{:.3f}".format}))
+                                                 "log-loss skill": "{:+.3f}".format, "AUC": "{:.3f}".format, "AUC ceiling": "{:.3f}".format}))
 
     counts = []
     def count(title, rate, actual, frame, scale=True):

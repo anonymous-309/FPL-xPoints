@@ -52,9 +52,17 @@
 
   // Times are shown in the chosen zone (UTC unless changed); matches are grouped into weekend (Fri-Mon) and midweek
   // (Tue-Thu) slots by the date in England, so a slot means the same round of matches wherever you are.
-  const ZONES = [['UTC', 'GMT+0 (UTC)'], ['Europe/London', 'UK time'], ['Europe/Paris', 'Central Europe'], ['Asia/Kolkata', 'GMT+5:30 (India)'], ['Asia/Bangkok', 'GMT+7 (Vietnam, Thailand)'],
-    ['Asia/Singapore', 'GMT+8 (Singapore, Malaysia)'], ['Asia/Tokyo', 'GMT+9 (Japan, Korea)'], ['Australia/Sydney', 'Sydney'],
-    ['America/New_York', 'US Eastern'], ['America/Los_Angeles', 'US Pacific'], ['local', 'This device']];
+  const ZONES = [['UTC', 'GMT+0 (UTC, Ghana, Iceland)'], ['Europe/London', 'UK, Ireland, Portugal'],
+    ['Europe/Paris', 'Central Europe (Norway, Sweden, Denmark, Netherlands, Germany, France, Spain, Italy, Poland)'],
+    ['Africa/Lagos', 'GMT+1 (Nigeria)'], ['Europe/Athens', 'Eastern Europe (Greece, Finland, Romania)'], ['Africa/Cairo', 'Egypt'],
+    ['Africa/Johannesburg', 'GMT+2 (South Africa, Zambia, Zimbabwe)'], ['Africa/Nairobi', 'GMT+3 (Kenya, Uganda, Tanzania)'],
+    ['Asia/Riyadh', 'GMT+3 (Saudi Arabia, Qatar, Kuwait)'], ['Europe/Istanbul', 'Turkey'], ['Asia/Dubai', 'GMT+4 (UAE, Oman)'],
+    ['Asia/Karachi', 'GMT+5 (Pakistan)'], ['Asia/Kolkata', 'GMT+5:30 (India, Sri Lanka)'], ['Asia/Kathmandu', 'GMT+5:45 (Nepal)'],
+    ['Asia/Dhaka', 'GMT+6 (Bangladesh)'], ['Asia/Bangkok', 'GMT+7 (Vietnam, Thailand, Cambodia)'], ['Asia/Jakarta', 'GMT+7 (Indonesia, Jakarta)'],
+    ['Asia/Shanghai', 'GMT+8 (China, Hong Kong, Taiwan)'], ['Asia/Singapore', 'GMT+8 (Singapore, Malaysia, Philippines)'],
+    ['Asia/Tokyo', 'GMT+9 (Japan, Korea)'], ['Australia/Perth', 'Perth'], ['Australia/Sydney', 'Sydney, Melbourne'], ['Pacific/Auckland', 'New Zealand'],
+    ['America/Sao_Paulo', 'Brazil (São Paulo)'], ['America/New_York', 'US & Canada Eastern'], ['America/Chicago', 'US & Canada Central'],
+    ['America/Denver', 'US & Canada Mountain'], ['America/Los_Angeles', 'US & Canada Pacific'], ['local', 'This device']];
   const tz = () => (state.tz === 'local' ? undefined : state.tz);
   const day = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: tz() });
   const hm = (d) => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz() });
