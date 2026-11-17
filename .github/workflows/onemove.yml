@@ -15,6 +15,7 @@ jobs:
           curl -sfL https://anonymous-309.github.io/FPL-xPoints/data.json -o /tmp/data.json
           (cd tsite && python3 -m http.server 8000 >/dev/null 2>&1 &)
           npm install --no-save playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          sleep 1
           bash tools/onemove/probe.sh
           exit 0
           (node tools/onemove/proxy.js &)
