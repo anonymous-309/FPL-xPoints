@@ -1401,11 +1401,7 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     pred["pred_ppg"] = pred["ppg_all"].fillna(0.0)
     pred["pred_w5"] = pred["w5_min"].fillna(0.0)
     models = {"Model": "xpts", "Trailing 4 GW": "pred_pts4", "Long-run PPG": "pred_ppg"}
-    if pred["xP"].notna().any():
-        models["FPL xP (may leak)"] = "xP"
     agg = {c: "sum" for c in ["total_points", "minutes", "xpts", "pred_pts4", "pred_ppg", "xmin", "pred_w5"]}
-    if "xP" in models.get("FPL xP (may leak)", ""):
-        agg["xP"] = "sum"
     agg |= {"name": "last", "team": "last", "position": "last", "min_long": "last"}
     gw = pred.groupby(["season", "GW", "pid"], as_index=False).agg(agg)
     gw.to_csv(out_csv, index=False)

@@ -37,7 +37,7 @@
     const season = (text.match(/training before (\d{4}-\d{2})/) || [])[1] || 'a past season';
     const S = sections(text);
     const out = [];
-    const NAMES = { 'Model': 'This site', 'Trailing 4 GW': 'Points in his last 4 GWs', 'Long-run PPG': 'Points per game, long run', 'FPL xP (may leak)': "FPL's own xP" };
+    const NAMES = { 'Model': 'This site', 'Trailing 4 GW': 'Points in his last 4 GWs', 'Long-run PPG': 'Points per game, long run' };
 
     // 1. points
     const acc = S['Prediction accuracy'] || [];
@@ -50,10 +50,10 @@
         p(`Tested on every player in every gameweek of ${season}. `, b('Average miss'), ' is how far, on average, the prediction was from the points he really scored. ', b('Order'),
           ' (0 to 1) is how well the predictions put players in the right order from best to worst: 1 would be perfect.'),
         table(['Way of guessing', 'Average miss (points)', 'Order (all players)', 'Order (regular starters)'],
-          all.map((r) => { const rr = reg.find((x) => x[0] === r[0]); return [NAMES[r[0]] || r[0], f(num(r[3]), 2), f(num(r[5]), 2), rr ? f(num(rr[5]), 2) : '–']; }),
+          all.filter((r) => !/^FPL xP/.test(r[0])).map((r) => { const rr = reg.find((x) => x[0] === r[0]); return [NAMES[r[0]] || r[0], f(num(r[3]), 2), f(num(r[5]), 2), rr ? f(num(rr[5]), 2) : '–']; }),
           { mark: (r) => r[0] === 'This site' }),
-        Number.isFinite(better) ? p('This site misses by about ', b(`${f(better, 0)}% less`), ' than going by recent points, and puts players in a better order than every simple way. Any one gameweek is still very random: a regular starter is typically off by 2 to 3 points either way, from goals, assists and bonus nobody can call.') : null,
-        p("FPL's xP column is shown for interest only: it may have been saved after some team news, so the comparison is not quite fair either way.")));
+        Number.isFinite(better) ? p('This site misses by about ', b(`${f(better, 0)}% less`), ' than going by recent points, and puts players in a better order than either simple way. Any one gameweek is still very random: a regular starter is typically off by 2 to 3 points either way, from goals, assists and bonus nobody can call.') : null,
+));
     }
 
     // 1b. top scorers
@@ -63,6 +63,7 @@
       const head = lines.findIndex((l) => /\bgroup\b/.test(l) && /\bMAE\b/.test(l));
       const rows = [];
       for (let j = head + 1; head >= 0 && j < lines.length && lines[j].trim(); j++) rows.push(lines[j].split('|').map((x) => x.trim()));
+      for (let j = rows.length - 1; j >= 0; j--) if (/^FPL xP/.test(rows[j][1])) rows.splice(j, 1);
       const POS = { GK: 'Goalkeepers (top 10)', DEF: 'Defenders (top 20)', MID: 'Midfielders (top 20)', FWD: 'Forwards (top 10)', All: 'All 60' };
       const groups = [...new Set(rows.map((r) => r[0]))];
       const tIdx = lines.findIndex((l) => /^Top scorers, season totals/.test(l.trim()));
@@ -87,7 +88,7 @@
       const rows = dec.slice(1).map((l) => l.trim().split(/\s{2,}/));
       out.push(card('Would it have picked the right players?',
         p('Each gameweek, the player each way rated highest as captain, and the 10 it rated highest: their ', b('real'), ' points per gameweek on average (captain not doubled).'),
-        table(['Way of guessing', 'Captain pick', 'Top 10 average'], rows.map((r) => [NAMES[r[0]] || r[0], f(num(r[1]), 2), f(num(r[2]), 2)]), { mark: (r) => r[0] === 'This site' })));
+        table(['Way of guessing', 'Captain pick', 'Top 10 average'], rows.filter((r) => !/^FPL xP/.test(r[0])).map((r) => [NAMES[r[0]] || r[0], f(num(r[1]), 2), f(num(r[2]), 2)]), { mark: (r) => r[0] === 'This site' })));
     }
 
     // 3. calibration
