@@ -6,7 +6,7 @@ window.XMin = (function () {
   const GOAL_PTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
   const PEN_TAKE_ON_PITCH = 1;  // same as the model: the listed taker takes them while he is on the pitch
   let takers = {};  // team -> players with an FPL penalty order, first taker first
-  let fkTakers = {};  // team -> players with an FPL direct free kick order
+  let fkTakers = {};  // team -> players on FPL's free kick or corner list
   const PARTS = ['goal', 'assist', 'bonus', 'cs', 'conceded', 'saves', 'pensave', 'penmiss', 'own', 'defcon', 'cards'];
 
   function load() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
@@ -48,7 +48,7 @@ window.XMin = (function () {
     takers = {};
     fkTakers = {};
     players.filter((p) => p.penOrder != null).forEach((p) => { (takers[p.team] = takers[p.team] || []).push(p); });
-    players.filter((p) => p.fkOrder != null).forEach((p) => { (fkTakers[p.team] = fkTakers[p.team] || []).push(p); });
+    players.filter((p) => p.fkOrder != null || p.cornerOrder != null).forEach((p) => { (fkTakers[p.team] = fkTakers[p.team] || []).push(p); });
     Object.values(takers).forEach((list) => list.sort((a, b) => a.penOrder - b.penOrder));
   }
 
@@ -60,7 +60,7 @@ window.XMin = (function () {
 
   // His share of the team's penalties while he is on the pitch in match j of gameweek g: the first taker takes
   // them when on, each next taker gets the ones left while those above him are off; those left while every listed
-  // taker is off go to the direct free kick takers, split by their minutes (same rule as the model).
+  // taker is off go to the free kick and corner takers, split by their minutes (same rule as the model).
   function penCond(overrides, p, g, j) {
     const d = p.byGw[g];
     if (!d || !d.fx) return 0;
@@ -72,7 +72,7 @@ window.XMin = (function () {
       if (t.id === p.id) share = PEN_TAKE_ON_PITCH * left;
       left *= 1 - m;
     }
-    if (p.fkOrder != null && left > 0) {
+    if ((p.fkOrder != null || p.cornerOrder != null) && left > 0) {
       const mine = onPitch(overrides, p, g, fx);
       const total = (fkTakers[p.team] || []).reduce((s, t) => s + (onPitch(overrides, t, g, fx) || 0), 0);
       if (mine > 0 && total > 0) share = Math.min(1, share + left / total);
