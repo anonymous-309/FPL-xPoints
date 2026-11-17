@@ -586,7 +586,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
-OOP_MIN_SHARE = 0.25  # below this he counts as a defender
+OOP_KNOWN = 3  # with at least this many league starts known to FotMob, his places decide (not his stats)
 OOP_MID_ROLES = {"AM", "RM", "LM", "RW", "LW", "ST"}  # wing, wide or attacking midfield (not holding/central midfield, not wing-back)
 FM_SHARE: dict = {}  # pid -> share of recent starts further forward
 FM_PLACES: dict = {}  # pid -> roles in his last league starts, for defenders playing further forward (filled each run)
@@ -705,15 +705,14 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     fm_oop = {}
     for pid, lst in starts.items():
         last = [r for _, r in sorted(lst)[-OOP_LAST:]]
-        if pos_of.get(pid) != 2 or not last:
+        if pos_of.get(pid) != 2 or len(last) < OOP_KNOWN:
             continue
         # share of his recent starts further forward, the newest weighted most (5-4-3-2-1)
         w = list(range(1, len(last) + 1))
         share = sum(wi for wi, r in zip(w, last) if role_base(r) in OOP_MID_ROLES) / sum(w)
-        if share >= OOP_MIN_SHARE:
-            fm_oop[pid] = {"share": round(share, 3), "last": last}
+        fm_oop[pid] = {"share": round(share, 3), "last": last}  # share 0: a plain defender, whatever his stats say
     print(f"FotMob places: {len(starts)} players; defenders starting in midfield or on a wing: "
-          + ", ".join(f"{pid} {v['share']:.0%}" for pid, v in fm_oop.items()))
+          + ", ".join(f"{pid} {v['share']:.0%}" for pid, v in fm_oop.items() if v["share"] > 0))
     print(f"FotMob: {fetched} new matches read; {len(hurt)} players taken off injured in GW{min(covered, default=0)}-{max(covered, default=0)}"
           + (f"; not matched to FPL: {', '.join(missing[:10])}" if missing else ""))
     return hurt, covered, fm_oop
@@ -1181,6 +1180,11 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         if played in med.index:
             up = (p["position"] == listed) & (p["role_box90"] >= med.at[played, "role_box90"]) & (p["role_xgi90"] >= med.at[played, "role_xgi90"])
             p.loc[up, "role"] = played
+    # Where FotMob's line-ups know his recent places, they decide instead (coming gameweeks): the share below.
+    if fm_oop:
+        fut_tf = df.loc[df["future"], "tf"].max() if df["future"].any() else None
+        if fut_tf is not None:
+            p.loc[(p["position"] == "DEF") & p["pid"].isin(list(fm_oop)) & (p["tf"] == fut_tf), "role"] = "DEF"
     for played in ("MID", "FWD"):
         for c in ("role_box90", "role_xgi90"):
             p[f"med_{c}_{played}"] = med.at[played, c] if played in med.index else np.nan
@@ -2304,9 +2308,9 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
     hurt, covered, fm_oop = injury_subs(cache, offline, _api("bootstrap-static/", cache, offline))
     FM_PLACES.clear()
-    FM_PLACES.update({k: v["last"] for k, v in fm_oop.items()})
+    FM_PLACES.update({k: v["last"] for k, v in fm_oop.items() if v["share"] > 0})
     FM_SHARE.clear()
-    FM_SHARE.update({k: v["share"] for k, v in fm_oop.items()})
+    FM_SHARE.update({k: v["share"] for k, v in fm_oop.items() if v["share"] > 0})
     df = mark_injuries(df, log, load_admin_injuries(), hurt, covered)
     feat = build_features(df, fm_oop)
     model = XPointsModel().fit(feat)
