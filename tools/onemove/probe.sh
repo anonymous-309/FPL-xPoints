@@ -1,20 +1,18 @@
 #!/bin/bash
-python3 -c "
-import json, collections
-d=json.load(open('/tmp/data.json')); g=str(d['gws'][0])
-tp=collections.defaultdict(list); taken=collections.Counter(); miss=collections.Counter()
-for p in d['players']:
-    b=p['byGw'].get(g) or {}
-    if not b: continue
-    pcs=b.get('pc'); tps=b.get('tp')
-    if tps: tp[p['team']].append(tps if isinstance(tps,(int,float)) else tps[0])
-    if pcs and tps:
-        pc0=pcs if isinstance(pcs,(int,float)) else sum(pcs); t0=tps if isinstance(tps,(int,float)) else tps[0]
-        taken[p['team']] += pc0*t0*b.get('xmin',0)/90
-    miss[p['team']] += b.get('pPenMiss',0) or 0
-print('sample', {k: d['players'][0]['byGw'][g].get(k) for k in ('pc','tp','xmin','pPenMiss')})
-awarded={t: max(v) for t,v in tp.items()}
-print('awarded per team (team_pens):', {t: round(v,3) for t,v in sorted(awarded.items())})
-print('TOTAL awarded', round(sum(awarded.values()),2), 'taken by listed takers', round(sum(taken.values()),2), 'per team avg', round(sum(awarded.values())/len(awarded),3), 'expected misses (sum pPenMiss)', round(sum(miss.values()),3))
-print('setpieces keys', [k for k in d.keys()])
-"
+python3 - <<'PY'
+import re, urllib.request, html
+UA={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"}
+def get(u):
+    try:
+        return urllib.request.urlopen(urllib.request.Request(u, headers=UA), timeout=30).read().decode("utf-8","replace")
+    except Exception as e:
+        return f"ERR {e}"
+print("robots:", get("https://checkthechance.com/robots.txt")[:300].replace("\n"," | "))
+for slug in ["fpl-clean-sheet-odds"] + [f"fpl-clean-sheet-gameweek-{g}" for g in range(1, 11)]:
+    h = get(f"https://checkthechance.com/{slug}/")
+    if h.startswith("ERR"): print(slug, h); continue
+    t = re.sub(r"<[^>]+>", "\n", h); t = html.unescape(t)
+    rows = re.findall(r"([A-Z][A-Za-z' .&]+?)\s*\|\s*([\d.]+)\s*%", t)
+    upd = re.search(r"Last updated:?\s*([\d/.-]+)", t); gw = re.search(r"Gameweek\s+(\d+)", t)
+    print(slug, "GW", gw.group(1) if gw else None, "updated", upd.group(1) if upd else None, len(rows), rows[:20])
+PY
