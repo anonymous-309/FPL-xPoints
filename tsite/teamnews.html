@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team news FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Team news</h1>
+    <p id="status" role="status">Loading team news</p>
+  </div>
+  <nav class="sitenav" aria-label="Pages"></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <label>Team <select id="team"><option value="">All</option></select></label>
+  <label>Search player <input id="search" type="search"></label>
+  <div class="seg" role="group" aria-label="Order">
+    <button type="button" data-sort="name" aria-pressed="true">A–Z</button>
+    <button type="button" data-sort="latest" aria-pressed="false">Latest news first</button>
+  </div>
+</form>
+<main class="tn">
+  <section id="latest" class="tn-latest" aria-labelledby="latest-h">
+    <h2 id="latest-h">Latest updates</h2>
+    <ol></ol>
+  </section>
+  <div id="cards" class="tn-cards"></div>
+</main>
+<footer>
+  <p>News, flags and chances of playing come straight from the official FPL site, checked each time this site updates. <b>Out</b> is a player FPL marks injured or unavailable, <b>Doubts</b> one it marks doubtful (with FPL's chance of playing the next round), <b>Banned</b> a suspended player, and <b>Other news</b> a note on a player who is available. <b>Likely XI</b> is not FPL's: it starts from the club's line-up in its last league match (from FotMob), so every player stands where he actually played (striker, winger, central midfield, full-back…). A starter we expect fewer than 45 minutes from next (injured, banned, doubtful or rotated, by our minutes formula) is swapped for the player with the most expected minutes who plays that role (FotMob's list of each player's positions: right back, left back, centre back, holding or central midfield, right or left wing, striker…), and a player back from injury (or anyone else outside the XI) takes the place of the starter we expect the fewest minutes from among those in a role of his, when we expect him to play at least 10 minutes more. Left back is drawn on the left; a blue ring marks him, and the line under the pitch says who came in for whom. The number under each name is his expected minutes. <b>One booking from a ban</b> lists players a yellow card short of the next suspension limit. Times are GMT. Not affiliated with the Premier League.</p>
+</footer>
+<script src="teamnews.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>

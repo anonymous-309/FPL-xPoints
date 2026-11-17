@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FPL xPoints</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>xPoints</h1>
+    <p id="status" role="status">Loading points</p>
+  </div>
+  <nav class="sitenav" aria-label="Pages"></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <div class="seg" role="group" aria-label="Position">
+    <button type="button" data-pos="" aria-pressed="true">All</button>
+    <button type="button" data-pos="GK" aria-pressed="false">GK</button>
+    <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
+    <button type="button" data-pos="MID" aria-pressed="false">MID</button>
+    <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+  </div>
+  <label>Search player <input id="search" type="search"></label>
+  <label>Team <select id="team"><option value="">All</option></select></label>
+  <label>Max price <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
+  <label>Gameweeks
+    <select id="horizon"><option>3</option><option>5</option><option selected>8</option><option>12</option></select>
+  </label>
+  <a id="edited" class="edited-link" href="minutes.html" hidden></a>
+</form>
+<main>
+  <div id="empty" class="empty"><p>Points appear here once the GitHub update has run.</p></div>
+  <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Expected points">
+    <table id="table"><thead></thead><tbody></tbody></table>
+  </div>
+</main>
+<aside id="detail" hidden aria-live="polite">
+  <p id="detail-text"></p>
+  <button id="close" type="button" aria-label="Close">×</button>
+</aside>
+<footer>
+  <p id="warnings"></p>
+  <p>Opponents in capitals are home matches, lower case are away. Expected minutes for every gameweek, including injuries and bans, are on the <a href="minutes.html">Minutes</a> page; minutes you set there are used here, and those cells are outlined. Avg xMin is the average expected minutes per match over the gameweeks shown (3, 5, 8 or 12; blanks left out); it can only be changed on the Minutes page. Total decay adds the gameweeks with each later one counting 0.85 times the one before, as the Planner does. Hover over or select a cell to see the minutes, Chance 90min (the same figures as the Chance 90min page) and the points from each component. Appearance points follow FPL rules: 1 point for 1+ minutes and another for 60+. Clean sheet and goals conceded need 60+ minutes, so they are scaled by the chance he plays 60+; every other component is scaled by minutes/90. These are statistical estimates, for reference only. Not affiliated with the Premier League.</p>
+</footer>
+<script src="minutes-core.js"></script>
+<script src="app.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>

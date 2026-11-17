@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Admin FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Admin</h1>
+    <p id="status" role="status">Usual minutes for everyone</p>
+  </div>
+  <nav class="sitenav" aria-label="Pages"></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+
+<form id="gate" class="filters admin-box" autocomplete="off">
+  <label>Password <input id="pass" type="password" autocomplete="current-password" required></label>
+  <button class="toggle" type="submit">Open</button>
+</form>
+
+<form id="tokenForm" class="filters admin-box" autocomplete="off" hidden>
+  <p class="meta">Saving writes admin_minutes.json to the GitHub repo, so this browser needs a GitHub token once: on GitHub, Settings → Developer settings → Fine-grained tokens → Generate new token, repository access <b>Only select repositories: FPL-xPoints</b>, permission <b>Contents: Read and write</b>. The token is kept only in this browser.</p>
+  <label>GitHub token <input id="token" type="password" autocomplete="off" required></label>
+  <button class="toggle" type="submit">Use token</button>
+</form>
+
+<div id="tabs" class="admin-tabs" role="tablist" aria-label="Admin sections" hidden>
+  <button type="button" role="tab" id="tab-abs" aria-controls="injPanel" aria-selected="true">Absences</button>
+  <button type="button" role="tab" id="tab-min" aria-controls="panel" aria-selected="false">Minutes</button>
+</div>
+
+<section id="injPanel" class="inj-admin" role="tabpanel" aria-labelledby="tab-abs" hidden>
+  <p class="meta">Add a match or run of matches a player misses: an injury the log missed (for example one week out), illness, a ban, or the manager leaving him out as discipline. Every match from Start to End GW is left out of the minutes formula, and upcoming gameweeks in that range get 0 minutes. Leave End GW empty if he is still out.</p>
+  <form id="injPick" class="filters admin-pick" autocomplete="off">
+    <div class="seg" role="group" aria-label="Position">
+      <button type="button" data-pos="" aria-pressed="true">All</button>
+      <button type="button" data-pos="GK" aria-pressed="false">GK</button>
+      <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
+      <button type="button" data-pos="MID" aria-pressed="false">MID</button>
+      <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+    </div>
+    <label>Team <select id="injTeam"><option value="">All</option></select></label>
+  </form>
+  <form id="injAdd" class="filters" autocomplete="off">
+    <label>Player <input id="injPlayer" list="injPlayers" required placeholder="Type a name"></label>
+    <datalist id="injPlayers"></datalist>
+    <label>Reason <select id="injType">
+      <option>Injury</option><option>Illness</option><option>Suspended</option><option>Manager discipline</option><option>Personal reasons</option><option>Other</option>
+    </select></label>
+    <label>Start GW <input id="injStart" type="number" min="1" max="38" inputmode="numeric" required></label>
+    <label>End GW <input id="injEnd" type="number" min="1" max="38" inputmode="numeric" placeholder="Still out"></label>
+    <label>Note <input id="injNote" type="text"></label>
+    <button class="toggle save" type="submit">Add</button>
+  </form>
+  <p id="injSaved" class="meta admin-note" role="status"></p>
+  <h3>Added by admin</h3>
+  <div class="wrap"><table class="minutes admin" id="injManual"><thead><tr><th scope="col">Player</th><th scope="col">Reason</th><th scope="col">Start</th><th scope="col">End</th><th scope="col">Note</th><th scope="col"></th></tr></thead><tbody></tbody></table></div>
+  <h3>Logged automatically, out now</h3>
+  <p class="meta">Correct when an absence started if the log has it wrong. A change is saved as soon as you leave the box.</p>
+  <div class="wrap"><table class="minutes admin" id="injAuto"><thead><tr><th scope="col">Player</th><th scope="col">Start<small>from the log</small></th><th scope="col">Start GW<small>yours</small></th><th scope="col">News</th></tr></thead><tbody></tbody></table></div>
+</section>
+
+<section id="panel" class="inj-admin" role="tabpanel" aria-labelledby="tab-min" hidden>
+  <p class="meta">Admin min replaces a player's usual minutes (the 5-4-3-2-1 formula) in every upcoming gameweek, for everyone on any browser, including xPoints, Minutes and the Planner. Injuries, bans and doubtful flags still apply on top. Delete a row to go back to the formula.</p>
+  <form id="minPick" class="filters admin-pick" autocomplete="off">
+    <div class="seg" role="group" aria-label="Position">
+      <button type="button" data-pos="" aria-pressed="true">All</button>
+      <button type="button" data-pos="GK" aria-pressed="false">GK</button>
+      <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
+      <button type="button" data-pos="MID" aria-pressed="false">MID</button>
+      <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+    </div>
+    <label>Team <select id="minTeam"><option value="">All</option></select></label>
+  </form>
+  <form id="minAdd" class="filters" autocomplete="off">
+    <label>Player <input id="minPlayer" list="minPlayers" required placeholder="Type a name"></label>
+    <datalist id="minPlayers"></datalist>
+    <label>Formula <output id="minFormula" class="admin-formula">–</output></label>
+    <label>Admin min <input id="minValue" type="number" min="0" max="90" inputmode="numeric" required></label>
+    <button class="toggle save" type="submit">Set</button>
+  </form>
+  <p id="saved" class="meta admin-note" role="status"></p>
+  <h3>Set by admin</h3>
+  <div class="wrap"><table class="minutes admin" id="minSet"><thead><tr><th scope="col">Player</th><th scope="col">Formula<small>last 5</small></th><th scope="col">Admin min<small>all GWs</small></th><th scope="col"></th></tr></thead><tbody></tbody></table></div>
+  <p><button id="forget" class="reset" type="button">Forget token</button></p>
+</section>
+<footer>
+  <p>Everything saved here applies for everyone, on any browser. After you save, the site rebuilds with the changes in about 10 minutes.</p>
+</footer>
+<script src="admin.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>

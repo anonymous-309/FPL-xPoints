@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Planner FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Planner</h1>
+    <p id="status" role="status">Enter an FPL team ID</p>
+  </div>
+  <nav class="sitenav" aria-label="Pages"></nav>
+</header>
+<form id="pick" class="filters plan-form" autocomplete="off">
+  <label>FPL team ID <input id="entry" type="text" inputmode="numeric" pattern="[0-9]*" placeholder="e.g. 1234567" required></label>
+  <details class="id-help">
+    <summary>Where do I find my ID?</summary>
+    <ol>
+      <li>Open <a href="https://fantasy.premierleague.com/" target="_blank" rel="noopener">fantasy.premierleague.com</a> in a browser and sign in.</li>
+      <li>Go to the <b>Points</b> tab.</li>
+      <li>Look at the address bar: it reads <code>fantasy.premierleague.com/entry/<b>1234567</b>/event/11</code>. The number after <code>/entry/</code> is your team ID.</li>
+    </ol>
+    <p>The FPL phone app does not show it, so use a browser (on your phone is fine). The ID is public and only lets the planner read your team; it cannot change anything.</p>
+  </details>
+  <label>Gameweeks to plan
+    <select id="horizon"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select>
+  </label>
+  <div id="chips" class="chip-picks"></div>
+  <button id="go" class="update" type="submit">Make plan</button>
+  <details class="plan-settings">
+    <summary>Settings</summary>
+    <div class="set-picks">
+      <div><label>Keep (always in the squad) <span class="pick-add"><input id="keepPick" list="playerNames" placeholder="Player"><button id="keepAdd" type="button">Add</button></span></label><div id="keepList" class="pick-list"></div></div>
+      <div><label>Avoid (never in the squad) <span class="pick-add"><input id="avoidPick" list="playerNames" placeholder="Player"><button id="avoidAdd" type="button">Add</button></span></label><div id="avoidList" class="pick-list"></div></div>
+    </div>
+    <p class="set-note">Force a transfer in <b id="forceGw">this gameweek</b>, for one you have already made or want made. It counts against your free transfers like any other; the plan picks the rest. Cleared when the gameweek moves on.</p>
+    <div class="set-picks">
+      <div><label>Force in <span class="pick-add"><input id="forceInPick" list="playerNames" placeholder="Player to buy"><button id="forceInAdd" type="button">Add</button></span></label><div id="forceInList" class="pick-list"></div></div>
+      <div><label>Force out <span class="pick-add"><input id="forceOutPick" list="playerNames" placeholder="Player to sell"><button id="forceOutAdd" type="button">Add</button></span></label><div id="forceOutList" class="pick-list"></div></div>
+    </div>
+    <p class="set-note">Plans to look at, by the free transfers you have: for saving now (each with different moves the next gameweek), for using 1, 2, … now, and with a hit. Up to 10 in all; more plans take longer to work out.</p>
+    <div id="planCounts" class="plan-counts"></div>
+    <p id="pcWarn" class="set-note warn-note" role="status" hidden></p>
+    <button id="resetSettings" type="button" class="link-btn">Back to defaults</button>
+  </details>
+  <datalist id="playerNames"></datalist>
+</form>
+<div id="error" class="error" role="alert" hidden></div>
+<main id="out" class="planner"></main>
+<footer>
+  <p>The planner works out plans for each number of free transfers you could use in the coming gameweek: saving them (in several branches, each with different moves the gameweek after), using 1, 2, … up to all of them, and with a hit; how many of each is set in Settings, 10 at most. Each plan then makes its own best moves for the next 3 gameweeks (transfers are planned for 4 gameweeks in all), and after that the squad stays, apart from a Wildcard or Free Hit you set. Because prices can change before later transfers, a transfer planned for the n-th gameweek from now must leave at least 0.1m × n in the bank (prices are otherwise taken as they are now); plans that leave only that little are flagged. Plans are scored on expected points from the xPoints figures (with your own minutes edits from the Minutes page, if any), each later gameweek counting 0.85 times the one before; less a cost for each free transfer used (0.5 points, weighed like its gameweek, when it is the last one in hand, then 75%, 50%, 25% and nothing with 1, 2, 3 or 4 left), so a move is only made early when it gains more than that; plus a value for the free transfers still in hand after the 4th gameweek (4 points weighed like that gameweek for the first, then 75%, 50%, 25%, 0%). Rules: a squad of 15 (2 GK, 5 DEF, 5 MID, 3 FWD), at most 3 per club, within your bank and selling prices; one free transfer a gameweek, up to 5 saved, 4 points for every extra one; a Wildcard or Free Hit keeps your saved transfers. Points include auto-subs: a starter who does not play is replaced by the first bench player who plays and keeps a legal formation, and the vice-captain takes the armband if the captain does not play; while planning, bench players count by the chance they are needed, from the appearance chances of your likely starters. The plan with the highest score is marked Best; the last column is the share of 5,000 simulated runs of every match in which a plan has the highest score. Prices are assumed not to change. Your team is read from FPL when you make a plan, through the site's small proxy. Not affiliated with the Premier League.</p>
+</footer>
+<script src="minutes-core.js"></script>
+<script src="planner-solve.js"></script>
+<script src="planner.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>
