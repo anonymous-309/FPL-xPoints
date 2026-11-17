@@ -442,5 +442,7 @@ td.fx-cell.blank { background: #fbe3df; }
 .fx-key.dgw { box-shadow: 0 0 0 2px var(--flag); }
 .fx-key.short { text-decoration: underline 2px var(--warn); text-underline-offset: 3px; }
 .fx-grid th.fx-gw.intl, td.fx-cell.intl { min-width: 70px; background: repeating-linear-gradient(135deg, #fff6cf 0 8px, #fdeeb0 8px 16px); }
-.fx-grid th.fx-gw.intl .gwn { font-size: 13px; }
 .fx-key.intl { background: #fdeeb0; }
+.fx-grid th.fx-gw.none, td.fx-cell.none { min-width: 70px; background: #eef0ed; }
+.fx-grid th.fx-gw.intl .gwb { background: #fff; }
+.fx-grid th.fx-gw.none .gwb { background: #dfe3dd; color: var(--muted); }

@@ -87,18 +87,30 @@
       s.days.add(ukDay(m.date));
       map.set(m.slot.key, s);
     }));
-    const out = [...map.values()];
-    out.forEach((s) => {
-      s.main = Number(Object.entries(s.gws).sort((a, b) => b[1] - a[1])[0]?.[0]) || null;
-      const d = [...s.days].sort((a, b) => a - b);
-      s.first = d[0]; s.last = d[d.length - 1];
-    });
-    BREAKS.forEach(([a, b]) => {
-      const first = Date.parse(a + 'T00:00:00Z'), last = Date.parse(b + 'T00:00:00Z');
-      if (from != null && (last + 864e5 <= +from || first >= +to)) return;
-      out.push({ kind: 'intl', key: first - 1, start: first, first, last, gws: {} });
-    });
-    return out.sort((a, b) => a.key - b.key);
+    // Every weekend in the range (with or without matches), plus each midweek that has matches or is in an
+    // international break, so a gap shows as the rounds it takes.
+    const keys = [...map.keys()].sort((x, y) => x - y);
+    if (!keys.length) return [];
+    let k = from != null ? slotOf(new Date(Math.max(+from, 0))).key : keys[0];
+    const end = from != null ? slotOf(new Date(+to - 1)).key : keys[keys.length - 1];
+    const brk = BREAKS.map(([x, y]) => [Date.parse(x + 'T00:00:00Z'), Date.parse(y + 'T00:00:00Z')]);
+    const out = [];
+    for (; k <= end; k += (new Date(k).getUTCDay() === 2 ? 3 : 4) * 864e5) {
+      const kind = new Date(k).getUTCDay() === 2 ? 'mid' : 'wkd';
+      const lastDay = k + (kind === 'mid' ? 2 : 3) * 864e5;
+      const s = map.get(k);
+      const intl = brk.some(([x, y]) => k <= y && lastDay >= x) && !(s && Object.keys(s.gws).length);
+      if (!s && kind === 'mid' && !intl) continue;
+      if (s) {
+        s.main = Number(Object.entries(s.gws).sort((x, y) => y[1] - x[1])[0]?.[0]) || null;
+        const d = [...s.days].sort((x, y) => x - y);
+        Object.assign(s, { first: d[0], last: d[d.length - 1], intl });
+        out.push(s);
+      } else {
+        out.push({ key: k, kind, start: k, first: k, last: lastDay, gws: {}, days: new Set(), empty: true, intl });
+      }
+    }
+    return out;
   }
 
   const label = (m) => (m.home ? m.oppShort.toUpperCase() : m.oppShort.toLowerCase());
@@ -114,19 +126,20 @@
   function renderGrid() {
     const ss = slots();
     const head = el('tr', {}, el('th', { scope: 'col', className: 'fx-team', textContent: 'Team' }),
-      ...ss.map((s) => el('th', { scope: 'col', className: `fx-gw ${s.kind}` },
-        el('span', { className: 'gwn', textContent: s.kind === 'intl' ? 'International break' : s.kind === 'mid' ? 'Midweek' : 'Weekend' }),
+      ...ss.map((s) => el('th', { scope: 'col', className: `fx-gw ${s.kind}${s.intl ? ' intl' : s.empty ? ' none' : ''}` },
+        el('span', { className: 'gwn', textContent: s.kind === 'mid' ? 'Midweek' : 'Weekend' }),
         el('span', { className: 'gwd', textContent: s.first === s.last ? dShort(s.first) : `${dShort(s.first)} – ${dShort(s.last)}` }),
-        Object.keys(s.gws).length ? el('span', { className: 'gwt', textContent: Object.keys(s.gws).map((g) => 'GW' + g).join(' + ') }) : null)));
+        Object.keys(s.gws).length ? el('span', { className: 'gwt', textContent: Object.keys(s.gws).map((g) => 'GW' + g).join(' + ') })
+          : s.intl ? el('span', { className: 'gwb', textContent: 'International break' }) : s.kind === 'wkd' ? el('span', { className: 'gwb', textContent: 'No league matches' }) : null)));
     $('.fx-grid thead').replaceChildren(head);
     const rows = teams.map((t) => {
       const cells = ss.map((s) => {
-        if (s.kind === 'intl') return el('td', { className: 'fx-cell intl' });
+        if (s.empty) return el('td', { className: `fx-cell ${s.kind}${s.intl ? ' intl' : ' none'}` });
         const ms = t.matches.filter((m) => m.slot && m.slot.key === s.key && state.on.has(m.comp)).sort((a, b) => a.date - b.date);
         const blank = state.on.has('PL') && s.main && !t.plGws[s.main] && !t.matches.some((m) => m.comp === 'PL' && m.gw === s.main && !m.date);
         const kids = ms.map(chip);
         if (blank) kids.push(el('span', { className: 'fx-none', textContent: `Blank GW${s.main}` }));
-        return el('td', { className: `fx-cell ${s.kind}${blank ? ' blank' : ''}` }, ...kids);
+        return el('td', { className: `fx-cell ${s.kind}${blank ? ' blank' : ''}${s.intl ? ' intl' : ''}` }, ...kids);
       });
       const btn = el('button', { type: 'button', className: 'linkish', textContent: t.name });
       btn.addEventListener('click', () => { state.team = t.short; state.view = 'team'; sync(); });
