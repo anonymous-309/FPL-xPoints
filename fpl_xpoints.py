@@ -733,7 +733,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
     except Exception as e:
         table, note = [], f"FotMob not read ({e}): only league matches are shown"
         print(note)
-    missed = []
+    missed, lineups = [], {}
     for fm_id, fm_name in table:
         t = by_name.get(FOTMOB_TEAMS.get(fm_name, fm_name)) or next((x for x in boot["teams"] if _name_key(x["name"]).split()[0] == _name_key(fm_name).split()[0]), None)
         if not t:
@@ -746,7 +746,21 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
         else:
             try:
                 d = _fotmob_get("teams", {"id": fm_id, "ccode3": "GBR"})
-                data = ((d.get("fixtures") or {}).get("allFixtures") or {}).get("fixtures") or []
+                fxs = ((d.get("fixtures") or {}).get("allFixtures") or {}).get("fixtures") or []
+                data = {"fixtures": fxs, "lineup": None}
+                # the line-up of the club's last league match (a cup side is often rotated)
+                lm = [m for m in fxs if (m.get("tournament") or {}).get("name") == "Premier League" and (m.get("status") or {}).get("finished")]
+                if lm:
+                    lm = lm[-1]
+                    md = _fotmob_get("matchDetails", {"matchId": lm["id"]})
+                    lu = ((md.get("content") or {}).get("lineup") or {})
+                    side = next((x for x in (lu.get("homeTeam"), lu.get("awayTeam")) if x and x.get("id") == fm_id), None)
+                    if side and side.get("starters"):
+                        data["lineup"] = {"formation": side.get("formation"),
+                                          "match": {"home": (lm.get("home") or {}).get("name"), "away": (lm.get("away") or {}).get("name"), "t": (lm.get("status") or {}).get("utcTime")},
+                                          "starters": [{"name": x.get("name"), "pid": x.get("positionId"), "x": (x.get("verticalLayout") or {}).get("x"),
+                                                        "y": (x.get("verticalLayout") or {}).get("y")} for x in side["starters"]]}
+                    time.sleep(0.4)
                 f.write_text(json.dumps(data))
                 time.sleep(0.4)
             except Exception as e:
@@ -754,6 +768,10 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
                 data = json.loads(f.read_text()) if f.exists() else None
                 if data is None:
                     missed.append(fm_name)
+        if isinstance(data, dict):
+            if (data.get("lineup") or {}).get("starters"):
+                lineups[t["short_name"]] = data["lineup"]
+            data = data.get("fixtures")
         for m in data or []:
             tour = (m.get("tournament") or {}).get("name") or ""
             st = m.get("status") or {}
@@ -769,6 +787,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
         print(f"Club fixtures: no cup matches for {', '.join(missed)}")
     for ms in out.values():
         ms.sort(key=lambda m: m["t"] or "9999")
+    (folder / "lineups.json").write_text(json.dumps(lineups, ensure_ascii=False))
     n = sum(len(v) for v in out.values())
     print(f"Club fixtures: {n} matches for {len(out)} teams, " + ", ".join(f"{c} {sum(m['comp'] == c for v in out.values() for m in v)}" for c in ["PL", *dict.fromkeys(CLUB_COMPS.values())]))
     return {"updatedAt": int(time.time() * 1000), "note": note,
@@ -780,6 +799,61 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
 YELLOW_LIMITS = ((19, 5), (32, 10), (38, 15))  # yellow cards by the end of these gameweeks that bring a ban
 
 
+XI_KEEP = 45  # a player from the last line-up keeps his place if we expect at least this many minutes from him
+
+
+def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dict], str | None, dict | None]:
+    """The club's last line-up (FotMob: formation and each starter's place on the pitch), with every starter we do not
+    expect to play (fewer than XI_KEEP expected minutes: injured, banned, rotated) replaced by the player of the same
+    FPL position with the most expected minutes. Without a line-up: the keeper and ten outfield players with the
+    most expected minutes, in rows by position."""
+    xmin = lambda p: float((p["byGw"].get(str(gw)) or {}).get("xmin") or 0)
+    full = lambda p: _name_key(p.get("fullName") or p["name"])
+
+    def find(name):
+        n = _name_key(name)
+        for test in (lambda p: full(p) == n, lambda p: _name_key(p["name"]) == n, lambda p: set(n.split()) <= set(full(p).split()),
+                     lambda p: set(_name_key(p["name"]).split()) <= set(n.split()), lambda p: n.split()[-1] == full(p).split()[-1]):
+            hit = [p for p in squad if test(p)]
+            if len(hit) == 1:
+                return hit[0]
+        return None
+
+    def slot_pos(pid):
+        pid = int(pid or 0)
+        return "GK" if pid <= 11 else "DEF" if pid < 60 else "MID" if pid < 100 else "FWD"
+
+    row = lambda p, x, y, new, was=None: {"name": p["name"], "pos": p["position"], "xmin": round(xmin(p)), "x": x, "y": y, "new": new, "for": was}
+    if not lineup or not lineup.get("starters"):
+        order = {"GK": 0, "DEF": 1, "MID": 2, "FWD": 3}
+        gk = sorted((p for p in squad if p["position"] == "GK"), key=xmin, reverse=True)[:1]
+        rest = sorted((p for p in squad if p["position"] != "GK"), key=xmin, reverse=True)[:10]
+        pick = sorted(gk + rest, key=lambda p: (order[p["position"]], -xmin(p)))
+        out = []
+        for pos, y in (("GK", .1), ("DEF", .32), ("MID", .58), ("FWD", .84)):
+            line = [p for p in pick if p["position"] == pos]
+            out += [row(p, (i + .5) / len(line), y, False) for i, p in enumerate(line)]
+        return out, None, None
+    slots, used = [], set()
+    for st in lineup["starters"]:
+        p = find(st["name"] or "")
+        slots.append((st, p))
+        if p and xmin(p) >= XI_KEEP:
+            used.add(p["id"])
+    out = []
+    for st, p in slots:
+        if p and p["id"] in used and not any(o["name"] == p["name"] for o in out):
+            out.append(row(p, st["x"], st["y"], False))
+            continue
+        pos = p["position"] if p else slot_pos(st["pid"])
+        alt = next((q for q in sorted(squad, key=xmin, reverse=True) if q["position"] == pos and q["id"] not in used), None)
+        if alt:
+            used.add(alt["id"])
+            out.append(row(alt, st["x"], st["y"], True, p["name"] if p else st["name"]))
+    m = lineup.get("match") or {}
+    return out, lineup.get("formation"), {"home": m.get("home"), "away": m.get("away"), "t": m.get("t")}
+
+
 def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
     """Per club: next match, a likely XI from our xMin, and FPL's news for every flagged player (out, doubtful,
     banned), plus players one yellow card away from a ban."""
@@ -789,6 +863,8 @@ def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
     by_code = {f"c{p['code']}": p for p in boot["elements"]}
     pos = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
     limit = next(((gw, n) for gw, n in YELLOW_LIMITS if first_gw <= gw), None)
+    lf = cache / "fotmob" / "lineups.json"
+    lineups = json.loads(lf.read_text(encoding="utf-8")) if lf.exists() else {}
     out = []
     for tid, t in sorted(teams.items(), key=lambda x: x[1]["name"]):
         nxt = sorted((f for f in fx if not f.get("finished") and f.get("event") and f["event"] >= first_gw and tid in (f["team_h"], f["team_a"])),
@@ -796,11 +872,7 @@ def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
         nm = [{"gw": f["event"], "t": f.get("kickoff_time"), "home": f["team_h"] == tid,
                "opp": teams[f["team_a"] if f["team_h"] == tid else f["team_h"]]["short_name"]} for f in nxt if f["event"] == (nxt[0]["event"] if nxt else None)]
         squad = [p for p in players.values() if p["team"] == t["short_name"]]
-        xmin = lambda p: float((p["byGw"].get(str(first_gw)) or {}).get("xmin") or 0)
-        gk = sorted((p for p in squad if p["position"] == "GK"), key=xmin, reverse=True)[:1]
-        rest = sorted((p for p in squad if p["position"] != "GK"), key=xmin, reverse=True)[:10]
-        order = {"GK": 0, "DEF": 1, "MID": 2, "FWD": 3}
-        xi = [{"name": p["name"], "pos": p["position"], "xmin": round(xmin(p))} for p in sorted(gk + rest, key=lambda p: (order[p["position"]], -xmin(p)))]
+        xi, formation, last = likely_xi(squad, lineups.get(t["short_name"]), first_gw)
         news, watch = [], []
         for e in boot["elements"]:
             if e["team"] != tid or e.get("status") == "u":
@@ -812,7 +884,7 @@ def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
             if limit and e.get("yellow_cards", 0) == limit[1] - 1 and e.get("status") != "s":
                 watch.append({"name": e["web_name"], "pos": pos[e["element_type"]], "yellows": e["yellow_cards"]})
         news.sort(key=lambda x: x["added"] or "", reverse=True)
-        out.append({"name": t["name"], "short": t["short_name"], "next": nm, "xi": xi, "news": news, "watch": watch,
+        out.append({"name": t["name"], "short": t["short_name"], "next": nm, "xi": xi, "formation": formation, "lastXi": last, "news": news, "watch": watch,
                     "lastNews": max((x["added"] for x in news if x["added"]), default=None)})
     nev = next((e for e in boot["events"] if e["id"] == first_gw), None)
     print(f"Team news: {sum(len(t['news']) for t in out)} flagged players, {sum(len(t['watch']) for t in out)} one yellow from a ban")
