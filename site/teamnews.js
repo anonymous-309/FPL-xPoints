@@ -46,10 +46,10 @@
         el('span', { className: 'tn-box top' }), el('span', { className: 'tn-box bottom' }), el('span', { className: 'tn-half' }), el('span', { className: 'tn-circle' }),
         ...t.xi.map((x) => {
           const c = chance.get(x.name);
-          const node = el('span', { className: `tn-p${x.new ? ' new' : ''}${c != null ? ' doubt' : ''}`, title: `${x.name} · ${x.xmin} expected minutes${x.new && x.for ? ' · in for ' + x.for : ''}${c != null ? ' · ' + c + '% chance of playing' : ''}` },
+          const node = el('span', { className: `tn-p${x.new ? ' new' : ''}${c != null ? ' doubt' : ''}`, title: `${x.name}${x.role ? ' · ' + x.role : ''} · ${x.xmin} expected minutes${x.new && x.for ? ' · in for ' + x.for : ''}${c != null ? ' · ' + c + '% chance of playing' : ''}` },
             el('i', { className: `tn-shirt ${x.pos}` }, c != null ? el('em', { textContent: `${c}%` }) : null),
             el('b', { textContent: x.name }), el('small', { textContent: `${x.xmin}'` }));
-          node.style.left = `${(x.x * 100).toFixed(1)}%`;
+          node.style.left = `${((1 - x.x) * 100).toFixed(1)}%`; // FotMob draws the team attacking upwards; with the keeper on top, mirror so left back is on the left
           node.style.top = `${(x.y * 100).toFixed(1)}%`;
           return node;
         })),
