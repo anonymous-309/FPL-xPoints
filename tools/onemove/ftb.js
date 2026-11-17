@@ -2,7 +2,7 @@
 const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch();
-  for (const flag of ['&ftbonus=1']) {
+  for (const flag of ['&x=1']) {
     const p = await b.newPage({ viewport: { width: 1400, height: 1000 } });
     p.on('pageerror', (e) => console.log('pageerror', e.message));
     await p.goto(`http://localhost:8000/planner.html?id=${process.argv[2]}&proxy=http://localhost:8001${flag}`);
