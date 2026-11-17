@@ -14,4 +14,6 @@ jobs:
           mkdir -p tsite/plans && curl -sfL https://anonymous-309.github.io/FPL-xPoints/plans/41.json -o tsite/plans/41.json || echo "no saved plan copy"
           (cd tsite && python3 -m http.server 8000 >/dev/null 2>&1 &)
           npm install --no-save playwright@1.49.1 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+          (node tools/onemove/proxy.js &)
+          sleep 2
           node tools/onemove/ftb.js 41
