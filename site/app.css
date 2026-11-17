@@ -368,3 +368,10 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .acc-table .num { text-align: right; white-space: nowrap; }
 .acc-table tr.on td { background: #e9f4ec; font-weight: 600; }
 .acc-raw pre { white-space: pre; overflow-x: auto; font-size: 11px; background: #f6f8f6; padding: 10px; border-radius: 8px; }
+
+.opt-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.decay-toggle { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px; cursor: pointer; }
+.decay-toggle input { width: 34px; height: 18px; appearance: none; -webkit-appearance: none; background: var(--line); border-radius: 9px; position: relative; cursor: pointer; transition: background .15s; margin: 0; }
+.decay-toggle input::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; background: #fff; border-radius: 50%; transition: left .15s; }
+.decay-toggle input:checked { background: var(--green, #0f6b45); }
+.decay-toggle input:checked::after { left: 18px; }

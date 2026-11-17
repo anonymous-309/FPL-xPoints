@@ -208,11 +208,8 @@
     if (reserve.some((x) => x > 0) && lastPaid >= 0 && ftVar) {
       // the free transfers still in hand after the last transfer week. (Not those kept this week as well: a plan that
       // saves now and makes the same moves next week would get that value for nothing.)
-      // the ones left unused at the end of the last transfer week (not the new one the next gameweek brings)
       const fEnd = v('fend', 'I', 0, MAX_FT);
-      const tl = depth - 1;
-      if (has('wildcard', tl) || has('freehit', tl)) row([[1, fEnd], [-1, `f${tl}`]], -Infinity, 0);
-      else row([[1, fEnd], [-1, `f${tl}`], [1, `u${tl}`]], -Infinity, 0);
+      nextFt(fEnd, depth - 1);
       reserveValue('rend', [[1, fEnd]], w(depth) * (input.ftMult ?? 1));
     }
     if (input.bankSteps && bankPrev) {
