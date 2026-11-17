@@ -5,6 +5,42 @@
     ['EFL', 'EFL Cup'], ['FAC', 'FA Cup']];
   // International breaks of the season, from the Premier League (first and last day, dates in England).
   const BREAKS = [['2026-09-21', '2026-10-06'], ['2026-11-09', '2026-11-17'], ['2027-03-22', '2027-03-30']];
+  // The rest of the season's calendar from Ben Crellin's 2026/27 sheet (with Fantasy Football Hub), copied on
+  // 17 Nov 2026: cup rounds not drawn yet, and gameweeks likely or possibly to blank or double. Date = first day.
+  const UEFA3 = (r) => [['UCL', r], ['UEL', r], ['UECL', r]];
+  const PLAN = [
+    ['2026-11-24', [['UCL', 'MD5'], ['UEL', 'MD5'], ['UECL', 'MD4']]],
+    ['2026-12-08', [['UCL', 'MD6'], ['UEL', 'MD6'], ['UECL', 'MD5']]],
+    ['2026-12-15', [['EFL', 'QF'], ['UECL', 'MD6']]],
+    ['2027-01-09', [['FAC', 'R3']]],
+    ['2027-01-12', [['EFL', 'SF 1st leg']]],
+    ['2027-01-19', [['UCL', 'MD7'], ['UEL', 'MD7']]],
+    ['2027-01-26', [['UCL', 'MD8'], ['UEL', 'MD8']]],
+    ['2027-02-02', [['EFL', 'SF 2nd leg']]],
+    ['2027-02-13', [['FAC', 'R4']]],
+    ['2027-02-16', UEFA3('KO play-off 1')],
+    ['2027-02-23', UEFA3('KO play-off 2')],
+    ['2027-03-06', [['FAC', 'R5']]],
+    ['2027-03-09', UEFA3('R16 1st leg')],
+    ['2027-03-16', UEFA3('R16 2nd leg')],
+    ['2027-03-20', [['EFL', 'Final']], ['blank', 'likely', 30]],
+    ['2027-04-03', [['FAC', 'QF']]],
+    ['2027-04-06', UEFA3('QF 1st leg')],
+    ['2027-04-13', UEFA3('QF 2nd leg')],
+    ['2027-04-17', [], ['double', 'likely', 32]],
+    ['2027-04-20', [], ['double', 'likely', 32]],
+    ['2027-04-24', [['FAC', 'SF']], ['blank', 'likely', 33]],
+    ['2027-04-27', UEFA3('SF 1st leg')],
+    ['2027-05-04', UEFA3('SF 2nd leg')],
+    ['2027-05-08', [], ['double', 'possible', 35]],
+    ['2027-05-11', [], ['double', 'possible', 35]],
+    ['2027-05-15', [], ['double', 'possible', 36]],
+    ['2027-05-18', [], ['double', 'possible', 36]],
+    ['2027-05-22', [['FAC', 'Final']], ['blank', 'possible', 37]],
+    ['2027-05-26', [['UEL', 'Final']]],
+    ['2027-06-02', [['UECL', 'Final']]],
+    ['2027-06-05', [['UCL', 'Final']]],
+  ];
   const NAME = Object.fromEntries(COMPS);
   const OFF_BY_DEFAULT = new Set();
   const $ = (s) => document.querySelector(s);
@@ -35,7 +71,16 @@
     return { key: start, kind: wd >= 2 && wd <= 4 ? 'mid' : 'wkd', start };
   }
 
+  let planBySlot = new Map();
   function prepare(raw) {
+    planBySlot = new Map();
+    PLAN.forEach(([d, rounds, flag]) => {
+      const k = slotOf(new Date(d + 'T12:00:00Z')).key;
+      const p = planBySlot.get(k) || { rounds: [], flags: [] };
+      p.rounds.push(...rounds);
+      if (flag && !p.flags.some((f) => f.join() === flag.join())) p.flags.push(flag);
+      planBySlot.set(k, p);
+    });
     const gws = raw.gws.slice().sort((a, b) => a.gw - b.gw);
     windows = gws.map((g, i) => {
       const from = new Date(g.deadline);
@@ -91,7 +136,7 @@
     const keys = [...map.keys()].sort((x, y) => x - y);
     if (!keys.length) return [];
     let k = from != null ? slotOf(new Date(Math.max(+from, 0))).key : keys[0];
-    const end = from != null ? slotOf(new Date(+to - 1)).key : keys[keys.length - 1];
+    const end = from != null ? slotOf(new Date(+to - 1)).key : Math.max(keys[keys.length - 1], ...planBySlot.keys());
     const brk = BREAKS.map(([x, y]) => [Date.parse(x + 'T00:00:00Z'), Date.parse(y + 'T00:00:00Z')]);
     const out = [];
     for (; k <= end; k += (new Date(k).getUTCDay() === 2 ? 3 : 4) * 864e5) {
@@ -99,17 +144,37 @@
       const lastDay = k + (kind === 'mid' ? 2 : 3) * 864e5;
       const s = map.get(k);
       const intl = brk.some(([x, y]) => k <= y && lastDay >= x) && !(s && Object.keys(s.gws).length);
+      const plan = planBySlot.get(k) || { rounds: [], flags: [] };
       if (s) {
+        s.plan = plan;
         s.main = Number(Object.entries(s.gws).sort((x, y) => y[1] - x[1])[0]?.[0]) || null;
         const d = [...s.days].sort((x, y) => x - y);
         Object.assign(s, { first: d[0], last: d[d.length - 1], intl });
         out.push(s);
       } else {
-        out.push({ key: k, kind, start: k, first: k, last: lastDay, gws: {}, days: new Set(), empty: true, intl });
+        out.push({ key: k, kind, start: k, first: k, last: lastDay, gws: {}, days: new Set(), empty: !plan.rounds.length, intl, plan });
       }
     }
     return out;
   }
+
+  // Can this club still be in this round? A round already drawn (someone has a real match in it in this slot) needs
+  // no placeholder; the FA Cup third round takes every Premier League club; otherwise any club in the competition
+  // this season, or for the EFL Cup any club with a tie from the quarter-finals on.
+  function tbdRounds(t, s) {
+    if (!s.plan || !s.plan.rounds.length) return [];
+    return s.plan.rounds.filter(([c, r]) => {
+      if (!state.on.has(c)) return false;
+      if (t.matches.some((m) => m.comp === c && m.slot && m.slot.key === s.key)) return false;
+      if (teams.some((x) => x.matches.some((m) => m.comp === c && m.slot && m.slot.key === s.key))) return false;
+      if (c === 'FAC') return true;
+      if (c === 'EFL') return t.matches.some((m) => m.comp === 'EFL' && m.date && m.date >= new Date('2026-12-01T00:00:00Z'));
+      return t.matches.some((m) => m.comp === c);
+    });
+  }
+  const tbdChip = ([c, r]) => el('span', { className: `fx-m tbd c-${c}`, title: `${NAME[c]} ${r}${c === 'FAC' && r === 'R3' ? '' : ', if still in'} · not drawn yet (Ben Crellin's calendar)` },
+    el('b', { textContent: c }), `${r}${c === 'FAC' && r === 'R3' ? '' : '?'}`);
+  const flagTag = ([kind, how, gw]) => el('span', { className: `gwf ${kind} ${how}`, textContent: `${how === 'likely' ? 'Likely' : 'Possible'} ${kind} GW${gw}` });
 
   const label = (m) => (m.home ? m.oppShort.toUpperCase() : m.oppShort.toLowerCase());
 
@@ -128,14 +193,16 @@
         el('span', { className: 'gwn', textContent: s.kind === 'mid' ? 'Midweek' : 'Weekend' }),
         el('span', { className: 'gwd', textContent: s.first === s.last ? dShort(s.first) : `${dShort(s.first)} – ${dShort(s.last)}` }),
         Object.keys(s.gws).length ? el('span', { className: 'gwt', textContent: Object.keys(s.gws).map((g) => 'GW' + g).join(' + ') })
-          : s.intl ? el('span', { className: 'gwb', textContent: 'International break' }) : s.empty ? el('span', { className: 'gwb', textContent: 'No matches' }) : s.kind === 'wkd' ? el('span', { className: 'gwb', textContent: 'No league matches' }) : null)));
+          : s.intl ? el('span', { className: 'gwb', textContent: 'International break' }) : s.empty && !s.plan.flags.length ? el('span', { className: 'gwb', textContent: 'No matches' }) : s.kind === 'wkd' && !s.plan.rounds.length ? el('span', { className: 'gwb', textContent: 'No league matches' }) : null,
+        s.plan.rounds.length ? el('span', { className: 'gwr' }, ...s.plan.rounds.map(([c, r]) => el('span', { className: `c-${c}`, textContent: `${c} ${r}` }))) : null,
+        ...s.plan.flags.map(flagTag))));
     $('.fx-grid thead').replaceChildren(head);
     const rows = teams.map((t) => {
       const cells = ss.map((s) => {
         if (s.empty) return el('td', { className: `fx-cell ${s.kind}${s.intl ? ' intl' : ' none'}` });
         const ms = t.matches.filter((m) => m.slot && m.slot.key === s.key && state.on.has(m.comp)).sort((a, b) => a.date - b.date);
         const blank = state.on.has('PL') && s.main && !t.plGws[s.main] && !t.matches.some((m) => m.comp === 'PL' && m.gw === s.main && !m.date);
-        const kids = ms.map(chip);
+        const kids = ms.map(chip).concat(tbdRounds(t, s).map(tbdChip));
         if (blank) kids.push(el('span', { className: 'fx-none', textContent: `Blank GW${s.main}` }));
         return el('td', { className: `fx-cell ${s.kind}${blank ? ' blank' : ''}${s.intl ? ' intl' : ''}` }, ...kids);
       });
