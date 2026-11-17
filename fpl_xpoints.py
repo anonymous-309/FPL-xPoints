@@ -1649,15 +1649,6 @@ def chance_report(pred: pd.DataFrame) -> None:
     p, h = per90("Assist 1+", "a90", "assists", played); calib["Assist 1+"] = (p, h)
     teams = d.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
     p, h = binary("Clean sheet (team)", teams["p_cs"], teams["ga"] == 0, np.zeros(len(teams))); calib["Clean sheet (team)"] = (p, h)
-    c = teams["conc90"].to_numpy(float); y = teams["ga"].to_numpy(float); hit0 = (y == 0).astype(float)
-    for c0 in (float(np.exp(np.log(c).mean())), 1.35):
-        for k in (1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8):
-            cc = c0 * (c / c0) ** k; pc = np.clip(np.exp(-cc), 1e-6, 1 - 1e-6)
-            ll = -np.mean(hit0 * np.log(pc) + (1 - hit0) * np.log(1 - pc)); pois = np.mean(cc - y * np.log(cc))
-            q = pd.qcut(pc, 5, labels=False)
-            bands = " ".join(f"{pc[q == i].mean():.2f}/{hit0[q == i].mean():.2f}" for i in range(5))
-            print(f"DIAG c0 {c0:.3f} k {k}: cs logloss {ll:.4f} pois {pois:.4f} mean {pc.mean():.3f} sd {pc.std():.3f} bands {bands} ceiling {_auc_ceiling(pc):.3f}")
-    print(f"DIAG actual cs {hit0.mean():.3f}; n {len(y)}")
     dc = played[(played["minutes"] >= 60) & played["defensive_contribution"].notna() & (played["position"] != "GK")]
     if len(dc):
         p, h = binary("DefCon (60+ min)", dc["p_defcon"], dc["defensive_contribution"] >= dc["position"].map(DEFCON_THRESHOLD), dc["position"]); calib["DefCon (60+ min)"] = (p, h)
