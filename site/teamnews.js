@@ -50,8 +50,10 @@
           const node = el('span', { className: `tn-p${x.new ? ' new' : ''}${c != null ? ' doubt' : ''}`, title: `${x.name}${x.role ? ' · ' + x.role : ''} · ${x.xmin} expected minutes${x.new ? ' · not in the last league XI' : ''}${c != null ? ' · ' + c + '% chance of playing' : ''}` },
             el('i', { className: `tn-shirt ${x.pos}` }, c != null ? el('em', { textContent: `${c}%` }) : null),
             el('b', { textContent: x.name }), el('small', { textContent: `${x.xmin}'` }));
-          node.style.left = `${((1 - x.x) * 100).toFixed(1)}%`; // FotMob draws the team attacking upwards; with the keeper on top, mirror so left back is on the left
-          node.style.top = `${(x.y * 100).toFixed(1)}%`;
+          // keeper at the bottom, team attacking upwards: FotMob's x runs from the team's right (0) to its left (1), so
+          // the right back is drawn on the right and the left winger on the left
+          node.style.left = `${((1 - x.x) * 100).toFixed(1)}%`;
+          node.style.top = `${((1 - x.y) * 100).toFixed(1)}%`;
           return node;
         })),
       el('p', { className: 'tn-changes' }, changes.length || gone.length ? `Changes from the last league XI${vs ? ' (' + vs + ')' : ''}: in ${changes.map((x) => x.name).join(', ') || '–'}; out ${gone.join(', ') || '–'}` : t.formation ? `Same XI as the last league match${vs ? ' (' + vs + ')' : ''}` : 'No recent line-up: the players with the most expected minutes')) : null;
