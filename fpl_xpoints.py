@@ -2078,23 +2078,23 @@ def penalty_shares(target: pd.DataFrame) -> np.ndarray:
     """Share of his team's penalties a player takes while on the pitch, per future match.
 
     The FPL number 1 takes them when on the pitch; each next taker gets the ones left while those above him are off;
-    any left while all the listed takers are off go to the other outfield players, evenly over their time on the pitch."""
+    any left while all the listed takers are off go to the direct free kick takers, split by their expected minutes."""
     out = np.zeros(len(target))
     on_pitch = pd.Series(usual_minutes(target)["min"] * target["avail"].fillna(1).to_numpy(), index=target.index).clip(0, 90) / 90
     order = pd.to_numeric(target["pen_order"], errors="coerce")
     frame = pd.DataFrame({"fixture": target["fixture"].to_numpy(), "team": target["team"].to_numpy(), "order": order.to_numpy(), "m": on_pitch.to_numpy()})
-    frame["gk"] = (target["position"] == "GK").to_numpy()
+    frame["fk"] = pd.to_numeric(target["fk_order"], errors="coerce").to_numpy() if "fk_order" in target else np.nan
     for _, g in frame.groupby(["fixture", "team"]):
         left = 1.0
         listed = g[g["order"].notna()]
         for i in listed.sort_values("order").index:
             out[i] = PEN_TAKE_ON_PITCH * left
             left *= 1 - g.at[i, "m"]
-        # Penalties given while none of the listed takers is on the pitch go to the other outfield players, evenly
-        # over the time each is on it: each gets the same share while on the pitch.
-        others = g[g["order"].isna() & ~g["gk"] & (g["m"] > 0)]
-        if len(others) and left > 0:
-            out[others.index] = left / others["m"].sum()
+        # Penalties given while none of the listed takers is on the pitch go to the direct free kick takers, split by
+        # their expected minutes (so the same extra share for each while he is on the pitch).
+        fks = g[g["fk"].notna() & (g["m"] > 0)]
+        if len(fks) and left > 0:
+            out[fks.index] = np.minimum(1.0, out[fks.index] + left / fks["m"].sum())
     return out
 
 
@@ -2368,7 +2368,7 @@ def set_piece_table(res: pd.DataFrame, gw: int) -> dict:
         g = g.copy()
         for c in ("pen_order", "fk_order", "corner_order"):
             g[c] = pd.to_numeric(g[c], errors="coerce")
-        pens = g[g["pen_order"].notna()].sort_values("pen_order")
+        pens = g[g["pen_order"].notna() | (g["pen_cond_used"] * g["xmin"] / 90 >= 0.0005)].sort_values(["pen_order", "xmin"], ascending=[True, False], na_position="last")
         def takers(col: str) -> list:
             t = g[g[col].notna()].sort_values(col)
             return [{"name": r["web_name"], "order": num(r[col]), "adjMin": round(float(r["xmin"]), 1)} for _, r in t.iterrows()]
@@ -2451,6 +2451,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "pastWhy": past_why.get(r["pid"], {}), "byGw": {},
             # penalty order and miss rate, so the site can move penalties to the next taker when minutes are edited
             "penOrder": None if pd.isna(pd.to_numeric(r.get("pen_order"), errors="coerce")) else int(pd.to_numeric(r["pen_order"], errors="coerce")),
+            "fkOrder": None if pd.isna(pd.to_numeric(r.get("fk_order"), errors="coerce")) else int(pd.to_numeric(r["fk_order"], errors="coerce")),
             "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):

@@ -4,8 +4,9 @@ window.XMin = (function () {
   'use strict';
   const STORE = 'xmin-overrides';
   const GOAL_PTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
-  const PEN_TAKE_ON_PITCH = 0.95;  // same as the model: the listed taker steps up when he is on the pitch
+  const PEN_TAKE_ON_PITCH = 1;  // same as the model: the listed taker takes them while he is on the pitch
   let takers = {};  // team -> players with an FPL penalty order, first taker first
+  let fkTakers = {};  // team -> players with an FPL direct free kick order
   const PARTS = ['goal', 'assist', 'bonus', 'cs', 'conceded', 'saves', 'pensave', 'penmiss', 'own', 'defcon', 'cards'];
 
   function load() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
@@ -45,23 +46,38 @@ window.XMin = (function () {
   // Call once with all players so penalty shares can follow edited minutes of the takers above.
   function setPlayers(players) {
     takers = {};
+    fkTakers = {};
     players.filter((p) => p.penOrder != null).forEach((p) => { (takers[p.team] = takers[p.team] || []).push(p); });
+    players.filter((p) => p.fkOrder != null).forEach((p) => { (fkTakers[p.team] = fkTakers[p.team] || []).push(p); });
     Object.values(takers).forEach((list) => list.sort((a, b) => a.penOrder - b.penOrder));
   }
 
+  // Share of 90 minutes player t is on the pitch in the match of fixture fx (gameweek g), or null if not in it.
+  function onPitch(overrides, t, g, fx) {
+    const k = t.byGw[g] && t.byGw[g].fx ? t.byGw[g].fx.indexOf(fx) : -1;
+    return k < 0 ? null : Math.min(90, minutes(overrides, t, g).mins[k]) / 90;
+  }
+
   // His share of the team's penalties while he is on the pitch in match j of gameweek g: the first taker takes
-  // them when on, each next taker gets the ones left while those above him are off (same rule as the model).
+  // them when on, each next taker gets the ones left while those above him are off; those left while every listed
+  // taker is off go to the direct free kick takers, split by their minutes (same rule as the model).
   function penCond(overrides, p, g, j) {
     const d = p.byGw[g];
-    if (p.penOrder == null || !d || !d.fx) return 0;
-    let left = 1;
+    if (!d || !d.fx) return 0;
+    const fx = d.fx[j];
+    let share = 0, left = 1;
     for (const t of takers[p.team] || []) {
-      if (t.penOrder >= p.penOrder || t.id === p.id) continue;
-      const k = t.byGw[g] && t.byGw[g].fx ? t.byGw[g].fx.indexOf(d.fx[j]) : -1;
-      if (k < 0) continue;
-      left *= 1 - Math.min(90, minutes(overrides, t, g).mins[k]) / 90;
+      const m = onPitch(overrides, t, g, fx);
+      if (m === null) continue;
+      if (t.id === p.id) share = PEN_TAKE_ON_PITCH * left;
+      left *= 1 - m;
     }
-    return PEN_TAKE_ON_PITCH * left;
+    if (p.fkOrder != null && left > 0) {
+      const mine = onPitch(overrides, p, g, fx);
+      const total = (fkTakers[p.team] || []).reduce((s, t) => s + (onPitch(overrides, t, g, fx) || 0), 0);
+      if (mine > 0 && total > 0) share = Math.min(1, share + left / total);
+    }
+    return share;
   }
 
   // Change in his full-90 goal, penalty miss and xG figures for match j when the penalty share moves.

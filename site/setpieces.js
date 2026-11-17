@@ -32,7 +32,7 @@
       const bar = el('span', { className: 'sp-bar' });
       bar.style.width = `${Math.round(p.share * 100)}%`;
       return el('tr', {},
-        el('td', { textContent: p.order }), el('td', { className: 'sp-name', textContent: p.name }), el('td', { textContent: Math.round(p.adjMin) + (p.edited ? '*' : ''), title: p.edited ? 'Your own minutes from the Minutes page' : '' }),
+        el('td', { textContent: p.order == null ? '–' : p.order }), el('td', { className: 'sp-name', textContent: p.name }), el('td', { textContent: Math.round(p.adjMin) + (p.edited ? '*' : ''), title: p.edited ? 'Your own minutes from the Minutes page' : '' }),
         el('td', { className: 'sp-share' }, el('span', { className: 'sp-track' }, bar), el('strong', { textContent: `${Math.round(p.share * 100)}%` })),
         el('td', { textContent: p.xPenGoals.toFixed(3) }));
     });
