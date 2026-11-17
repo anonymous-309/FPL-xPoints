@@ -585,6 +585,9 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # FotMob's match events mark a substitution made because the player going off was hurt ("injuredPlayerOut"). Each
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
+OOP_LAST, OOP_NEED = 5, 3  # a defender who started in midfield or on a wing in 3 of his last 5 league starts plays as a midfielder
+OOP_MID_ROLES = {"DM", "CM", "AM", "RM", "LM", "RW", "LW", "ST"}
+FM_PLACES: dict = {}  # pid -> roles in his last league starts, for defenders playing further forward (filled each run)
 FOTMOB_API = "https://www.fotmob.com/api/data"
 FOTMOB_LEAGUE = 47  # Premier League
 FOTMOB_TEAMS = {"AFC Bournemouth": "Bournemouth", "Brighton & Hove Albion": "Brighton", "Manchester City": "Man City", "Manchester United": "Man Utd",
@@ -622,7 +625,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
             league = json.loads(idx.read_text())
     except Exception as e:  # never stop the site for this
         print(f"FotMob not read ({e}); the match a player got hurt in is guessed from his minutes")
-        return set(), set()
+        return set(), set(), {}
     matches = ((league.get("fixtures") or {}).get("allMatches") or (league.get("matches") or {}).get("allMatches") or [])
     teams = {t["name"]: t["id"] for t in boot["teams"]}
     by_team = {}
@@ -647,7 +650,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         if not (m.get("status") or {}).get("finished"):
             continue
         rnd = int(m.get("round") or 0)
-        if str(m["id"]) in store:
+        if str(m["id"]) in store and ("starters" in store[str(m["id"])] or offline):
             got = store[str(m["id"])]
         elif offline:
             done[rnd] = False
@@ -656,9 +659,13 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
             try:
                 d = _fotmob_get("matchDetails", {"matchId": m["id"]})
                 ev = (((d.get("content") or {}).get("matchFacts") or {}).get("events") or {}).get("events") or []
+                lu = (d.get("content") or {}).get("lineup") or {}
+                side = lambda tm: [[x.get("name"), x.get("positionId"), (x.get("verticalLayout") or {}).get("x")] for x in (lu.get(tm) or {}).get("starters") or []]
                 got = {"round": rnd, "home": m["home"]["name"], "away": m["away"]["name"],
                        "injured": [{"name": e["swap"][1]["name"] if len(e.get("swap") or []) > 1 else None, "home": e.get("isHome"), "time": e.get("time")}
-                                   for e in ev if e.get("type") == "Substitution" and e.get("injuredPlayerOut")]}
+                                   for e in ev if e.get("type") == "Substitution" and e.get("injuredPlayerOut")],
+                       # each starter's place (FotMob position id and side), for the roles players actually play
+                       "starters": {"home": side("homeTeam"), "away": side("awayTeam")}}
                 store[str(m["id"])] = got
                 fetched += 1
                 time.sleep(0.4)
@@ -677,9 +684,31 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     if fetched:
         INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
     covered = {r for r, ok in done.items() if ok}
+    # Where each player started his last league matches (FotMob places): a defender in FPL who started in midfield or
+    # on a wing in most of his last OOP_LAST starts plays out of position.
+    starts = {}
+    for got in store.values():
+        for k, team in (("home", got.get("home")), ("away", got.get("away"))):
+            line = (got.get("starters") or {}).get(k) or []
+            front = sum(1 for _, pid, _ in line if int(pid or 0) >= 100)
+            for name, pid, x in line:
+                q = find(name, team) if name else None
+                if not q:
+                    continue
+                r = ROLE_OF(pid)
+                if r == "ST" and front >= 3 and x is not None:
+                    r = "RW" if x < 0.35 else "LW" if x > 0.65 else "ST"
+                starts.setdefault(f"c{q['code']}", []).append((got.get("round") or 0, r))
+    pos_of = {f"c{q['code']}": q["element_type"] for q in boot["elements"]}
+    fm_oop = {}
+    for pid, lst in starts.items():
+        last = [r for _, r in sorted(lst)[-OOP_LAST:]]
+        if pos_of.get(pid) == 2 and len(last) >= OOP_NEED and sum(r in OOP_MID_ROLES for r in last) >= OOP_NEED:
+            fm_oop[pid] = last
+    print(f"FotMob places: {len(starts)} players; defenders starting in midfield or on a wing: {len(fm_oop)}")
     print(f"FotMob: {fetched} new matches read; {len(hurt)} players taken off injured in GW{min(covered, default=0)}-{max(covered, default=0)}"
           + (f"; not matched to FPL: {', '.join(missing[:10])}" if missing else ""))
-    return hurt, covered
+    return hurt, covered, fm_oop
 
 
 # ---------------------------------------------------------------- every club's fixtures in all competitions
@@ -1013,7 +1042,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     return df
 
 
-def build_features(df: pd.DataFrame) -> pd.DataFrame:
+def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame:
     df = df.copy()
     last_hist = df.loc[~df["future"], "t"].max()
     df["tf"] = np.where(df["future"], last_hist + 1, df["t"])  # future GWs all see the same history
@@ -1122,6 +1151,11 @@ def build_features(df: pd.DataFrame) -> pd.DataFrame:
         if played in med.index:
             up = (p["position"] == listed) & (p["role_box90"] >= med.at[played, "role_box90"]) & (p["role_xgi90"] >= med.at[played, "role_xgi90"])
             p.loc[up, "role"] = played
+    # Or FotMob's line-ups show him starting in midfield or on a wing in most recent league matches (current form only)
+    if fm_oop:
+        fut_tf = df.loc[df["future"], "tf"].max() if df["future"].any() else None
+        if fut_tf is not None:
+            p.loc[(p["position"] == "DEF") & p["pid"].isin(list(fm_oop)) & (p["tf"] == fut_tf), "role"] = "MID"
     for played in ("MID", "FWD"):
         for c in ("role_box90", "role_xgi90"):
             p[f"med_{c}_{played}"] = med.at[played, c] if played in med.index else np.nan
@@ -2230,9 +2264,11 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
     df = yellow_bans(clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON]))
     log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
-    hurt, covered = injury_subs(cache, offline, _api("bootstrap-static/", cache, offline))
+    hurt, covered, fm_oop = injury_subs(cache, offline, _api("bootstrap-static/", cache, offline))
+    FM_PLACES.clear()
+    FM_PLACES.update(fm_oop)
     df = mark_injuries(df, log, load_admin_injuries(), hurt, covered)
-    feat = build_features(df)
+    feat = build_features(df, fm_oop)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
     target = doubtful_minutes(target, df)
@@ -2336,7 +2372,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "price": float(r["value"]) / 10, "status": r["status"] if isinstance(r["status"], str) else "a",
             "news": r["news"] if isinstance(r["news"], str) else "",
             "w5Min": None if pd.isna(r["w5_min"]) else round(float(r["w5_min"]), 1),
-            "role": r["role"], "box90": None if pd.isna(r["role_box90"]) else round(float(r["role_box90"]), 2),
+            "role": r["role"], "places": FM_PLACES.get(r["pid"]), "box90": None if pd.isna(r["role_box90"]) else round(float(r["role_box90"]), 2),
             "xgi90": None if pd.isna(r["role_xgi90"]) else round(float(r["role_xgi90"]), 3),
             "minUsual": round(float(r["min_usual"]), 1),
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
