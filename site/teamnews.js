@@ -38,7 +38,8 @@
     const news = t.news.filter(match);
     const nx = t.next.length ? t.next.map((m) => `${m.opp} (${m.home ? "H" : "A"})${m.t ? ' ' + gmt(m.t) : ''}`).join(' + ') : 'No league match this gameweek';
     const chance = new Map(t.news.filter((n) => n.status === 'd').map((n) => [n.name, n.chance]));
-    const changes = t.xi.filter((x) => x.new && x.for);
+    const changes = t.xi.filter((x) => x.new);
+    const gone = (t.lastXi && t.lastXi.out) || [];
     const vs = t.lastXi ? (t.lastXi.home && t.lastXi.away ? `${t.lastXi.home} ${t.lastXi.away ? 'v ' + t.lastXi.away : ''}` : '') : '';
     const pitch = t.xi.length ? el('div', { className: 'tn-xi' },
       el('h3', { textContent: `Likely XI${t.formation ? ' · ' + t.formation : ''}` }),
@@ -46,14 +47,14 @@
         el('span', { className: 'tn-box top' }), el('span', { className: 'tn-box bottom' }), el('span', { className: 'tn-half' }), el('span', { className: 'tn-circle' }),
         ...t.xi.map((x) => {
           const c = chance.get(x.name);
-          const node = el('span', { className: `tn-p${x.new ? ' new' : ''}${c != null ? ' doubt' : ''}`, title: `${x.name}${x.role ? ' · ' + x.role : ''} · ${x.xmin} expected minutes${x.new && x.for ? ' · in for ' + x.for : ''}${c != null ? ' · ' + c + '% chance of playing' : ''}` },
+          const node = el('span', { className: `tn-p${x.new ? ' new' : ''}${c != null ? ' doubt' : ''}`, title: `${x.name}${x.role ? ' · ' + x.role : ''} · ${x.xmin} expected minutes${x.new ? ' · not in the last league XI' : ''}${c != null ? ' · ' + c + '% chance of playing' : ''}` },
             el('i', { className: `tn-shirt ${x.pos}` }, c != null ? el('em', { textContent: `${c}%` }) : null),
             el('b', { textContent: x.name }), el('small', { textContent: `${x.xmin}'` }));
           node.style.left = `${((1 - x.x) * 100).toFixed(1)}%`; // FotMob draws the team attacking upwards; with the keeper on top, mirror so left back is on the left
           node.style.top = `${(x.y * 100).toFixed(1)}%`;
           return node;
         })),
-      el('p', { className: 'tn-changes' }, changes.length ? `Changes from the last league XI${vs ? ' (' + vs + ')' : ''}: ` + changes.map((x) => `${x.name} for ${x.for}`).join(', ') : t.formation ? `Same XI as the last league match${vs ? ' (' + vs + ')' : ''}` : 'No recent line-up: the players with the most expected minutes')) : null;
+      el('p', { className: 'tn-changes' }, changes.length || gone.length ? `Changes from the last league XI${vs ? ' (' + vs + ')' : ''}: in ${changes.map((x) => x.name).join(', ') || '–'}; out ${gone.join(', ') || '–'}` : t.formation ? `Same XI as the last league match${vs ? ' (' + vs + ')' : ''}` : 'No recent line-up: the players with the most expected minutes')) : null;
     return el('article', { className: 'sp-card tn-card' },
       el('div', { className: 'sp-head' },
         el('h2', { textContent: t.name }),
