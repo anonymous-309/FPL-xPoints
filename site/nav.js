@@ -2,10 +2,11 @@
 (function () {
   'use strict';
   const GROUPS = [
-    ['Points', [['index.html', 'xPoints', 'Expected points by gameweek'], ['planner.html', 'Planner', 'Best transfers for your team'], ['fixtures.html', 'Fixtures', 'Every club, every competition']]],
+    ['Points', [['index.html', 'xPoints', 'Expected points by gameweek'], ['planner.html', 'Planner', 'Best transfers for your team']]],
     ['Players', [['minutes.html', 'Minutes', 'Played minutes and xMin'], ['chances.html', 'Chance 90min', 'Goals, assists, clean sheets…'],
       ['setpieces.html', 'Set pieces', 'Penalty, free kick and corner takers'], ['oop.html', 'OOP', 'Out of position players'],
-      ['injuries.html', 'Injuries', 'Absence log']]],
+      ['injuries.html', 'Injuries', 'Absence log'], ['teamnews.html', 'Team news', 'Out, doubts and bans by club'],
+      ['fixtures.html', 'Fixtures', 'Every club, every competition']]],
     ['About', [['explain.html', 'How it works', 'The formula, step by step'], ['accuracy.html', 'Accuracy', 'Model against real results'],
       ['admin.html', 'Admin', 'Minutes and absences']]],
   ];

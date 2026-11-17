@@ -776,6 +776,50 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
             "teams": [{"name": t["name"], "short": t["short_name"], "matches": out[t["id"]]} for t in sorted(boot["teams"], key=lambda t: t["name"])]}
 
 
+# ---------------------------------------------------------------- team news (FPL's own player news)
+YELLOW_LIMITS = ((19, 5), (32, 10), (38, 15))  # yellow cards by the end of these gameweeks that bring a ban
+
+
+def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
+    """Per club: next match, a likely XI from our xMin, and FPL's news for every flagged player (out, doubtful,
+    banned), plus players one yellow card away from a ban."""
+    boot = _api("bootstrap-static/", cache, offline)
+    fx = _api("fixtures/", cache, offline)
+    teams = {t["id"]: t for t in boot["teams"]}
+    by_code = {f"c{p['code']}": p for p in boot["elements"]}
+    pos = {1: "GK", 2: "DEF", 3: "MID", 4: "FWD"}
+    limit = next(((gw, n) for gw, n in YELLOW_LIMITS if first_gw <= gw), None)
+    out = []
+    for tid, t in sorted(teams.items(), key=lambda x: x[1]["name"]):
+        nxt = sorted((f for f in fx if not f.get("finished") and f.get("event") and f["event"] >= first_gw and tid in (f["team_h"], f["team_a"])),
+                     key=lambda f: (f["event"], f.get("kickoff_time") or ""))
+        nm = [{"gw": f["event"], "t": f.get("kickoff_time"), "home": f["team_h"] == tid,
+               "opp": teams[f["team_a"] if f["team_h"] == tid else f["team_h"]]["short_name"]} for f in nxt if f["event"] == (nxt[0]["event"] if nxt else None)]
+        squad = [p for p in players.values() if p["team"] == t["short_name"]]
+        xmin = lambda p: float((p["byGw"].get(str(first_gw)) or {}).get("xmin") or 0)
+        gk = sorted((p for p in squad if p["position"] == "GK"), key=xmin, reverse=True)[:1]
+        rest = sorted((p for p in squad if p["position"] != "GK"), key=xmin, reverse=True)[:10]
+        order = {"GK": 0, "DEF": 1, "MID": 2, "FWD": 3}
+        xi = [{"name": p["name"], "pos": p["position"], "xmin": round(xmin(p))} for p in sorted(gk + rest, key=lambda p: (order[p["position"]], -xmin(p)))]
+        news, watch = [], []
+        for e in boot["elements"]:
+            if e["team"] != tid or e.get("status") == "u":
+                continue
+            item = {"name": e["web_name"], "pos": pos[e["element_type"]], "status": e.get("status"), "news": e.get("news") or "",
+                    "added": e.get("news_added"), "chance": e.get("chance_of_playing_next_round"), "xmin": round(xmin(players[f"c{e['code']}"])) if f"c{e['code']}" in players else None}
+            if e.get("status") in ("i", "n", "s", "d") or (e.get("news") and e.get("status") == "a"):
+                news.append(item)
+            if limit and e.get("yellow_cards", 0) == limit[1] - 1 and e.get("status") != "s":
+                watch.append({"name": e["web_name"], "pos": pos[e["element_type"]], "yellows": e["yellow_cards"]})
+        news.sort(key=lambda x: x["added"] or "", reverse=True)
+        out.append({"name": t["name"], "short": t["short_name"], "next": nm, "xi": xi, "news": news, "watch": watch,
+                    "lastNews": max((x["added"] for x in news if x["added"]), default=None)})
+    nev = next((e for e in boot["events"] if e["id"] == first_gw), None)
+    print(f"Team news: {sum(len(t['news']) for t in out)} flagged players, {sum(len(t['watch']) for t in out)} one yellow from a ban")
+    return {"updatedAt": int(time.time() * 1000), "gw": first_gw, "deadline": nev["deadline_time"] if nev else None,
+            "yellowLimit": {"gw": limit[0], "cards": limit[1]} if limit else None, "teams": out}
+
+
 def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, hurt: set | None = None, covered: set | None = None) -> pd.DataFrame:
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
@@ -2267,6 +2311,10 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         (out_dir / "fixtures.json").write_text(json.dumps(club_fixtures(data_dir / "api_cache", offline), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as e:  # never stop the site for this page
         print(f"Club fixtures not written ({e})")
+    try:
+        (out_dir / "team_news.json").write_text(json.dumps(team_news(data_dir / "api_cache", offline, players, payload["gws"][0]), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    except Exception as e:  # never stop the site for this page
+        print(f"Team news not written ({e})")
     first = str(payload["gws"][0])
     top = sorted((p for p in players.values() if first in p["byGw"]), key=lambda p: -p["byGw"][first]["pScore"])[:5]
     for p in top:

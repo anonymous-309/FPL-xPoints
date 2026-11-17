@@ -5,8 +5,8 @@
     ['EFL', 'EFL Cup'], ['FAC', 'FA Cup']];
   // International breaks of the season, from the Premier League (first and last day, dates in England).
   const BREAKS = [['2026-09-21', '2026-10-06'], ['2026-11-09', '2026-11-17'], ['2027-03-22', '2027-03-30']];
-  // The rest of the season's calendar from Ben Crellin's 2026/27 sheet (with Fantasy Football Hub), copied on
-  // 17 Nov 2026: cup rounds not drawn yet, and gameweeks likely or possibly to blank or double. Date = first day.
+  // The rest of the season's calendar, added by hand (17 Nov 2026): cup rounds not drawn yet, and gameweeks likely
+  // or possibly to blank or double. Date = first day.
   const UEFA3 = (r) => [['UCL', r], ['UEL', r], ['UECL', r]];
   const PLAN = [
     ['2026-11-24', [['UCL', 'MD5'], ['UEL', 'MD5'], ['UECL', 'MD4']]],
@@ -174,7 +174,7 @@
       return t.matches.some((m) => m.comp === c);
     });
   }
-  const tbdChip = ([c, r]) => el('span', { className: `fx-m tbd c-${c}`, title: `${NAME[c]} ${r}${c === 'FAC' && r === 'R3' ? '' : ', if still in'} · not drawn yet (Ben Crellin's calendar)` },
+  const tbdChip = ([c, r]) => el('span', { className: `fx-m tbd c-${c}`, title: `${NAME[c]} ${r}${c === 'FAC' && r === 'R3' ? '' : ', if still in'} · not drawn yet` },
     el('b', { textContent: c }), `${r}${c === 'FAC' && r === 'R3' ? '' : '?'}`);
   const flagTag = ([kind, how, gw]) => el('span', { className: `gwf ${kind} ${how}`, textContent: `${how === 'likely' ? 'Likely' : 'Possible'} ${kind} GW${gw}` });
 
