@@ -183,7 +183,7 @@
   function chip(m) {
     const past = m.score != null;
     const title = `${NAME[m.comp] || m.comp}${m.gw ? ' GW' + m.gw : ''} · ${m.opp} (${m.home ? 'H' : 'A'}) · ${m.date ? when(m.date) : 'date to be set'}${past ? ' · ' + m.score : ''}${m.stage ? ' · ' + m.stage : ''}${m.rest != null && m.comp !== 'FR' ? ` · ${Math.round(m.rest)} days after the last match` : ''}`;
-    return el('span', { className: `fx-m c-${m.comp}${past ? ' past' : ''}${m.dgw ? ' dgw' : ''}${m.rest != null && m.rest < 3.5 && m.comp !== 'FR' ? ' short' : ''}`, title },
+    return el('span', { className: `fx-m c-${m.comp}${past ? ' past' : ''}${m.dgw ? ' dgw' : ''}`, title },
       m.comp === 'PL' ? null : el('b', { textContent: m.comp }), label(m),
       el('i', { textContent: past ? m.score.replace(/\s/g, '') : (m.date ? `${day(m.date)} ${hm(m.date)}` : 'TBC') }));
   }

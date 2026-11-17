@@ -437,10 +437,8 @@ td.fx-cell .fx-m { display: flex; width: max-content; }
 .fx-grid .gwb { display: block; width: max-content; margin-bottom: 2px; }
 td.fx-cell.blank { background: #fbe3df; }
 .fx-m.dgw { box-shadow: 0 0 0 2px var(--flag); }
-.fx-m.short { text-decoration: underline 2px var(--warn); text-underline-offset: 3px; }
 .fx-key.blank { background: #fbe3df; color: var(--warn); font-weight: 650; }
 .fx-key.dgw { box-shadow: 0 0 0 2px var(--flag); }
-.fx-key.short { text-decoration: underline 2px var(--warn); text-underline-offset: 3px; }
 .fx-grid th.fx-gw.intl, td.fx-cell.intl { min-width: 70px; background: repeating-linear-gradient(135deg, #fff6cf 0 8px, #fdeeb0 8px 16px); }
 .fx-key.intl { background: #fdeeb0; }
 .fx-grid th.fx-gw.none, td.fx-cell.none { min-width: 70px; background: #eef0ed; }
