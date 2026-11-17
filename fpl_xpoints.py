@@ -685,7 +685,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
 # ---------------------------------------------------------------- every club's fixtures in all competitions
 # League matches come from FPL (its gameweek and kickoff); every other competition from FotMob's team pages.
 CLUB_COMPS = {"Champions League": "UCL", "Europa League": "UEL", "Conference League": "UECL", "EFL Cup": "EFL",
-              "FA Cup": "FAC", "Community Shield": "CS", "Club Friendlies": "FR"}
+              "FA Cup": "FAC"}
 
 
 _CLUB_FILLER = {"fc", "ac", "as", "sc", "cf", "fk", "sk", "afc", "real", "club", "athletic", "olympique", "rb", "us", "ss", "ssc", "vfb", "vfl", "bayer", "borussia", "fsv", "tsg", "sv", "ogc", "rc", "rcd", "cd", "ud", "sd", "kv", "krc", "rsc", "royal"}
@@ -757,7 +757,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
         for m in data or []:
             tour = (m.get("tournament") or {}).get("name") or ""
             st = m.get("status") or {}
-            if tour == "Premier League" or st.get("cancelled"):
+            if tour in ("Premier League", "Community Shield", "Club Friendlies") or st.get("cancelled"):
                 continue
             home = (m.get("home") or {}).get("id") == fm_id
             opp = (m.get("away") if home else m.get("home")) or {}

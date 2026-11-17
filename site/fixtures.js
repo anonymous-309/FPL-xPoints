@@ -2,9 +2,11 @@
 (function () {
   'use strict';
   const COMPS = [['PL', 'Premier League'], ['UCL', 'Champions League'], ['UEL', 'Europa League'], ['UECL', 'Conference League'],
-    ['EFL', 'EFL Cup'], ['FAC', 'FA Cup'], ['CS', 'Community Shield'], ['FR', 'Friendlies']];
+    ['EFL', 'EFL Cup'], ['FAC', 'FA Cup']];
+  // International breaks of the season, from the Premier League (first and last day, dates in England).
+  const BREAKS = [['2026-09-21', '2026-10-06'], ['2026-11-09', '2026-11-17'], ['2027-03-22', '2027-03-30']];
   const NAME = Object.fromEntries(COMPS);
-  const OFF_BY_DEFAULT = new Set(['CS', 'FR']);
+  const OFF_BY_DEFAULT = new Set();
   const $ = (s) => document.querySelector(s);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props || {}); n.append(...kids.filter((k) => k != null)); return n; };
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
@@ -47,7 +49,7 @@
       return w ? w.gw : null;
     };
     teams = raw.teams.map((t) => {
-      const ms = t.matches.map((m) => Object.assign({}, m, { date: m.t ? new Date(m.t) : null }));
+      const ms = t.matches.filter((m) => NAME[m.comp]).map((m) => Object.assign({}, m, { date: m.t ? new Date(m.t) : null }));
       ms.forEach((m) => { m.col = windowOf(m); m.slot = m.date ? slotOf(m.date) : null; });
       // Days since the club's previous competitive match (friendlies left out).
       let last = null;
@@ -85,14 +87,18 @@
       s.days.add(ukDay(m.date));
       map.set(m.slot.key, s);
     }));
-    const out = [...map.values()].sort((a, b) => a.key - b.key);
-    out.forEach((s, i) => {
+    const out = [...map.values()];
+    out.forEach((s) => {
       s.main = Number(Object.entries(s.gws).sort((a, b) => b[1] - a[1])[0]?.[0]) || null;
-      s.breakBefore = i > 0 && s.start - out[i - 1].start > 10 * 864e5;
       const d = [...s.days].sort((a, b) => a - b);
       s.first = d[0]; s.last = d[d.length - 1];
     });
-    return out;
+    BREAKS.forEach(([a, b]) => {
+      const first = Date.parse(a + 'T00:00:00Z'), last = Date.parse(b + 'T00:00:00Z');
+      if (from != null && (last + 864e5 <= +from || first >= +to)) return;
+      out.push({ kind: 'intl', key: first - 1, start: first, first, last, gws: {} });
+    });
+    return out.sort((a, b) => a.key - b.key);
   }
 
   const label = (m) => (m.home ? m.oppShort.toUpperCase() : m.oppShort.toLowerCase());
@@ -109,13 +115,13 @@
     const ss = slots();
     const head = el('tr', {}, el('th', { scope: 'col', className: 'fx-team', textContent: 'Team' }),
       ...ss.map((s) => el('th', { scope: 'col', className: `fx-gw ${s.kind}` },
-        s.breakBefore ? el('span', { className: 'gwb', textContent: 'after a break' }) : null,
-        el('span', { className: 'gwn', textContent: s.kind === 'mid' ? 'Midweek' : 'Weekend' }),
+        el('span', { className: 'gwn', textContent: s.kind === 'intl' ? 'International break' : s.kind === 'mid' ? 'Midweek' : 'Weekend' }),
         el('span', { className: 'gwd', textContent: s.first === s.last ? dShort(s.first) : `${dShort(s.first)} – ${dShort(s.last)}` }),
         Object.keys(s.gws).length ? el('span', { className: 'gwt', textContent: Object.keys(s.gws).map((g) => 'GW' + g).join(' + ') }) : null)));
     $('.fx-grid thead').replaceChildren(head);
     const rows = teams.map((t) => {
       const cells = ss.map((s) => {
+        if (s.kind === 'intl') return el('td', { className: 'fx-cell intl' });
         const ms = t.matches.filter((m) => m.slot && m.slot.key === s.key && state.on.has(m.comp)).sort((a, b) => a.date - b.date);
         const blank = state.on.has('PL') && s.main && !t.plGws[s.main] && !t.matches.some((m) => m.comp === 'PL' && m.gw === s.main && !m.date);
         const kids = ms.map(chip);
