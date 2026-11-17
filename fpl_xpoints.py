@@ -586,6 +586,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
+OOP_MIN_SHARE = 0.10  # at or below this share he counts as a plain defender
 OOP_KNOWN = 3  # with at least this many league starts known to FotMob, his places decide (not his stats)
 OOP_MID_ROLES = {"AM", "RM", "LM", "RW", "LW", "ST"}  # wing, wide or attacking midfield (not holding/central midfield, not wing-back)
 FM_SHARE: dict = {}  # pid -> share of recent starts further forward
@@ -710,6 +711,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         # share of his recent starts further forward, the newest weighted most (5-4-3-2-1)
         w = list(range(1, len(last) + 1))
         share = sum(wi for wi, r in zip(w, last) if role_base(r) in OOP_MID_ROLES) / sum(w)
+        share = share if share > OOP_MIN_SHARE else 0.0  # too little to matter: a plain defender
         fm_oop[pid] = {"share": round(share, 3), "last": last}  # share 0: a plain defender, whatever his stats say
     print(f"FotMob places: {len(starts)} players; defenders starting in midfield or on a wing: "
           + ", ".join(f"{pid} {v['share']:.0%}" for pid, v in fm_oop.items() if v["share"] > 0))
@@ -1596,6 +1598,22 @@ def _auc(score: np.ndarray, hit: np.ndarray) -> float:
     return float((ranks[hit == 1].sum() - pos * (pos + 1) / 2) / (pos * (n - pos)))
 
 
+def _auc_ceiling(prob: np.ndarray) -> float:
+    """The AUC the chances would get on average if each were exactly right: every match then happens with its own
+    chance, and the score is how often one where it happened is rated above one where it did not. A rare or near
+    coin-flip event cannot be sorted well even by perfect chances, so this is the most to expect from each row."""
+    p = np.sort(np.asarray(prob, float))
+    q = 1 - p
+    # weight of "it happened" pairs above "it did not": for each match, its p times the (1 - p) of every match below
+    # it, ties counting half, leaving out the match paired with itself
+    s = pd.Series(q).groupby(p).sum()
+    below = s.cumsum() - s
+    tie = pd.Series(p).groupby(p).sum() * s - pd.Series(p * q).groupby(p).sum()
+    num = float((pd.Series(p).groupby(p).sum() * below).sum() + 0.5 * tie.sum())
+    den = float(p.sum() * q.sum() - (p * q).sum())
+    return num / den if den > 0 else float("nan")
+
+
 def chance_report(pred: pd.DataFrame) -> None:
     """How good each Chance 90min figure was on the test season, against what happened.
 
@@ -1615,7 +1633,8 @@ def chance_report(pred: pd.DataFrame) -> None:
         ll0 = -np.mean(hit * np.log(base) + (1 - hit) * np.log(1 - base))
         none = hit.sum() == 0 or hit.sum() == len(hit)
         rows.append({"figure": title, "n": len(hit), "predicted": prob.mean(), "actual": hit.mean(),
-                     "Brier skill": np.nan if none else 1 - brier / brier0, "log-loss skill": np.nan if none else 1 - ll / ll0, "AUC": _auc(prob, hit)})
+                     "Brier skill": np.nan if none else 1 - brier / brier0, "log-loss skill": np.nan if none else 1 - ll / ll0, "AUC": _auc(prob, hit),
+                     "AUC ceiling": _auc_ceiling(prob)})
         return prob, hit
 
     def per90(title, rate, actual, frame, cap_one=True):
@@ -1630,6 +1649,15 @@ def chance_report(pred: pd.DataFrame) -> None:
     p, h = per90("Assist 1+", "a90", "assists", played); calib["Assist 1+"] = (p, h)
     teams = d.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
     p, h = binary("Clean sheet (team)", teams["p_cs"], teams["ga"] == 0, np.zeros(len(teams))); calib["Clean sheet (team)"] = (p, h)
+    c = teams["conc90"].to_numpy(float); y = teams["ga"].to_numpy(float); hit0 = (y == 0).astype(float)
+    for c0 in (float(np.exp(np.log(c).mean())), 1.35):
+        for k in (1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8):
+            cc = c0 * (c / c0) ** k; pc = np.clip(np.exp(-cc), 1e-6, 1 - 1e-6)
+            ll = -np.mean(hit0 * np.log(pc) + (1 - hit0) * np.log(1 - pc)); pois = np.mean(cc - y * np.log(cc))
+            q = pd.qcut(pc, 5, labels=False)
+            bands = " ".join(f"{pc[q == i].mean():.2f}/{hit0[q == i].mean():.2f}" for i in range(5))
+            print(f"DIAG c0 {c0:.3f} k {k}: cs logloss {ll:.4f} pois {pois:.4f} mean {pc.mean():.3f} sd {pc.std():.3f} bands {bands} ceiling {_auc_ceiling(pc):.3f}")
+    print(f"DIAG actual cs {hit0.mean():.3f}; n {len(y)}")
     dc = played[(played["minutes"] >= 60) & played["defensive_contribution"].notna() & (played["position"] != "GK")]
     if len(dc):
         p, h = binary("DefCon (60+ min)", dc["p_defcon"], dc["defensive_contribution"] >= dc["position"].map(DEFCON_THRESHOLD), dc["position"]); calib["DefCon (60+ min)"] = (p, h)
@@ -1642,9 +1670,9 @@ def chance_report(pred: pd.DataFrame) -> None:
     p, h = per90("Yellow card", "y90", "yellow_cards", played); calib["Yellow card"] = (p, h)
     t = pd.DataFrame(rows)
     print("\n=== Chance 90min: each chance against what happened (test season) ===")
-    print("Skill: 1 - error / error of the position average (0 = no better, 1 = perfect). AUC: 0.5 = coin flip, 1 = perfect order.")
+    print("Skill: 1 - error / error of the position average (0 = no better, 1 = perfect). AUC: 0.5 = coin flip, 1 = perfect order; ceiling: the AUC if every chance were exactly right.")
     print(t.to_string(index=False, formatters={"predicted": "{:.2%}".format, "actual": "{:.2%}".format, "Brier skill": "{:+.3f}".format,
-                                                 "log-loss skill": "{:+.3f}".format, "AUC": "{:.3f}".format}))
+                                                 "log-loss skill": "{:+.3f}".format, "AUC": "{:.3f}".format, "AUC ceiling": "{:.3f}".format}))
 
     counts = []
     def count(title, rate, actual, frame, scale=True):
@@ -1839,15 +1867,6 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
         att = known["core_pen_scored"].fillna(0) + known["core_pen_missed"].fillna(0)
         print(f"Penalties taken per player match: predicted {(known['pen90'] * known['minutes'] / 90).mean():.4f}, actual {att.mean():.4f}, "
               f"missed predicted {(known['pm90'] * known['minutes'] / 90).mean():.4f}, actual {known['core_pen_missed'].fillna(0).mean():.4f}, n={len(known)}")
-        k2 = known.assign(att=att, pexp=known["pen90"] * known["minutes"] / 90)
-        print("DIAG league_pen_rate", known["team_pens"].mean(), "team pens per team-match actual", att.sum() / k2.drop_duplicates(["season", "fixture", "team"]).shape[0])
-        print("DIAG pens by players with share 0:", k2.loc[k2["pen_cond_used"] <= 0, "att"].sum(), "of", att.sum())
-        tk = k2[k2["att"] > 0]
-        print("DIAG takers: share used", tk["pen_cond_used"].describe().round(3).to_dict())
-        g = k2.groupby(["team"]).agg(pred=("pexp", "sum"), act=("att", "sum")).round(1)
-        print("DIAG per team", g.to_dict("index"))
-        top = k2.groupby("name" if "name" in k2 else "pid").agg(pred=("pexp", "sum"), act=("att", "sum"), share=("pen_cond_used", "mean")).sort_values("act", ascending=False).head(25).round(2)
-        print("DIAG takers", top.to_string())
     gks = played[played["position"] == "GK"]
     share = gks["minutes"] / 90
     print(f"Saves per GK match: predicted {(gks['saves90'] * share).mean():.3f}, actual {gks['saves'].mean():.3f}, n={len(gks)}")
