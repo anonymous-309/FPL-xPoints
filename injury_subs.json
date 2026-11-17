@@ -3,7 +3,123 @@
 "round": 1,
 "home": "Arsenal",
 "away": "Coventry City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Ben White",
+32,
+0.125
+],
+[
+"Cristhian Mosquera",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Martin Ødegaard",
+73,
+0.21
+],
+[
+"Myles Lewis-Skelly",
+75,
+0.5
+],
+[
+"Declan Rice",
+77,
+0.79
+],
+[
+"Bukayo Saka",
+103,
+0.21
+],
+[
+"Kai Havertz",
+105,
+0.5
+],
+[
+"Christos Tzolis",
+107,
+0.79
+]
+],
+"away": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Milan van Ewijk",
+32,
+0.125
+],
+[
+"Bobby Thomas",
+34,
+0.375
+],
+[
+"Aurèle Amenda",
+36,
+0.625
+],
+[
+"Jay Dasilva",
+38,
+0.875
+],
+[
+"Caleb Yirenkyi",
+73,
+0.21
+],
+[
+"Matt Grimes",
+75,
+0.5
+],
+[
+"Frank Onyeka",
+77,
+0.79
+],
+[
+"Loum Tchaouna",
+103,
+0.21
+],
+[
+"Ellis Simms",
+105,
+0.5
+],
+[
+"Brandon Thomas-Asante",
+107,
+0.79
+]
+]
+}
 },
 "5795364": {
 "round": 1,
@@ -25,7 +141,123 @@
 "home": true,
 "time": 70
 }
+],
+"starters": {
+"home": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.305
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Nobel Mendy",
+37,
+0.695
+],
+[
+"Lewie Coyle",
+51,
+0.11
+],
+[
+"Ryan Giles",
+59,
+0.89
+],
+[
+"Mohamed Belloumi",
+72,
+0.125
+],
+[
+"Matt Crooks",
+74,
+0.375
+],
+[
+"Regan Slater",
+76,
+0.625
+],
+[
+"Elliot Stroud",
+78,
+0.875
+],
+[
+"Oli McBurnie",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Noussair Mazraoui",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Ayden Heaven",
+36,
+0.625
+],
+[
+"Luke Shaw",
+38,
+0.875
+],
+[
+"Youri Tielemans",
+64,
+0.3
+],
+[
+"Andrey Santos",
+66,
+0.7
+],
+[
+"Bryan Mbeumo",
+83,
+0.162
+],
+[
+"Bruno Fernandes",
+85,
+0.5
+],
+[
+"Patrick Dorgu",
+87,
+0.837
+],
+[
+"Matheus Cunha",
+115,
+0.5
+]
+]
+}
 },
 "5795365": {
 "round": 1,
@@ -37,7 +269,123 @@
 "home": false,
 "time": 72
 }
+],
+"starters": {
+"home": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Merlin Röhl",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"Hayden Hackney",
+66,
+0.7
+],
+[
+"Iliman Ndiaye",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Tyrique George",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Dean Henderson",
+11,
+0.5
+],
+[
+"Jaydee Canvot",
+33,
+0.21
+],
+[
+"Chris Richards",
+35,
+0.5
+],
+[
+"Chadi Riad",
+37,
+0.79
+],
+[
+"Daniel Muñoz",
+62,
+0.125
+],
+[
+"Adam Wharton",
+64,
+0.375
+],
+[
+"Daichi Kamada",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Dwight McNeil",
+84,
+0.3
+],
+[
+"Edward Nketiah",
+86,
+0.7
+],
+[
+"Jean-Philippe Mateta",
+105,
+0.5
+]
+]
+}
 },
 "5795366": {
 "round": 1,
@@ -49,25 +397,489 @@
 "home": true,
 "time": 71
 }
+],
+"starters": {
+"home": [
+[
+"Kjell Scherpen",
+11,
+0.5
+],
+[
+"Dara O'Shea",
+32,
+0.125
+],
+[
+"Issa Diop",
+34,
+0.375
+],
+[
+"Jacob Greaves",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Marcelino Núñez",
+64,
+0.3
+],
+[
+"Sasa Lukic",
+66,
+0.7
+],
+[
+"Abdul Fatawu",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Daizen Maeda",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Thomas Meunier",
+32,
+0.125
+],
+[
+"Daniel Ballard",
+34,
+0.375
+],
+[
+"Luke O'Nien",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Trai Hume",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Nilson Angulo",
+87,
+0.837
+],
+[
+"Brian Brobbey",
+115,
+0.5
+]
+]
+}
 },
 "5795367": {
 "round": 1,
 "home": "Nottingham Forest",
 "away": "Leeds United",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Jair Cunha",
+33,
+0.21
+],
+[
+"Nikola Milenkovic",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Ola Aina",
+62,
+0.125
+],
+[
+"James McAtee",
+64,
+0.375
+],
+[
+"Ibrahim Sangaré",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Morgan Gibbs-White",
+84,
+0.3
+],
+[
+"Dan Ndoye",
+86,
+0.7
+],
+[
+"Igor Jesus",
+105,
+0.5
+]
+],
+"away": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"Joe Rodon",
+33,
+0.21
+],
+[
+"Jaka Bijol",
+35,
+0.5
+],
+[
+"Tarik Muharemovic",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+72,
+0.125
+],
+[
+"Anton Stach",
+74,
+0.375
+],
+[
+"Ethan Ampadu",
+76,
+0.625
+],
+[
+"James Justin",
+78,
+0.875
+],
+[
+"Harry Wilson",
+103,
+0.21
+],
+[
+"Dominic Calvert-Lewin",
+105,
+0.5
+],
+[
+"Brenden Aaronson",
+107,
+0.79
+]
+]
+}
 },
 "5795368": {
 "round": 1,
 "home": "Brentford",
 "away": "Tottenham Hotspur",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Kristoffer Ajer",
+34,
+0.375
+],
+[
+"Nathan Collins",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Mamadou Sangaré",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Dango Ouattara",
+83,
+0.162
+],
+[
+"Mathias Jensen",
+85,
+0.5
+],
+[
+"Kevin Schade",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
+]
+],
+"away": [
+[
+"Antonín Kinsky",
+11,
+0.5
+],
+[
+"Archie Gray",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Marcos Senesi",
+36,
+0.625
+],
+[
+"Andrew Robertson",
+38,
+0.875
+],
+[
+"Sandro Tonali",
+64,
+0.3
+],
+[
+"Lucas Bergvall",
+66,
+0.7
+],
+[
+"Mikey Moore",
+83,
+0.162
+],
+[
+"Conor Gallagher",
+85,
+0.5
+],
+[
+"Mathys Tel",
+87,
+0.837
+],
+[
+"Richarlison",
+115,
+0.5
+]
+]
+}
 },
 "5795369": {
 "round": 1,
 "home": "Brighton & Hove Albion",
 "away": "Aston Villa",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Mats Wieffer",
+32,
+0.125
+],
+[
+"Luka Vuskovic",
+34,
+0.375
+],
+[
+"Lewis Dunk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Yasin Ayari",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Jack Hinshelwood",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Georginio Rutter",
+115,
+0.5
+]
+],
+"away": [
+[
+"Marco Bizot",
+11,
+0.5
+],
+[
+"Matty Cash",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Pau Torres",
+36,
+0.625
+],
+[
+"Ian Maatsen",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"João Gomes",
+66,
+0.7
+],
+[
+"John McGinn",
+83,
+0.162
+],
+[
+"Ross Barkley",
+85,
+0.5
+],
+[
+"George Hemmings",
+87,
+0.837
+],
+[
+"Emiliano Buendía",
+115,
+0.5
+]
+]
+}
 },
 "5795370": {
 "round": 1,
@@ -79,49 +891,977 @@
 "home": true,
 "time": 63
 }
+],
+"starters": {
+"home": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Rico Lewis",
+32,
+0.125
+],
+[
+"Abdukodir Khusanov",
+34,
+0.375
+],
+[
+"Rúben Dias",
+36,
+0.625
+],
+[
+"Josko Gvardiol",
+38,
+0.875
+],
+[
+"Elliot Anderson",
+64,
+0.3
+],
+[
+"Marc Guéhi",
+66,
+0.7
+],
+[
+"Phil Foden",
+83,
+0.162
+],
+[
+"Nico O'Reilly",
+85,
+0.5
+],
+[
+"Antoine Semenyo",
+87,
+0.837
+],
+[
+"Erling Haaland",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Djordje Petrovic",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Lewis Cook",
+64,
+0.3
+],
+[
+"Alex Scott",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Justin Kluivert",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
+]
+]
+}
 },
 "5795371": {
 "round": 1,
 "home": "Newcastle United",
 "away": "Liverpool",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Amar Dedic",
+32,
+0.125
+],
+[
+"Malick Thiaw",
+34,
+0.375
+],
+[
+"Sven Botman",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Sean Steur",
+64,
+0.3
+],
+[
+"Lewis Miley",
+66,
+0.7
+],
+[
+"Anthony Elanga",
+83,
+0.162
+],
+[
+"Yoane Wissa",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"William Osula",
+115,
+0.5
+]
+],
+"away": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Jeremie Frimpong",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Milos Kerkez",
+38,
+0.875
+],
+[
+"Ryan Gravenberch",
+64,
+0.3
+],
+[
+"Dominik Szoboszlai",
+66,
+0.7
+],
+[
+"Rio Ngumoha",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Cody Gakpo",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
+]
+]
+}
 },
 "5795372": {
 "round": 1,
 "home": "Fulham",
 "away": "Chelsea",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"Calvin Bassey",
+34,
+0.375
+],
+[
+"Jorge Cuenca",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Sander Berge",
+64,
+0.3
+],
+[
+"Alex Iwobi",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"César Palacios",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
+]
+],
+"away": [
+[
+"Robert Sánchez",
+11,
+0.5
+],
+[
+"Josh Acheampong",
+33,
+0.21
+],
+[
+"Maxence Lacroix",
+35,
+0.5
+],
+[
+"Levi Colwill",
+37,
+0.79
+],
+[
+"Malo Gusto",
+62,
+0.125
+],
+[
+"Reece James",
+64,
+0.375
+],
+[
+"Roméo Lavia",
+66,
+0.625
+],
+[
+"Jorrel Hato",
+68,
+0.875
+],
+[
+"Cole Palmer",
+84,
+0.3
+],
+[
+"Morgan Rogers",
+86,
+0.7
+],
+[
+"João Pedro",
+105,
+0.5
+]
+]
+}
 },
 "5795429": {
 "round": 2,
 "home": "Crystal Palace",
 "away": "Manchester City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Dean Henderson",
+11,
+0.5
+],
+[
+"Jaydee Canvot",
+33,
+0.21
+],
+[
+"Chris Richards",
+35,
+0.5
+],
+[
+"Takehiro Tomiyasu",
+37,
+0.79
+],
+[
+"Anan Khalaili",
+62,
+0.125
+],
+[
+"Adam Wharton",
+64,
+0.375
+],
+[
+"Daichi Kamada",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Yéremi Pino",
+84,
+0.3
+],
+[
+"Edward Nketiah",
+86,
+0.7
+],
+[
+"Jørgen Strand Larsen",
+105,
+0.5
+]
+],
+"away": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Abdukodir Khusanov",
+32,
+0.125
+],
+[
+"Rúben Dias",
+34,
+0.375
+],
+[
+"Marc Guéhi",
+36,
+0.625
+],
+[
+"Joško Gvardiol",
+38,
+0.875
+],
+[
+"Nico O'Reilly",
+64,
+0.3
+],
+[
+"Elliot Anderson",
+66,
+0.7
+],
+[
+"Phil Foden",
+83,
+0.162
+],
+[
+"Rayan Cherki",
+85,
+0.5
+],
+[
+"Antoine Semenyo",
+87,
+0.837
+],
+[
+"Erling Haaland",
+115,
+0.5
+]
+]
+}
 },
 "5795431": {
 "round": 2,
 "home": "Liverpool",
 "away": "Nottingham Forest",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Jeremie Frimpong",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Milos Kerkez",
+38,
+0.875
+],
+[
+"Alexis Mac Allister",
+64,
+0.3
+],
+[
+"Dominik Szoboszlai",
+66,
+0.7
+],
+[
+"Cody Gakpo",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Víctor Muñoz",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
+]
+],
+"away": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Jair Cunha",
+33,
+0.21
+],
+[
+"Nikola Milenkovic",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Ola Aina",
+62,
+0.125
+],
+[
+"Xaver Schlager",
+64,
+0.375
+],
+[
+"James McAtee",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Morgan Gibbs-White",
+84,
+0.3
+],
+[
+"Dan Ndoye",
+86,
+0.7
+],
+[
+"Igor Jesus",
+105,
+0.5
+]
+]
+}
 },
 "5795425": {
 "round": 2,
 "home": "AFC Bournemouth",
 "away": "Everton",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Djordje Petrovic",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Lewis Cook",
+64,
+0.3
+],
+[
+"Alex Scott",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Justin Kluivert",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
+]
+],
+"away": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Merlin Röhl",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"James Garner",
+66,
+0.7
+],
+[
+"Iliman Ndiaye",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Tyrique George",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
+]
+]
+}
 },
 "5795428": {
 "round": 2,
 "home": "Coventry City",
 "away": "Hull City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Milan van Ewijk",
+32,
+0.125
+],
+[
+"Bobby Thomas",
+34,
+0.375
+],
+[
+"Aurèle Amenda",
+36,
+0.625
+],
+[
+"Jay Dasilva",
+38,
+0.875
+],
+[
+"Caleb Yirenkyi",
+64,
+0.3
+],
+[
+"Matt Grimes",
+66,
+0.7
+],
+[
+"Loum Tchaouna",
+83,
+0.162
+],
+[
+"Jack Rudoni",
+85,
+0.5
+],
+[
+"Ephron Mason-Clark",
+87,
+0.837
+],
+[
+"Taiwo Awoniyi",
+115,
+0.5
+]
+],
+"away": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.21
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Nobel Mendy",
+37,
+0.79
+],
+[
+"Lewie Coyle",
+72,
+0.125
+],
+[
+"Regan Slater",
+74,
+0.375
+],
+[
+"Hidemasa Morita",
+76,
+0.625
+],
+[
+"Ryan Giles",
+78,
+0.875
+],
+[
+"Mohamed Belloumi",
+103,
+0.21
+],
+[
+"Oli McBurnie",
+105,
+0.5
+],
+[
+"Elliot Stroud",
+107,
+0.79
+]
+]
+}
 },
 "5795434": {
 "round": 2,
 "home": "Tottenham Hotspur",
 "away": "Newcastle United",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Archie Gray",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Micky van de Ven",
+36,
+0.625
+],
+[
+"Andrew Robertson",
+38,
+0.875
+],
+[
+"Rodrigo Bentancur",
+64,
+0.3
+],
+[
+"Sandro Tonali",
+66,
+0.7
+],
+[
+"Pedro Porro",
+83,
+0.162
+],
+[
+"Mateus Fernandes",
+85,
+0.5
+],
+[
+"Mathys Tel",
+87,
+0.837
+],
+[
+"Omar Marmoush",
+115,
+0.5
+]
+],
+"away": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Amar Dedić",
+32,
+0.125
+],
+[
+"Malick Thiaw",
+34,
+0.375
+],
+[
+"Sven Botman",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Nico González",
+64,
+0.3
+],
+[
+"Lewis Miley",
+66,
+0.7
+],
+[
+"Anthony Elanga",
+83,
+0.162
+],
+[
+"Joseph Willock",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"Yoane Wissa",
+115,
+0.5
+]
+]
+}
 },
 "5795427": {
 "round": 2,
@@ -133,7 +1873,123 @@
 "home": true,
 "time": 82
 }
+],
+"starters": {
+"home": [
+[
+"Emiliano Martínez",
+11,
+0.5
+],
+[
+"Wesley Fofana",
+33,
+0.21
+],
+[
+"Maxence Lacroix",
+35,
+0.5
+],
+[
+"Levi Colwill",
+37,
+0.79
+],
+[
+"Pedro Neto",
+62,
+0.125
+],
+[
+"Malo Gusto",
+64,
+0.375
+],
+[
+"Roméo Lavia",
+66,
+0.625
+],
+[
+"Jorrel Hato",
+68,
+0.875
+],
+[
+"Cole Palmer",
+84,
+0.3
+],
+[
+"Morgan Rogers",
+86,
+0.7
+],
+[
+"João Pedro",
+105,
+0.5
 ]
+],
+"away": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Mats Wieffer",
+32,
+0.125
+],
+[
+"Luka Vuskovic",
+34,
+0.375
+],
+[
+"Lewis Dunk",
+36,
+0.625
+],
+[
+"Ferdi Kadioglu",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Olivier Boscagli",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Malick Junior Yalcouyé",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+]
+}
 },
 "5795430": {
 "round": 2,
@@ -145,7 +2001,123 @@
 "home": true,
 "time": 34
 }
+],
+"starters": {
+"home": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"Joe Rodon",
+33,
+0.21
+],
+[
+"Jaka Bijol",
+35,
+0.5
+],
+[
+"Tarik Muharemovic",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+62,
+0.125
+],
+[
+"Ethan Ampadu",
+64,
+0.375
+],
+[
+"Anton Stach",
+66,
+0.625
+],
+[
+"James Justin",
+68,
+0.875
+],
+[
+"Brenden Aaronson",
+84,
+0.3
+],
+[
+"Noah Okafor",
+86,
+0.7
+],
+[
+"Dominic Calvert-Lewin",
+105,
+0.5
 ]
+],
+"away": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Kristoffer Ajer",
+34,
+0.375
+],
+[
+"Nathan Collins",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Mamadou Sangaré",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Jaidon Anthony",
+83,
+0.162
+],
+[
+"Mikkel Damsgaard",
+85,
+0.5
+],
+[
+"Kevin Schade",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
+]
+]
+}
 },
 "5795433": {
 "round": 2,
@@ -157,13 +2129,245 @@
 "home": true,
 "time": 83
 }
+],
+"starters": {
+"home": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Thomas Meunier",
+32,
+0.125
+],
+[
+"Nordi Mukiele",
+34,
+0.375
+],
+[
+"Daniel Ballard",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Trai Hume",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Nilson Angulo",
+87,
+0.837
+],
+[
+"Brian Brobbey",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"Joachim Andersen",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Sander Berge",
+64,
+0.3
+],
+[
+"Alex Iwobi",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"César Palacios",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
+]
+]
+}
 },
 "5795432": {
 "round": 2,
 "home": "Manchester United",
 "away": "Ipswich Town",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Diogo Dalot",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Lisandro Martínez",
+36,
+0.625
+],
+[
+"Luke Shaw",
+38,
+0.875
+],
+[
+"Youri Tielemans",
+64,
+0.3
+],
+[
+"Kobbie Mainoo",
+66,
+0.7
+],
+[
+"Bryan Mbeumo",
+83,
+0.162
+],
+[
+"Bruno Fernandes",
+85,
+0.5
+],
+[
+"Marcus Rashford",
+87,
+0.837
+],
+[
+"Matheus Cunha",
+115,
+0.5
+]
+],
+"away": [
+[
+"Kjell Scherpen",
+11,
+0.5
+],
+[
+"Dara O'Shea",
+32,
+0.125
+],
+[
+"Issa Diop",
+34,
+0.375
+],
+[
+"Jacob Greaves",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Marcelino Núñez",
+64,
+0.3
+],
+[
+"Sasa Lukic",
+66,
+0.7
+],
+[
+"Abdul Fatawu",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Daizen Maeda",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
+]
+]
+}
 },
 "5795426": {
 "round": 2,
@@ -175,19 +2379,367 @@
 "home": false,
 "time": 79
 }
+],
+"starters": {
+"home": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Matty Cash",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Pau Torres",
+36,
+0.625
+],
+[
+"Ian Maatsen",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"Ross Barkley",
+66,
+0.7
+],
+[
+"John McGinn",
+83,
+0.162
+],
+[
+"Emiliano Buendía",
+85,
+0.5
+],
+[
+"George Hemmings",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
 ]
+],
+"away": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Ben White",
+32,
+0.125
+],
+[
+"Cristhian Mosquera",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Declan Rice",
+64,
+0.3
+],
+[
+"Myles Lewis-Skelly",
+66,
+0.7
+],
+[
+"Bukayo Saka",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Christos Tzolis",
+87,
+0.837
+],
+[
+"Kai Havertz",
+115,
+0.5
+]
+]
+}
 },
 "5795441": {
 "round": 3,
 "home": "Ipswich Town",
 "away": "Liverpool",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Kjell Scherpen",
+11,
+0.5
+],
+[
+"Dara O'Shea",
+32,
+0.125
+],
+[
+"Issa Diop",
+34,
+0.375
+],
+[
+"Jacob Greaves",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Saša Lukić",
+64,
+0.3
+],
+[
+"Exequiel Palacios",
+66,
+0.7
+],
+[
+"Abdul Fatawu",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Daizen Maeda",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
+]
+],
+"away": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Ronald Araujo",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Miloš Kerkez",
+38,
+0.875
+],
+[
+"Dominik Szoboszlai",
+64,
+0.3
+],
+[
+"Alexis Mac Allister",
+66,
+0.7
+],
+[
+"Víctor Muñoz",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Cody Gakpo",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
+]
+]
+}
 },
 "5795443": {
 "round": 3,
 "home": "Newcastle United",
 "away": "AFC Bournemouth",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Amar Dedić",
+32,
+0.125
+],
+[
+"Malick Thiaw",
+34,
+0.375
+],
+[
+"Sven Botman",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Nico González",
+64,
+0.3
+],
+[
+"Lewis Miley",
+66,
+0.7
+],
+[
+"Anthony Elanga",
+83,
+0.162
+],
+[
+"Joseph Willock",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"Yoane Wissa",
+115,
+0.5
+]
+],
+"away": [
+[
+"Djordje Petrović",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Tyler Adams",
+64,
+0.3
+],
+[
+"Alex Scott",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Justin Kluivert",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
+]
+]
+}
 },
 "5795436": {
 "round": 3,
@@ -199,19 +2751,367 @@
 "home": true,
 "time": 17
 }
+],
+"starters": {
+"home": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Kristoffer Ajer",
+34,
+0.375
+],
+[
+"Nathan Collins",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Mamadou Sangaré",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Dango Ouattara",
+83,
+0.162
+],
+[
+"Mikkel Damsgaard",
+85,
+0.5
+],
+[
+"Kevin Schade",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Nordi Mukiele",
+32,
+0.125
+],
+[
+"Kevin Danso",
+34,
+0.375
+],
+[
+"Daniel Ballard",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Thomas Meunier",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Nilson Angulo",
+87,
+0.837
+],
+[
+"Brian Brobbey",
+115,
+0.5
+]
+]
+}
 },
 "5795437": {
 "round": 3,
 "home": "Brighton & Hove Albion",
 "away": "Leeds United",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Ferdi Kadıoğlu",
+32,
+0.125
+],
+[
+"Luka Vušković",
+34,
+0.375
+],
+[
+"Lewis Dunk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Yasin Ayari",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Malick Junior Yalcouyé",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+],
+"away": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"James Justin",
+33,
+0.21
+],
+[
+"Nico Elvedi",
+35,
+0.5
+],
+[
+"Tarik Muharemović",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+62,
+0.125
+],
+[
+"Ethan Ampadu",
+64,
+0.375
+],
+[
+"Ao Tanaka",
+66,
+0.625
+],
+[
+"Gabriel Gudmundsson",
+68,
+0.875
+],
+[
+"Anton Stach",
+84,
+0.3
+],
+[
+"Noah Okafor",
+86,
+0.7
+],
+[
+"Dominic Calvert-Lewin",
+105,
+0.5
+]
+]
+}
 },
 "5795439": {
 "round": 3,
 "home": "Fulham",
 "away": "Crystal Palace",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"Joachim Andersen",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Shea Charles",
+64,
+0.3
+],
+[
+"Alex Iwobi",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"César Palacios",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
+]
+],
+"away": [
+[
+"Dean Henderson",
+11,
+0.5
+],
+[
+"Chris Richards",
+33,
+0.21
+],
+[
+"Axel Disasi",
+35,
+0.5
+],
+[
+"Jaydee Canvot",
+37,
+0.79
+],
+[
+"Anan Khalaili",
+62,
+0.125
+],
+[
+"Quinten Timber",
+64,
+0.375
+],
+[
+"Adam Wharton",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Daichi Kamada",
+84,
+0.3
+],
+[
+"Yéremi Pino",
+86,
+0.7
+],
+[
+"Edward Nketiah",
+105,
+0.5
+]
+]
+}
 },
 "5795442": {
 "round": 3,
@@ -223,7 +3123,123 @@
 "home": true,
 "time": 87
 }
+],
+"starters": {
+"home": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Abdukodir Khusanov",
+32,
+0.125
+],
+[
+"Rúben Dias",
+34,
+0.375
+],
+[
+"Marc Guéhi",
+36,
+0.625
+],
+[
+"Joško Gvardiol",
+38,
+0.875
+],
+[
+"Elliot Anderson",
+65,
+0.5
+],
+[
+"Antoine Semenyo",
+82,
+0.125
+],
+[
+"Enzo Fernández",
+84,
+0.375
+],
+[
+"Rayan Cherki",
+86,
+0.625
+],
+[
+"Iliman Ndiaye",
+88,
+0.875
+],
+[
+"Erling Haaland",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Aurèle Amenda",
+33,
+0.21
+],
+[
+"Bobby Thomas",
+35,
+0.5
+],
+[
+"Ethan Pinnock",
+37,
+0.79
+],
+[
+"Milan van Ewijk",
+72,
+0.125
+],
+[
+"Frank Onyeka",
+74,
+0.375
+],
+[
+"Matt Grimes",
+76,
+0.625
+],
+[
+"Jay Dasilva",
+78,
+0.875
+],
+[
+"Jack Rudoni",
+103,
+0.21
+],
+[
+"Taiwo Awoniyi",
+105,
+0.5
+],
+[
+"Ephron Mason-Clark",
+107,
+0.79
+]
+]
+}
 },
 "5795444": {
 "round": 3,
@@ -235,13 +3251,245 @@
 "home": true,
 "time": 90
 }
+],
+"starters": {
+"home": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Jair Cunha",
+33,
+0.21
+],
+[
+"Nikola Milenković",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Ola Aina",
+62,
+0.125
+],
+[
+"Xaver Schlager",
+64,
+0.375
+],
+[
+"James McAtee",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Dan Ndoye",
+84,
+0.3
+],
+[
+"Morgan Gibbs-White",
+86,
+0.7
+],
+[
+"Liam Delap",
+105,
+0.5
 ]
+],
+"away": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Pedro Porro",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Micky van de Ven",
+36,
+0.625
+],
+[
+"Destiny Udogie",
+38,
+0.875
+],
+[
+"Sandro Tonali",
+64,
+0.3
+],
+[
+"Rodrigo Bentancur",
+66,
+0.7
+],
+[
+"Sávio",
+83,
+0.162
+],
+[
+"Conor Gallagher",
+85,
+0.5
+],
+[
+"Mathys Tel",
+87,
+0.837
+],
+[
+"Omar Marmoush",
+115,
+0.5
+]
+]
+}
 },
 "5795440": {
 "round": 3,
 "home": "Hull City",
 "away": "Aston Villa",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.305
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Nobel Mendy",
+37,
+0.695
+],
+[
+"Lewie Coyle",
+51,
+0.11
+],
+[
+"Ryan Giles",
+59,
+0.89
+],
+[
+"Mohamed Belloumi",
+72,
+0.125
+],
+[
+"Regan Slater",
+74,
+0.375
+],
+[
+"Lucas Gourna-Douath",
+76,
+0.625
+],
+[
+"Elliot Stroud",
+78,
+0.875
+],
+[
+"Oli McBurnie",
+115,
+0.5
+]
+],
+"away": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Matty Cash",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Tyrone Mings",
+36,
+0.625
+],
+[
+"Ian Maatsen",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"Ross Barkley",
+66,
+0.7
+],
+[
+"John McGinn",
+83,
+0.162
+],
+[
+"Emiliano Buendía",
+85,
+0.5
+],
+[
+"George Hemmings",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
+]
+]
+}
 },
 "5795438": {
 "round": 3,
@@ -253,13 +3501,245 @@
 "home": true,
 "time": 77
 }
+],
+"starters": {
+"home": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Merlin Röhl",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"James Garner",
+66,
+0.7
+],
+[
+"Brennan Johnson",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Tyrique George",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Diogo Dalot",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Lisandro Martínez",
+36,
+0.625
+],
+[
+"Luke Shaw",
+38,
+0.875
+],
+[
+"Kobbie Mainoo",
+64,
+0.3
+],
+[
+"Youri Tielemans",
+66,
+0.7
+],
+[
+"Bryan Mbeumo",
+83,
+0.162
+],
+[
+"Bruno Fernandes",
+85,
+0.5
+],
+[
+"Marcus Rashford",
+87,
+0.837
+],
+[
+"Matheus Cunha",
+115,
+0.5
+]
+]
+}
 },
 "5795435": {
 "round": 3,
 "home": "Arsenal",
 "away": "Chelsea",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Ben White",
+32,
+0.125
+],
+[
+"Ezri Konsa",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Declan Rice",
+64,
+0.3
+],
+[
+"Myles Lewis-Skelly",
+66,
+0.7
+],
+[
+"Bukayo Saka",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Christos Tzolis",
+87,
+0.837
+],
+[
+"Kai Havertz",
+115,
+0.5
+]
+],
+"away": [
+[
+"Emiliano Martínez",
+11,
+0.5
+],
+[
+"Josh Acheampong",
+33,
+0.21
+],
+[
+"Maxence Lacroix",
+35,
+0.5
+],
+[
+"Wesley Fofana",
+37,
+0.79
+],
+[
+"Pedro Neto",
+62,
+0.125
+],
+[
+"Roméo Lavia",
+64,
+0.375
+],
+[
+"Reece James",
+66,
+0.625
+],
+[
+"Jorrel Hato",
+68,
+0.875
+],
+[
+"Cole Palmer",
+84,
+0.3
+],
+[
+"Morgan Rogers",
+86,
+0.7
+],
+[
+"João Pedro",
+105,
+0.5
+]
+]
+}
 },
 "5795445": {
 "round": 4,
@@ -271,7 +3751,123 @@
 "home": true,
 "time": 82
 }
+],
+"starters": {
+"home": [
+[
+"Djordje Petrović",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Tyler Adams",
+64,
+0.3
+],
+[
+"Alex Scott",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Justin Kluivert",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Aaron Hickey",
+32,
+0.125
+],
+[
+"Jannik Schuster",
+34,
+0.375
+],
+[
+"Kristoffer Ajer",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Mamadou Sangaré",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Jaidon Anthony",
+83,
+0.162
+],
+[
+"Yehor Yarmoliuk",
+85,
+0.5
+],
+[
+"Kevin Schade",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
+]
+]
+}
 },
 "5795446": {
 "round": 4,
@@ -283,7 +3879,123 @@
 "home": true,
 "time": 25
 }
+],
+"starters": {
+"home": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Aaron Wan-Bissaka",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Pau Torres",
+36,
+0.625
+],
+[
+"Ian Maatsen",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"Ross Barkley",
+66,
+0.7
+],
+[
+"John McGinn",
+83,
+0.162
+],
+[
+"Emiliano Buendía",
+85,
+0.5
+],
+[
+"George Hemmings",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Ola Aina",
+33,
+0.21
+],
+[
+"Ousmane Diomande",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Daniel Muñoz",
+62,
+0.125
+],
+[
+"James McAtee",
+64,
+0.375
+],
+[
+"Xaver Schlager",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Dan Ndoye",
+84,
+0.3
+],
+[
+"Morgan Gibbs-White",
+86,
+0.7
+],
+[
+"Liam Delap",
+105,
+0.5
+]
+]
+}
 },
 "5795447": {
 "round": 4,
@@ -300,7 +4012,123 @@
 "home": true,
 "time": 78
 }
+],
+"starters": {
+"home": [
+[
+"Emiliano Martínez",
+11,
+0.5
+],
+[
+"Malo Gusto",
+32,
+0.125
+],
+[
+"Wesley Fofana",
+34,
+0.375
+],
+[
+"Levi Colwill",
+36,
+0.625
+],
+[
+"Jorrel Hato",
+38,
+0.875
+],
+[
+"Reece James",
+64,
+0.3
+],
+[
+"Roméo Lavia",
+66,
+0.7
+],
+[
+"Pedro Neto",
+83,
+0.162
+],
+[
+"Cole Palmer",
+85,
+0.5
+],
+[
+"Morgan Rogers",
+87,
+0.837
+],
+[
+"João Pedro",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.21
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Nobel Mendy",
+37,
+0.79
+],
+[
+"Lewie Coyle",
+72,
+0.125
+],
+[
+"Matt Crooks",
+74,
+0.375
+],
+[
+"Regan Slater",
+76,
+0.625
+],
+[
+"Ryan Giles",
+78,
+0.875
+],
+[
+"Mohamed Belloumi",
+103,
+0.21
+],
+[
+"Oli McBurnie",
+105,
+0.5
+],
+[
+"Elliot Stroud",
+107,
+0.79
+]
+]
+}
 },
 "5795449": {
 "round": 4,
@@ -312,19 +4140,367 @@
 "home": false,
 "time": 63
 }
+],
+"starters": {
+"home": [
+[
+"Walter Benítez",
+11,
+0.5
+],
+[
+"Chris Richards",
+33,
+0.21
+],
+[
+"Axel Disasi",
+35,
+0.5
+],
+[
+"Honest Ahanor",
+37,
+0.79
+],
+[
+"Anan Khalaili",
+62,
+0.125
+],
+[
+"Quinten Timber",
+64,
+0.375
+],
+[
+"Adam Wharton",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Daichi Kamada",
+84,
+0.3
+],
+[
+"Yéremi Pino",
+86,
+0.7
+],
+[
+"Jørgen Strand Larsen",
+105,
+0.5
 ]
+],
+"away": [
+[
+"Kjell Scherpen",
+11,
+0.5
+],
+[
+"Dara O'Shea",
+32,
+0.125
+],
+[
+"Issa Diop",
+34,
+0.375
+],
+[
+"Jacob Greaves",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Saša Lukić",
+64,
+0.3
+],
+[
+"Exequiel Palacios",
+66,
+0.7
+],
+[
+"Abdul Fatawu",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Jack Clarke",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
+]
+]
+}
 },
 "5795451": {
 "round": 4,
 "home": "Liverpool",
 "away": "Fulham",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Ronald Araujo",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Konstantinos Tsimikas",
+38,
+0.875
+],
+[
+"Dominik Szoboszlai",
+64,
+0.3
+],
+[
+"Ryan Gravenberch",
+66,
+0.7
+],
+[
+"Víctor Muñoz",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Bradley Barcola",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
+]
+],
+"away": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"David Affengruber",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Sander Berge",
+64,
+0.3
+],
+[
+"Shea Charles",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"Alex Iwobi",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
+]
+]
+}
 },
 "5795454": {
 "round": 4,
 "home": "Tottenham Hotspur",
 "away": "Everton",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Archie Gray",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Micky van de Ven",
+36,
+0.625
+],
+[
+"Andrew Robertson",
+38,
+0.875
+],
+[
+"Rodrigo Bentancur",
+64,
+0.3
+],
+[
+"Sandro Tonali",
+66,
+0.7
+],
+[
+"Sávio",
+83,
+0.162
+],
+[
+"Mateus Fernandes",
+85,
+0.5
+],
+[
+"Omar Marmoush",
+87,
+0.837
+],
+[
+"Dominic Solanke",
+115,
+0.5
+]
+],
+"away": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Ainsley Maitland-Niles",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"James Garner",
+65,
+0.5
+],
+[
+"Brennan Johnson",
+82,
+0.125
+],
+[
+"Harrison Armstrong",
+84,
+0.375
+],
+[
+"Kiernan Dewsbury-Hall",
+86,
+0.625
+],
+[
+"Tyrique George",
+88,
+0.875
+],
+[
+"Thierno Barry",
+115,
+0.5
+]
+]
+}
 },
 "5795453": {
 "round": 4,
@@ -336,7 +4512,123 @@
 "home": false,
 "time": 46
 }
+],
+"starters": {
+"home": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Nordi Mukiele",
+32,
+0.125
+],
+[
+"Kevin Danso",
+34,
+0.375
+],
+[
+"Daniel Ballard",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Thomas Meunier",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Nilson Angulo",
+87,
+0.837
+],
+[
+"Brian Brobbey",
+115,
+0.5
 ]
+],
+"away": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Ben White",
+32,
+0.125
+],
+[
+"Ezri Konsa",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Declan Rice",
+64,
+0.3
+],
+[
+"Myles Lewis-Skelly",
+66,
+0.7
+],
+[
+"Bukayo Saka",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Christos Tzolis",
+87,
+0.837
+],
+[
+"Kai Havertz",
+115,
+0.5
+]
+]
+}
 },
 "5795448": {
 "round": 4,
@@ -348,13 +4640,245 @@
 "home": true,
 "time": 73
 }
+],
+"starters": {
+"home": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Aurèle Amenda",
+33,
+0.21
+],
+[
+"Bobby Thomas",
+35,
+0.5
+],
+[
+"Ethan Pinnock",
+37,
+0.79
+],
+[
+"Milan van Ewijk",
+72,
+0.125
+],
+[
+"Frank Onyeka",
+74,
+0.375
+],
+[
+"Matt Grimes",
+76,
+0.625
+],
+[
+"Jay Dasilva",
+78,
+0.875
+],
+[
+"Jack Rudoni",
+103,
+0.21
+],
+[
+"Taiwo Awoniyi",
+105,
+0.5
+],
+[
+"Ephron Mason-Clark",
+107,
+0.79
 ]
+],
+"away": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Ferdi Kadıoğlu",
+32,
+0.125
+],
+[
+"Luka Vušković",
+34,
+0.375
+],
+[
+"Lewis Dunk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Yasin Ayari",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Malick Junior Yalcouyé",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+]
+}
 },
 "5795452": {
 "round": 4,
 "home": "Manchester United",
 "away": "Manchester City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Diogo Dalot",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Lisandro Martínez",
+36,
+0.625
+],
+[
+"Patrick Dorgu",
+38,
+0.875
+],
+[
+"Youri Tielemans",
+64,
+0.3
+],
+[
+"Kobbie Mainoo",
+66,
+0.7
+],
+[
+"Bryan Mbeumo",
+83,
+0.162
+],
+[
+"Bruno Fernandes",
+85,
+0.5
+],
+[
+"Marcus Rashford",
+87,
+0.837
+],
+[
+"Matheus Cunha",
+115,
+0.5
+]
+],
+"away": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Matheus Nunes",
+32,
+0.125
+],
+[
+"Marc Guéhi",
+34,
+0.375
+],
+[
+"Rúben Dias",
+36,
+0.625
+],
+[
+"Joško Gvardiol",
+38,
+0.875
+],
+[
+"Elliot Anderson",
+65,
+0.5
+],
+[
+"Phil Foden",
+82,
+0.125
+],
+[
+"Rayan Cherki",
+84,
+0.375
+],
+[
+"Enzo Fernández",
+86,
+0.625
+],
+[
+"Antoine Semenyo",
+88,
+0.875
+],
+[
+"Erling Haaland",
+115,
+0.5
+]
+]
+}
 },
 "5795450": {
 "round": 4,
@@ -366,13 +4890,245 @@
 "home": false,
 "time": 19
 }
+],
+"starters": {
+"home": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"James Justin",
+33,
+0.21
+],
+[
+"Nico Elvedi",
+35,
+0.5
+],
+[
+"Tarik Muharemović",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+71,
+0.11
+],
+[
+"Anton Stach",
+73,
+0.305
+],
+[
+"Ethan Ampadu",
+75,
+0.5
+],
+[
+"Ao Tanaka",
+77,
+0.695
+],
+[
+"Gabriel Gudmundsson",
+79,
+0.89
+],
+[
+"Dominic Calvert-Lewin",
+104,
+0.3
+],
+[
+"Noah Okafor",
+106,
+0.7
 ]
+],
+"away": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Amar Dedić",
+32,
+0.125
+],
+[
+"Malick Thiaw",
+34,
+0.375
+],
+[
+"Sven Botman",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Lewis Miley",
+64,
+0.3
+],
+[
+"Nico González",
+66,
+0.7
+],
+[
+"Jacob Murphy",
+83,
+0.162
+],
+[
+"Matias Fernandez-Pardo",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"Yoane Wissa",
+115,
+0.5
+]
+]
+}
 },
 "5795456": {
 "round": 5,
 "home": "Brentford",
 "away": "Chelsea",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Jannik Schuster",
+34,
+0.375
+],
+[
+"Kristoffer Ajer",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Yehor Yarmoliuk",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Jaidon Anthony",
+83,
+0.162
+],
+[
+"Mikkel Damsgaard",
+85,
+0.5
+],
+[
+"Kevin Schade",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
+]
+],
+"away": [
+[
+"Emiliano Martínez",
+11,
+0.5
+],
+[
+"Wesley Fofana",
+33,
+0.21
+],
+[
+"Maxence Lacroix",
+35,
+0.5
+],
+[
+"Levi Colwill",
+37,
+0.79
+],
+[
+"Pedro Neto",
+62,
+0.125
+],
+[
+"Jordan Henderson",
+64,
+0.375
+],
+[
+"Valentín Barco",
+66,
+0.625
+],
+[
+"Pep Chavarría",
+68,
+0.875
+],
+[
+"Cole Palmer",
+84,
+0.3
+],
+[
+"Morgan Rogers",
+86,
+0.7
+],
+[
+"Danny Welbeck",
+105,
+0.5
+]
+]
+}
 },
 "5795464": {
 "round": 5,
@@ -384,13 +5140,245 @@
 "home": true,
 "time": 19
 }
+],
+"starters": {
+"home": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Pedro Porro",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Micky van de Ven",
+36,
+0.625
+],
+[
+"Andrew Robertson",
+38,
+0.875
+],
+[
+"Rodrigo Bentancur",
+64,
+0.3
+],
+[
+"Sandro Tonali",
+66,
+0.7
+],
+[
+"Sávio",
+83,
+0.162
+],
+[
+"Mateus Fernandes",
+85,
+0.5
+],
+[
+"Omar Marmoush",
+87,
+0.837
+],
+[
+"Dominic Solanke",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Aaron Wan-Bissaka",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Tyrone Mings",
+36,
+0.625
+],
+[
+"Matteo Ruggeri",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"João Gomes",
+66,
+0.7
+],
+[
+"John McGinn",
+83,
+0.162
+],
+[
+"Johan Manzambi",
+85,
+0.5
+],
+[
+"Emiliano Buendía",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
+]
+]
+}
 },
 "5795457": {
 "round": 5,
 "home": "Brighton & Hove Albion",
 "away": "Arsenal",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Ferdi Kadıoğlu",
+32,
+0.125
+],
+[
+"Luka Vušković",
+34,
+0.375
+],
+[
+"Pascal Struijk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Chema Andrés",
+64,
+0.3
+],
+[
+"Yasin Ayari",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Pascal Groß",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+],
+"away": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Jurriën Timber",
+32,
+0.125
+],
+[
+"Ezri Konsa",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Declan Rice",
+64,
+0.3
+],
+[
+"Bruno Guimarães",
+66,
+0.7
+],
+[
+"Bukayo Saka",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Christos Tzolis",
+87,
+0.837
+],
+[
+"Kai Havertz",
+115,
+0.5
+]
+]
+}
 },
 "5795458": {
 "round": 5,
@@ -402,7 +5390,123 @@
 "home": false,
 "time": 81
 }
+],
+"starters": {
+"home": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Ainsley Maitland-Niles",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"James Garner",
+66,
+0.7
+],
+[
+"Brennan Johnson",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Jack Grealish",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Christian Walton",
+11,
+0.5
+],
+[
+"Abdoul Ouattara",
+32,
+0.125
+],
+[
+"Issa Diop",
+34,
+0.375
+],
+[
+"Dara O'Shea",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Saša Lukić",
+64,
+0.3
+],
+[
+"Exequiel Palacios",
+66,
+0.7
+],
+[
+"Abdul Fatawu",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Jack Clarke",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
+]
+]
+}
 },
 "5795462": {
 "round": 5,
@@ -419,43 +5523,855 @@
 "home": true,
 "time": 74
 }
+],
+"starters": {
+"home": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Lewis Miley",
+32,
+0.125
+],
+[
+"Malick Thiaw",
+34,
+0.375
+],
+[
+"Sven Botman",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Sean Steur",
+65,
+0.5
+],
+[
+"Jacob Murphy",
+82,
+0.125
+],
+[
+"Yoane Wissa",
+84,
+0.375
+],
+[
+"Joseph Willock",
+86,
+0.625
+],
+[
+"Harvey Barnes",
+88,
+0.875
+],
+[
+"Matias Fernandez-Pardo",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.305
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Lucas Herrington",
+37,
+0.695
+],
+[
+"Lewie Coyle",
+51,
+0.11
+],
+[
+"Ryan Giles",
+59,
+0.89
+],
+[
+"Mohamed Belloumi",
+72,
+0.125
+],
+[
+"Regan Slater",
+74,
+0.375
+],
+[
+"Matt Crooks",
+76,
+0.625
+],
+[
+"Sorba Thomas",
+78,
+0.875
+],
+[
+"Oli McBurnie",
+115,
+0.5
+]
+]
+}
 },
 "5795463": {
 "round": 5,
 "home": "Nottingham Forest",
 "away": "Coventry City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Jair Cunha",
+33,
+0.21
+],
+[
+"Ousmane Diomande",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Daniel Muñoz",
+62,
+0.125
+],
+[
+"Xaver Schlager",
+64,
+0.375
+],
+[
+"James McAtee",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Dan Ndoye",
+84,
+0.3
+],
+[
+"Morgan Gibbs-White",
+86,
+0.7
+],
+[
+"Liam Delap",
+105,
+0.5
+]
+],
+"away": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Stephen Mfuni",
+33,
+0.21
+],
+[
+"Bobby Thomas",
+35,
+0.5
+],
+[
+"Ethan Pinnock",
+37,
+0.79
+],
+[
+"Caleb Yirenkyi",
+72,
+0.125
+],
+[
+"Frank Onyeka",
+74,
+0.375
+],
+[
+"Matt Grimes",
+76,
+0.625
+],
+[
+"Jay Dasilva",
+78,
+0.875
+],
+[
+"Jack Rudoni",
+103,
+0.21
+],
+[
+"Brandon Thomas-Asante",
+105,
+0.5
+],
+[
+"Ephron Mason-Clark",
+107,
+0.79
+]
+]
+}
 },
 "5795455": {
 "round": 5,
 "home": "AFC Bournemouth",
 "away": "Liverpool",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Djordje Petrović",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Tyler Adams",
+64,
+0.3
+],
+[
+"Alex Scott",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Ryan Christie",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
+]
+],
+"away": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Ronald Araujo",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Miloš Kerkez",
+38,
+0.875
+],
+[
+"Dominik Szoboszlai",
+64,
+0.3
+],
+[
+"Alexis Mac Allister",
+66,
+0.7
+],
+[
+"Cody Gakpo",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Bradley Barcola",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
+]
+]
+}
 },
 "5795460": {
 "round": 5,
 "home": "Leeds United",
 "away": "Crystal Palace",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"James Justin",
+33,
+0.21
+],
+[
+"Nico Elvedi",
+35,
+0.5
+],
+[
+"Tarik Muharemović",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+71,
+0.11
+],
+[
+"Anton Stach",
+73,
+0.305
+],
+[
+"Ethan Ampadu",
+75,
+0.5
+],
+[
+"Ao Tanaka",
+77,
+0.695
+],
+[
+"Gabriel Gudmundsson",
+79,
+0.89
+],
+[
+"Dominic Calvert-Lewin",
+104,
+0.3
+],
+[
+"Noah Okafor",
+106,
+0.7
+]
+],
+"away": [
+[
+"Walter Benítez",
+11,
+0.5
+],
+[
+"Chris Richards",
+33,
+0.21
+],
+[
+"Takehiro Tomiyasu",
+35,
+0.5
+],
+[
+"Jaydee Canvot",
+37,
+0.79
+],
+[
+"Anan Khalaili",
+62,
+0.125
+],
+[
+"Quinten Timber",
+64,
+0.375
+],
+[
+"Adam Wharton",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Daichi Kamada",
+84,
+0.3
+],
+[
+"Yéremi Pino",
+86,
+0.7
+],
+[
+"Jørgen Strand Larsen",
+105,
+0.5
+]
+]
+}
 },
 "5795461": {
 "round": 5,
 "home": "Manchester City",
 "away": "Sunderland",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Matheus Nunes",
+32,
+0.125
+],
+[
+"Rúben Dias",
+34,
+0.375
+],
+[
+"Marc Guéhi",
+36,
+0.625
+],
+[
+"Joško Gvardiol",
+38,
+0.875
+],
+[
+"Enzo Fernández",
+64,
+0.3
+],
+[
+"Elliot Anderson",
+66,
+0.7
+],
+[
+"Iliman Ndiaye",
+83,
+0.162
+],
+[
+"Rayan Cherki",
+85,
+0.5
+],
+[
+"Antoine Semenyo",
+87,
+0.837
+],
+[
+"Erling Haaland",
+115,
+0.5
+]
+],
+"away": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Nordi Mukiele",
+32,
+0.125
+],
+[
+"Kevin Danso",
+34,
+0.375
+],
+[
+"Daniel Ballard",
+36,
+0.625
+],
+[
+"Dayann Méthalie",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Thomas Meunier",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Nilson Angulo",
+87,
+0.837
+],
+[
+"Brian Brobbey",
+115,
+0.5
+]
+]
+}
 },
 "5795459": {
 "round": 5,
 "home": "Fulham",
 "away": "Manchester United",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"David Affengruber",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Sander Berge",
+64,
+0.3
+],
+[
+"Shea Charles",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"Alex Iwobi",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
+]
+],
+"away": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Diogo Dalot",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Lisandro Martínez",
+36,
+0.625
+],
+[
+"Luke Shaw",
+38,
+0.875
+],
+[
+"Youri Tielemans",
+64,
+0.3
+],
+[
+"Kobbie Mainoo",
+66,
+0.7
+],
+[
+"Bryan Mbeumo",
+83,
+0.162
+],
+[
+"Bruno Fernandes",
+85,
+0.5
+],
+[
+"Marcus Rashford",
+87,
+0.837
+],
+[
+"Matheus Cunha",
+115,
+0.5
+]
+]
+}
 },
 "5795465": {
 "round": 6,
 "home": "Arsenal",
 "away": "Leeds United",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Ben White",
+32,
+0.125
+],
+[
+"Ezri Konsa",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Declan Rice",
+64,
+0.3
+],
+[
+"Myles Lewis-Skelly",
+66,
+0.7
+],
+[
+"Bukayo Saka",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Noni Madueke",
+87,
+0.837
+],
+[
+"Kai Havertz",
+115,
+0.5
+]
+],
+"away": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"James Justin",
+33,
+0.21
+],
+[
+"Nico Elvedi",
+35,
+0.5
+],
+[
+"Tarik Muharemović",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+71,
+0.11
+],
+[
+"Anton Stach",
+73,
+0.305
+],
+[
+"Ethan Ampadu",
+75,
+0.5
+],
+[
+"Ao Tanaka",
+77,
+0.695
+],
+[
+"Gabriel Gudmundsson",
+79,
+0.89
+],
+[
+"Dominic Calvert-Lewin",
+104,
+0.3
+],
+[
+"Noah Okafor",
+106,
+0.7
+]
+]
+}
 },
 "5795466": {
 "round": 6,
@@ -467,19 +6383,367 @@
 "home": false,
 "time": 52
 }
+],
+"starters": {
+"home": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Matty Cash",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Tyrone Mings",
+36,
+0.625
+],
+[
+"Matteo Ruggeri",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"João Gomes",
+66,
+0.7
+],
+[
+"John McGinn",
+83,
+0.162
+],
+[
+"Emiliano Buendía",
+85,
+0.5
+],
+[
+"Johan Manzambi",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Kristoffer Ajer",
+34,
+0.375
+],
+[
+"Jannik Schuster",
+36,
+0.625
+],
+[
+"Malick Diouf",
+38,
+0.875
+],
+[
+"Yehor Yarmoliuk",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Jaidon Anthony",
+83,
+0.162
+],
+[
+"Keane Lewis-Potter",
+85,
+0.5
+],
+[
+"Kevin Schade",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
+]
+]
+}
 },
 "5795467": {
 "round": 6,
 "home": "Chelsea",
 "away": "AFC Bournemouth",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Emiliano Martínez",
+11,
+0.5
+],
+[
+"Josh Acheampong",
+33,
+0.21
+],
+[
+"Maxence Lacroix",
+35,
+0.5
+],
+[
+"Levi Colwill",
+37,
+0.79
+],
+[
+"Pedro Neto",
+62,
+0.125
+],
+[
+"Moisés Caicedo",
+64,
+0.375
+],
+[
+"Jordan Henderson",
+66,
+0.625
+],
+[
+"Pep Chavarría",
+68,
+0.875
+],
+[
+"Cole Palmer",
+84,
+0.3
+],
+[
+"Morgan Rogers",
+86,
+0.7
+],
+[
+"João Pedro",
+105,
+0.5
+]
+],
+"away": [
+[
+"Djordje Petrović",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Tyler Adams",
+64,
+0.3
+],
+[
+"Ryan Christie",
+66,
+0.7
+],
+[
+"David Brooks",
+83,
+0.162
+],
+[
+"Rayan",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
+]
+]
+}
 },
 "5795471": {
 "round": 6,
 "home": "Ipswich Town",
 "away": "Fulham",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Christian Walton",
+11,
+0.5
+],
+[
+"Abdoul Ouattara",
+32,
+0.125
+],
+[
+"Issa Diop",
+34,
+0.375
+],
+[
+"Dara O'Shea",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Florentino",
+64,
+0.3
+],
+[
+"Saša Lukić",
+66,
+0.7
+],
+[
+"Daizen Maeda",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Jaden Philogene-Bidace",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
+]
+],
+"away": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Kenny Tete",
+32,
+0.125
+],
+[
+"David Affengruber",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Ryan Sessegnon",
+38,
+0.875
+],
+[
+"Shea Charles",
+64,
+0.3
+],
+[
+"Sander Berge",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"Alex Iwobi",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
+]
+]
+}
 },
 "5795474": {
 "round": 6,
@@ -491,31 +6755,611 @@
 "home": true,
 "time": 34
 }
+],
+"starters": {
+"home": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Trai Hume",
+32,
+0.125
+],
+[
+"Nordi Mukiele",
+34,
+0.375
+],
+[
+"Kevin Danso",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Thomas Meunier",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Nilson Angulo",
+87,
+0.837
+],
+[
+"Wilson Isidor",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Ferdi Kadıoğlu",
+32,
+0.125
+],
+[
+"Luka Vušković",
+34,
+0.375
+],
+[
+"Pascal Struijk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Chema Andrés",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Yasin Ayari",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+]
+}
 },
 "5795473": {
 "round": 6,
 "home": "Manchester United",
 "away": "Tottenham Hotspur",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Leny Yoro",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Lisandro Martínez",
+36,
+0.625
+],
+[
+"Luke Shaw",
+38,
+0.875
+],
+[
+"Youri Tielemans",
+64,
+0.3
+],
+[
+"Kobbie Mainoo",
+66,
+0.7
+],
+[
+"Amad Diallo",
+83,
+0.162
+],
+[
+"Bruno Fernandes",
+85,
+0.5
+],
+[
+"Matheus Cunha",
+87,
+0.837
+],
+[
+"Bryan Mbeumo",
+115,
+0.5
+]
+],
+"away": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Archie Gray",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Marcos Senesi",
+36,
+0.625
+],
+[
+"Destiny Udogie",
+38,
+0.875
+],
+[
+"Lucas Bergvall",
+64,
+0.3
+],
+[
+"Sandro Tonali",
+66,
+0.7
+],
+[
+"Mohammed Kudus",
+83,
+0.162
+],
+[
+"Conor Gallagher",
+85,
+0.5
+],
+[
+"Sávio",
+87,
+0.837
+],
+[
+"Dominic Solanke",
+115,
+0.5
+]
+]
+}
 },
 "5795469": {
 "round": 6,
 "home": "Crystal Palace",
 "away": "Nottingham Forest",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Walter Benítez",
+11,
+0.5
+],
+[
+"Jefferson Lerma",
+33,
+0.21
+],
+[
+"Chris Richards",
+35,
+0.5
+],
+[
+"Jaydee Canvot",
+37,
+0.79
+],
+[
+"Anan Khalaili",
+62,
+0.125
+],
+[
+"Adam Wharton",
+64,
+0.375
+],
+[
+"Quinten Timber",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Daichi Kamada",
+84,
+0.3
+],
+[
+"Yéremi Pino",
+86,
+0.7
+],
+[
+"Jørgen Strand Larsen",
+105,
+0.5
+]
+],
+"away": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Ola Aina",
+33,
+0.21
+],
+[
+"Ousmane Diomande",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Daniel Muñoz",
+62,
+0.125
+],
+[
+"Xaver Schlager",
+64,
+0.375
+],
+[
+"James McAtee",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Morgan Gibbs-White",
+84,
+0.3
+],
+[
+"Dan Ndoye",
+86,
+0.7
+],
+[
+"Liam Delap",
+105,
+0.5
+]
+]
+}
 },
 "5795470": {
 "round": 6,
 "home": "Hull City",
 "away": "Everton",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.305
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Nobel Mendy",
+37,
+0.695
+],
+[
+"Lewie Coyle",
+51,
+0.11
+],
+[
+"Ryan Giles",
+59,
+0.89
+],
+[
+"Joe Gelhardt",
+72,
+0.125
+],
+[
+"Matt Crooks",
+74,
+0.375
+],
+[
+"Regan Slater",
+76,
+0.625
+],
+[
+"Sorba Thomas",
+78,
+0.875
+],
+[
+"Oli McBurnie",
+115,
+0.5
+]
+],
+"away": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Ainsley Maitland-Niles",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Michael Keane",
+36,
+0.625
+],
+[
+"Jarrad Branthwaite",
+38,
+0.875
+],
+[
+"James Garner",
+64,
+0.3
+],
+[
+"Harrison Armstrong",
+66,
+0.7
+],
+[
+"Brennan Johnson",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Jack Grealish",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
+]
+]
+}
 },
 "5795472": {
 "round": 6,
 "home": "Liverpool",
 "away": "Manchester City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Ronald Araujo",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Miloš Kerkez",
+38,
+0.875
+],
+[
+"Ryan Gravenberch",
+64,
+0.3
+],
+[
+"Alexis Mac Allister",
+66,
+0.7
+],
+[
+"Víctor Muñoz",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Bradley Barcola",
+87,
+0.837
+],
+[
+"Lewis Koumas",
+115,
+0.5
+]
+],
+"away": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Matheus Nunes",
+32,
+0.125
+],
+[
+"Rúben Dias",
+34,
+0.375
+],
+[
+"Marc Guéhi",
+36,
+0.625
+],
+[
+"Nico O'Reilly",
+38,
+0.875
+],
+[
+"Elliot Anderson",
+65,
+0.5
+],
+[
+"Iliman Ndiaye",
+82,
+0.125
+],
+[
+"Rayan Cherki",
+84,
+0.375
+],
+[
+"Enzo Fernández",
+86,
+0.625
+],
+[
+"Antoine Semenyo",
+88,
+0.875
+],
+[
+"Erling Haaland",
+115,
+0.5
+]
+]
+}
 },
 "5795468": {
 "round": 6,
@@ -527,7 +7371,123 @@
 "home": false,
 "time": 90
 }
+],
+"starters": {
+"home": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Milan van Ewijk",
+32,
+0.125
+],
+[
+"Bobby Thomas",
+34,
+0.375
+],
+[
+"Ethan Pinnock",
+36,
+0.625
+],
+[
+"Jay Dasilva",
+38,
+0.875
+],
+[
+"Caleb Yirenkyi",
+64,
+0.3
+],
+[
+"Matt Grimes",
+66,
+0.7
+],
+[
+"Brandon Thomas-Asante",
+83,
+0.162
+],
+[
+"Jack Rudoni",
+85,
+0.5
+],
+[
+"Ephron Mason-Clark",
+87,
+0.837
+],
+[
+"Sidiki Cherif",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Lewis Miley",
+32,
+0.125
+],
+[
+"Malick Thiaw",
+34,
+0.375
+],
+[
+"Sven Botman",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Nico González",
+64,
+0.3
+],
+[
+"Joseph Willock",
+66,
+0.7
+],
+[
+"Jacob Murphy",
+83,
+0.162
+],
+[
+"Yoane Wissa",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"Matias Fernandez-Pardo",
+115,
+0.5
+]
+]
+}
 },
 "5795478": {
 "round": 7,
@@ -539,7 +7499,123 @@
 "home": false,
 "time": 75
 }
+],
+"starters": {
+"home": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Ainsley Maitland-Niles",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"James Garner",
+66,
+0.7
+],
+[
+"Merlin Röhl",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Jack Grealish",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Emiliano Martínez",
+11,
+0.5
+],
+[
+"Josh Acheampong",
+32,
+0.125
+],
+[
+"Maxence Lacroix",
+34,
+0.375
+],
+[
+"Levi Colwill",
+36,
+0.625
+],
+[
+"Jorrel Hato",
+38,
+0.875
+],
+[
+"Moisés Caicedo",
+64,
+0.3
+],
+[
+"Jordan Henderson",
+66,
+0.7
+],
+[
+"Pedro Neto",
+83,
+0.162
+],
+[
+"Cole Palmer",
+85,
+0.5
+],
+[
+"Morgan Rogers",
+87,
+0.837
+],
+[
+"João Pedro",
+115,
+0.5
+]
+]
+}
 },
 "5795476": {
 "round": 7,
@@ -556,7 +7632,123 @@
 "home": false,
 "time": 52
 }
+],
+"starters": {
+"home": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Sepp van den Berg",
+34,
+0.375
+],
+[
+"Kristoffer Ajer",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Yehor Yarmoliuk",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Dango Ouattara",
+83,
+0.162
+],
+[
+"Mathias Jensen",
+85,
+0.5
+],
+[
+"Jaidon Anthony",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Ronald Araujo",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Miloš Kerkez",
+38,
+0.875
+],
+[
+"Alexis Mac Allister",
+64,
+0.3
+],
+[
+"Dominik Szoboszlai",
+66,
+0.7
+],
+[
+"Víctor Muñoz",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Bradley Barcola",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
+]
+]
+}
 },
 "5795479": {
 "round": 7,
@@ -573,7 +7765,123 @@
 "home": true,
 "time": 78
 }
+],
+"starters": {
+"home": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"David Affengruber",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Sander Berge",
+64,
+0.3
+],
+[
+"Shea Charles",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"Alex Iwobi",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.305
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Lucas Herrington",
+37,
+0.695
+],
+[
+"Lewie Coyle",
+51,
+0.11
+],
+[
+"Brooke Norton-Cuffy",
+59,
+0.89
+],
+[
+"Mohamed Belloumi",
+72,
+0.125
+],
+[
+"Matt Crooks",
+74,
+0.375
+],
+[
+"Regan Slater",
+76,
+0.625
+],
+[
+"Sorba Thomas",
+78,
+0.875
+],
+[
+"Oli McBurnie",
+115,
+0.5
+]
+]
+}
 },
 "5795481": {
 "round": 7,
@@ -590,7 +7898,123 @@
 "home": true,
 "time": 76
 }
+],
+"starters": {
+"home": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Matheus Nunes",
+32,
+0.125
+],
+[
+"Rúben Dias",
+34,
+0.375
+],
+[
+"Marc Guéhi",
+36,
+0.625
+],
+[
+"Nico O'Reilly",
+38,
+0.875
+],
+[
+"Mateo Kovačić",
+64,
+0.3
+],
+[
+"Ayyoub Bouaddi",
+66,
+0.7
+],
+[
+"Iliman Ndiaye",
+83,
+0.162
+],
+[
+"Phil Foden",
+85,
+0.5
+],
+[
+"Jérémy Doku",
+87,
+0.837
+],
+[
+"Erling Haaland",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Christian Walton",
+11,
+0.5
+],
+[
+"Dara O'Shea",
+33,
+0.21
+],
+[
+"Issa Diop",
+35,
+0.5
+],
+[
+"Jacob Greaves",
+37,
+0.79
+],
+[
+"Abdoul Ouattara",
+62,
+0.125
+],
+[
+"Florentino",
+64,
+0.375
+],
+[
+"Exequiel Palacios",
+66,
+0.625
+],
+[
+"Leif Davis",
+68,
+0.875
+],
+[
+"Daizen Maeda",
+84,
+0.3
+],
+[
+"Julio Enciso",
+86,
+0.7
+],
+[
+"Emersonn",
+105,
+0.5
+]
+]
+}
 },
 "5795482": {
 "round": 7,
@@ -602,7 +8026,123 @@
 "home": false,
 "time": 77
 }
+],
+"starters": {
+"home": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Lewis Miley",
+32,
+0.125
+],
+[
+"Malick Thiaw",
+34,
+0.375
+],
+[
+"Sven Botman",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Nico González",
+64,
+0.3
+],
+[
+"Joelinton",
+66,
+0.7
+],
+[
+"Matias Fernandez-Pardo",
+83,
+0.162
+],
+[
+"Joseph Willock",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"Yoane Wissa",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Matty Cash",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Tyrone Mings",
+36,
+0.625
+],
+[
+"Aaron Wan-Bissaka",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"João Gomes",
+66,
+0.7
+],
+[
+"Alysson Edward",
+83,
+0.162
+],
+[
+"Johan Manzambi",
+85,
+0.5
+],
+[
+"Emiliano Buendía",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
+]
+]
+}
 },
 "5795475": {
 "round": 7,
@@ -614,25 +8154,489 @@
 "home": false,
 "time": 65
 }
+],
+"starters": {
+"home": [
+[
+"Djordje Petrović",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Tyler Adams",
+64,
+0.3
+],
+[
+"Ryan Christie",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Lewis Cook",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Nordi Mukiele",
+32,
+0.125
+],
+[
+"Kevin Danso",
+34,
+0.375
+],
+[
+"Omar Alderete",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Trai Hume",
+83,
+0.162
+],
+[
+"Chris Rigg",
+85,
+0.5
+],
+[
+"Enzo Le Fée",
+87,
+0.837
+],
+[
+"Timur Tuterov",
+115,
+0.5
+]
+]
+}
 },
 "5795477": {
 "round": 7,
 "home": "Brighton & Hove Albion",
 "away": "Crystal Palace",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Ferdi Kadıoğlu",
+32,
+0.125
+],
+[
+"Luka Vušković",
+34,
+0.375
+],
+[
+"Lewis Dunk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Chema Andrés",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Yasin Ayari",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+],
+"away": [
+[
+"Walter Benítez",
+11,
+0.5
+],
+[
+"Jaydee Canvot",
+33,
+0.21
+],
+[
+"Chris Richards",
+35,
+0.5
+],
+[
+"Honest Ahanor",
+37,
+0.79
+],
+[
+"Anan Khalaili",
+62,
+0.125
+],
+[
+"Adam Wharton",
+64,
+0.375
+],
+[
+"Quinten Timber",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Daichi Kamada",
+84,
+0.3
+],
+[
+"Yéremi Pino",
+86,
+0.7
+],
+[
+"Jørgen Strand Larsen",
+105,
+0.5
+]
+]
+}
 },
 "5795480": {
 "round": 7,
 "home": "Leeds United",
 "away": "Manchester United",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"James Justin",
+33,
+0.21
+],
+[
+"Nico Elvedi",
+35,
+0.5
+],
+[
+"Tarik Muharemović",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+62,
+0.125
+],
+[
+"Ethan Ampadu",
+64,
+0.375
+],
+[
+"Ao Tanaka",
+66,
+0.625
+],
+[
+"Gabriel Gudmundsson",
+68,
+0.875
+],
+[
+"Anton Stach",
+84,
+0.3
+],
+[
+"Noah Okafor",
+86,
+0.7
+],
+[
+"Dominic Calvert-Lewin",
+105,
+0.5
+]
+],
+"away": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Leny Yoro",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Lisandro Martínez",
+36,
+0.625
+],
+[
+"Diogo Dalot",
+38,
+0.875
+],
+[
+"Andrey Santos",
+64,
+0.3
+],
+[
+"Carlos Baleba",
+66,
+0.7
+],
+[
+"Amad Diallo",
+83,
+0.162
+],
+[
+"Youri Tielemans",
+85,
+0.5
+],
+[
+"Bruno Fernandes",
+87,
+0.837
+],
+[
+"Bryan Mbeumo",
+115,
+0.5
+]
+]
+}
 },
 "5795483": {
 "round": 7,
 "home": "Nottingham Forest",
 "away": "Arsenal",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Jair Cunha",
+33,
+0.21
+],
+[
+"Ousmane Diomande",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Daniel Muñoz",
+62,
+0.125
+],
+[
+"James McAtee",
+64,
+0.375
+],
+[
+"Xaver Schlager",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Dan Ndoye",
+84,
+0.3
+],
+[
+"Nicolás Dominguez",
+86,
+0.7
+],
+[
+"Liam Delap",
+105,
+0.5
+]
+],
+"away": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Ben White",
+32,
+0.125
+],
+[
+"Ezri Konsa",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Bruno Guimarães",
+64,
+0.3
+],
+[
+"Declan Rice",
+66,
+0.7
+],
+[
+"Bukayo Saka",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Eberechi Eze",
+87,
+0.837
+],
+[
+"Kai Havertz",
+115,
+0.5
+]
+]
+}
 },
 "5795484": {
 "round": 7,
@@ -654,7 +8658,123 @@
 "home": true,
 "time": 87
 }
+],
+"starters": {
+"home": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Jan Paul van Hecke",
+32,
+0.125
+],
+[
+"Tosin Adarabioyo",
+34,
+0.375
+],
+[
+"Micky van de Ven",
+36,
+0.625
+],
+[
+"Andrew Robertson",
+38,
+0.875
+],
+[
+"Sandro Tonali",
+65,
+0.5
+],
+[
+"Archie Gray",
+84,
+0.3
+],
+[
+"James Maddison",
+86,
+0.7
+],
+[
+"Mohammed Kudus",
+103,
+0.17
+],
+[
+"Dominic Solanke",
+105,
+0.5
+],
+[
+"Omar Marmoush",
+107,
+0.83
 ]
+],
+"away": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Milan van Ewijk",
+32,
+0.125
+],
+[
+"Bobby Thomas",
+34,
+0.375
+],
+[
+"Ethan Pinnock",
+36,
+0.625
+],
+[
+"Jay Dasilva",
+38,
+0.875
+],
+[
+"Caleb Yirenkyi",
+64,
+0.3
+],
+[
+"Matt Grimes",
+66,
+0.7
+],
+[
+"Tatsuhiro Sakamoto",
+83,
+0.162
+],
+[
+"Jack Rudoni",
+85,
+0.5
+],
+[
+"Brandon Thomas-Asante",
+87,
+0.837
+],
+[
+"Sidiki Cherif",
+115,
+0.5
+]
+]
+}
 },
 "5795491": {
 "round": 8,
@@ -666,13 +8786,245 @@
 "home": false,
 "time": 84
 }
+],
+"starters": {
+"home": [
+[
+"Christian Walton",
+11,
+0.5
+],
+[
+"Abdoul Ouattara",
+32,
+0.125
+],
+[
+"Issa Diop",
+34,
+0.375
+],
+[
+"Dara O'Shea",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Exequiel Palacios",
+64,
+0.3
+],
+[
+"Florentino",
+66,
+0.7
+],
+[
+"Abdul Fatawu",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Jaden Philogene-Bidace",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Jair Cunha",
+33,
+0.21
+],
+[
+"Nikola Milenković",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Daniel Muñoz",
+62,
+0.125
+],
+[
+"James McAtee",
+64,
+0.375
+],
+[
+"Xaver Schlager",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Morgan Gibbs-White",
+84,
+0.3
+],
+[
+"Dan Ndoye",
+86,
+0.7
+],
+[
+"Liam Delap",
+105,
+0.5
+]
+]
+}
 },
 "5795486": {
 "round": 8,
 "home": "Aston Villa",
 "away": "Manchester City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Matty Cash",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Pau Torres",
+36,
+0.625
+],
+[
+"Ian Maatsen",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"João Gomes",
+66,
+0.7
+],
+[
+"Alysson Edward",
+83,
+0.162
+],
+[
+"John McGinn",
+85,
+0.5
+],
+[
+"Johan Manzambi",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
+]
+],
+"away": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Abdukodir Khusanov",
+32,
+0.125
+],
+[
+"Marc Guéhi",
+34,
+0.375
+],
+[
+"Rúben Dias",
+36,
+0.625
+],
+[
+"Joško Gvardiol",
+38,
+0.875
+],
+[
+"Elliot Anderson",
+64,
+0.3
+],
+[
+"Enzo Fernández",
+66,
+0.7
+],
+[
+"Iliman Ndiaye",
+83,
+0.162
+],
+[
+"Rayan Cherki",
+85,
+0.5
+],
+[
+"Jérémy Doku",
+87,
+0.837
+],
+[
+"Erling Haaland",
+115,
+0.5
+]
+]
+}
 },
 "5795485": {
 "round": 8,
@@ -684,7 +9036,123 @@
 "home": false,
 "time": 74
 }
+],
+"starters": {
+"home": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Ben White",
+32,
+0.125
+],
+[
+"Ezri Konsa",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Myles Lewis-Skelly",
+38,
+0.875
+],
+[
+"Declan Rice",
+64,
+0.3
+],
+[
+"Mikel Merino",
+66,
+0.7
+],
+[
+"Noni Madueke",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Eberechi Eze",
+87,
+0.837
+],
+[
+"Viktor Gyökeres",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Merlin Röhl",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jake O'Brien",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"James Garner",
+66,
+0.7
+],
+[
+"Brennan Johnson",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Tyrique George",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
+]
+]
+}
 },
 "5795488": {
 "round": 8,
@@ -696,7 +9164,123 @@
 "home": true,
 "time": 60
 }
+],
+"starters": {
+"home": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Milan van Ewijk",
+32,
+0.125
+],
+[
+"Bobby Thomas",
+34,
+0.375
+],
+[
+"Ethan Pinnock",
+36,
+0.625
+],
+[
+"Jay Dasilva",
+38,
+0.875
+],
+[
+"Caleb Yirenkyi",
+64,
+0.3
+],
+[
+"Matt Grimes",
+66,
+0.7
+],
+[
+"Tatsuhiro Sakamoto",
+83,
+0.162
+],
+[
+"Jack Rudoni",
+85,
+0.5
+],
+[
+"Brandon Thomas-Asante",
+87,
+0.837
+],
+[
+"Sidiki Cherif",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"David Affengruber",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Shea Charles",
+64,
+0.3
+],
+[
+"Hugo Larsson",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"Alex Iwobi",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
+]
+]
+}
 },
 "5795487": {
 "round": 8,
@@ -708,19 +9292,367 @@
 "home": false,
 "time": 51
 }
+],
+"starters": {
+"home": [
+[
+"Mike Penders",
+11,
+0.5
+],
+[
+"Josh Acheampong",
+33,
+0.21
+],
+[
+"Maxence Lacroix",
+35,
+0.5
+],
+[
+"Levi Colwill",
+37,
+0.79
+],
+[
+"Pedro Neto",
+62,
+0.125
+],
+[
+"Moisés Caicedo",
+64,
+0.375
+],
+[
+"Jordan Henderson",
+66,
+0.625
+],
+[
+"Jorrel Hato",
+68,
+0.875
+],
+[
+"Cole Palmer",
+84,
+0.3
+],
+[
+"Geovany Quenda",
+86,
+0.7
+],
+[
+"Morgan Rogers",
+105,
+0.5
 ]
+],
+"away": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Archie Gray",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Micky van de Ven",
+36,
+0.625
+],
+[
+"Andrew Robertson",
+38,
+0.875
+],
+[
+"Sandro Tonali",
+64,
+0.3
+],
+[
+"Mateus Fernandes",
+66,
+0.7
+],
+[
+"Mohammed Kudus",
+83,
+0.162
+],
+[
+"James Maddison",
+85,
+0.5
+],
+[
+"Mathys Tel",
+87,
+0.837
+],
+[
+"Omar Marmoush",
+115,
+0.5
+]
+]
+}
 },
 "5795489": {
 "round": 8,
 "home": "Crystal Palace",
 "away": "Newcastle United",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Walter Benítez",
+11,
+0.5
+],
+[
+"Chris Richards",
+33,
+0.21
+],
+[
+"Axel Disasi",
+35,
+0.5
+],
+[
+"Jaydee Canvot",
+37,
+0.79
+],
+[
+"Anan Khalaili",
+62,
+0.125
+],
+[
+"Adam Wharton",
+64,
+0.375
+],
+[
+"Daichi Kamada",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Dwight McNeil",
+84,
+0.3
+],
+[
+"Yéremi Pino",
+86,
+0.7
+],
+[
+"Jean-Philippe Mateta",
+105,
+0.5
+]
+],
+"away": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Amar Dedić",
+32,
+0.125
+],
+[
+"Fabian Schär",
+34,
+0.375
+],
+[
+"Daniel Burn",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Nico González",
+64,
+0.3
+],
+[
+"Joelinton",
+66,
+0.7
+],
+[
+"Jacob Murphy",
+83,
+0.162
+],
+[
+"Joseph Willock",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"William Osula",
+115,
+0.5
+]
+]
+}
 },
 "5795490": {
 "round": 8,
 "home": "Hull City",
 "away": "Brentford",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.305
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Lucas Herrington",
+37,
+0.695
+],
+[
+"Lewie Coyle",
+51,
+0.11
+],
+[
+"Ryan Giles",
+59,
+0.89
+],
+[
+"Mohamed Belloumi",
+72,
+0.125
+],
+[
+"Tim Iroegbunam",
+74,
+0.375
+],
+[
+"Regan Slater",
+76,
+0.625
+],
+[
+"Elliot Stroud",
+78,
+0.875
+],
+[
+"Oli McBurnie",
+115,
+0.5
+]
+],
+"away": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Sepp van den Berg",
+34,
+0.375
+],
+[
+"Kristoffer Ajer",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Mamadou Sangaré",
+64,
+0.3
+],
+[
+"Aaron Hickey",
+66,
+0.7
+],
+[
+"Dango Ouattara",
+83,
+0.162
+],
+[
+"Mathias Jensen",
+85,
+0.5
+],
+[
+"Kevin Schade",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
+]
+]
+}
 },
 "5795492": {
 "round": 8,
@@ -742,13 +9674,245 @@
 "home": true,
 "time": 65
 }
+],
+"starters": {
+"home": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Ronald Araujo",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Miloš Kerkez",
+38,
+0.875
+],
+[
+"Ryan Gravenberch",
+64,
+0.3
+],
+[
+"Alexis Mac Allister",
+66,
+0.7
+],
+[
+"Bradley Barcola",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Cody Gakpo",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Ferdi Kadıoğlu",
+32,
+0.125
+],
+[
+"Luka Vušković",
+34,
+0.375
+],
+[
+"Lewis Dunk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Chema Andrés",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Yasin Ayari",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+]
+}
 },
 "5795493": {
 "round": 8,
 "home": "Manchester United",
 "away": "AFC Bournemouth",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Leny Yoro",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Ayden Heaven",
+36,
+0.625
+],
+[
+"Diogo Dalot",
+38,
+0.875
+],
+[
+"Andrey Santos",
+64,
+0.3
+],
+[
+"Carlos Baleba",
+66,
+0.7
+],
+[
+"Amad Diallo",
+83,
+0.162
+],
+[
+"Youri Tielemans",
+85,
+0.5
+],
+[
+"Mason Mount",
+87,
+0.837
+],
+[
+"Bryan Mbeumo",
+115,
+0.5
+]
+],
+"away": [
+[
+"Djordje Petrović",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Tyler Adams",
+64,
+0.3
+],
+[
+"Lewis Cook",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Justin Kluivert",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
+]
+]
+}
 },
 "5795494": {
 "round": 8,
@@ -760,7 +9924,123 @@
 "home": true,
 "time": 52
 }
+],
+"starters": {
+"home": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Trai Hume",
+32,
+0.125
+],
+[
+"Nordi Mukiele",
+34,
+0.375
+],
+[
+"Luke O'Nien",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Chris Rigg",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Nilson Angulo",
+87,
+0.837
+],
+[
+"Brian Brobbey",
+115,
+0.5
 ]
+],
+"away": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"James Justin",
+33,
+0.21
+],
+[
+"Jaka Bijol",
+35,
+0.5
+],
+[
+"Tarik Muharemović",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+62,
+0.125
+],
+[
+"Ethan Ampadu",
+64,
+0.375
+],
+[
+"Ao Tanaka",
+66,
+0.625
+],
+[
+"Gabriel Gudmundsson",
+68,
+0.875
+],
+[
+"Harry Wilson",
+84,
+0.3
+],
+[
+"Brenden Aaronson",
+86,
+0.7
+],
+[
+"Dominic Calvert-Lewin",
+105,
+0.5
+]
+]
+}
 },
 "5795498": {
 "round": 9,
@@ -772,55 +10052,1099 @@
 "home": false,
 "time": 77
 }
+],
+"starters": {
+"home": [
+[
+"Mike Penders",
+11,
+0.5
+],
+[
+"Josh Acheampong",
+32,
+0.125
+],
+[
+"Wesley Fofana",
+34,
+0.375
+],
+[
+"Levi Colwill",
+36,
+0.625
+],
+[
+"Marco Palestra",
+38,
+0.875
+],
+[
+"Roméo Lavia",
+64,
+0.3
+],
+[
+"Moisés Caicedo",
+66,
+0.7
+],
+[
+"Estêvão",
+83,
+0.162
+],
+[
+"Cole Palmer",
+85,
+0.5
+],
+[
+"Morgan Rogers",
+87,
+0.837
+],
+[
+"Pedro Neto",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Leny Yoro",
+32,
+0.125
+],
+[
+"Harry Maguire",
+34,
+0.375
+],
+[
+"Lisandro Martínez",
+36,
+0.625
+],
+[
+"Diogo Dalot",
+38,
+0.875
+],
+[
+"Carlos Baleba",
+64,
+0.3
+],
+[
+"Andrey Santos",
+66,
+0.7
+],
+[
+"Amad Diallo",
+83,
+0.162
+],
+[
+"Bruno Fernandes",
+85,
+0.5
+],
+[
+"Matheus Cunha",
+87,
+0.837
+],
+[
+"Bryan Mbeumo",
+115,
+0.5
+]
+]
+}
 },
 "5795495": {
 "round": 9,
 "home": "AFC Bournemouth",
 "away": "Leeds United",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Djordje Petrović",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Tyler Adams",
+64,
+0.3
+],
+[
+"Ryan Christie",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Justin Kluivert",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
+]
+],
+"away": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"James Justin",
+33,
+0.21
+],
+[
+"Nico Elvedi",
+35,
+0.5
+],
+[
+"Tarik Muharemović",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+62,
+0.125
+],
+[
+"Ethan Ampadu",
+64,
+0.375
+],
+[
+"Ao Tanaka",
+66,
+0.625
+],
+[
+"Gabriel Gudmundsson",
+68,
+0.875
+],
+[
+"Harry Wilson",
+84,
+0.3
+],
+[
+"Daniel James",
+86,
+0.7
+],
+[
+"Dominic Calvert-Lewin",
+105,
+0.5
+]
+]
+}
 },
 "5795497": {
 "round": 9,
 "home": "Brentford",
 "away": "Nottingham Forest",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Kristoffer Ajer",
+34,
+0.375
+],
+[
+"Sepp van den Berg",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Mamadou Sangaré",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Dango Ouattara",
+83,
+0.162
+],
+[
+"Mathias Jensen",
+85,
+0.5
+],
+[
+"Kevin Schade",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
+]
+],
+"away": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Jair Cunha",
+33,
+0.21
+],
+[
+"Nikola Milenković",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Ola Aina",
+62,
+0.125
+],
+[
+"James McAtee",
+64,
+0.375
+],
+[
+"Xaver Schlager",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"Dan Ndoye",
+84,
+0.3
+],
+[
+"Morgan Gibbs-White",
+86,
+0.7
+],
+[
+"Liam Delap",
+105,
+0.5
+]
+]
+}
 },
 "5795499": {
 "round": 9,
 "home": "Coventry City",
 "away": "Sunderland",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Milan van Ewijk",
+32,
+0.125
+],
+[
+"Stephen Mfuni",
+34,
+0.375
+],
+[
+"Ethan Pinnock",
+36,
+0.625
+],
+[
+"Jay Dasilva",
+38,
+0.875
+],
+[
+"Caleb Yirenkyi",
+64,
+0.3
+],
+[
+"Victor Torp",
+66,
+0.7
+],
+[
+"Tatsuhiro Sakamoto",
+83,
+0.162
+],
+[
+"Jack Rudoni",
+85,
+0.5
+],
+[
+"Yann Gboho",
+87,
+0.837
+],
+[
+"Taiwo Awoniyi",
+115,
+0.5
+]
+],
+"away": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Trai Hume",
+32,
+0.125
+],
+[
+"Luke O'Nien",
+34,
+0.375
+],
+[
+"Omar Alderete",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Noah Sadiki",
+64,
+0.3
+],
+[
+"Granit Xhaka",
+66,
+0.7
+],
+[
+"Chris Rigg",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Nilson Angulo",
+87,
+0.837
+],
+[
+"Brian Brobbey",
+115,
+0.5
+]
+]
+}
 },
 "5795500": {
 "round": 9,
 "home": "Hull City",
 "away": "Ipswich Town",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.305
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Nobel Mendy",
+37,
+0.695
+],
+[
+"Lewie Coyle",
+51,
+0.11
+],
+[
+"Ryan Giles",
+59,
+0.89
+],
+[
+"Mohamed Belloumi",
+72,
+0.125
+],
+[
+"Tim Iroegbunam",
+74,
+0.375
+],
+[
+"Regan Slater",
+76,
+0.625
+],
+[
+"Elliot Stroud",
+78,
+0.875
+],
+[
+"Oli McBurnie",
+115,
+0.5
+]
+],
+"away": [
+[
+"Christian Walton",
+11,
+0.5
+],
+[
+"Abdoul Ouattara",
+32,
+0.125
+],
+[
+"Dara O'Shea",
+34,
+0.375
+],
+[
+"Issa Diop",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Florentino",
+64,
+0.3
+],
+[
+"Exequiel Palacios",
+66,
+0.7
+],
+[
+"Abdul Fatawu",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Jaden Philogene-Bidace",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
+]
+]
+}
 },
 "5795502": {
 "round": 9,
 "home": "Manchester City",
 "away": "Brighton & Hove Albion",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Matheus Nunes",
+32,
+0.125
+],
+[
+"Abdukodir Khusanov",
+34,
+0.375
+],
+[
+"Rúben Dias",
+36,
+0.625
+],
+[
+"Joško Gvardiol",
+38,
+0.875
+],
+[
+"Ayyoub Bouaddi",
+64,
+0.3
+],
+[
+"Elliot Anderson",
+66,
+0.7
+],
+[
+"Iliman Ndiaye",
+83,
+0.162
+],
+[
+"Enzo Fernández",
+85,
+0.5
+],
+[
+"Jérémy Doku",
+87,
+0.837
+],
+[
+"Erling Haaland",
+115,
+0.5
+]
+],
+"away": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Costinha",
+32,
+0.125
+],
+[
+"Luka Vušković",
+34,
+0.375
+],
+[
+"Lewis Dunk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Chema Andrés",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Yasin Ayari",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+]
+}
 },
 "5795504": {
 "round": 9,
 "home": "Tottenham Hotspur",
 "away": "Crystal Palace",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Archie Gray",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Micky van de Ven",
+36,
+0.625
+],
+[
+"Andrew Robertson",
+38,
+0.875
+],
+[
+"Sandro Tonali",
+64,
+0.3
+],
+[
+"Mateus Fernandes",
+66,
+0.7
+],
+[
+"Mohammed Kudus",
+83,
+0.162
+],
+[
+"Omar Marmoush",
+85,
+0.5
+],
+[
+"Mathys Tel",
+87,
+0.837
+],
+[
+"Dominic Solanke",
+115,
+0.5
+]
+],
+"away": [
+[
+"Dean Henderson",
+11,
+0.5
+],
+[
+"Chris Richards",
+33,
+0.21
+],
+[
+"Axel Disasi",
+35,
+0.5
+],
+[
+"Jaydee Canvot",
+37,
+0.79
+],
+[
+"Óscar Mingueza",
+62,
+0.125
+],
+[
+"Adam Wharton",
+64,
+0.375
+],
+[
+"Daichi Kamada",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Dwight McNeil",
+84,
+0.3
+],
+[
+"Yéremi Pino",
+86,
+0.7
+],
+[
+"Jean-Philippe Mateta",
+105,
+0.5
+]
+]
+}
 },
 "5795496": {
 "round": 9,
 "home": "Aston Villa",
 "away": "Fulham",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Matty Cash",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Pau Torres",
+36,
+0.625
+],
+[
+"Ian Maatsen",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"Leon Goretzka",
+66,
+0.7
+],
+[
+"Alysson Edward",
+83,
+0.162
+],
+[
+"John McGinn",
+85,
+0.5
+],
+[
+"Johan Manzambi",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
+]
+],
+"away": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"David Affengruber",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Sander Berge",
+64,
+0.3
+],
+[
+"Shea Charles",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"Alex Iwobi",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
+]
+]
+}
 },
 "5795501": {
 "round": 9,
 "home": "Liverpool",
 "away": "Arsenal",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Ronald Araujo",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Miloš Kerkez",
+38,
+0.875
+],
+[
+"Alexis Mac Allister",
+64,
+0.3
+],
+[
+"Trey Nyoni",
+66,
+0.7
+],
+[
+"Cody Gakpo",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Bradley Barcola",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
+]
+],
+"away": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Jurriën Timber",
+32,
+0.125
+],
+[
+"Ezri Konsa",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Bruno Guimarães",
+64,
+0.3
+],
+[
+"Declan Rice",
+66,
+0.7
+],
+[
+"Noni Madueke",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Christos Tzolis",
+87,
+0.837
+],
+[
+"Kai Havertz",
+115,
+0.5
+]
+]
+}
 },
 "5795503": {
 "round": 9,
@@ -832,13 +11156,245 @@
 "home": false,
 "time": 82
 }
+],
+"starters": {
+"home": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Amar Dedić",
+32,
+0.125
+],
+[
+"Fabian Schär",
+34,
+0.375
+],
+[
+"Daniel Burn",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Joelinton",
+64,
+0.3
+],
+[
+"Nico González",
+66,
+0.7
+],
+[
+"Anthony Elanga",
+83,
+0.162
+],
+[
+"Joseph Willock",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"William Osula",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Jake O'Brien",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"James Garner",
+66,
+0.7
+],
+[
+"Merlin Röhl",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Tyrique George",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
+]
+]
+}
 },
 "5795508": {
 "round": 10,
 "home": "Everton",
 "away": "Coventry City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Merlin Röhl",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"James Garner",
+66,
+0.7
+],
+[
+"Tyler Dibling",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Tyrique George",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
+]
+],
+"away": [
+[
+"Carl Rushworth",
+11,
+0.5
+],
+[
+"Milan van Ewijk",
+32,
+0.125
+],
+[
+"Stephen Mfuni",
+34,
+0.375
+],
+[
+"Ethan Pinnock",
+36,
+0.625
+],
+[
+"Jay Dasilva",
+38,
+0.875
+],
+[
+"Caleb Yirenkyi",
+64,
+0.3
+],
+[
+"Victor Torp",
+66,
+0.7
+],
+[
+"Tatsuhiro Sakamoto",
+83,
+0.162
+],
+[
+"Jack Rudoni",
+85,
+0.5
+],
+[
+"Yann Gboho",
+87,
+0.837
+],
+[
+"Taiwo Awoniyi",
+115,
+0.5
+]
+]
+}
 },
 "5795511": {
 "round": 10,
@@ -850,7 +11406,123 @@
 "home": false,
 "time": 43
 }
+],
+"starters": {
+"home": [
+[
+"James Trafford",
+11,
+0.5
+],
+[
+"James Justin",
+33,
+0.21
+],
+[
+"Nico Elvedi",
+35,
+0.5
+],
+[
+"Tarik Muharemović",
+37,
+0.79
+],
+[
+"Jayden Bogle",
+62,
+0.125
+],
+[
+"Ethan Ampadu",
+64,
+0.375
+],
+[
+"Ao Tanaka",
+66,
+0.625
+],
+[
+"Gabriel Gudmundsson",
+68,
+0.875
+],
+[
+"Sean Longstaff",
+84,
+0.3
+],
+[
+"Lukas Nmecha",
+86,
+0.7
+],
+[
+"Dominic Calvert-Lewin",
+105,
+0.5
 ]
+],
+"away": [
+[
+"Antonín Kinský",
+11,
+0.5
+],
+[
+"Pedro Porro",
+32,
+0.125
+],
+[
+"Jan Paul van Hecke",
+34,
+0.375
+],
+[
+"Micky van de Ven",
+36,
+0.625
+],
+[
+"Andrew Robertson",
+38,
+0.875
+],
+[
+"Sandro Tonali",
+73,
+0.21
+],
+[
+"Mateus Fernandes",
+75,
+0.5
+],
+[
+"Archie Gray",
+77,
+0.79
+],
+[
+"Mohammed Kudus",
+103,
+0.21
+],
+[
+"Omar Marmoush",
+105,
+0.5
+],
+[
+"Mathys Tel",
+107,
+0.79
+]
+]
+}
 },
 "5795505": {
 "round": 10,
@@ -867,7 +11539,123 @@
 "home": false,
 "time": 75
 }
+],
+"starters": {
+"home": [
+[
+"David Raya",
+11,
+0.5
+],
+[
+"Jurriën Timber",
+32,
+0.125
+],
+[
+"Ezri Konsa",
+34,
+0.375
+],
+[
+"Gabriel",
+36,
+0.625
+],
+[
+"Riccardo Calafiori",
+38,
+0.875
+],
+[
+"Bruno Guimarães",
+64,
+0.3
+],
+[
+"Declan Rice",
+66,
+0.7
+],
+[
+"Noni Madueke",
+83,
+0.162
+],
+[
+"Martin Ødegaard",
+85,
+0.5
+],
+[
+"Christos Tzolis",
+87,
+0.837
+],
+[
+"Kai Havertz",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Konstantinos Tzolakis",
+11,
+0.5
+],
+[
+"Semi Ajayi",
+33,
+0.305
+],
+[
+"John Egan",
+35,
+0.5
+],
+[
+"Nobel Mendy",
+37,
+0.695
+],
+[
+"Lewie Coyle",
+51,
+0.11
+],
+[
+"Elliot Stroud",
+59,
+0.89
+],
+[
+"Tim Iroegbunam",
+73,
+0.21
+],
+[
+"Lucas Gourna-Douath",
+75,
+0.5
+],
+[
+"Regan Slater",
+77,
+0.79
+],
+[
+"Mohamed-Ali Cho",
+104,
+0.3
+],
+[
+"Oli McBurnie",
+106,
+0.7
+]
+]
+}
 },
 "5795509": {
 "round": 10,
@@ -884,31 +11672,611 @@
 "home": false,
 "time": 85
 }
+],
+"starters": {
+"home": [
+[
+"Bernd Leno",
+11,
+0.5
+],
+[
+"Timothy Castagne",
+32,
+0.125
+],
+[
+"David Affengruber",
+34,
+0.375
+],
+[
+"Calvin Bassey",
+36,
+0.625
+],
+[
+"Antonee Robinson",
+38,
+0.875
+],
+[
+"Sander Berge",
+64,
+0.3
+],
+[
+"Shea Charles",
+66,
+0.7
+],
+[
+"Oscar Bobb",
+83,
+0.162
+],
+[
+"Joshua King",
+85,
+0.5
+],
+[
+"Alex Iwobi",
+87,
+0.837
+],
+[
+"Gonzalo García",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Lukás Hornícek",
+11,
+0.5
+],
+[
+"Amar Dedić",
+32,
+0.125
+],
+[
+"Malick Thiaw",
+34,
+0.375
+],
+[
+"Daniel Burn",
+36,
+0.625
+],
+[
+"Lewis Hall",
+38,
+0.875
+],
+[
+"Sean Steur",
+64,
+0.3
+],
+[
+"Nico González",
+66,
+0.7
+],
+[
+"Jacob Murphy",
+83,
+0.162
+],
+[
+"Yoane Wissa",
+85,
+0.5
+],
+[
+"Harvey Barnes",
+87,
+0.837
+],
+[
+"William Osula",
+115,
+0.5
+]
+]
+}
 },
 "5795513": {
 "round": 10,
 "home": "Nottingham Forest",
 "away": "Manchester City",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Matz Sels",
+11,
+0.5
+],
+[
+"Jair Cunha",
+33,
+0.21
+],
+[
+"Nikola Milenković",
+35,
+0.5
+],
+[
+"Murillo",
+37,
+0.79
+],
+[
+"Daniel Muñoz",
+62,
+0.125
+],
+[
+"Ryan Yates",
+64,
+0.375
+],
+[
+"Xaver Schlager",
+66,
+0.625
+],
+[
+"Neco Williams",
+68,
+0.875
+],
+[
+"James McAtee",
+84,
+0.3
+],
+[
+"Morgan Gibbs-White",
+86,
+0.7
+],
+[
+"Liam Delap",
+105,
+0.5
+]
+],
+"away": [
+[
+"Gianluigi Donnarumma",
+11,
+0.5
+],
+[
+"Abdukodir Khusanov",
+32,
+0.125
+],
+[
+"Rúben Dias",
+34,
+0.375
+],
+[
+"Marc Guéhi",
+36,
+0.625
+],
+[
+"Joško Gvardiol",
+38,
+0.875
+],
+[
+"Elliot Anderson",
+64,
+0.3
+],
+[
+"Enzo Fernández",
+66,
+0.7
+],
+[
+"Iliman Ndiaye",
+83,
+0.162
+],
+[
+"Rayan Cherki",
+85,
+0.5
+],
+[
+"Jérémy Doku",
+87,
+0.837
+],
+[
+"Erling Haaland",
+115,
+0.5
+]
+]
+}
 },
 "5795506": {
 "round": 10,
 "home": "Brighton & Hove Albion",
 "away": "Brentford",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Bart Verbruggen",
+11,
+0.5
+],
+[
+"Costinha",
+32,
+0.125
+],
+[
+"Luka Vušković",
+34,
+0.375
+],
+[
+"Lewis Dunk",
+36,
+0.625
+],
+[
+"Olivier Boscagli",
+38,
+0.875
+],
+[
+"Pascal Groß",
+64,
+0.3
+],
+[
+"Chema Andrés",
+66,
+0.7
+],
+[
+"Diego Gómez",
+83,
+0.162
+],
+[
+"Yasin Ayari",
+85,
+0.5
+],
+[
+"Maxim De Cuyper",
+87,
+0.837
+],
+[
+"Charalampos Kostoulas",
+115,
+0.5
+]
+],
+"away": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Kristoffer Ajer",
+34,
+0.375
+],
+[
+"Sepp van den Berg",
+36,
+0.625
+],
+[
+"Aaron Hickey",
+38,
+0.875
+],
+[
+"Mamadou Sangaré",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Dango Ouattara",
+83,
+0.162
+],
+[
+"Kevin Schade",
+85,
+0.5
+],
+[
+"Keane Lewis-Potter",
+87,
+0.837
+],
+[
+"Igor Thiago",
+115,
+0.5
+]
+]
+}
 },
 "5795507": {
 "round": 10,
 "home": "Crystal Palace",
 "away": "Liverpool",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Dean Henderson",
+11,
+0.5
+],
+[
+"Chris Richards",
+33,
+0.21
+],
+[
+"Axel Disasi",
+35,
+0.5
+],
+[
+"Jefferson Lerma",
+37,
+0.79
+],
+[
+"Óscar Mingueza",
+62,
+0.125
+],
+[
+"Adam Wharton",
+64,
+0.375
+],
+[
+"Quinten Timber",
+66,
+0.625
+],
+[
+"Tyrick Mitchell",
+68,
+0.875
+],
+[
+"Daichi Kamada",
+84,
+0.3
+],
+[
+"Yéremi Pino",
+86,
+0.7
+],
+[
+"Jørgen Strand Larsen",
+105,
+0.5
+]
+],
+"away": [
+[
+"Alisson Becker",
+11,
+0.5
+],
+[
+"Ronald Araujo",
+32,
+0.125
+],
+[
+"Jérémy Jacquet",
+34,
+0.375
+],
+[
+"Virgil van Dijk",
+36,
+0.625
+],
+[
+"Miloš Kerkez",
+38,
+0.875
+],
+[
+"Dominik Szoboszlai",
+64,
+0.3
+],
+[
+"Alexis Mac Allister",
+66,
+0.7
+],
+[
+"Cody Gakpo",
+83,
+0.162
+],
+[
+"Florian Wirtz",
+85,
+0.5
+],
+[
+"Bradley Barcola",
+87,
+0.837
+],
+[
+"Alexander Isak",
+115,
+0.5
+]
+]
+}
 },
 "5795510": {
 "round": 10,
 "home": "Ipswich Town",
 "away": "AFC Bournemouth",
-"injured": []
+"injured": [],
+"starters": {
+"home": [
+[
+"Christian Walton",
+11,
+0.5
+],
+[
+"Abdoul Ouattara",
+32,
+0.125
+],
+[
+"Issa Diop",
+34,
+0.375
+],
+[
+"Dara O'Shea",
+36,
+0.625
+],
+[
+"Leif Davis",
+38,
+0.875
+],
+[
+"Florentino",
+64,
+0.3
+],
+[
+"Exequiel Palacios",
+66,
+0.7
+],
+[
+"Daizen Maeda",
+83,
+0.162
+],
+[
+"Julio Enciso",
+85,
+0.5
+],
+[
+"Jaden Philogene-Bidace",
+87,
+0.837
+],
+[
+"Emersonn",
+115,
+0.5
+]
+],
+"away": [
+[
+"Djordje Petrović",
+11,
+0.5
+],
+[
+"Adam Smith",
+32,
+0.125
+],
+[
+"James Hill",
+34,
+0.375
+],
+[
+"António Silva",
+36,
+0.625
+],
+[
+"Adrien Truffert",
+38,
+0.875
+],
+[
+"Tyler Adams",
+64,
+0.3
+],
+[
+"Ryan Christie",
+66,
+0.7
+],
+[
+"Rayan",
+83,
+0.162
+],
+[
+"Justin Kluivert",
+85,
+0.5
+],
+[
+"Marcus Tavernier",
+87,
+0.837
+],
+[
+"Evanilson",
+115,
+0.5
+]
+]
+}
 },
 "5795514": {
 "round": 10,
@@ -925,7 +12293,123 @@
 "home": true,
 "time": 67
 }
+],
+"starters": {
+"home": [
+[
+"Robin Roefs",
+11,
+0.5
+],
+[
+"Thomas Meunier",
+32,
+0.125
+],
+[
+"Nordi Mukiele",
+34,
+0.375
+],
+[
+"Luke O'Nien",
+36,
+0.625
+],
+[
+"Reinildo",
+38,
+0.875
+],
+[
+"Granit Xhaka",
+64,
+0.3
+],
+[
+"Noah Sadiki",
+66,
+0.7
+],
+[
+"Trai Hume",
+83,
+0.162
+],
+[
+"Enzo Le Fée",
+85,
+0.5
+],
+[
+"Chemsdine Talbi",
+87,
+0.837
+],
+[
+"Brian Brobbey",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Mike Penders",
+11,
+0.5
+],
+[
+"Marco Palestra",
+32,
+0.125
+],
+[
+"Wesley Fofana",
+34,
+0.375
+],
+[
+"Levi Colwill",
+36,
+0.625
+],
+[
+"Pep Chavarría",
+38,
+0.875
+],
+[
+"Moisés Caicedo",
+63,
+0.21
+],
+[
+"Roméo Lavia",
+65,
+0.5
+],
+[
+"Jordan Henderson",
+67,
+0.79
+],
+[
+"Cole Palmer",
+84,
+0.3
+],
+[
+"Morgan Rogers",
+86,
+0.7
+],
+[
+"Pedro Neto",
+115,
+0.5
+]
+]
+}
 },
 "5795512": {
 "round": 10,
@@ -937,6 +12421,122 @@
 "home": true,
 "time": 46
 }
+],
+"starters": {
+"home": [
+[
+"Senne Lammens",
+11,
+0.5
+],
+[
+"Noussair Mazraoui",
+32,
+0.125
+],
+[
+"Leny Yoro",
+34,
+0.375
+],
+[
+"Harry Maguire",
+36,
+0.625
+],
+[
+"Diogo Dalot",
+38,
+0.875
+],
+[
+"Youri Tielemans",
+64,
+0.3
+],
+[
+"Kobbie Mainoo",
+66,
+0.7
+],
+[
+"Amad Diallo",
+83,
+0.162
+],
+[
+"Bruno Fernandes",
+85,
+0.5
+],
+[
+"Matheus Cunha",
+87,
+0.837
+],
+[
+"Bryan Mbeumo",
+115,
+0.5
 ]
+],
+"away": [
+[
+"Zion Suzuki",
+11,
+0.5
+],
+[
+"Taylor Harwood-Bellis",
+32,
+0.125
+],
+[
+"Victor Nilsson Lindelöf",
+34,
+0.375
+],
+[
+"Pau Torres",
+36,
+0.625
+],
+[
+"Ian Maatsen",
+38,
+0.875
+],
+[
+"Boubacar Kamara",
+64,
+0.3
+],
+[
+"Leon Goretzka",
+66,
+0.7
+],
+[
+"Alysson Edward",
+83,
+0.162
+],
+[
+"John McGinn",
+85,
+0.5
+],
+[
+"Johan Manzambi",
+87,
+0.837
+],
+[
+"Nicolas Jackson",
+115,
+0.5
+]
+]
+}
 }
 }

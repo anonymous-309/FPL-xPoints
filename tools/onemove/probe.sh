@@ -4,12 +4,11 @@ python3 -c "
 import json, fpl_xpoints as f
 from pathlib import Path
 c=Path('/tmp/cache')
+f.club_fixtures(c, False)
+d=json.load(open('/tmp/data.json'))
+players={p['id']:p for p in d['players']}
 b=f._api('bootstrap-static/', c, False)
-h, cov, oop = f.injury_subs(c, False, b)
-st=json.load(open('injury_subs.json'))
-for mid,g in sorted(st.items(), key=lambda x: x[1]['round']):
-    for k in ('home','away'):
-        if g[k].startswith('Sunderland'):
-            print(g['round'], k, [(n.split()[-1], pid, x) for n,pid,x in g['starters'][k] if pid and pid>=30 and pid<100])
-print([ (e['web_name'], e['first_name'], e['second_name'], e['element_type']) for e in b['elements'] if e['web_name'] in ('Hume','Meunier')])
+ev=[e for e in b['events'] if e.get('is_next')][0]['id']
+tn=f.team_news(c, False, players, ev)
+for t in tn['teams']: print(t['short'], t['formation'], ' '.join(f\"{x['role']}:{x['name']}{'*' if x['new'] else ''}\" for x in t['xi']), '| out', t['lastXi']['out'] if t['lastXi'] else None)
 "

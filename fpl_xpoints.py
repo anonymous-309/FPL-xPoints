@@ -703,7 +703,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     fm_oop = {}
     for pid, lst in starts.items():
         last = [r for _, r in sorted(lst)[-OOP_LAST:]]
-        if pos_of.get(pid) == 2 and len(last) >= OOP_NEED and sum(r in OOP_MID_ROLES for r in last) >= OOP_NEED:
+        if pos_of.get(pid) == 2 and len(last) >= OOP_NEED and sum(role_base(r) in OOP_MID_ROLES for r in last) >= OOP_NEED:
             fm_oop[pid] = last
     print(f"FotMob places: {len(starts)} players; defenders starting in midfield or on a wing: {len(fm_oop)}")
     print(f"FotMob: {fetched} new matches read; {len(hurt)} players taken off injured in GW{min(covered, default=0)}-{max(covered, default=0)}"
@@ -837,18 +837,32 @@ XI_SWAP = 10
 
 
 def ROLE_OF(pid) -> str:
+    """FotMob position id -> role, with the side for central places (RCB/CB/LCB, RDM/DM/LDM, RCM/CM/LCM, RAM/AM/LAM,
+    RST/ST/LST): FotMob numbers each line from the team's right to its left."""
     pid = int(pid or 0)
     if pid <= 11:
         return "GK"
     if pid < 40:
-        return {32: "RB", 38: "LB"}.get(pid, "CB")
+        return {32: "RB", 33: "RCB", 34: "RCB", 35: "CB", 36: "LCB", 37: "LCB", 38: "LB"}.get(pid, "CB")
     if pid < 70:
-        return "RWB" if pid in (51, 52, 62) else "LWB" if pid in (58, 59, 68) else "DM"
+        if pid in (51, 52, 62):
+            return "RWB"
+        if pid in (58, 59, 68):
+            return "LWB"
+        return {63: "RDM", 64: "RDM", 65: "DM", 66: "LDM", 67: "LDM"}.get(pid, "DM")
     if pid < 80:
-        return "RM" if pid in (71, 72) else "LM" if pid in (78, 79) else "CM"
+        return {71: "RM", 72: "RM", 73: "RCM", 74: "RCM", 75: "CM", 76: "LCM", 77: "LCM", 78: "LM", 79: "LM"}.get(pid, "CM")
     if pid < 100:
-        return "RW" if pid in (81, 82, 83) else "LW" if pid in (87, 88, 89) else "AM"
-    return "ST"
+        return {81: "RW", 82: "RW", 83: "RW", 84: "RAM", 85: "AM", 86: "LAM", 87: "LW", 88: "LW", 89: "LW"}.get(pid, "AM")
+    return {104: "RST", 106: "LST"}.get(pid, "ST")
+
+
+SIDE_BASE = {"RCB": "CB", "LCB": "CB", "RDM": "DM", "LDM": "DM", "RCM": "CM", "LCM": "CM", "RAM": "AM", "LAM": "AM", "RST": "ST", "LST": "ST"}
+
+
+def role_base(r: str) -> str:
+    """The role without its side (RCB -> CB); full-backs and wingers keep theirs."""
+    return SIDE_BASE.get(r, r)
 
 
 ROLE_NEAR = {"RB": ("RWB",), "RWB": ("RB", "RM"), "LB": ("LWB",), "LWB": ("LB", "LM"), "DM": ("CM",), "CM": ("DM", "AM"),
@@ -856,7 +870,7 @@ ROLE_NEAR = {"RB": ("RWB",), "RWB": ("RB", "RM"), "LB": ("LWB",), "LWB": ("LB", 
 
 
 def slot_pos_role(role: str) -> str:
-    return {"GK": "GK", "RB": "DEF", "LB": "DEF", "CB": "DEF", "RWB": "DEF", "LWB": "DEF", "ST": "FWD"}.get(role, "MID")  # a player outside it comes in for a starter of his position we expect at least this many fewer minutes from
+    return {"GK": "GK", "RB": "DEF", "LB": "DEF", "CB": "DEF", "RWB": "DEF", "LWB": "DEF", "ST": "FWD"}.get(role_base(role), "MID")  # a player outside it comes in for a starter of his position we expect at least this many fewer minutes from
 
 
 def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dict], str | None, dict | None]:
@@ -899,8 +913,12 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
         """The role of a place in the line-up. FotMob gives wide forwards in a front three a striker's id, so in the
         front line the place's side decides: FotMob's x runs from the team's right (0) to its left (1)."""
         r = ROLE_OF(st["pid"])
-        if r == "ST" and st.get("x") is not None and sum(1 for o in lineup["starters"] if int(o.get("pid") or 0) >= 100) >= 3:
-            return "RW" if st["x"] < 0.35 else "LW" if st["x"] > 0.65 else "ST"
+        front = sum(1 for o in lineup["starters"] if int(o.get("pid") or 0) >= 100)
+        if role_base(r) == "ST" and st.get("x") is not None:
+            if front >= 3:
+                return "RW" if st["x"] < 0.35 else "LW" if st["x"] > 0.65 else "ST"
+            if front == 2:
+                return "RST" if st["x"] < 0.5 else "LST"
         return r
 
     starters = [(st, find(st["name"] or "")) for st in lineup["starters"]]
@@ -921,8 +939,12 @@ def likely_xi(squad: list[dict], lineup: dict | None, gw: int) -> tuple[list[dic
             f = 0.8 if slot_pos_role(role) == q["position"] else 0
         elif role in rs:
             f = max(0.75, 1 - 0.07 * rs.index(role))
+        elif any(role_base(r) == role_base(role) for r in rs):
+            # the same place on the other side, or in the middle (a left centre back playing on the right)
+            k = next(i for i, r in enumerate(rs) if role_base(r) == role_base(role))
+            f = 0.9 * max(0.75, 1 - 0.07 * k)
         else:
-            f = 0.6 if any(role in ROLE_NEAR.get(r, ()) for r in rs) else 0
+            f = 0.6 if any(role_base(role) in ROLE_NEAR.get(role_base(r), ()) for r in rs) else 0
         if role == "GK" or q["position"] == "GK":
             f = f if role == "GK" and q["position"] == "GK" else 0
         return f * (1.08 if last_slot.get(q["id"]) == role else 1)
