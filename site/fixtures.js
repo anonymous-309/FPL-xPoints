@@ -47,7 +47,7 @@
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props || {}); n.append(...kids.filter((k) => k != null)); return n; };
   const store = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* private mode */ } } };
 
-  const state = { view: 'grid', team: '', range: '12', on: new Set(), tz: 'UTC' };
+  const state = { view: 'grid', team: '', range: 'rest', on: new Set(), tz: 'UTC' };
   let data, windows, teams;
 
   // Times are shown in the chosen zone (UTC unless changed); matches are grouped into weekend (Fri-Mon) and midweek
@@ -113,6 +113,7 @@
   // Date range of the chosen number of gameweeks, from the one being played now (or the next one).
   function shownRange() {
     if (state.range === 'all') return [null, null];
+    if (state.range === 'rest') return [new Date(ukDay(new Date())), new Date('2027-07-01T00:00:00Z')];
     const cur = windows.find((w) => w.current) || null;
     const nxt = windows.find((w) => w.next) || windows[0];
     const start = cur && cur.to > new Date() ? cur : nxt;
@@ -136,7 +137,8 @@
     const keys = [...map.keys()].sort((x, y) => x - y);
     if (!keys.length) return [];
     let k = from != null ? slotOf(new Date(Math.max(+from, 0))).key : keys[0];
-    const end = from != null ? slotOf(new Date(+to - 1)).key : Math.max(keys[keys.length - 1], ...planBySlot.keys());
+    const last = Math.max(keys[keys.length - 1], ...planBySlot.keys());
+    const end = from != null ? Math.min(slotOf(new Date(+to - 1)).key, last) : last;
     const brk = BREAKS.map(([x, y]) => [Date.parse(x + 'T00:00:00Z'), Date.parse(y + 'T00:00:00Z')]);
     const out = [];
     for (; k <= end; k += (new Date(k).getUTCDay() === 2 ? 3 : 4) * 864e5) {
@@ -244,7 +246,7 @@
     $('#range').closest('label').hidden = state.view !== 'grid';
     $('#grid').hidden = state.view !== 'grid';
     $('#list').hidden = state.view !== 'team';
-    store.set('fx-view', JSON.stringify({ view: state.view, team: state.team, range: state.range, on: [...state.on], tz: state.tz }));
+    store.set('fx-view', JSON.stringify({ view: state.view, team: state.team, range2: state.range, on: [...state.on], tz: state.tz }));
     $('#tz').value = state.tz;
     if (state.view === 'grid') renderGrid(); else renderList();
   }
@@ -255,7 +257,7 @@
     let saved = null;
     try { saved = JSON.parse(store.get('fx-view') || 'null'); } catch (e) { saved = null; }
     state.on = new Set(saved && Array.isArray(saved.on) ? saved.on : comps.map(([c]) => c).filter((c) => !OFF_BY_DEFAULT.has(c)));
-    if (saved) Object.assign(state, { view: saved.view === 'team' ? 'team' : 'grid', team: saved.team || '', range: ['8', '12', 'all'].includes(saved.range) ? saved.range : '12', tz: ZONES.some(([z]) => z === saved.tz) ? saved.tz : 'UTC' });
+    if (saved) Object.assign(state, { view: saved.view === 'team' ? 'team' : 'grid', team: saved.team || '', range: ['8', '12', 'rest', 'all'].includes(saved.range2) ? saved.range2 : 'rest', tz: ZONES.some(([z]) => z === saved.tz) ? saved.tz : 'UTC' });
     $('#tz').replaceChildren(...ZONES.map(([z, n]) => el('option', { value: z, textContent: n })));
     $('#tz').addEventListener('change', (e) => { state.tz = e.target.value; sync(); });
     $('.fx-comps').replaceChildren(...comps.map(([c, n]) => {
