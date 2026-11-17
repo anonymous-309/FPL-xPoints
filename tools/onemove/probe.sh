@@ -1,14 +1,32 @@
 #!/bin/bash
-UA="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36"
-curl -sSL -m 40 -A "$UA" -o /tmp/tn.html -w "HTTP %{http_code} bytes %{size_download}\n" https://www.fantasyfootballscout.co.uk/team-news/
 python3 - <<'PY'
-import re
-h=open('/tmp/tn.html',encoding='utf-8',errors='ignore').read()
-print('title:', re.search(r'<title>(.*?)</title>', h, re.S).group(1)[:120] if '<title>' in h else None)
-for kw in ['Predicted','Doubts','Banned','Latest News','Last Updated','Arsenal','cf-challenge','Just a moment']:
-    print(kw, h.count(kw))
-i=h.find('Arsenal')
-txt=re.sub(r'<[^>]+>',' ',h); txt=re.sub(r'\s+',' ',txt)
-j=txt.find("Doubts"); print(txt[max(0,j-1500):j+1500]); print("SCRIPTS", len(re.findall(r"<script", h))); print([m[:150] for m in re.findall(r"(?:wp-json|ajax|api)[^\"\x27 ]{0,120}", h)][:15])
+import json, urllib.request, urllib.parse, collections
+H={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36","Accept":"application/json","Referer":"https://www.fotmob.com/"}
+def get(p,q):
+    r=urllib.request.Request("https://www.fotmob.com/api/data/"+p+"?"+urllib.parse.urlencode(q),headers=H)
+    return json.loads(urllib.request.urlopen(r,timeout=30).read())
+lg=get("leagues",{"id":47,"ccode3":"GBR"})
+tbl=lg.get("table") or []
+teams=[]
+try:
+    for t in tbl[0]["data"]["table"]["all"]: teams.append((t["id"],t["name"]))
+except Exception as e: print("table err",e, list(lg.keys()))
+print(len(teams), teams[:3])
+d=get("teams",{"id":teams[0][0],"ccode3":"GBR"})
+print("keys", list(d.keys()))
+fx=d.get("fixtures") or {}
+print("fixtures keys", list(fx.keys()))
+af=(fx.get("allFixtures") or {})
+print("allFixtures keys", list(af.keys()))
+L=af.get("fixtures") or []
+print(len(L)); print(json.dumps(L[0])[:900]) if L else None
+print(collections.Counter((m.get("tournament") or {}).get("name") for m in L))
+for m in L[-12:]: print(m.get("status",{}).get("utcTime"), (m.get("tournament") or {}).get("name"), m["home"]["name"], "-", m["away"]["name"], m.get("status",{}).get("scoreStr"))
+# cups leagues
+for lid in (132,133,42,73,10216):
+    try:
+        x=get("leagues",{"id":lid,"ccode3":"GBR"}); det=x.get("details",{})
+        am=((x.get("fixtures") or {}).get("allMatches") or [])
+        print(lid, det.get("name"), det.get("selectedSeason"), len(am), [ (m.get("round"), m.get("roundName"), m["home"]["name"], m["away"]["name"], m["status"].get("utcTime")) for m in am[-3:]])
+    except Exception as e: print(lid,"err",e)
 PY
-curl -sS -m 30 https://www.fantasyfootballscout.co.uk/robots.txt | head -40
