@@ -516,8 +516,10 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .fdr td.fdr-cell.blank { color: var(--muted); font-size: 12px; text-align: center; background: #eef0ed; }
 .fdr-m { display: flex; flex-direction: column; align-items: center; margin: 1px 0; padding: 3px 4px; border-radius: 3px; line-height: 1.15; }
 .fdr-m b { font-size: 12.5px; } .fdr-m small { font-size: 10.5px; opacity: .85; }
-.r1 { background: #1e7a46; color: #fff; } .r2 { background: #7fc39a; color: #0d3a20; } .r3 { background: #e7e9e5; color: var(--ink); }
-.r4 { background: #f0a092; color: #5a1208; } .r5 { background: #b3261e; color: #fff; }
+.fdr-m.r1, .fdr-key .r1 { background: #375523; color: #fff; } .fdr-m.r2, .fdr-key .r2 { background: #01fc7a; color: #000; }
+.fdr-m.r3, .fdr-key .r3 { background: #e7e7e7; color: #000; } .fdr-m.r4, .fdr-key .r4 { background: #ff1751; color: #fff; }
+.fdr-m.r5, .fdr-key .r5 { background: #80072d; color: #fff; } /* the official FPL difficulty colours */
+.fdr-m { flex-direction: row; justify-content: center; gap: 5px; } .fdr-m small { font-weight: 700; opacity: 1; }
 .fdr-key { margin: 8px 0; color: var(--muted); font-size: 12px; }
 .fdr-key span { display: inline-block; width: 22px; margin: 0 1px; text-align: center; border-radius: 2px; font-weight: 650; }
 

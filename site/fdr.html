@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fixture difficulty FPL</title>
+<title>Fixture Difficulty Rating (FDR) FPL</title>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
 <header class="pitch">
   <div class="brand">
-    <h1>Fixture difficulty</h1>
+    <h1>Fixture Difficulty Rating (FDR)</h1>
     <p id="status" role="status">Loading</p>
   </div>
   <nav class="sitenav" aria-label="Pages"></nav>
@@ -24,13 +24,13 @@
   <label>Gameweeks <select id="range"></select></label>
 </form>
 <main>
-  <div class="wrap" tabindex="0" aria-label="Fixture difficulty">
+  <div class="wrap" tabindex="0" aria-label="Fixture Difficulty Rating">
     <table class="minutes fdr"><thead></thead><tbody></tbody></table>
   </div>
   <p class="fdr-key" aria-hidden="true">Easier <span class="r1">1</span><span class="r2">2</span><span class="r3">3</span><span class="r4">4</span><span class="r5">5</span> Harder</p>
 </main>
 <footer>
-  <p>For reference only: the planner and the points do not use these ratings. They come from the same model as the points. <b>Attack</b>: goals the club is expected to score in the match (the other side's expected goals conceded), shown in each cell; more is easier. <b>Defence</b>: the club's chance of a clean sheet, shown in each cell; higher is easier. <b>Overall</b>: expected goals scored minus conceded, shown in each cell. Each cell is coloured 1 (easiest) to 5 (hardest) by where it falls among all the coming matches shown, a fifth of them in each colour. Clubs are sorted easiest first by the total over the gameweeks chosen: a blank gameweek adds nothing, a double adds both matches. Opponents in capitals are at home, in lower case away. Not affiliated with the Premier League.</p>
+  <p><b>Fixture Difficulty Rating (FDR)</b> for each club's coming matches, 1 (easiest) to 5 (hardest), in the same colours as the official FPL site. The ratings are our own, not FPL's, and are for reference only: the planner and the points do not use them. They come from the same model as the points. <b>Attack</b> rates the goals the club is expected to score in the match (the other side's expected goals conceded); more is easier. <b>Defence</b> rates the club's chance of a clean sheet; higher is easier. <b>Overall</b> rates expected goals scored minus conceded. Each match gets 1 to 5 by where it falls among all the coming matches shown, a fifth of them on each rating; hover or tap a cell for the numbers behind it. <b>Avg FDR</b> is the average over the club's matches in the gameweeks chosen. Clubs are sorted easiest first by the model's total over those gameweeks: a blank gameweek adds nothing, a double adds both matches. (H) is at home, (A) away. Not affiliated with the Premier League.</p>
 </footer>
 <script src="fdr.js"></script>
 <script src="nav.js"></script>

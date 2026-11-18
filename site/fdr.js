@@ -25,18 +25,19 @@
     const rating = (x) => 5 - cut.filter((c) => x >= c).length; // 1 easiest .. 5 hardest
     const rows = Object.entries(data.teams).map(([short, t]) => {
       const total = gws.reduce((s, g) => s + (t[g] || []).reduce((a, m) => a + k.v(m), 0), 0);
-      return { short, t, total };
+      const rs = gws.flatMap((g) => (t[g] || []).map((m) => rating(k.v(m))));
+      return { short, t, total, avg: rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null };
     }).sort((a, b) => b.total - a.total);
-    $('.fdr thead').replaceChildren(el('tr', {}, el('th', { scope: 'col', textContent: 'Team' }), el('th', { scope: 'col', className: 'num', textContent: 'Total' }),
+    $('.fdr thead').replaceChildren(el('tr', {}, el('th', { scope: 'col', textContent: 'Team' }), el('th', { scope: 'col', className: 'num', textContent: 'Avg FDR' }),
       ...gws.map((g) => el('th', { scope: 'col', textContent: `GW${g}` }))));
-    $('.fdr tbody').replaceChildren(...rows.map(({ short, t, total }) => el('tr', {},
+    $('.fdr tbody').replaceChildren(...rows.map(({ short, t, avg }) => el('tr', {},
       el('td', { className: 'player', textContent: data.names[short] || short }),
-      el('td', { className: 'num', textContent: k.text(total) }),
+      el('td', { className: 'num', textContent: avg == null ? '–' : avg.toFixed(1) }),
       ...gws.map((g) => {
         const ms = t[g] || [];
         if (!ms.length) return el('td', { className: 'fdr-cell blank', textContent: 'Blank' });
-        return el('td', { className: `fdr-cell${ms.length > 1 ? ' double' : ''}` }, ...ms.map((m) => el('span', { className: `fdr-m r${rating(k.v(m))}`, title: `${m.opp} (${m.home ? 'H' : 'A'}): ${k.title(m)}` },
-          el('b', { textContent: m.opp }), el('small', { textContent: k.text(k.v(m)) }))));
+        return el('td', { className: `fdr-cell${ms.length > 1 ? ' double' : ''}` }, ...ms.map((m) => el('span', { className: `fdr-m r${rating(k.v(m))}`, title: `${m.opp} (${m.home ? 'H' : 'A'}): FDR ${rating(k.v(m))}, ${k.title(m)}` },
+          el("b", { textContent: `${m.opp.toUpperCase()} (${m.home ? "H" : "A"})` }), el('small', { textContent: String(rating(k.v(m))) }))));
       }))));
     store.set('fdr-view', JSON.stringify(state));
   }
