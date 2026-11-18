@@ -5,49 +5,18 @@ jobs:
   run:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
       - run: |
           python3 - <<'PY'
-          import json, urllib.request, collections
-          H={"User-Agent":"Mozilla/5.0"}
-          g=lambda u: json.loads(urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=30).read())
-          b=g("https://fantasy.premierleague.com/api/bootstrap-static/"); f=g("https://fantasy.premierleague.com/api/fixtures/")
-          T={t["id"]:t["short_name"] for t in b["teams"]}
-          # official rating of facing each side: visiting X (X at home) = team_a_difficulty; X visiting = team_h_difficulty
-          side={}
-          for x in f:
-              side.setdefault((T[x["team_h"]],"A"),set()).add(x["team_a_difficulty"])
-              side.setdefault((T[x["team_a"]],"H"),set()).add(x["team_h_difficulty"])
-          print("sides with more than one value:", {k:v for k,v in side.items() if len(v)>1})
-          off={k:max(v) for k,v in side.items()}
-          print("OFFICIAL per side counts", sorted(collections.Counter(off.values()).items()))
-          c=collections.Counter(); fut=collections.Counter()
-          for x in f:
-              for d in (x["team_h_difficulty"],x["team_a_difficulty"]):
-                  c[d]+=1
-                  if not x["finished"]: fut[d]+=1
-          n=sum(c.values()); print("OFFICIAL all fixtures", [(k,v,round(100*v/n,1)) for k,v in sorted(c.items())])
-          n=sum(fut.values()); print("OFFICIAL coming fixtures", [(k,v,round(100*v/n,1)) for k,v in sorted(fut.items())])
-          print("OFFICIAL table:", " ".join(f"{k[0]}({k[1]})={v}" for k,v in sorted(off.items(), key=lambda kv:(-kv[1],kv[0]))))
-          # ours, from the site
-          d=g("https://anonymous-309.github.io/FPL-xPoints/fdr.json")
-          for kind in ["overall","attack","defence"]:
-              lst=[]
-              for short,t in d["teams"].items():
-                  for home in (True,False):
-                      ms=[m for gw in d["gws"] for m in t.get(str(gw),[]) if m["home"]==home] or [m for gw in d["gws"] for m in t.get(str(gw),[])]
-                      xgf=sum(m.get("xgf") or 0 for m in ms)/len(ms); xga=sum(m["xga"] for m in ms)/len(ms)
-                      v={"overall":xgf-xga,"attack":-xga,"defence":xgf}[kind]
-                      lst.append((v,short,"A" if home else "H"))
-              lst.sort(reverse=True)
-              ours={(s,h):(5 if i<4 else 4 if i<14 else 3 if i<30 else 2) for i,(v,s,h) in enumerate(lst)}
-              cc=collections.Counter(); ff=collections.Counter()
-              for short,t in d["teams"].items():
-                  for gw in d["gws"]:
-                      for m in t.get(str(gw),[]):
-                          r=ours[(m["opp"].upper(),"H" if m["home"] else "A")]; cc[r]+=1
-              n=sum(cc.values())
-              agree=sum(ours[k]==off.get(k) for k in ours)
-              print(kind.upper(), "ours per side", sorted(collections.Counter(ours.values()).items()), "| ours coming fixtures", [(k,v,round(100*v/n,1)) for k,v in sorted(cc.items())], "| same as FPL on", agree, "of 40 sides")
-              if kind=="overall": print("OURS overall:", " ".join(f"{s}({h})={r}" for (v,s,h) in lst for r in [ours[(s,h)]]))
+          import json, urllib.request
+          d=json.loads(urllib.request.urlopen("https://anonymous-309.github.io/FPL-xPoints/fdr.json").read())
+          ms=lambda t,h=None:[m for g in d["gws"] for m in d["teams"][t].get(str(g),[]) if h is None or m["home"]==h]
+          avg=lambda l,k: sum(m[k] or 0 for m in l)/max(1,len(l))
+          for kind,f in [("overall",lambda a,b:a-b),("attack",lambda a,b:-b),("defence",lambda a,b:a)]:
+              base={t:f(avg(ms(t),"xgf"),avg(ms(t),"xga")) for t in d["teams"]}
+              ven={(t,h):f(avg(ms(t,h),"xgf"),avg(ms(t,h),"xga")) for t in d["teams"] for h in (True,False)}
+              hh=sum(ven[(t,True)]-ven[(t,False)] for t in d["teams"])/20
+              print(kind.upper(),"league home edge",round(hh,3))
+              for label,val in [("now (venue averages)",ven),("team + uniform edge",{(t,h):base[t]+(hh/2 if h else -hh/2) for t in d["teams"] for h in (True,False)}),("team + half edge",{(t,h):base[t]+(hh/4 if h else -hh/4) for t in d["teams"] for h in (True,False)})]:
+                  top=sorted(val,key=lambda k:-val[k])
+                  print(" ",label,"| (A) in top 12:",sum(1 for t,h in top[:12] if h),"| top 12:"," ".join(f"{t}({'A' if h else 'H'})" for t,h in top[:12]))
           PY
