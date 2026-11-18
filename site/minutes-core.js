@@ -72,9 +72,10 @@ window.XMin = (function () {
       if (t.id === p.id) share = PEN_TAKE_ON_PITCH * left;
       left *= 1 - m;
     }
-    if ((p.fkOrder != null || p.cornerOrder != null) && left > 0) {
+    // (not the penalty takers themselves: these penalties come exactly when they are all off)
+    if (p.penOrder == null && (p.fkOrder != null || p.cornerOrder != null) && left > 0) {
       const mine = onPitch(overrides, p, g, fx);
-      const total = (fkTakers[p.team] || []).reduce((s, t) => s + (onPitch(overrides, t, g, fx) || 0), 0);
+      const total = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).reduce((s, t) => s + (onPitch(overrides, t, g, fx) || 0), 0);
       if (mine > 0 && total > 0) share = Math.min(1, share + left / total);
     }
     return share;

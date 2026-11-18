@@ -2093,7 +2093,8 @@ def penalty_shares(target: pd.DataFrame) -> np.ndarray:
             left *= 1 - g.at[i, "m"]
         # Penalties given while none of the listed takers is on the pitch go to the free kick and corner takers, split
         # by their expected minutes (so the same extra share for each while he is on the pitch).
-        fks = g[g["fk"].notna() & (g["m"] > 0)]
+        # (not the penalty takers themselves: these penalties come exactly when they are all off)
+        fks = g[g["fk"].notna() & g["order"].isna() & (g["m"] > 0)]
         if len(fks) and left > 0:
             out[fks.index] = np.minimum(1.0, out[fks.index] + left / fks["m"].sum())
     return out
