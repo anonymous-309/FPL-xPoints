@@ -17,4 +17,4 @@ jobs:
           path: fpl_data/20*
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
-      - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; tail -5 bt.txt | grep -a "Error\|Traceback" ; grep -a -A13 'figure     n predicted' bt.txt; grep -a 'Penalt\|R2 ' bt.txt | head; sed -n '/=== /,$p' bt.txt | head -30
+      - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; tail -25 bt.txt; grep -a -A13 'figure     n predicted' bt.txt; grep -a 'Penalt\|R2 ' bt.txt | head; sed -n '/=== /,$p' bt.txt | head -30
