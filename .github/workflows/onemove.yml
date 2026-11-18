@@ -8,24 +8,21 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           python3 - <<'PY'
-          import json, urllib.request, collections
-          H={"User-Agent":"Mozilla/5.0"}
-          g=lambda p: json.loads(urllib.request.urlopen(urllib.request.Request("https://fantasy.premierleague.com/api/"+p,headers=H),timeout=30).read())
-          b=g("bootstrap-static/"); f=g("fixtures/")
-          T={t["id"]:t for t in b["teams"]}
-          print("strength", sorted([(t["strength"],t["short_name"]) for t in b["teams"]]))
-          for k in ["strength_overall_home","strength_overall_away","strength_attack_home","strength_attack_away","strength_defence_home","strength_defence_away"]:
-              print(k, sorted([(t[k],t["short_name"]) for t in b["teams"]]))
-          c=collections.Counter()
-          for x in f: c[x["team_h_difficulty"]]+=1; c[x["team_a_difficulty"]]+=1
-          print("difficulty counts", sorted(c.items()))
-          per=collections.defaultdict(collections.Counter)
-          for x in f:
-              per[T[x["team_a"]]["short_name"]][("vs home", x["team_h_difficulty"])]+=1
-              per[T[x["team_h"]]["short_name"]][("vs away", x["team_a_difficulty"])]+=1
-          for t,v in sorted(per.items()): print(t, T[[i for i in T if T[i]["short_name"]==t][0]]["strength"], dict(v))
-          fut=[x for x in f if not x["finished"]]
-          c2=collections.Counter()
-          for x in fut: c2[x["team_h_difficulty"]]+=1; c2[x["team_a_difficulty"]]+=1
-          print("coming difficulty counts", sorted(c2.items()))
+          import json, urllib.request, urllib.parse, time
+          H={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36","Accept":"application/json","Referer":"https://www.fotmob.com/"}
+          def get(p,q):
+              r=urllib.request.Request("https://www.fotmob.com/api/data/"+p+"?"+urllib.parse.urlencode(q),headers=H)
+              return json.loads(urllib.request.urlopen(r,timeout=30).read())
+          t=get("teams",{"id":8456,"ccode3":"GBR"})
+          mem=[m for g in t["squad"]["squad"] for m in g["members"]]
+          print("squad", len(mem), json.dumps(mem[3])[:400])
+          for m in mem[:6]:
+              pid=m["id"]
+              for ep in ["playerData"]:
+                  try:
+                      d=get(ep,{"id":pid}); print(ep, m["name"], list(d.keys()))
+                      rm=d.get("recentMatches")
+                      print(" recentMatches type", type(rm).__name__, json.dumps(rm)[:1500])
+                  except Exception as e: print(ep, "fail", e)
+              time.sleep(0.5)
           PY
