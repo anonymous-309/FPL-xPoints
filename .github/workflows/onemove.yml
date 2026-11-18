@@ -5,6 +5,9 @@ jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    strategy:
+      matrix:
+        hl: ["19", "10", "5"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -17,4 +20,5 @@ jobs:
           path: fpl_data/20*
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
+      - run: sed -i "s/^RED_HALFLIFE_TF = 38 /RED_HALFLIFE_TF = ${{ matrix.hl }} /" fpl_xpoints.py && grep -n "^RED_HALFLIFE_TF" fpl_xpoints.py
       - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; tail -25 bt.txt; grep -a -A13 'figure     n predicted' bt.txt; grep -a 'Penalt\|R2 ' bt.txt | head; sed -n '/=== /,$p' bt.txt | head -30

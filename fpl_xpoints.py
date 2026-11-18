@@ -73,12 +73,12 @@ TEAM_WINDOW = 0    # if above 0, use only this many latest matches, equally weig
 MAX_BAN_MATCHES = 4
 HIST_PEN_SHARE = {1: 0.85, 2: 0.12, 3: 0.03}  # share of team penalties by FPL order, used for past seasons
 PEN_TAKE_ON_PITCH = 1.0  # the listed taker takes every penalty while he is on the pitch (being on it is already in xMin)
-PEN_CONVERSION, PEN_XG = 0.78, 0.76
+PEN_CONVERSION, PEN_XG = 0.79, 0.79  # a penalty is worth 0.79 xG (FotMob / Opta), so about 21% are missed or saved
 PEN_SAVE_SHARE = 0.12  # share of penalties saved, used until penalties are counted
 SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_order", "corners_and_indirect_freekicks_order": "corner_order"}
 HL_FINISH, K_XGOT, K_FINISH_XG = 12, 8.0, 15.0  # finishing: same half-life as the rest, shrunk by xG volume
 HISTORY_MATCHES = 38  # every decayed record uses only each player's or team's latest 38 matches
-PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty
+PEN_XGOT = 0.76  # xGOT of a penalty taken (FotMob), taken out of a player's xGOT
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
 # goals, xG, xGOT weights, and how many average xG each player's record is padded with (smaller = closer to a plain average)
@@ -1097,7 +1097,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     taken = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)).where(known, 0)
     # Each taker's penalties and misses where they are counted, for his own miss rate.
     df["pen_taken_k"], df["pen_missed_k"] = taken, df["core_pen_missed"].fillna(0).where(known, 0)
-    df["league_pen_miss"] = float(np.clip(df["pen_missed_k"].sum() / taken.sum(), 0.12, 0.35)) if taken.sum() > 200 else 1 - PEN_CONVERSION
+    df["league_pen_miss"] = 1 - PEN_CONVERSION  # the long-run rate: a few hundred penalties are too few to measure it better
     # Share of penalties the goalkeeper saves, where penalties are counted.
     saved = df.loc[known & (df["position"] == "GK"), "penalties_saved"].fillna(0).sum()
     df["league_pen_save"] = float(np.clip(saved / taken.sum(), 0.05, 0.3)) if taken.sum() > 200 else PEN_SAVE_SHARE
@@ -1113,7 +1113,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     pen_goals = df["core_pen_scored"].fillna(0).where(known, expected_pens * PEN_CONVERSION)
     df["np_xg"] = (df["expected_goals"] - pens_taken * PEN_XG).clip(lower=0)
     df["np_goals"] = (df["goals_scored"] - pen_goals).clip(lower=0)
-    pen_xgot = df["core_pen_scored"].fillna(0) * PEN_XGOT_SCORED + df["core_pen_missed"].fillna(0) * PEN_XGOT_MISSED
+    pen_xgot = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)) * PEN_XGOT
     df["np_xgot"] = (df["core_xgot"] - pen_xgot).clip(lower=0).where(known, 0.0)
     df["np_xg_known"] = df["np_xg"].where(known, 0.0)
     dc = df["defensive_contribution"]
