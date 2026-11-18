@@ -2234,6 +2234,39 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
     return [1.0] * n, False, "", None
 
 
+def outside_matches(cache: Path, offline: bool) -> dict:
+    """Matches outside the league this season, per club and FotMob player name: [(kick-off, minutes, what)], from
+    cup and European matches (CUP_MINUTES with FotMob's fixtures) and national-team matches (INTL_MINUTES)."""
+    out: dict = {}
+    try:
+        fx = club_fixtures(cache, offline)
+        mf = cache / "fotmob" / "members.json"
+        members = json.loads(mf.read_text()) if mf.exists() else {}
+        store = json.loads(CUP_MINUTES.read_text(encoding="utf-8")) if CUP_MINUTES.exists() else {}
+        for t in fx["teams"]:
+            squad = {_name_key(m[0]) for m in members.get(t["short"], [])}
+            for m in t["matches"]:
+                rec = store.get(str(m.get("mid"))) if m["comp"] in CUP_CODES and m.get("score") is not None else None
+                if not rec or not rec.get("teams"):
+                    continue
+                side = max(rec["teams"].values(), key=lambda names: sum(_name_key(n) in squad for n in names))
+                for n, mins in side.items():
+                    out.setdefault(t["short"], {}).setdefault(n, []).append((m.get("t") or "", int(mins), f"{m['comp']} v {m['opp']}"))
+    except Exception as e:
+        print(f"Cup minutes for flags not read ({e})")
+    try:
+        intl = json.loads(INTL_MINUTES.read_text(encoding="utf-8")) if INTL_MINUTES.exists() else {}
+        for rec in intl.values():
+            for t, opp, mins, comp, nat in (rec.get("matches") or {}).values():
+                out.setdefault(rec.get("club"), {}).setdefault(rec["name"], []).append((t, int(mins), f"{nat} v {opp}"))
+    except Exception as e:
+        print(f"International minutes for flags not read ({e})")
+    return out
+
+
+FIT_AFTER_FLAG_MIN = 90  # a full match outside the league after FPL's injury flag: taken as fit
+
+
 def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame, pd.DataFrame, int]:
     boot = _api("bootstrap-static/", cache, offline)
     fixtures = _api("fixtures/", cache, offline)
@@ -2254,10 +2287,21 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
         past = [g for g, d in deadlines.items() if d and added and d <= added]
         return max(past) if past else first
 
+    outside = outside_matches(cache, offline)
+    cleared = []
     for p in boot["elements"]:
         if pos.get(p["element_type"]) is None:
             continue
         name = f'{p.get("first_name", "")} {p.get("second_name", "")}'.strip() or p["web_name"]
+        # Flagged injured or doubtful, but has played a full match for his country or in a cup since: fit.
+        if p.get("status") in ("i", "d") and p.get("news_added"):
+            seen = _fm_find({"name": p["web_name"], "fullName": name}, outside.get(short[p["team"]], {})) or []
+            full = sorted(x for x in seen if x[0] > p["news_added"] and x[1] >= FIT_AFTER_FLAG_MIN)
+            if full:
+                t90, _, what = full[-1]
+                p = dict(p, status="a", chance_of_playing_next_round=None,
+                         news=f"Played {FIT_AFTER_FLAG_MIN} minutes ({what}, {t90[:10]}) after FPL's flag: taken as fit. FPL: {p.get('news', '')}")
+                cleared.append(p["web_name"])
         base = {"name": name, "position": pos[p["element_type"]], "element": p["id"], "code": p["code"], "season": CURRENT_SEASON,
                 **{new: p.get(old) for old, new in SET_PIECE_COLS.items()}}
         played = []
@@ -2292,6 +2336,8 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
                                 "news_added": p.get("news_added"), "chance": p.get("chance_of_playing_next_round"), "news_gw": news_gw(p.get("news_added")),
                                 "team_short": short[team_id], "opp_short": short[f["team_a"] if home else f["team_h"]], "web_name": p["web_name"], "status": p.get("status"), "news": p.get("news", ""),
                                 "pen_text": p.get("penalties_text") or "", "fk_text": p.get("direct_freekicks_text") or "", "corner_text": p.get("corners_and_indirect_freekicks_text") or ""})
+    if cleared:
+        print(f"Flagged but played {FIT_AFTER_FLAG_MIN} minutes outside the league since, taken as fit: {', '.join(cleared)}")
     return pd.DataFrame(hist), pd.DataFrame(fut), first
 
 
