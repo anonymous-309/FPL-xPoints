@@ -58,10 +58,10 @@
     ['Europe/Athens', 'Greece, Finland, Romania'], ['Africa/Cairo', 'Egypt'], ['Africa/Johannesburg', 'South Africa, Zambia, Zimbabwe'],
     ['Africa/Nairobi', 'Kenya, Uganda, Tanzania'], ['Asia/Riyadh', 'Saudi Arabia, Qatar, Kuwait'], ['Europe/Istanbul', 'Turkey'],
     ['Asia/Dubai', 'UAE, Oman'], ['Asia/Karachi', 'Pakistan'], ['Asia/Kolkata', 'India, Sri Lanka'], ['Asia/Kathmandu', 'Nepal'],
-    ['Asia/Dhaka', 'Bangladesh'], ['Asia/Bangkok', 'Vietnam, Thailand, Cambodia'], ['Asia/Jakarta', 'Indonesia, Jakarta'],
+    ['Asia/Dhaka', 'Bangladesh'], ['Asia/Bangkok', 'Vietnam, Thailand, Cambodia'], ['Asia/Jakarta', 'Indonesia'],
     ['Asia/Shanghai', 'China, Hong Kong, Taiwan'], ['Asia/Singapore', 'Singapore, Malaysia, Philippines'], ['Asia/Tokyo', 'Japan, Korea'],
     ['Australia/Perth', 'Perth'], ['Australia/Sydney', 'Sydney, Melbourne'], ['Pacific/Auckland', 'New Zealand'],
-    ['America/Sao_Paulo', 'Brazil, São Paulo'], ['America/New_York', 'US & Canada Eastern'], ['America/Chicago', 'US & Canada Central'],
+    ['America/Sao_Paulo', 'Brazil'], ['America/New_York', 'US & Canada Eastern'], ['America/Chicago', 'US & Canada Central'],
     ['America/Denver', 'US & Canada Mountain'], ['America/Los_Angeles', 'US & Canada Pacific']];
   function gmtOffset(zone) {
     try {
@@ -71,7 +71,15 @@
     } catch (e) { return 0; }
   }
   const gmtText = (h) => `GMT${h < 0 ? '−' : '+'}${Math.floor(Math.abs(h))}${Math.abs(h) % 1 ? ':' + String(Math.round((Math.abs(h) % 1) * 60)).padStart(2, '0') : ''}`;
-  const ZONES = ZONE_PLACES.map(([z, n]) => [z, gmtOffset(z), n]).sort((a, b) => a[1] - b[1]).map(([z, h, n]) => [z, `${gmtText(h)} (${n})`])
+  // One option per GMT offset today, with all the places on it; the first zone stands for the group.
+  const groups = new Map();
+  ZONE_PLACES.map(([z, n]) => [z, gmtOffset(z), n]).sort((a, b) => a[1] - b[1]).forEach(([z, h, n]) => {
+    const g = groups.get(h) || { zone: z, places: [], members: [] };
+    g.places.push(n); g.members.push(z); groups.set(h, g);
+  });
+  const ZONE_OF = {}; // any listed zone -> the zone that stands for its group (for a choice saved earlier)
+  groups.forEach((g) => g.members.forEach((z) => { ZONE_OF[z] = g.zone; }));
+  const ZONES = [...groups].map(([h, g]) => [g.zone, `${gmtText(h)} (${g.places.join(', ')})`])
     .concat([['local', `This device (${gmtText(-new Date().getTimezoneOffset() / 60)})`]]);
   const tz = () => (state.tz === 'local' ? undefined : state.tz);
   const day = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: tz() });
@@ -275,7 +283,7 @@
     let saved = null;
     try { saved = JSON.parse(store.get('fx-view') || 'null'); } catch (e) { saved = null; }
     state.on = new Set(saved && Array.isArray(saved.on) ? saved.on : comps.map(([c]) => c).filter((c) => !OFF_BY_DEFAULT.has(c)));
-    if (saved) Object.assign(state, { view: saved.view === 'team' ? 'team' : 'grid', team: saved.team || '', range: ['rest', 'all'].includes(saved.range2) ? saved.range2 : 'rest', tz: ZONES.some(([z]) => z === saved.tz) ? saved.tz : 'UTC' });
+    if (saved) Object.assign(state, { view: saved.view === 'team' ? 'team' : 'grid', team: saved.team || '', range: ['rest', 'all'].includes(saved.range2) ? saved.range2 : 'rest', tz: saved.tz === 'local' ? 'local' : ZONE_OF[saved.tz] || 'UTC' });
     $('#tz').replaceChildren(...ZONES.map(([z, n]) => el('option', { value: z, textContent: n })));
     $('#tz').addEventListener('change', (e) => { state.tz = e.target.value; sync(); });
     $('.fx-comps').replaceChildren(...comps.map(([c, n]) => {
