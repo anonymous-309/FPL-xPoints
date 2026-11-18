@@ -2607,8 +2607,8 @@ def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tupl
 
 def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed_order: bool = False) -> np.ndarray:
     """Share of his team's penalties a player takes while on the pitch, per future match, minute by minute (see
-    pen_time_shares): each listed taker who started his last match is on from the kick-off for his usual minutes, one
-    who did not comes on for them at the end; the first listed taker on the pitch takes the penalty, and penalties while
+    pen_time_shares): each listed taker with a Start above 50% is on from the kick-off for his usual minutes, one
+    below comes on for them at the end; the first listed taker on the pitch takes the penalty, and penalties while
     none of them is on go to the free kick and corner takers, split by their expected minutes. So two takers who both
     started leave the next one only the end of the match, after they have gone off.
 
@@ -2625,9 +2625,9 @@ def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed
                           "order": order.to_numpy(), "fk": fk_any, "pos": np.arange(len(target))})
     for c in ("start", "ms", "mb", "there"):
         frame[c] = prof[c].to_numpy()
-    # Kept simple for penalties: if he started his last match he is on from the kick-off for his usual minutes, if not
-    # he comes on for them at the end (either way his expected minutes add up)
-    frame["start"] = prof["last"].to_numpy()
+    # Kept simple for penalties: a Start above 50% means he starts and is on from the kick-off for his usual minutes,
+    # otherwise he comes on for them at the end (either way his expected minutes add up)
+    frame["start"] = (prof["start"].to_numpy() > 0.5).astype(float)
     usual_m = np.clip(np.nan_to_num(usual_minutes(target)["min"]), 0, 90)
     frame["ms"] = usual_m
     frame["mb"] = usual_m
