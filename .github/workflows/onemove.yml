@@ -10,7 +10,10 @@ jobs:
           import json, urllib.request
           d=json.loads(urllib.request.urlopen("https://anonymous-309.github.io/FPL-xPoints/data.json").read())
           for p in d["players"]:
-              if p["name"] in ("Virgil","Van Dijk","van Dijk") or "Dijk" in p.get("fullName",""):
+              if "Mart" in p["name"]:
                   g=str(d["gws"][0]); b=p["byGw"].get(g,{})
-                  print("V", p["name"], p["status"], p["news"], "pitch", p.get("pitch"), "usual", p["minUsual"], "w5", p.get("w5Min"), "mins", b.get("mins"), "past", {k:p["pastMin"][k] for k in sorted(p["pastMin"], key=int)[-7:]}, "why", p.get("pastWhy"))
+                  print("M", p["name"], p["team"], p["status"], "|", p["news"], "| mins", b.get("mins"), "usual", p["minUsual"], "note", p.get("minNote"))
+          b=json.loads(urllib.request.urlopen(urllib.request.Request("https://fantasy.premierleague.com/api/bootstrap-static/",headers={"User-Agent":"Mozilla/5.0"})).read())
+          for p in b["elements"]:
+              if "Mart" in p["web_name"]: print("F", p["web_name"], p["team"], p["status"], p["chance_of_playing_next_round"], p["news_added"], p["news"])
           PY
