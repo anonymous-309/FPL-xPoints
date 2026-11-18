@@ -586,6 +586,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
+RED_HALFLIFE_TF = 38  # gameweeks (about a season) for a red card's weight in the position average to halve
 OOP_MIN_SHARE = 0.10  # at or below this share he counts as a plain defender
 OOP_KNOWN = 3  # with at least this many league starts known to FotMob, his places decide (not his stats)
 OOP_MID_ROLES = {"AM", "RM", "LM", "RW", "LW", "ST"}  # wing, wide or attacking midfield (not holding/central midfield, not wing-back)
@@ -1199,9 +1200,13 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         t = roll[~roll["future"]].groupby([group, "tf"], as_index=False)[cols].sum()
         idx = pd.MultiIndex.from_product([POSITIONS, sorted(df["tf"].unique())], names=[group, "tf"])
         t = t.set_index([group, "tf"]).reindex(idx, fill_value=0.0).sort_index()
+        raw = t.copy()
         t = t.groupby(group).cumsum().groupby(group).shift(1).fillna(0.0)
         for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
             t[f"p_{c}"] = (t[c] / t["n90"].replace(0, np.nan)).fillna(EPS)
+        # Red cards: newer seasons count more (each season back about half as much), as the rate has been falling.
+        ew = lambda c: raw[c].groupby(level=0).transform(lambda x: x.ewm(halflife=RED_HALFLIFE_TF, adjust=True).mean()).groupby(level=0).shift(1)
+        t["p_rc"] = (ew("rc") / ew("n90").replace(0, np.nan)).fillna(t["p_rc"]).replace(0, EPS)
         t["p_dh"] = (t["dh"] / t["do"].replace(0, np.nan)).fillna(0.0)
         t["p_dc"] = (t["dcs"] / t["dcn"].replace(0, np.nan)).fillna(DC_PRIOR_DEFAULT)
         return t[[c for c in t.columns if c.startswith("p_")]].reset_index()
