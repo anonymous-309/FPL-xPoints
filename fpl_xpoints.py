@@ -1264,7 +1264,11 @@ def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
                 continue
             item = {"name": e["web_name"], "pos": pos[e["element_type"]], "status": e.get("status"), "news": e.get("news") or "",
                     "added": e.get("news_added"), "chance": e.get("chance_of_playing_next_round"), "xmin": round(xmin(players[f"c{e['code']}"])) if f"c{e['code']}" in players else None}
-            if e.get("status") in ("i", "n", "s", "d") or (e.get("news") and e.get("status") == "a"):
+            mine = players.get(f"c{e['code']}") or {}
+            if e.get("status") in ("i", "d") and mine.get("status") == "a" and str(mine.get("news", "")).startswith("Played"):
+                # played a full match since FPL's flag: taken as fit, listed under other news with the reason
+                item.update(status="a", chance=None, news=mine["news"])
+            if item["status"] in ("i", "n", "s", "d") or (item["news"] and item["status"] == "a"):
                 news.append(item)
             if limit and e.get("yellow_cards", 0) == limit[1] - 1 and e.get("status") != "s":
                 watch.append({"name": e["web_name"], "pos": pos[e["element_type"]], "yellows": e["yellow_cards"]})
