@@ -169,7 +169,7 @@
       if (s.plain) return s.past ? pastCell(s.gws[0]) : futCell(s.gws[0]);
       const td = el('td', { className: `fx-cell mslot ${s.kind}${s.intl ? ' intl' : ''}` });
       if (s.gws.length) {
-        if (s.past) td.append(...leaguePast(s.gws[0]));
+        if (s.past) { const pc = pastCell(s.gws[0]); td.className += ' lgpast'; td.append(...pc.childNodes); }
         else { const f = futCell(s.gws[0]); td.className += ` ${f.className}`; td.append(...f.childNodes); }
       }
       td.append(...chips);
@@ -291,7 +291,8 @@
   let compsOn = new Set(COMP_BTNS.map(([c]) => c));
   // "Show only EPL": league gameweeks only, no cup or international columns or chips
   let eplOnly = false;
-  try { eplOnly = localStorage.getItem('minutes-epl-only') === '1'; } catch (e) { /* private mode */ }
+  eplOnly = true; // the default: league only, easier to read
+  try { const v = localStorage.getItem('minutes-epl-only'); if (v !== null) eplOnly = v === '1'; } catch (e) { /* private mode */ }
   try { const v = JSON.parse(localStorage.getItem('minutes-comps') || 'null'); if (Array.isArray(v)) compsOn = new Set(v); } catch (e) { /* private mode */ }
   function eplButton() {
     const b = $('eplOnly');

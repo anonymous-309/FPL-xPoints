@@ -865,20 +865,25 @@ def intl_minutes(cache: Path, offline: bool) -> dict:
 def _fm_find(p: dict, names: dict):
     """The value for this FPL player in a {FotMob name: value} map of his club, or None."""
     full = _name_key(p.get("fullName") or p["name"])
-    v = next((v for n, v in names.items() if _name_key(n) == full), None)
-    if v is None:
-        v = next((v for n, v in names.items() if _name_key(n).split()[-1:] == full.split()[-1:] and _name_key(n).split()[:1] == full.split()[:1]), None)
-    if v is None:
-        v = next((v for n, v in names.items() if set(_name_key(p["name"]).split()) <= set(_name_key(n).split())), None)
-    return v
+    # exact full name first, then first and last name, then the web name inside the FotMob name; a loose match
+    # counts only when it fits one player alone (Conor Bradley is not Bradley Barcola)
+    for test in (lambda n: _name_key(n) == full,
+                 lambda n: _name_key(n).split()[-1:] == full.split()[-1:] and _name_key(n).split()[:1] == full.split()[:1],
+                 # every word of the FotMob name is in his full name, and his web name is in it: "Gabriel Magalhães"
+                 lambda n: set(_name_key(n).split()) <= set(full.split()) and set(_name_key(p["name"]).split()) <= set(_name_key(n).split())):
+        hits = [n for n in names if test(n)]
+        if len(hits) == 1:
+            return names[hits[0]]
+        if len(hits) > 1:
+            return None
+    return None
 
 
 def intl_tables(store: dict, players: dict) -> dict:
     """Per player, his national-team matches this season: [[nation, opponent, minutes, kick-off, competition]]."""
     by_club = {}
-    for rec in store.values():
-        if rec.get("matches"):
-            by_club.setdefault(rec.get("club"), {})[rec["name"]] = rec["matches"]
+    for rec in store.values():  # every squad member, so a name is matched against the whole squad
+        by_club.setdefault(rec.get("club"), {})[rec["name"]] = rec.get("matches") or {}
     out = {}
     for p in players.values():
         ms = _fm_find(p, by_club.get(p["team"], {}))
@@ -916,12 +921,7 @@ def cup_tables(fx: dict, store: dict, boot: dict, players: dict) -> tuple[dict, 
                 return sum(1 for p in squad for n in names if _name_key(n).split()[-1:] == _name_key(p.get("fullName") or p["name"]).split()[-1:])
             side = max(sides.values(), key=hits, default={}) if sides else {}
             for p in squad:
-                full = _name_key(p.get("fullName") or p["name"])
-                mins = next((v for n, v in side.items() if _name_key(n) == full), None)
-                if mins is None:
-                    mins = next((v for n, v in side.items() if _name_key(n).split()[-1:] == full.split()[-1:] and _name_key(n).split()[:1] == full.split()[:1]), None)
-                if mins is None:
-                    mins = next((v for n, v in side.items() if set(_name_key(p["name"]).split()) <= set(_name_key(n).split())), 0)
+                mins = _fm_find(p, side) or 0  # not in the match squad (or a name that fits two players): 0
                 past.setdefault(p["id"], {}).setdefault(str(gw), []).append([m["comp"], opp, int(mins), m.get("t")])
     return past, nxt
 
