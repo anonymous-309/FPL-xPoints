@@ -61,7 +61,7 @@
   $('filters').addEventListener('input', render);
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') { overrides = XMin.load(); if (data) render(); } });
   $('filters').addEventListener('submit', (e) => e.preventDefault());
-  fetch('data.json', { cache: 'no-store' })
+  fetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((d) => {
       if (!d.setPieces) throw new Error('missing');

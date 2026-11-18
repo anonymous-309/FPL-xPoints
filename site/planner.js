@@ -940,7 +940,7 @@
   }
 
   async function teamFromSite(entry) {
-    const r = await fetch(`plans/${entry}.json`, { cache: 'no-store' });
+    const r = await fetch(`plans/${entry}.json`, { cache: 'no-cache' });
     if (r.status === 404) throw new Error(`Could not read team ${entry} from FPL right now, and the site has no saved copy of it. Try again in a minute.`);
     if (!r.ok) throw new Error('Could not load the team. Reload the page to try again.');
     return r.json();
@@ -1063,7 +1063,7 @@
   let saved = '';
   try { saved = localStorage.getItem(KEY) || ''; } catch (e) { saved = ''; }
   $('entry').value = new URLSearchParams(location.search).get('id') || saved || '';
-  fetch('data.json', { cache: 'no-store' })
+  fetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((data) => {
       state.data = data;

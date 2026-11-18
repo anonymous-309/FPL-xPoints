@@ -67,7 +67,7 @@
   // worked out once per gameweek range (not for every row)
   let colsMemo = { key: null, val: null };
   function slotCols() {
-    const memoKey = `${$('horizon').value}|${state.data.gws[0]}|${cal.days.size}`;
+    const memoKey = `${$('horizon').value}|${state.data.gws[0]}|${cal.days.size}|${eplOnly}`;
     if (colsMemo.key === memoKey) return colsMemo.val;
     const past = pastGws().map(String), fut = futureGws().map(String);
     const known = (l) => l.filter((g) => cal.gwSlot[g] != null);
@@ -89,6 +89,7 @@
         fut: f.length ? slotsBetween(fStart, cal.gwSlot[f[f.length - 1]], f, false) : [],
       };
     }
+    if (eplOnly) val = { past: val.past.filter((x) => x.gws.length), fut: val.fut.filter((x) => x.gws.length) };
     colsMemo = { key: memoKey, val };
     return val;
   }
@@ -249,7 +250,22 @@
   // which cups show (buttons as on the Fixtures page), remembered on this device
   const COMP_BTNS = [['UCL', 'Champions League'], ['UEL', 'Europa League'], ['UECL', 'Conference League'], ['EFL', 'EFL Cup'], ['FAC', 'FA Cup'], ['INT', 'International']];
   let compsOn = new Set(COMP_BTNS.map(([c]) => c));
+  // "Show only EPL": league gameweeks only, no cup or international columns or chips
+  let eplOnly = false;
+  try { eplOnly = localStorage.getItem('minutes-epl-only') === '1'; } catch (e) { /* private mode */ }
   try { const v = JSON.parse(localStorage.getItem('minutes-comps') || 'null'); if (Array.isArray(v)) compsOn = new Set(v); } catch (e) { /* private mode */ }
+  function eplButton() {
+    const b = $('eplOnly');
+    b.textContent = eplOnly ? 'Show all fixtures' : 'Show only EPL';
+    b.setAttribute('aria-pressed', String(eplOnly));
+    document.querySelector('.fx-comps').style.display = eplOnly ? 'none' : '';
+  }
+  $('eplOnly').addEventListener('click', () => {
+    eplOnly = !eplOnly;
+    try { localStorage.setItem('minutes-epl-only', eplOnly ? '1' : '0'); } catch (e) { /* private mode */ }
+    eplButton();
+    render();
+  });
   function compButtons() {
     const box = document.querySelector('.fx-comps');
     box.replaceChildren(...COMP_BTNS.map(([c, n]) => {
@@ -264,7 +280,7 @@
       return b;
     }));
   }
-  const cupChips = (l) => l.filter((m) => compsOn.has(m.c)).map((m) => (m.past
+  const cupChips = (l) => l.filter((m) => !eplOnly && compsOn.has(m.c)).map((m) => (m.past
     ? el('span', { className: `fx-m c-${m.c}`, title: `${m.c === 'INT' ? `${m.nat}, ${m.comp}` : CUP_NAME[m.c]} v ${m.o}, ${when(m.t)}: ${m.mins} minutes (shown only, not used by the formula)` },
       el('b', { textContent: m.c === 'INT' ? natCode(m.nat) : m.c }), m.o, el('i', { textContent: `${m.mins}'` }))
     : el('span', { className: `fx-m c-${m.c}`, title: `${CUP_NAME[m.c]} v ${m.o}, ${when(m.t)} (shown only: xMin is not changed for it)` }, el('b', { textContent: m.c }), m.o, el('i', { textContent: dd(m.t) }))));
@@ -311,6 +327,7 @@
     $('team').replaceChildren(el('option', { value: '', textContent: 'All' }), ...[...new Set(data.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
     updateReset();
     compButtons();
+    eplButton();
     render();
   }
 

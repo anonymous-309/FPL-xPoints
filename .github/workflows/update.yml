@@ -41,6 +41,12 @@ jobs:
         with:
           path: fpl_data/20*
           key: fpl-history-v1
+      - name: Keep FotMob pages between runs (each is re-read only after 6 hours)
+        uses: actions/cache@v4
+        with:
+          path: fpl_data/api_cache/fotmob
+          key: fotmob-${{ github.run_id }}
+          restore-keys: fotmob-
       - name: Download past seasons
         run: python fpl_xpoints.py download
       - name: Build the points table

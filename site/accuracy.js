@@ -156,7 +156,7 @@
     $('status').textContent = `The model tested on ${season}, a season it was not trained on`;
   }
 
-  fetch('backtest.txt', { cache: 'no-store' })
+  fetch('backtest.txt', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
     .then((t) => render(t.split('\n').filter((l) => !/Warning|^\s+(df|self|tm|return)\b/.test(l)).join('\n')))
     .catch(() => { $('error').hidden = false; $('error').textContent = 'Could not load the test results. They appear here once the GitHub update has run.'; $('status').textContent = ''; });

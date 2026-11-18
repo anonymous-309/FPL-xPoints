@@ -24,7 +24,7 @@
       el('td', { className: 'total', textContent: r.xpts.toFixed(1) }))) : [el('tr', {}, el('td', { colSpan: COLS.length, className: 'none', textContent: 'No players are out of position right now.' }))]));
   }
 
-  fetch('data.json', { cache: 'no-store' })
+  fetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((d) => {
       const gws = d.gws.slice(0, 5), first = d.gws[0];
