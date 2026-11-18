@@ -133,13 +133,16 @@ window.XMin = (function () {
     const d = p.byGw[g];
     if (!d || !d.fx) return 0;
     const fx = d.fx[j];
-    const listed = (takers[p.team] || []).map((t) => pitch(overrides, t, g, fx)).filter(Boolean);
+    // listed takers: started his last match -> on from the kick-off for his minutes, else on at the end for them
+    const listed = (takers[p.team] || []).map((t) => {
+      const x = pitch(overrides, t, g, fx);
+      if (!x) return null;
+      const len = Math.min(90, (t.minUsual || 0) * (t.minUsual > 0 ? Math.max(1, matchMins(overrides, t, g, fx) / t.minUsual) : 1));
+      return { ...x, start: t.pitch ? t.pitch.last : x.start, ms: len, mb: len };
+    }).filter(Boolean);
     const fks = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).map((t) => { const m = matchMins(overrides, t, g, fx); return m ? { id: t.id, m: m / 90 } : null; }).filter(Boolean);
     if (!listed.some((x) => x.id === p.id) && !fks.some((x) => x.id === p.id)) return 0;
-    const ids = listed.map((x) => x.id).join();
-    const pt = (patterns[p.team] || []).find((x) => x.ids.join() === ids);
-    const pats = pt ? pt.pats : null;
-    return shares(listed, fks, pats)[p.id] || 0;
+    return shares(listed, fks, null)[p.id] || 0;
   }
 
   // The chance he starts in gameweek g (at least one start in a double): his Start times the share of his usual
