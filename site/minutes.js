@@ -51,11 +51,11 @@
   function header() {
     const head = el('tr', {}, ...columns().map(([key, label, sub]) => {
       const comp = /^[cn]\d+_(\w+)$/.exec(key);
-      const th = el('th', { scope: 'col', className: `${/^[pc]\d/.test(key) ? 'past' : ''} ${comp ? `cupcol c-${comp[1]}` : ''}`, title: comp ? `${CUP_NAME[comp[1]] || comp[1]}: shown only, not used by the formula` : '' },
+      const th = el('th', { scope: 'col', className: `${/^[pc]\d/.test(key) ? 'past' : ''}${comp ? ' cupcol' : ''}`, title: comp ? `${CUP_NAME[comp[1]] || comp[1]}: shown only, not used by the formula` : '' },
         el('button', { type: 'button', onclick: () => {
           if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' || key === 'note' ? 1 : -1; }
           render();
-        } }, label, ...(sub ? [el('small', { textContent: sub })] : [])));
+        } }, comp ? el('span', { className: `fx-m c-${comp[1]}` }, el('b', { textContent: label })) : label, ...(sub ? [el('small', { textContent: sub })] : [])));
       if (state.sort === key) th.setAttribute('aria-sort', state.dir < 0 ? 'descending' : 'ascending');
       return th;
     }));
@@ -154,15 +154,16 @@
     return CUP_ORDER.filter((c) => seen.has(c));
   }
   const when = (t) => (t ? new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+  // Same chips as the Fixtures page: opponent (capitals at home), then minutes played or the day and kick-off.
+  const hm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  const dd = (t) => new Date(t).toLocaleDateString('en-GB', { weekday: 'short' });
   function cupCell(p, g, c, past) {
     const l = cupsOf(p, g, past).filter((x) => x[0] === c);
-    if (!l.length) return el('td', { className: `cupcell none ${past ? 'past' : ''}`, textContent: '' });
-    if (past) {
-      return el('td', { className: `cupcell past c-${c}`, title: l.map(([, o, m]) => `${CUP_NAME[c]} v ${o}: ${m} minutes (shown only, not used by the formula)`).join('\n') },
-        el('span', { textContent: l.map((x) => x[2]).join('+') }), el('small', { textContent: l.map((x) => x[1]).join(', ') }));
-    }
-    return el('td', { className: `cupcell c-${c}`, title: l.map(([, o, t]) => `${CUP_NAME[c]} v ${o}, ${when(t)} (shown only: xMin is not changed for it)`).join('\n') },
-      el('span', { textContent: l.map((x) => x[1]).join(', ') }), el('small', { textContent: l.map((x) => (x[2] ? new Date(x[2]).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' }) : '')).join(', ') }));
+    const td = el('td', { className: `cupcell${past ? ' past' : ''}` });
+    l.forEach(([, o, x]) => td.append(past
+      ? el('span', { className: `fx-m c-${c}${x ? '' : ' nil'}`, title: `${CUP_NAME[c]} v ${o}: ${x} minutes (shown only, not used by the formula)` }, o, el('i', { textContent: `${x}'` }))
+      : el('span', { className: `fx-m c-${c}`, title: `${CUP_NAME[c]} v ${o}${x ? ', ' + when(x) : ''} (shown only: xMin is not changed for it)` }, o, el('i', { textContent: x ? `${dd(x)} ${hm(x)}` : 'TBC' }))));
+    return td;
   }
 
   function render() {

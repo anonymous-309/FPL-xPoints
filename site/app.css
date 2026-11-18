@@ -532,14 +532,9 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .manual-week .pick-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .manual-week input { min-width: 0; flex: 1 1 140px; }
 .linkbtn { background: none; border: 0; color: var(--turf); text-decoration: underline; cursor: pointer; }
-/* Minutes: cup and European matches in their own columns, next to the gameweek they fall in (reference only) */
-.minutes th.cupcol { font-size: 11px; }
-.minutes th.cupcol button, .minutes th.cupcol small { color: inherit; opacity: .9; }
-.minutes th.cupcol.c-UCL { background: #163a8a; color: #fff; } .minutes th.cupcol.c-UEL { background: #3f6fc4; color: #fff; }
-.minutes th.cupcol.c-UECL { background: #a9c3ef; color: #0f2350; } .minutes th.cupcol.c-EFL { background: #1e7a46; color: #fff; }
-.minutes th.cupcol.c-FAC { background: #6b2fa0; color: #fff; }
-.minutes td.cupcell { text-align: center; font-size: 14px; min-width: 48px; }
-.minutes td.cupcell:not(.none) { box-shadow: inset 3px 0 0 var(--cup); }
-.minutes td.cupcell small { display: block; font-size: 10px; opacity: .75; }
-.minutes td.cupcell.c-UCL { --cup: #163a8a; } .minutes td.cupcell.c-UEL { --cup: #3f6fc4; } .minutes td.cupcell.c-UECL { --cup: #a9c3ef; }
-.minutes td.cupcell.c-EFL { --cup: #1e7a46; } .minutes td.cupcell.c-FAC { --cup: #6b2fa0; }
+/* Minutes: cup and European matches in their own columns, chips as on the Fixtures page (reference only) */
+.minutes th.cupcol { min-width: 0; }
+.minutes th.cupcol .fx-m { padding: 0 5px; }
+.minutes td.cupcell { padding: 4px 6px; vertical-align: middle; }
+.minutes td.cupcell .fx-m { display: flex; width: max-content; margin: 1px auto; }
+.minutes td.cupcell .fx-m.nil { opacity: .45; }
