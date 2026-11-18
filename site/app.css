@@ -405,7 +405,7 @@ td.fx-cell .fx-m { display: flex; width: max-content; }
 .fx-m.c-UEL { background: #3f6fc4; border-color: #3f6fc4; color: #fff; }
 .fx-m.c-UECL { background: #a9c3ef; border-color: #a9c3ef; color: #0f2350; }
 .fx-m.c-EFL { background: #1e7a46; border-color: #1e7a46; color: #fff; }
-.fx-m.c-FAC { background: #7a1010; border-color: #7a1010; color: #fff; }
+.fx-m.c-FAC { background: #6b2fa0; border-color: #6b2fa0; color: #fff; }
 .fx-key { display: inline-block; padding: 0 6px; border: 1px solid var(--line); border-radius: 2px; }
 .fx-key.n2 { background: #e6efe3; } .fx-key.n3 { background: #c9dcc4; }
 .fx-list td { text-align: left; }
@@ -420,7 +420,7 @@ td.fx-cell .fx-m { display: flex; width: max-content; }
 .fx-tog.c-UEL[aria-pressed="true"] { background: #3f6fc4; border-color: #3f6fc4; color: #fff; }
 .fx-tog.c-UECL[aria-pressed="true"] { background: #a9c3ef; border-color: #a9c3ef; color: #0f2350; }
 .fx-tog.c-EFL[aria-pressed="true"] { background: #1e7a46; border-color: #1e7a46; color: #fff; }
-.fx-tog.c-FAC[aria-pressed="true"] { background: #7a1010; border-color: #7a1010; color: #fff; }
+.fx-tog.c-FAC[aria-pressed="true"] { background: #6b2fa0; border-color: #6b2fa0; color: #fff; }
 .fx-tog.c-PL[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); }
 @media (max-width: 600px) {
   .fx-grid td.fx-team { min-width: 92px; max-width: 92px; white-space: normal; overflow-wrap: anywhere; line-height: 1.2; }
@@ -446,12 +446,12 @@ td.fx-cell.blank { background: #fbe3df; }
 .fx-grid th.fx-gw.none .gwb { background: #dfe3dd; color: var(--muted); }
 .fx-m.tbd { background: transparent !important; border: 1px dashed currentColor; font-weight: 600; }
 .fx-m.tbd.c-UCL { color: #163a8a; } .fx-m.tbd.c-UEL { color: #3f6fc4; } .fx-m.tbd.c-UECL { color: #4d6fa8; }
-.fx-m.tbd.c-EFL { color: #1e7a46; } .fx-m.tbd.c-FAC { color: #7a1010; }
+.fx-m.tbd.c-EFL { color: #1e7a46; } .fx-m.tbd.c-FAC { color: #6b2fa0; }
 .fx-grid .gwr { display: flex; flex-wrap: wrap; gap: 2px; margin-top: 3px; }
 .fx-grid .gwr span { padding: 0 4px; border-radius: 2px; font-size: 10.5px; font-weight: 650; line-height: 15px; }
 .fx-grid .gwr .c-UCL { background: #163a8a; color: #fff; } .fx-grid .gwr .c-UEL { background: #3f6fc4; color: #fff; }
 .fx-grid .gwr .c-UECL { background: #a9c3ef; color: #0f2350; } .fx-grid .gwr .c-EFL { background: #1e7a46; color: #fff; }
-.fx-grid .gwr .c-FAC { background: #7a1010; color: #fff; }
+.fx-grid .gwr .c-FAC { background: #6b2fa0; color: #fff; }
 .fx-grid .gwf { display: block; width: max-content; margin-top: 3px; padding: 0 5px; border-radius: 2px; font-size: 10.5px; font-weight: 700; line-height: 16px; }
 .gwf.double.likely { background: #ffe94d; } .gwf.double.possible { background: #fbd88a; }
 .gwf.blank.likely { background: #b3261e; color: #fff; } .gwf.blank.possible { background: #e7a39c; color: #4a0c07; }
