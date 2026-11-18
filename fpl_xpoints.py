@@ -724,7 +724,11 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
 # ---------------------------------------------------------------- every club's fixtures in all competitions
 # League matches come from FPL (its gameweek and kickoff); every other competition from FotMob's team pages.
 CLUB_COMPS = {"Champions League": "UCL", "Europa League": "UEL", "Conference League": "UECL", "EFL Cup": "EFL",
-              "FA Cup": "FAC"}
+              "FA Cup": "FAC",
+              # qualifying rounds count as the competition itself
+              "Champions League Qualification": "UCL", "Europa League Qualification": "UEL",
+              "Conference League Qualification": "UECL"}
+CUP_CODES = {"UCL", "UEL", "UECL", "EFL", "FAC"}
 
 
 _CLUB_FILLER = {"fc", "ac", "as", "sc", "cf", "fk", "sk", "afc", "real", "club", "athletic", "olympique", "rb", "us", "ss", "ssc", "vfb", "vfl", "bayer", "borussia", "fsv", "tsg", "sv", "ogc", "rc", "rcd", "cd", "ud", "sd", "kv", "krc", "rsc", "royal"}
@@ -768,7 +772,7 @@ def cup_minutes(fx: dict, offline: bool) -> dict:
     Premier League club, read once from FotMob's player stats and kept in CUP_MINUTES. For reference on the Minutes
     page only: the minutes formula does not use them."""
     store = json.loads(CUP_MINUTES.read_text(encoding="utf-8")) if CUP_MINUTES.exists() else {}
-    want = {str(m["mid"]) for t in fx["teams"] for m in t["matches"] if m["comp"] != "PL" and m.get("score") is not None and m.get("mid")}
+    want = {str(m["mid"]) for t in fx["teams"] for m in t["matches"] if m["comp"] in CUP_CODES and m.get("score") is not None and m.get("mid")}
     fetched = 0
     for mid in sorted(want - set(store)):
         if offline:
@@ -821,7 +825,7 @@ def cup_tables(fx: dict, store: dict, boot: dict, players: dict) -> tuple[dict, 
     for t in fx["teams"]:
         squad = squads.get(t["short"], [])
         for m in t["matches"]:
-            if m["comp"] == "PL":
+            if m["comp"] not in CUP_CODES:  # league, friendlies, Community Shield, Super Cup
                 continue
             gw = gw_of_time(m.get("t"), fx["gws"])
             if gw is None:

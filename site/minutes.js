@@ -27,9 +27,9 @@
   function columns() {
     return [
       ['name', 'Player'],
-      ...pastGws().map((g) => [`p${g}`, `GW${g}`, 'played']),
+      ...pastGws().flatMap((g) => [[`p${g}`, `GW${g}`, 'played'], ...cupComps(g, true).map((c) => [`c${g}_${c}`, c, `GW${g} played`])]),
       ['usual', 'Usual', 'last 5'], ['adjust', 'Adjust min', 'all GWs'],
-      ...futureGws().map((g) => [`f${g}`, `GW${g}`, 'xMin']),
+      ...futureGws().flatMap((g) => [[`f${g}`, `GW${g}`, 'xMin'], ...cupComps(g, false).map((c) => [`n${g}_${c}`, c, `GW${g}`])]),
       ['note', 'Injury / ban'],
     ];
   }
@@ -41,6 +41,8 @@
     if (key === 'usual') return (p) => p.minUsual;
     if (key === 'adjust') return (p) => { const o = state.overrides[p.id]; return o && o.all !== undefined ? o.all : -1; };
     if (key === 'note') return (p) => p.minNote || '';
+    if (key[0] === 'c') { const [g, c] = key.slice(1).split('_'); return (p) => { const l = cupsOf(p, g, true).filter((x) => x[0] === c); return l.length ? sum(l.map((x) => x[2])) : -1; }; }
+    if (key[0] === 'n') { const [g, c] = key.slice(1).split('_'); return (p) => cupsOf(p, g, false).filter((x) => x[0] === c).length; }
     if (key[0] === 'p') { const g = key.slice(1); return (p) => { const m = pastMins(p, g); return m ? sum(m) : -1; }; }
     const g = key.slice(1);
     return (p) => nextMins(p, g);
@@ -48,7 +50,8 @@
 
   function header() {
     const head = el('tr', {}, ...columns().map(([key, label, sub]) => {
-      const th = el('th', { scope: 'col', className: /^p\d/.test(key) ? 'past' : '' },
+      const comp = /^[cn]\d+_(\w+)$/.exec(key);
+      const th = el('th', { scope: 'col', className: `${/^[pc]\d/.test(key) ? 'past' : ''} ${comp ? `cupcol c-${comp[1]}` : ''}`, title: comp ? `${CUP_NAME[comp[1]] || comp[1]}: shown only, not used by the formula` : '' },
         el('button', { type: 'button', onclick: () => {
           if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' || key === 'note' ? 1 : -1; }
           render();
@@ -75,7 +78,8 @@
     const usual = p.adminMin !== null && p.adminMin !== undefined
       ? el('td', { className: 'usual admin-set', textContent: Math.round(p.minUsual), title: `Set by admin (formula ${Math.round(p.minModel ?? p.minUsual)})` })
       : el('td', { className: 'usual', textContent: Math.round(p.minUsual), title: p.w5Min !== null && Math.round(p.w5Min) !== Math.round(p.minUsual) ? `${Math.round(p.w5Min)} counting his current absence` : '' });
-    const past = pastGws().map((g) => {
+    const past = pastGws().flatMap((g) => [pastCell(g), ...cupComps(g, true).map((c) => cupCell(p, g, c, true))]);
+    function pastCell(g) {
       const m = pastMins(p, g);
       if (!m) return el('td', { className: 'past none', textContent: '–' });
       const opp = (p.pastOpp && p.pastOpp[g]) || [];
@@ -111,22 +115,19 @@
         });
         nums.append(b);
       });
-      // cup and European minutes that gameweek, for reference only (the formula uses league matches)
-      const cups = (p.cupPast && p.cupPast[g]) || [];
-      const cupLine = cups.length ? el('small', { className: 'cup-line' }, ...cups.map(([c, o, mins]) => el('span', { className: `cup c-${c}`, title: `${CUP_NAME[c] || c} v ${o}: ${mins} minutes (shown only, not used by the formula)` }, `${c} ${mins}`))) : '';
-      return el('td', { className: 'past' }, nums, opp.length ? el('small', { textContent: opp.join(', ') }) : '', cupLine);
-    });
-    const future = futureGws().map((g) => {
+      return el('td', { className: 'past' }, nums, opp.length ? el('small', { textContent: opp.join(', ') }) : '');
+    }
+    const future = futureGws().flatMap((g) => [futCell(g), ...cupComps(g, false).map((c) => cupCell(p, g, c, false))]);
+    function futCell(g) {
       const m = XMin.minutes(state.overrides, p, g);
       if (!m) return el('td', { className: 'none', textContent: 'Blank' });
       const model = XMin.model(p, g);
       const own = o.gw && o.gw[g] !== undefined;
       const td = el('td', { className: `fut ${m.source !== 'model' ? 'edited' : ''} ${sum(m.mins) === 0 ? 'zero' : ''}` },
         input(own ? o.gw[g] : undefined, XMin.join(m.source === 'all' ? m.mins : model.mins), `Minutes per match for ${p.name} in gameweek ${g}`, { gw: String(g) }),
-        el('small', { textContent: p.byGw[g].opp.join(', ') }),
-        cupNext(p, g));
+        el('small', { textContent: p.byGw[g].opp.join(', ') }));
       return td;
-    });
+    }
     const note = el('td', { className: 'note', textContent: p.minNote || '', title: p.news || '' });
     const tr = el('tr', {}, name, ...past, usual, adjust, ...future, note);
     tr.dataset.pid = p.id;
@@ -134,12 +135,34 @@
   }
 
   const CUP_NAME = { UCL: 'Champions League', UEL: 'Europa League', UECL: 'Conference League', EFL: 'EFL Cup', FAC: 'FA Cup' };
-  // His club's cup and European matches in that gameweek window, for reference only (xMin is not changed for them).
-  function cupNext(p, g) {
-    const list = (state.data.cupNext && state.data.cupNext[p.team] && state.data.cupNext[p.team][g]) || [];
-    if (!list.length) return '';
-    const day = (t) => (t ? new Date(t).toLocaleDateString('en-GB', { weekday: 'short' }) : '');
-    return el('small', { className: 'cup-line' }, ...list.map(([c, o, t]) => el('span', { className: `cup c-${c}`, title: `${CUP_NAME[c] || c} v ${o}${t ? ', ' + new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''} (shown only: xMin is not changed for it)` }, `${c} ${o} ${day(t)}`)));
+  // Cup and European matches, for reference only: the formula and xMin use league matches.
+  // Past: [competition, opponent, minutes] per player; coming: [competition, opponent, kick-off] per club.
+  function cupsOf(p, g, past) {
+    if (past) return (p.cupPast && p.cupPast[g]) || [];
+    return (state.data.cupNext && state.data.cupNext[p.team] && state.data.cupNext[p.team][g]) || [];
+  }
+  const CUP_ORDER = ['UCL', 'UEL', 'UECL', 'EFL', 'FAC'];
+  // One column per competition played in that gameweek window, by the clubs on show (all, or the team picked).
+  function cupComps(g, past) {
+    const team = $('team').value;
+    const seen = new Set();
+    if (past) {
+      for (const p of state.data.players) if (!team || p.team === team) cupsOf(p, g, true).forEach((x) => seen.add(x[0]));
+    } else {
+      Object.entries(state.data.cupNext || {}).forEach(([t, by]) => { if (!team || t === team) (by[g] || []).forEach((x) => seen.add(x[0])); });
+    }
+    return CUP_ORDER.filter((c) => seen.has(c));
+  }
+  const when = (t) => (t ? new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '');
+  function cupCell(p, g, c, past) {
+    const l = cupsOf(p, g, past).filter((x) => x[0] === c);
+    if (!l.length) return el('td', { className: `cupcell none ${past ? 'past' : ''}`, textContent: '' });
+    if (past) {
+      return el('td', { className: `cupcell past c-${c}`, title: l.map(([, o, m]) => `${CUP_NAME[c]} v ${o}: ${m} minutes (shown only, not used by the formula)`).join('\n') },
+        el('span', { textContent: l.map((x) => x[2]).join('+') }), el('small', { textContent: l.map((x) => x[1]).join(', ') }));
+    }
+    return el('td', { className: `cupcell c-${c}`, title: l.map(([, o, t]) => `${CUP_NAME[c]} v ${o}, ${when(t)} (shown only: xMin is not changed for it)`).join('\n') },
+      el('span', { textContent: l.map((x) => x[1]).join(', ') }), el('small', { textContent: l.map((x) => (x[2] ? new Date(x[2]).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric' }) : '')).join(', ') }));
   }
 
   function render() {
