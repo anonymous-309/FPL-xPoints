@@ -8,12 +8,12 @@ jobs:
       - run: |
           python3 - <<'PY'
           import json, urllib.request
+          t=json.loads(urllib.request.urlopen("https://anonymous-309.github.io/FPL-xPoints/team_news.json").read())
           d=json.loads(urllib.request.urlopen("https://anonymous-309.github.io/FPL-xPoints/data.json").read())
+          names={"Martinez","Gvardiol","Gudmundsson"}
+          for c in (t["clubs"] if isinstance(t,dict) and "clubs" in t else t if isinstance(t,list) else t.get("teams",[])):
+              for n in c["news"]:
+                  if n["name"] in names: print("T", c["short"], n["name"], n["status"], n["chance"], n["news"][:90])
           for p in d["players"]:
-              if "Mart" in p["name"]:
-                  g=str(d["gws"][0]); b=p["byGw"].get(g,{})
-                  print("M", p["name"], p["team"], p["status"], "|", p["news"], "| mins", b.get("mins"), "usual", p["minUsual"], "note", p.get("minNote"))
-          b=json.loads(urllib.request.urlopen(urllib.request.Request("https://fantasy.premierleague.com/api/bootstrap-static/",headers={"User-Agent":"Mozilla/5.0"})).read())
-          for p in b["elements"]:
-              if "Mart" in p["web_name"]: print("F", p["web_name"], p["team"], p["status"], p["chance_of_playing_next_round"], p["news_added"], p["news"])
+              if p["name"] in names: print("D", p["team"], p["name"], p["status"], p["byGw"][str(d["gws"][0])]["mins"])
           PY
