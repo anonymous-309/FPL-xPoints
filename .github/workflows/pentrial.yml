@@ -46,3 +46,5 @@ jobs:
           }
           J
           node check.js
+          node -e "const d=require('./_site/data.json'); for (const p of d.players) if (p.team==='CRY' && (p.penOrder!=null||['c489706','c231747','c205533','c232185'].includes(p.id))) console.log('CRYP', p.id, p.name, p.penOrder, p.fkOrder, p.cornerOrder, Object.keys(p.byGw).slice(0,3).join(','), JSON.stringify(p.pitch), p.minUsual, JSON.stringify(p.byGw['13'] && {m:p.byGw['13'].mins, pc:p.byGw['13'].pc}))"
+
