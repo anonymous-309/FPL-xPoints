@@ -8905,1121 +8905,3539 @@
 "1072068": {
 "name": "Konstantinos Tzolakis",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181836": [
+"2026-11-16T19:45:00.000Z",
+"Serbia",
+0,
+"UEFA Nations League A",
+"Greece"
+],
+"5181833": [
+"2026-11-13T19:45:00.000Z",
+"Netherlands",
+90,
+"UEFA Nations League A",
+"Greece"
+],
+"5181831": [
+"2026-10-04T18:45:00.000Z",
+"Germany",
+90,
+"UEFA Nations League A",
+"Greece"
+],
+"5181830": [
+"2026-10-01T18:45:00.000Z",
+"Netherlands",
+90,
+"UEFA Nations League A",
+"Greece"
+],
+"5181828": [
+"2026-09-27T18:45:00.000Z",
+"Germany",
+90,
+"UEFA Nations League A",
+"Greece"
+],
+"5181826": [
+"2026-09-24T18:45:00.000Z",
+"Serbia",
+90,
+"UEFA Nations League A",
+"Greece"
+]
+},
 "nat": 6383
 },
 "709148": {
 "name": "Lewie Coyle",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "933635": {
 "name": "Ryan Giles",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1331703": {
 "name": "Charlie Hughes",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "410836": {
 "name": "Semi Ajayi",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040391": [
+"2026-11-17T13:00:00.000Z",
+"Tanzania",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040389": [
+"2026-11-13T16:00:00.000Z",
+"Tanzania",
+1,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040386": [
+"2026-09-29T16:00:00.000Z",
+"Guinea-Bissau",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040384": [
+"2026-09-25T16:00:00.000Z",
+"Madagascar",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+]
+},
 "nat": 6346
 },
 "295062": {
 "name": "John Egan",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181823": [
+"2026-11-17T19:45:00.000Z",
+"Kosovo",
+76,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181821": [
+"2026-11-14T19:45:00.000Z",
+"Austria",
+0,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181819": [
+"2026-10-04T18:45:00.000Z",
+"Israel",
+0,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181817": [
+"2026-10-01T18:45:00.000Z",
+"Austria",
+90,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181815": [
+"2026-09-27T18:45:00.000Z",
+"Israel",
+0,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181813": [
+"2026-09-24T18:45:00.000Z",
+"Kosovo",
+88,
+"UEFA Nations League B",
+"Ireland"
+]
+},
 "nat": 5791
 },
 "575780": {
 "name": "Paddy McNair",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181810": [
+"2026-11-17T19:45:00.000Z",
+"Hungary",
+0,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181809": [
+"2026-11-14T19:45:00.000Z",
+"Ukraine",
+0,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181806": [
+"2026-10-05T18:45:00.000Z",
+"Georgia",
+4,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181805": [
+"2026-10-02T18:45:00.000Z",
+"Ukraine",
+6,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181803": [
+"2026-09-28T18:45:00.000Z",
+"Hungary",
+0,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181800": [
+"2026-09-25T16:00:00.000Z",
+"Georgia",
+1,
+"UEFA Nations League B",
+"Northern Ireland"
+]
+},
 "nat": 10259
 },
 "1686118": {
 "name": "Lucas Herrington",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6220970": [
+"2026-11-17T16:00:00.000Z",
+"Jordan",
+90,
+"Friendlies",
+"Australia"
+],
+"6220818": [
+"2026-11-13T14:45:00.000Z",
+"Qatar",
+81,
+"Friendlies",
+"Australia"
+],
+"5924777": [
+"2026-09-29T10:00:00.000Z",
+"Brazil",
+90,
+"Friendlies",
+"Australia"
+],
+"5924776": [
+"2026-09-25T10:00:00.000Z",
+"Brazil",
+90,
+"Friendlies",
+"Australia"
+],
+"4653716": [
+"2026-07-03T18:00:00.000Z",
+"Egypt",
+120,
+"World Cup",
+"Australia"
+]
+},
 "nat": 6716
 },
 "538112": {
 "name": "Matt Targett",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1428427": {
 "name": "Nobel Mendy",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040401": [
+"2026-11-12T19:00:00.000Z",
+"Sudan",
+0,
+"Africa Cup of Nations Qualification",
+"Senegal"
+],
+"6299698": [
+"2026-10-04T13:00:00.000Z",
+"Comoros",
+44,
+"Friendlies",
+"Senegal"
+],
+"6040398": [
+"2026-09-29T13:00:00.000Z",
+"Ethiopia",
+0,
+"Africa Cup of Nations Qualification",
+"Senegal"
+],
+"6040405": [
+"2026-09-25T13:00:00.000Z",
+"Mozambique",
+0,
+"Africa Cup of Nations Qualification",
+"Senegal"
+]
+},
 "nat": 6395
 },
 "915102": {
 "name": "Hidemasa Morita",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6715
 },
 "1178514": {
 "name": "Eliot Matazo",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8263
 },
 "1231090": {
 "name": "Mohamed Belloumi",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6366761": [
+"2026-10-06T17:00:00.000Z",
+"Niger",
+50,
+"Friendlies",
+"Algeria"
+],
+"6040358": [
+"2026-09-29T13:00:00.000Z",
+"Burundi",
+64,
+"Africa Cup of Nations Qualification",
+"Algeria"
+],
+"6040356": [
+"2026-09-25T19:00:00.000Z",
+"Zambia",
+71,
+"Africa Cup of Nations Qualification",
+"Algeria"
+]
+},
 "nat": 6317
 },
 "956161": {
 "name": "Joe Gelhardt",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1377949": {
 "name": "Jens Hjertø-Dahl",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8492
 },
 "1214915": {
 "name": "Brooke Norton-Cuffy",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1356264": {
 "name": "Óscar Zambrano",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6539650": [
+"2026-11-17T23:30:00.000Z",
+"Bolivia",
+0,
+"Friendlies",
+"Ecuador"
+],
+"6539347": [
+"2026-11-14T00:00:00.000Z",
+"Costa Rica",
+6,
+"Friendlies",
+"Ecuador"
+]
+},
 "nat": 6707
 },
 "1272349": {
 "name": "Elliot Stroud",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181848": [
+"2026-11-17T19:45:00.000Z",
+"Poland",
+90,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181846": [
+"2026-11-14T19:45:00.000Z",
+"Bosnia and Herzegovina",
+9,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181844": [
+"2026-10-05T18:45:00.000Z",
+"Romania",
+0,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181840": [
+"2026-09-28T18:45:00.000Z",
+"Poland",
+0,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181838": [
+"2026-09-25T18:45:00.000Z",
+"Romania",
+90,
+"UEFA Nations League B",
+"Sweden"
+]
+},
 "nat": 8520
 },
 "1125874": {
 "name": "Darko Gyabi",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "280507": {
 "name": "Matt Crooks",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "605262": {
 "name": "Kieran Dowell",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "807930": {
 "name": "Regan Slater",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1515977": {
 "name": "Ilyas Ansah",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8570
 },
 "1137106": {
 "name": "Lucas Gourna-Douath",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6723
 },
 "1574198": {
 "name": "Christos Mouzakitis",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181831": [
+"2026-10-04T18:45:00.000Z",
+"Germany",
+22,
+"UEFA Nations League A",
+"Greece"
+],
+"5181830": [
+"2026-10-01T18:45:00.000Z",
+"Netherlands",
+0,
+"UEFA Nations League A",
+"Greece"
+],
+"5181828": [
+"2026-09-27T18:45:00.000Z",
+"Germany",
+0,
+"UEFA Nations League A",
+"Greece"
+],
+"5181826": [
+"2026-09-24T18:45:00.000Z",
+"Serbia",
+0,
+"UEFA Nations League A",
+"Greece"
+]
+},
 "nat": 6383
 },
 "1203512": {
 "name": "Tim Iroegbunam",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "812982": {
 "name": "Sorba Thomas",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181872": [
+"2026-11-17T19:45:00.000Z",
+"Portugal",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181868": [
+"2026-10-04T18:45:00.000Z",
+"Denmark",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181866": [
+"2026-10-01T18:45:00.000Z",
+"Norway",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181863": [
+"2026-09-27T16:00:00.000Z",
+"Denmark",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181862": [
+"2026-09-24T18:45:00.000Z",
+"Portugal",
+13,
+"UEFA Nations League A",
+"Wales"
+]
+},
 "nat": 5790
 },
 "509151": {
 "name": "Oli McBurnie",
 "club": "HUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181787": [
+"2026-11-16T19:45:00.000Z",
+"Switzerland",
+58,
+"UEFA Nations League B",
+"Scotland"
+],
+"5181784": [
+"2026-11-13T19:45:00.000Z",
+"North Macedonia",
+23,
+"UEFA Nations League B",
+"Scotland"
+],
+"5181782": [
+"2026-10-06T18:45:00.000Z",
+"Slovenia",
+66,
+"UEFA Nations League B",
+"Scotland"
+],
+"5181780": [
+"2026-10-03T18:45:00.000Z",
+"North Macedonia",
+45,
+"UEFA Nations League B",
+"Scotland"
+],
+"5181778": [
+"2026-09-29T18:45:00.000Z",
+"Switzerland",
+59,
+"UEFA Nations League B",
+"Scotland"
+],
+"5181776": [
+"2026-09-26T13:00:00.000Z",
+"Slovenia",
+90,
+"UEFA Nations League B",
+"Scotland"
+]
+},
 "nat": 8498
 },
 "704138": {
 "name": "Abdülkadir Ömür",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6595
 },
 "1705134": {
 "name": "Robinio Vaz",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6723
 },
 "1180718": {
 "name": "Mohamed-Ali Cho",
 "club": "HUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6723
 },
 "643228": {
 "name": "Alex Palmer",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "111027": {
 "name": "David Button",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "512013": {
 "name": "Christian Walton",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "796398": {
 "name": "Kjell Scherpen",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6708
 },
 "609733": {
 "name": "Darnell Furlong",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "980381": {
 "name": "Leif Davis",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "760398": {
 "name": "Cédric Kipré",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6709
 },
 "696443": {
 "name": "Issa Diop",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040206": [
+"2026-11-17T20:00:00.000Z",
+"Niger",
+0,
+"Africa Cup of Nations Qualification",
+"Morocco"
+],
+"6040204": [
+"2026-11-13T20:00:00.000Z",
+"Niger",
+90,
+"Africa Cup of Nations Qualification",
+"Morocco"
+],
+"6367353": [
+"2026-10-04T18:00:00.000Z",
+"Mali",
+90,
+"Friendlies",
+"Morocco"
+],
+"6040202": [
+"2026-09-29T13:00:00.000Z",
+"Lesotho",
+90,
+"Africa Cup of Nations Qualification",
+"Morocco"
+],
+"6040199": [
+"2026-09-25T19:00:00.000Z",
+"Gabon",
+90,
+"Africa Cup of Nations Qualification",
+"Morocco"
+],
+"4653851": [
+"2026-07-09T20:00:00.000Z",
+"France",
+90,
+"World Cup",
+"Morocco"
+],
+"4653843": [
+"2026-07-04T17:00:00.000Z",
+"Canada",
+87,
+"World Cup",
+"Morocco"
+]
+},
 "nat": 6262
 },
 "1079103": {
 "name": "Jacob Greaves",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "789578": {
 "name": "Dara O'Shea",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181823": [
+"2026-11-17T19:45:00.000Z",
+"Kosovo",
+90,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181821": [
+"2026-11-14T19:45:00.000Z",
+"Austria",
+90,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181817": [
+"2026-10-01T18:45:00.000Z",
+"Austria",
+90,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181815": [
+"2026-09-27T18:45:00.000Z",
+"Israel",
+90,
+"UEFA Nations League B",
+"Ireland"
+],
+"5181813": [
+"2026-09-24T18:45:00.000Z",
+"Kosovo",
+90,
+"UEFA Nations League B",
+"Ireland"
+]
+},
 "nat": 5791
 },
 "1343053": {
 "name": "Abdoul Ouattara",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040241": [
+"2026-11-17T16:00:00.000Z",
+"Gambia",
+0,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+],
+"6040240": [
+"2026-11-12T19:00:00.000Z",
+"Gambia",
+0,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+]
+},
 "nat": 6709
 },
 "797594": {
 "name": "Azor Matusiwa",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6708
 },
 "1073742": {
 "name": "Julio Enciso",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6539356": [
+"2026-11-17T13:10:00.000Z",
+"Japan",
+86,
+"Friendlies",
+"Paraguay"
+],
+"6539341": [
+"2026-11-13T12:00:00.000Z",
+"Singapore",
+16,
+"Friendlies",
+"Paraguay"
+],
+"6299693": [
+"2026-10-03T00:00:00.000Z",
+"Colombia",
+85,
+"Friendlies",
+"Paraguay"
+],
+"6280211": [
+"2026-09-27T20:30:00.000Z",
+"Bolivia",
+71,
+"Friendlies",
+"Paraguay"
+],
+"4653842": [
+"2026-07-04T21:00:00.000Z",
+"France",
+61,
+"World Cup",
+"Paraguay"
+]
+},
 "nat": 6724
 },
 "793255": {
 "name": "Florentino",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8361
 },
 "789507": {
 "name": "Jack Taylor",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 5791
 },
 "556972": {
 "name": "Saša Lukić",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181836": [
+"2026-11-16T19:45:00.000Z",
+"Greece",
+90,
+"UEFA Nations League A",
+"Serbia"
+],
+"5181832": [
+"2026-10-04T18:45:00.000Z",
+"Netherlands",
+90,
+"UEFA Nations League A",
+"Serbia"
+],
+"5181829": [
+"2026-10-01T18:45:00.000Z",
+"Germany",
+23,
+"UEFA Nations League A",
+"Serbia"
+],
+"5181827": [
+"2026-09-27T16:00:00.000Z",
+"Netherlands",
+90,
+"UEFA Nations League A",
+"Serbia"
+],
+"5181826": [
+"2026-09-24T18:45:00.000Z",
+"Greece",
+45,
+"UEFA Nations League A",
+"Serbia"
+]
+},
 "nat": 8205
 },
 "693599": {
 "name": "Exequiel Palacios",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6462729": [
+"2026-11-17T23:00:00.000Z",
+"Costa Rica",
+0,
+"Friendlies",
+"Argentina"
+],
+"6462728": [
+"2026-11-13T23:00:00.000Z",
+"Uruguay",
+45,
+"Friendlies",
+"Argentina"
+],
+"6266053": [
+"2026-10-06T23:00:00.000Z",
+"Benin",
+11,
+"Friendlies",
+"Argentina"
+],
+"6162939": [
+"2026-10-04T00:00:00.000Z",
+"Burkina Faso",
+21,
+"Friendlies",
+"Argentina"
+],
+"6266052": [
+"2026-10-01T00:00:00.000Z",
+"Bolivia",
+81,
+"Friendlies",
+"Argentina"
+],
+"4653858": [
+"2026-07-19T19:00:00.000Z",
+"Spain",
+0,
+"World Cup",
+"Argentina"
+],
+"4653856": [
+"2026-07-15T19:00:00.000Z",
+"England",
+0,
+"World Cup",
+"Argentina"
+],
+"4653854": [
+"2026-07-12T01:00:00.000Z",
+"Switzerland",
+0,
+"World Cup",
+"Argentina"
+],
+"4653848": [
+"2026-07-07T16:00:00.000Z",
+"Egypt",
+0,
+"World Cup",
+"Argentina"
+],
+"4653715": [
+"2026-07-03T22:00:00.000Z",
+"Cape Verde",
+0,
+"World Cup",
+"Argentina"
+]
+},
 "nat": 6706
 },
 "1129081": {
 "name": "Marcelino Núñez",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5991874": [
+"2026-09-30T00:00:00.000Z",
+"USA",
+0,
+"Friendlies",
+"Chile"
+],
+"6006643": [
+"2026-09-26T23:00:00.000Z",
+"Canada",
+52,
+"Friendlies",
+"Chile"
+]
+},
 "nat": 9762
 },
 "1198007": {
 "name": "Anis Mehmeti",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181900": [
+"2026-10-06T18:45:00.000Z",
+"San Marino",
+45,
+"UEFA Nations League C",
+"Albania"
+],
+"5181898": [
+"2026-10-03T13:00:00.000Z",
+"Finland",
+13,
+"UEFA Nations League C",
+"Albania"
+],
+"5181897": [
+"2026-09-29T18:45:00.000Z",
+"San Marino",
+80,
+"UEFA Nations League C",
+"Albania"
+],
+"5181895": [
+"2026-09-26T18:45:00.000Z",
+"Belarus",
+16,
+"UEFA Nations League C",
+"Albania"
+]
+},
 "nat": 10024
 },
 "1265626": {
 "name": "Abdul Fatawu",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040242": [
+"2026-11-16T15:00:00.000Z",
+"Somalia",
+89,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"6040239": [
+"2026-11-12T15:00:00.000Z",
+"Somalia",
+86,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"6040237": [
+"2026-09-29T16:00:00.000Z",
+"Gambia",
+90,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"6040236": [
+"2026-09-24T19:00:00.000Z",
+"Ivory Coast",
+90,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"4653718": [
+"2026-07-04T01:30:00.000Z",
+"Colombia",
+28,
+"World Cup",
+"Ghana"
+]
+},
 "nat": 6714
 },
 "1307961": {
 "name": "Sindre Walle Egeli",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8492
 },
 "873559": {
 "name": "Zian Flemming",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6708
 },
 "1089645": {
 "name": "Jaden Philogene-Bidace",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1320949": {
 "name": "Emersonn",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8256
 },
 "1113915": {
 "name": "Kasey McAteer",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 5791
 },
 "413158": {
 "name": "Chuba Akpom",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "728765": {
 "name": "Daizen Maeda",
 "club": "IPS",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6539356": [
+"2026-11-17T13:10:00.000Z",
+"Paraguay",
+0,
+"Friendlies",
+"Japan"
+],
+"6497224": [
+"2026-11-14T10:15:00.000Z",
+"Brazil",
+72,
+"Friendlies",
+"Japan"
+],
+"6369014": [
+"2026-10-05T10:30:00.000Z",
+"New Zealand",
+90,
+"Friendlies",
+"Japan"
+],
+"6315047": [
+"2026-10-01T10:10:00.000Z",
+"Ecuador",
+0,
+"Friendlies",
+"Japan"
+],
+"6315013": [
+"2026-09-28T10:25:00.000Z",
+"Venezuela",
+0,
+"Friendlies",
+"Japan"
+],
+"6280194": [
+"2026-09-24T10:05:00.000Z",
+"Uruguay",
+64,
+"Friendlies",
+"Japan"
+]
+},
 "nat": 6715
 },
 "914402": {
 "name": "Jack Clarke",
 "club": "IPS",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "215168": {
 "name": "Bernd Leno",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8570
 },
 "210114": {
 "name": "Benjamin Lecomte",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6723
 },
 "469804": {
 "name": "Kenny Tete",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6708
 },
 "877401": {
 "name": "Calvin Bassey",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040391": [
+"2026-11-17T13:00:00.000Z",
+"Tanzania",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040389": [
+"2026-11-13T16:00:00.000Z",
+"Tanzania",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040386": [
+"2026-09-29T16:00:00.000Z",
+"Guinea-Bissau",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040384": [
+"2026-09-25T16:00:00.000Z",
+"Madagascar",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+]
+},
 "nat": 6346
 },
 "821728": {
 "name": "Jorge Cuenca",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6720
 },
 "503659": {
 "name": "Joachim Andersen",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181871": [
+"2026-11-17T19:45:00.000Z",
+"Norway",
+90,
+"UEFA Nations League A",
+"Denmark"
+],
+"5181870": [
+"2026-11-14T19:45:00.000Z",
+"Portugal",
+82,
+"UEFA Nations League A",
+"Denmark"
+],
+"5181868": [
+"2026-10-04T18:45:00.000Z",
+"Wales",
+90,
+"UEFA Nations League A",
+"Denmark"
+],
+"5181865": [
+"2026-10-01T18:45:00.000Z",
+"Portugal",
+90,
+"UEFA Nations League A",
+"Denmark"
+],
+"5181863": [
+"2026-09-27T16:00:00.000Z",
+"Wales",
+90,
+"UEFA Nations League A",
+"Denmark"
+],
+"5181861": [
+"2026-09-24T18:45:00.000Z",
+"Norway",
+90,
+"UEFA Nations League A",
+"Denmark"
+]
+},
 "nat": 8238
 },
 "465750": {
 "name": "Timothy Castagne",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181798": [
+"2026-11-15T19:45:00.000Z",
+"Italy",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181796": [
+"2026-11-12T17:00:00.000Z",
+"Turkiye",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181794": [
+"2026-10-05T18:45:00.000Z",
+"France",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181792": [
+"2026-10-02T18:45:00.000Z",
+"Turkiye",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181790": [
+"2026-09-28T18:45:00.000Z",
+"France",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181788": [
+"2026-09-25T18:45:00.000Z",
+"Italy",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"4653853": [
+"2026-07-10T19:00:00.000Z",
+"Spain",
+90,
+"World Cup",
+"Belgium"
+],
+"4653845": [
+"2026-07-07T00:00:00.000Z",
+"USA",
+90,
+"World Cup",
+"Belgium"
+],
+"4653710": [
+"2026-07-01T20:00:00.000Z",
+"Senegal",
+120,
+"World Cup",
+"Belgium"
+]
+},
 "nat": 8263
 },
 "1073980": {
 "name": "David Affengruber",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181822": [
+"2026-11-17T19:45:00.000Z",
+"Israel",
+90,
+"UEFA Nations League B",
+"Austria"
+],
+"5181821": [
+"2026-11-14T19:45:00.000Z",
+"Ireland",
+1,
+"UEFA Nations League B",
+"Austria"
+],
+"5181818": [
+"2026-10-04T16:00:00.000Z",
+"Kosovo",
+0,
+"UEFA Nations League B",
+"Austria"
+],
+"5181817": [
+"2026-10-01T18:45:00.000Z",
+"Ireland",
+45,
+"UEFA Nations League B",
+"Austria"
+],
+"5181814": [
+"2026-09-27T16:00:00.000Z",
+"Kosovo",
+90,
+"UEFA Nations League B",
+"Austria"
+],
+"5181812": [
+"2026-09-24T18:45:00.000Z",
+"Israel",
+0,
+"UEFA Nations League B",
+"Austria"
+],
+"4653708": [
+"2026-07-02T19:00:00.000Z",
+"Spain",
+0,
+"World Cup",
+"Austria"
+]
+},
 "nat": 8255
 },
 "773991": {
 "name": "Ryan Sessegnon",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "662428": {
 "name": "Antonee Robinson",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6391964": [
+"2026-11-18T00:00:00.000Z",
+"Haiti",
+81,
+"Concacaf Nations League",
+"USA"
+],
+"6391963": [
+"2026-11-14T21:30:00.000Z",
+"Haiti",
+90,
+"Concacaf Nations League",
+"USA"
+],
+"5991876": [
+"2026-10-07T00:00:00.000Z",
+"Canada",
+16,
+"Friendlies",
+"USA"
+],
+"5991875": [
+"2026-10-04T02:00:00.000Z",
+"Mexico",
+90,
+"Friendlies",
+"USA"
+],
+"5991874": [
+"2026-09-30T00:00:00.000Z",
+"Chile",
+90,
+"Friendlies",
+"USA"
+],
+"5991873": [
+"2026-09-26T20:30:00.000Z",
+"Peru",
+28,
+"Friendlies",
+"USA"
+],
+"4653845": [
+"2026-07-07T00:00:00.000Z",
+"Belgium",
+89,
+"World Cup",
+"USA"
+],
+"4653709": [
+"2026-07-02T00:00:00.000Z",
+"Bosnia and Herzegovina",
+90,
+"World Cup",
+"USA"
+]
+},
 "nat": 6713
 },
 "502420": {
 "name": "Harrison Reed",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "182962": {
 "name": "Tom Cairney",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8498
 },
 "1339269": {
 "name": "Hugo Larsson",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181848": [
+"2026-11-17T19:45:00.000Z",
+"Poland",
+90,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181846": [
+"2026-11-14T19:45:00.000Z",
+"Bosnia and Herzegovina",
+90,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181844": [
+"2026-10-05T18:45:00.000Z",
+"Romania",
+36,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181841": [
+"2026-10-02T18:45:00.000Z",
+"Bosnia and Herzegovina",
+90,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181840": [
+"2026-09-28T18:45:00.000Z",
+"Poland",
+10,
+"UEFA Nations League B",
+"Sweden"
+],
+"5181838": [
+"2026-09-25T18:45:00.000Z",
+"Romania",
+0,
+"UEFA Nations League B",
+"Sweden"
+]
+},
 "nat": 8520
 },
 "540963": {
 "name": "Sander Berge",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181871": [
+"2026-11-17T19:45:00.000Z",
+"Denmark",
+90,
+"UEFA Nations League A",
+"Norway"
+],
+"5181869": [
+"2026-11-14T17:00:00.000Z",
+"Wales",
+90,
+"UEFA Nations League A",
+"Norway"
+],
+"5181867": [
+"2026-10-04T18:45:00.000Z",
+"Portugal",
+90,
+"UEFA Nations League A",
+"Norway"
+],
+"5181866": [
+"2026-10-01T18:45:00.000Z",
+"Wales",
+90,
+"UEFA Nations League A",
+"Norway"
+],
+"5181864": [
+"2026-09-27T18:45:00.000Z",
+"Portugal",
+90,
+"UEFA Nations League A",
+"Norway"
+],
+"5181861": [
+"2026-09-24T18:45:00.000Z",
+"Denmark",
+90,
+"UEFA Nations League A",
+"Norway"
+],
+"4653852": [
+"2026-07-11T21:00:00.000Z",
+"England",
+120,
+"World Cup",
+"Norway"
+],
+"4653846": [
+"2026-07-05T20:00:00.000Z",
+"Brazil",
+90,
+"World Cup",
+"Norway"
+]
+},
 "nat": 8492
 },
 "604785": {
 "name": "Alex Iwobi",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040391": [
+"2026-11-17T13:00:00.000Z",
+"Tanzania",
+29,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040389": [
+"2026-11-13T16:00:00.000Z",
+"Tanzania",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040386": [
+"2026-09-29T16:00:00.000Z",
+"Guinea-Bissau",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040384": [
+"2026-09-25T16:00:00.000Z",
+"Madagascar",
+90,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+]
+},
 "nat": 6346
 },
 "1281452": {
 "name": "Shea Charles",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181810": [
+"2026-11-17T19:45:00.000Z",
+"Hungary",
+90,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181809": [
+"2026-11-14T19:45:00.000Z",
+"Ukraine",
+90,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181806": [
+"2026-10-05T18:45:00.000Z",
+"Georgia",
+90,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181805": [
+"2026-10-02T18:45:00.000Z",
+"Ukraine",
+90,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181803": [
+"2026-09-28T18:45:00.000Z",
+"Hungary",
+90,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181800": [
+"2026-09-25T16:00:00.000Z",
+"Georgia",
+90,
+"UEFA Nations League B",
+"Northern Ireland"
+]
+},
 "nat": 10259
 },
 "1508427": {
 "name": "Manuel Ángel",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6720
 },
 "1422593": {
 "name": "Joshua King",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181858": [
+"2026-11-12T19:45:00.000Z",
+"Croatia",
+0,
+"UEFA Nations League A",
+"England"
+]
+},
 "nat": 8491
 },
 "889534": {
 "name": "Emile Smith Rowe",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1413847": {
 "name": "Gonzalo García",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6720
 },
 "1403691": {
 "name": "César Palacios",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6720
 },
 "1128945": {
 "name": "Rodrigo Muniz",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8256
 },
 "1318400": {
 "name": "Kevin",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8256
 },
 "1113790": {
 "name": "Oscar Bobb",
 "club": "FUL",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181871": [
+"2026-11-17T19:45:00.000Z",
+"Denmark",
+13,
+"UEFA Nations League A",
+"Norway"
+],
+"5181869": [
+"2026-11-14T17:00:00.000Z",
+"Wales",
+66,
+"UEFA Nations League A",
+"Norway"
+],
+"5181867": [
+"2026-10-04T18:45:00.000Z",
+"Portugal",
+16,
+"UEFA Nations League A",
+"Norway"
+],
+"5181866": [
+"2026-10-01T18:45:00.000Z",
+"Wales",
+49,
+"UEFA Nations League A",
+"Norway"
+],
+"5181864": [
+"2026-09-27T18:45:00.000Z",
+"Portugal",
+18,
+"UEFA Nations League A",
+"Norway"
+],
+"5181861": [
+"2026-09-24T18:45:00.000Z",
+"Denmark",
+66,
+"UEFA Nations League A",
+"Norway"
+],
+"4653852": [
+"2026-07-11T21:00:00.000Z",
+"England",
+52,
+"World Cup",
+"Norway"
+],
+"4653846": [
+"2026-07-05T20:00:00.000Z",
+"Brazil",
+45,
+"World Cup",
+"Norway"
+]
+},
 "nat": 8492
 },
 "1532672": {
 "name": "Jonah Kusi-Asare",
 "club": "FUL",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8520
 },
 "887969": {
 "name": "Steven Benda",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8570
 },
 "749834": {
 "name": "John Victor",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8256
 },
 "181069": {
 "name": "Matz Sels",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8263
 },
 "1425182": {
 "name": "Ousmane Diomande",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040241": [
+"2026-11-17T16:00:00.000Z",
+"Gambia",
+16,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+],
+"6040240": [
+"2026-11-12T19:00:00.000Z",
+"Gambia",
+90,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+],
+"6299697": [
+"2026-10-03T19:00:00.000Z",
+"Cameroon",
+83,
+"Friendlies",
+"Ivory Coast"
+],
+"6040238": [
+"2026-09-29T19:00:00.000Z",
+"Somalia",
+0,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+],
+"6040236": [
+"2026-09-24T19:00:00.000Z",
+"Ghana",
+90,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+]
+},
 "nat": 6709
 },
 "1078788": {
 "name": "Neco Williams",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181869": [
+"2026-11-14T17:00:00.000Z",
+"Norway",
+72,
+"UEFA Nations League A",
+"Wales"
+],
+"5181868": [
+"2026-10-04T18:45:00.000Z",
+"Denmark",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181866": [
+"2026-10-01T18:45:00.000Z",
+"Norway",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181863": [
+"2026-09-27T16:00:00.000Z",
+"Denmark",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181862": [
+"2026-09-24T18:45:00.000Z",
+"Portugal",
+90,
+"UEFA Nations League A",
+"Wales"
+]
+},
 "nat": 5790
 },
 "1458711": {
 "name": "Murillo",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8256
 },
 "1391209": {
 "name": "Jair Cunha",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6487085": [
+"2026-11-17T10:00:00.000Z",
+"Singapore",
+0,
+"Friendlies",
+"Brazil"
+],
+"6497224": [
+"2026-11-14T10:15:00.000Z",
+"Japan",
+58,
+"Friendlies",
+"Brazil"
+],
+"5985687": [
+"2026-10-03T14:00:00.000Z",
+"India",
+30,
+"Friendlies",
+"Brazil"
+],
+"5924777": [
+"2026-09-29T10:00:00.000Z",
+"Australia",
+87,
+"Friendlies",
+"Brazil"
+],
+"5924776": [
+"2026-09-25T10:00:00.000Z",
+"Australia",
+14,
+"Friendlies",
+"Brazil"
+]
+},
 "nat": 8256
 },
 "766611": {
 "name": "Nikola Milenković",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181836": [
+"2026-11-16T19:45:00.000Z",
+"Greece",
+90,
+"UEFA Nations League A",
+"Serbia"
+],
+"5181834": [
+"2026-11-13T19:45:00.000Z",
+"Germany",
+90,
+"UEFA Nations League A",
+"Serbia"
+]
+},
 "nat": 8205
 },
 "682548": {
 "name": "Ola Aina",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040391": [
+"2026-11-17T13:00:00.000Z",
+"Tanzania",
+8,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040389": [
+"2026-11-13T16:00:00.000Z",
+"Tanzania",
+89,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040386": [
+"2026-09-29T16:00:00.000Z",
+"Guinea-Bissau",
+0,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040384": [
+"2026-09-25T16:00:00.000Z",
+"Madagascar",
+87,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+]
+},
 "nat": 6346
 },
 "1622290": {
 "name": "Nicolò Savona",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8204
 },
 "795371": {
 "name": "Ibrahim Sangaré",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040241": [
+"2026-11-17T16:00:00.000Z",
+"Gambia",
+25,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+],
+"6040240": [
+"2026-11-12T19:00:00.000Z",
+"Gambia",
+90,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+],
+"6299697": [
+"2026-10-03T19:00:00.000Z",
+"Cameroon",
+90,
+"Friendlies",
+"Ivory Coast"
+],
+"6040238": [
+"2026-09-29T19:00:00.000Z",
+"Somalia",
+0,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+],
+"6040236": [
+"2026-09-24T19:00:00.000Z",
+"Ghana",
+72,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+]
+},
 "nat": 6709
 },
 "827315": {
 "name": "Nicolás Domínguez",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6706
 },
 "789502": {
 "name": "Morgan Gibbs-White",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181860": [
+"2026-11-15T19:45:00.000Z",
+"Spain",
+0,
+"UEFA Nations League A",
+"England"
+],
+"5181858": [
+"2026-11-12T19:45:00.000Z",
+"Croatia",
+0,
+"UEFA Nations League A",
+"England"
+],
+"5181856": [
+"2026-10-06T18:45:00.000Z",
+"Czechia",
+18,
+"UEFA Nations League A",
+"England"
+],
+"5181853": [
+"2026-10-03T16:00:00.000Z",
+"Croatia",
+11,
+"UEFA Nations League A",
+"England"
+],
+"5181851": [
+"2026-09-29T18:45:00.000Z",
+"Czechia",
+9,
+"UEFA Nations League A",
+"England"
+],
+"5181850": [
+"2026-09-26T18:45:00.000Z",
+"Spain",
+7,
+"UEFA Nations League A",
+"England"
+]
+},
 "nat": 8491
 },
 "620027": {
 "name": "Xaver Schlager",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181818": [
+"2026-10-04T16:00:00.000Z",
+"Kosovo",
+90,
+"UEFA Nations League B",
+"Austria"
+],
+"5181817": [
+"2026-10-01T18:45:00.000Z",
+"Ireland",
+90,
+"UEFA Nations League B",
+"Austria"
+],
+"5181814": [
+"2026-09-27T16:00:00.000Z",
+"Kosovo",
+90,
+"UEFA Nations League B",
+"Austria"
+],
+"5181812": [
+"2026-09-24T18:45:00.000Z",
+"Israel",
+90,
+"UEFA Nations League B",
+"Austria"
+],
+"4653708": [
+"2026-07-02T19:00:00.000Z",
+"Spain",
+45,
+"World Cup",
+"Austria"
+]
+},
 "nat": 8255
 },
 "775614": {
 "name": "Ryan Yates",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1107648": {
 "name": "James McAtee",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1155130": {
 "name": "Luca Netz",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8570
 },
 "859282": {
 "name": "Daniel Muñoz",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6540017": [
+"2026-11-17T23:00:00.000Z",
+"Chile",
+90,
+"Friendlies",
+"Colombia"
+],
+"6539346": [
+"2026-11-14T00:00:00.000Z",
+"Chile",
+90,
+"Friendlies",
+"Colombia"
+],
+"6299694": [
+"2026-10-06T23:45:00.000Z",
+"Peru",
+90,
+"Friendlies",
+"Colombia"
+],
+"6299693": [
+"2026-10-03T00:00:00.000Z",
+"Paraguay",
+7,
+"Friendlies",
+"Colombia"
+],
+"6210558": [
+"2026-09-27T01:00:00.000Z",
+"Mexico",
+90,
+"Friendlies",
+"Colombia"
+],
+"4653849": [
+"2026-07-07T20:00:00.000Z",
+"Switzerland",
+120,
+"World Cup",
+"Colombia"
+],
+"4653718": [
+"2026-07-04T01:30:00.000Z",
+"Ghana",
+90,
+"World Cup",
+"Colombia"
+]
+},
 "nat": 8258
 },
 "846383": {
 "name": "Callum Hudson-Odoi",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "169719": {
 "name": "Chris Wood",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6369014": [
+"2026-10-05T10:30:00.000Z",
+"Japan",
+90,
+"Friendlies",
+"New Zealand"
+],
+"6315046": [
+"2026-10-01T06:10:00.000Z",
+"Panama",
+90,
+"Friendlies",
+"New Zealand"
+]
+},
 "nat": 5820
 },
 "1082102": {
 "name": "Igor Jesus",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8256
 },
 "1022649": {
 "name": "Dan Ndoye",
 "club": "NFO",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181785": [
+"2026-11-13T19:45:00.000Z",
+"Slovenia",
+87,
+"UEFA Nations League B",
+"Switzerland"
+],
+"5181783": [
+"2026-10-06T18:45:00.000Z",
+"North Macedonia",
+86,
+"UEFA Nations League B",
+"Switzerland"
+],
+"5181781": [
+"2026-10-03T18:45:00.000Z",
+"Slovenia",
+87,
+"UEFA Nations League B",
+"Switzerland"
+],
+"5181778": [
+"2026-09-29T18:45:00.000Z",
+"Scotland",
+86,
+"UEFA Nations League B",
+"Switzerland"
+],
+"5181777": [
+"2026-09-26T18:45:00.000Z",
+"North Macedonia",
+75,
+"UEFA Nations League B",
+"Switzerland"
+],
+"4653854": [
+"2026-07-12T01:00:00.000Z",
+"Argentina",
+86,
+"World Cup",
+"Switzerland"
+],
+"4653849": [
+"2026-07-07T20:00:00.000Z",
+"Colombia",
+89,
+"World Cup",
+"Switzerland"
+],
+"4653717": [
+"2026-07-03T03:00:00.000Z",
+"Algeria",
+87,
+"World Cup",
+"Switzerland"
+]
+},
 "nat": 6717
 },
 "1095445": {
 "name": "Arnaud Kalimuendo-Muinga",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6723
 },
 "1113903": {
 "name": "Liam Delap",
 "club": "NFO",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "302783": {
 "name": "Ben Wilson",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1187236": {
 "name": "Carl Rushworth",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "189103": {
 "name": "Daniel Bentley",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "711357": {
 "name": "Ethan Pinnock",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 5806
 },
 "759814": {
 "name": "Jay Dasilva",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181872": [
+"2026-11-17T19:45:00.000Z",
+"Portugal",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181869": [
+"2026-11-14T17:00:00.000Z",
+"Norway",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181868": [
+"2026-10-04T18:45:00.000Z",
+"Denmark",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181866": [
+"2026-10-01T18:45:00.000Z",
+"Norway",
+90,
+"UEFA Nations League A",
+"Wales"
+],
+"5181863": [
+"2026-09-27T16:00:00.000Z",
+"Denmark",
+0,
+"UEFA Nations League A",
+"Wales"
+],
+"5181862": [
+"2026-09-24T18:45:00.000Z",
+"Portugal",
+90,
+"UEFA Nations League A",
+"Wales"
+]
+},
 "nat": 5790
 },
 "1161885": {
 "name": "Bobby Thomas",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1613300": {
 "name": "Stephen Mfuni",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "191174": {
 "name": "Jake Bidwell",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "863822": {
 "name": "Joël Latibeaudiere",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6391966": [
+"2026-11-18T02:30:00.000Z",
+"Mexico",
+82,
+"Concacaf Nations League",
+"Jamaica"
+],
+"6391965": [
+"2026-11-15T01:00:00.000Z",
+"Mexico",
+90,
+"Concacaf Nations League",
+"Jamaica"
+],
+"5991897": [
+"2026-10-03T02:00:00.000Z",
+"El Salvador",
+84,
+"Concacaf Nations League",
+"Jamaica"
+],
+"5991892": [
+"2026-09-29T00:00:00.000Z",
+"Honduras",
+90,
+"Concacaf Nations League",
+"Jamaica"
+],
+"5991890": [
+"2026-09-26T00:00:00.000Z",
+"Guatemala",
+90,
+"Concacaf Nations League",
+"Jamaica"
+]
+},
 "nat": 5806
 },
 "1257648": {
 "name": "Aurèle Amenda",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"4653854": [
+"2026-07-12T01:00:00.000Z",
+"Argentina",
+0,
+"World Cup",
+"Switzerland"
+],
+"4653849": [
+"2026-07-07T20:00:00.000Z",
+"Colombia",
+0,
+"World Cup",
+"Switzerland"
+],
+"4653717": [
+"2026-07-03T03:00:00.000Z",
+"Algeria",
+0,
+"World Cup",
+"Switzerland"
+]
+},
 "nat": 6717
 },
 "866688": {
 "name": "Luke Woolfenden",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1074750": {
 "name": "Milan van Ewijk",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6708
 },
 "1030830": {
 "name": "Jack Rudoni",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "478357": {
 "name": "Matt Grimes",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1615927": {
 "name": "Caleb Yirenkyi",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040239": [
+"2026-11-12T15:00:00.000Z",
+"Somalia",
+86,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"6040237": [
+"2026-09-29T16:00:00.000Z",
+"Gambia",
+90,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"6040236": [
+"2026-09-24T19:00:00.000Z",
+"Ivory Coast",
+90,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"4653718": [
+"2026-07-04T01:30:00.000Z",
+"Colombia",
+79,
+"World Cup",
+"Ghana"
+]
+},
 "nat": 6714
 },
 "856685": {
 "name": "Frank Onyeka",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040386": [
+"2026-09-29T16:00:00.000Z",
+"Guinea-Bissau",
+45,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040384": [
+"2026-09-25T16:00:00.000Z",
+"Madagascar",
+0,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+]
+},
 "nat": 6346
 },
 "962000": {
 "name": "Josh Eccles",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "845985": {
 "name": "Victor Torp",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8238
 },
 "955411": {
 "name": "Yann Gboho",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6299697": [
+"2026-10-03T19:00:00.000Z",
+"Cameroon",
+78,
+"Friendlies",
+"Ivory Coast"
+],
+"6040238": [
+"2026-09-29T19:00:00.000Z",
+"Somalia",
+7,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+],
+"6040236": [
+"2026-09-24T19:00:00.000Z",
+"Ghana",
+0,
+"Africa Cup of Nations Qualification",
+"Ivory Coast"
+]
+},
 "nat": 6709
 },
 "1025603": {
 "name": "Tatsuhiro Sakamoto",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6539356": [
+"2026-11-17T13:10:00.000Z",
+"Paraguay",
+45,
+"Friendlies",
+"Japan"
+],
+"6497224": [
+"2026-11-14T10:15:00.000Z",
+"Brazil",
+18,
+"Friendlies",
+"Japan"
+]
+},
 "nat": 6715
 },
 "982284": {
 "name": "Ellis Simms",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "798654": {
 "name": "Ephron Mason-Clark",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 5806
 },
 "848268": {
 "name": "Haji Wright",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"4653845": [
+"2026-07-07T00:00:00.000Z",
+"Belgium",
+1,
+"World Cup",
+"USA"
+],
+"4653709": [
+"2026-07-02T00:00:00.000Z",
+"Bosnia and Herzegovina",
+0,
+"World Cup",
+"USA"
+]
+},
 "nat": 6713
 },
 "643717": {
 "name": "Taiwo Awoniyi",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040391": [
+"2026-11-17T13:00:00.000Z",
+"Tanzania",
+61,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040389": [
+"2026-11-13T16:00:00.000Z",
+"Tanzania",
+0,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040386": [
+"2026-09-29T16:00:00.000Z",
+"Guinea-Bissau",
+45,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+],
+"6040384": [
+"2026-09-25T16:00:00.000Z",
+"Madagascar",
+21,
+"Africa Cup of Nations Qualification",
+"Nigeria"
+]
+},
 "nat": 6346
 },
 "1283034": {
 "name": "Loum Tchaouna",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6723
 },
 "1089686": {
 "name": "Kaine Kesler-Hayden",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "776184": {
 "name": "Brandon Thomas-Asante",
 "club": "COV",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040242": [
+"2026-11-16T15:00:00.000Z",
+"Somalia",
+58,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"6040239": [
+"2026-11-12T15:00:00.000Z",
+"Somalia",
+4,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"6040237": [
+"2026-09-29T16:00:00.000Z",
+"Gambia",
+45,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"6040236": [
+"2026-09-24T19:00:00.000Z",
+"Ivory Coast",
+64,
+"Africa Cup of Nations Qualification",
+"Ghana"
+],
+"4653718": [
+"2026-07-04T01:30:00.000Z",
+"Colombia",
+0,
+"World Cup",
+"Ghana"
+]
+},
 "nat": 6714
 },
 "775355": {
 "name": "Gustavo Hamer",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6708
 },
 "1524069": {
 "name": "Sidiki Cherif",
 "club": "COV",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6723
 },
 "1178602": {
 "name": "Senne Lammens",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181798": [
+"2026-11-15T19:45:00.000Z",
+"Italy",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181796": [
+"2026-11-12T17:00:00.000Z",
+"Turkiye",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181794": [
+"2026-10-05T18:45:00.000Z",
+"France",
+0,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181792": [
+"2026-10-02T18:45:00.000Z",
+"Turkiye",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181790": [
+"2026-09-28T18:45:00.000Z",
+"France",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181788": [
+"2026-09-25T18:45:00.000Z",
+"Italy",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"4653853": [
+"2026-07-10T19:00:00.000Z",
+"Spain",
+19,
+"World Cup",
+"Belgium"
+],
+"4653845": [
+"2026-07-07T00:00:00.000Z",
+"USA",
+0,
+"World Cup",
+"Belgium"
+],
+"4653710": [
+"2026-07-01T20:00:00.000Z",
+"Senegal",
+0,
+"World Cup",
+"Belgium"
+]
+},
 "nat": 8263
 },
 "163604": {
 "name": "Karl Darlow",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181872": [
+"2026-11-17T19:45:00.000Z",
+"Portugal",
+0,
+"UEFA Nations League A",
+"Wales"
+],
+"5181869": [
+"2026-11-14T17:00:00.000Z",
+"Norway",
+90,
+"UEFA Nations League A",
+"Wales"
+]
+},
 "nat": 5790
 },
 "24155": {
 "name": "Tom Heaton",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1367699": {
 "name": "Dermot Mee",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181810": [
+"2026-11-17T19:45:00.000Z",
+"Hungary",
+0,
+"UEFA Nations League B",
+"Northern Ireland"
+],
+"5181809": [
+"2026-11-14T19:45:00.000Z",
+"Ukraine",
+0,
+"UEFA Nations League B",
+"Northern Ireland"
+]
+},
 "nat": 10259
 },
 "751550": {
 "name": "Diogo Dalot",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181872": [
+"2026-11-17T19:45:00.000Z",
+"Wales",
+71,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181870": [
+"2026-11-14T19:45:00.000Z",
+"Denmark",
+90,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181867": [
+"2026-10-04T18:45:00.000Z",
+"Norway",
+27,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181865": [
+"2026-10-01T18:45:00.000Z",
+"Denmark",
+27,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181864": [
+"2026-09-27T18:45:00.000Z",
+"Norway",
+0,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181862": [
+"2026-09-24T18:45:00.000Z",
+"Wales",
+1,
+"UEFA Nations League A",
+"Portugal"
+],
+"4653844": [
+"2026-07-06T19:00:00.000Z",
+"Spain",
+19,
+"World Cup",
+"Portugal"
+],
+"4653707": [
+"2026-07-02T23:00:00.000Z",
+"Croatia",
+0,
+"World Cup",
+"Portugal"
+]
+},
 "nat": 8361
 },
 "775539": {
 "name": "Noussair Mazraoui",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6040206": [
+"2026-11-17T20:00:00.000Z",
+"Niger",
+16,
+"Africa Cup of Nations Qualification",
+"Morocco"
+],
+"6040204": [
+"2026-11-13T20:00:00.000Z",
+"Niger",
+69,
+"Africa Cup of Nations Qualification",
+"Morocco"
+],
+"6040202": [
+"2026-09-29T13:00:00.000Z",
+"Lesotho",
+69,
+"Africa Cup of Nations Qualification",
+"Morocco"
+],
+"6040199": [
+"2026-09-25T19:00:00.000Z",
+"Gabon",
+84,
+"Africa Cup of Nations Qualification",
+"Morocco"
+],
+"4653851": [
+"2026-07-09T20:00:00.000Z",
+"France",
+90,
+"World Cup",
+"Morocco"
+],
+"4653843": [
+"2026-07-04T17:00:00.000Z",
+"Canada",
+90,
+"World Cup",
+"Morocco"
+]
+},
 "nat": 6262
 },
 "769895": {
 "name": "Matthijs de Ligt",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6708
 },
 "255610": {
 "name": "Harry Maguire",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "847983": {
 "name": "Lisandro Martínez",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6462729": [
+"2026-11-17T23:00:00.000Z",
+"Costa Rica",
+61,
+"Friendlies",
+"Argentina"
+],
+"6462728": [
+"2026-11-13T23:00:00.000Z",
+"Uruguay",
+90,
+"Friendlies",
+"Argentina"
+],
+"6266053": [
+"2026-10-06T23:00:00.000Z",
+"Benin",
+38,
+"Friendlies",
+"Argentina"
+],
+"6162939": [
+"2026-10-04T00:00:00.000Z",
+"Burkina Faso",
+45,
+"Friendlies",
+"Argentina"
+],
+"6266052": [
+"2026-10-01T00:00:00.000Z",
+"Bolivia",
+81,
+"Friendlies",
+"Argentina"
+],
+"4653858": [
+"2026-07-19T19:00:00.000Z",
+"Spain",
+44,
+"World Cup",
+"Argentina"
+],
+"4653856": [
+"2026-07-15T19:00:00.000Z",
+"England",
+72,
+"World Cup",
+"Argentina"
+],
+"4653854": [
+"2026-07-12T01:00:00.000Z",
+"Switzerland",
+120,
+"World Cup",
+"Argentina"
+],
+"4653848": [
+"2026-07-07T16:00:00.000Z",
+"Egypt",
+90,
+"World Cup",
+"Argentina"
+],
+"4653715": [
+"2026-07-03T22:00:00.000Z",
+"Cape Verde",
+120,
+"World Cup",
+"Argentina"
+]
+},
 "nat": 6706
 },
 "1358581": {
 "name": "Leny Yoro",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181799": [
+"2026-11-15T19:45:00.000Z",
+"Turkiye",
+0,
+"UEFA Nations League A",
+"France"
+],
+"5181797": [
+"2026-11-12T19:45:00.000Z",
+"Italy",
+0,
+"UEFA Nations League A",
+"France"
+],
+"5181794": [
+"2026-10-05T18:45:00.000Z",
+"Belgium",
+90,
+"UEFA Nations League A",
+"France"
+],
+"5181793": [
+"2026-10-02T18:45:00.000Z",
+"Italy",
+0,
+"UEFA Nations League A",
+"France"
+],
+"5181790": [
+"2026-09-28T18:45:00.000Z",
+"Belgium",
+0,
+"UEFA Nations League A",
+"France"
+],
+"5181789": [
+"2026-09-25T18:45:00.000Z",
+"Turkiye",
+0,
+"UEFA Nations League A",
+"France"
+]
+},
 "nat": 6723
 },
 "362694": {
 "name": "Luke Shaw",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1559639": {
 "name": "Ayden Heaven",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "750032": {
 "name": "Mason Mount",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "422685": {
 "name": "Bruno Fernandes",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181872": [
+"2026-11-17T19:45:00.000Z",
+"Wales",
+89,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181870": [
+"2026-11-14T19:45:00.000Z",
+"Denmark",
+79,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181867": [
+"2026-10-04T18:45:00.000Z",
+"Norway",
+89,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181865": [
+"2026-10-01T18:45:00.000Z",
+"Denmark",
+89,
+"UEFA Nations League A",
+"Portugal"
+],
+"5181862": [
+"2026-09-24T18:45:00.000Z",
+"Wales",
+89,
+"UEFA Nations League A",
+"Portugal"
+],
+"4653844": [
+"2026-07-06T19:00:00.000Z",
+"Spain",
+90,
+"World Cup",
+"Portugal"
+],
+"4653707": [
+"2026-07-02T23:00:00.000Z",
+"Croatia",
+63,
+"World Cup",
+"Portugal"
+]
+},
 "nat": 8361
 },
 "1372921": {
 "name": "Andrey Santos",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"6487085": [
+"2026-11-17T10:00:00.000Z",
+"Singapore",
+0,
+"Friendlies",
+"Brazil"
+],
+"6497224": [
+"2026-11-14T10:15:00.000Z",
+"Japan",
+78,
+"Friendlies",
+"Brazil"
+],
+"5985687": [
+"2026-10-03T14:00:00.000Z",
+"India",
+61,
+"Friendlies",
+"Brazil"
+],
+"5924777": [
+"2026-09-29T10:00:00.000Z",
+"Australia",
+29,
+"Friendlies",
+"Brazil"
+],
+"5924776": [
+"2026-09-25T10:00:00.000Z",
+"Australia",
+0,
+"Friendlies",
+"Brazil"
+]
+},
 "nat": 8256
 },
 "465960": {
 "name": "Youri Tielemans",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"5181798": [
+"2026-11-15T19:45:00.000Z",
+"Italy",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181796": [
+"2026-11-12T17:00:00.000Z",
+"Turkiye",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181792": [
+"2026-10-02T18:45:00.000Z",
+"Turkiye",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181790": [
+"2026-09-28T18:45:00.000Z",
+"France",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"5181788": [
+"2026-09-25T18:45:00.000Z",
+"Italy",
+90,
+"UEFA Nations League A",
+"Belgium"
+],
+"4653853": [
+"2026-07-10T19:00:00.000Z",
+"Spain",
+0,
+"World Cup",
+"Belgium"
+],
+"4653845": [
+"2026-07-07T00:00:00.000Z",
+"USA",
+90,
+"World Cup",
+"Belgium"
+],
+"4653710": [
+"2026-07-01T20:00:00.000Z",
+"Senegal",
+120,
+"World Cup",
+"Belgium"
+]
+},
 "nat": 8263
 },
 "1352713": {
 "name": "Carlos Baleba",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 6629
 },
 "1035614": {
 "name": "Manuel Ugarte",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 5796
 },
 "1292810": {
 "name": "Kobbie Mainoo",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"4653856": [
+"2026-07-15T19:00:00.000Z",
+"Argentina",
+0,
+"World Cup",
+"England"
+],
+"4653852": [
+"2026-07-11T21:00:00.000Z",
+"Norway",
+0,
+"World Cup",
+"England"
+],
+"4653847": [
+"2026-07-06T01:00:00.000Z",
+"Mexico",
+0,
+"World Cup",
+"England"
+],
+"4653714": [
+"2026-07-01T16:00:00.000Z",
+"DR Congo",
+0,
+"World Cup",
+"England"
+]
+},
 "nat": 8491
 },
 "1575707": {
 "name": "Jack Fletcher",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "1676985": {
 "name": "Tyler Fletcher",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8498
 },
 "1430832": {
 "name": "Harry Amass",
 "club": "MUN",
-"fetched": 0,
+"fetched": 1794985140.800176,
 "matches": {},
 "nat": 8491
 },
 "696365": {
 "name": "Marcus Rashford",
 "club": "MUN",
-"fetched": 0,
-"matches": {},
+"fetched": 1794985140.800176,
+"matches": {
+"4653857": [
+"2026-07-18T21:00:00.000Z",
+"France",
+45,
+"World Cup",
+"England"
+],
+"4653856": [
+"2026-07-15T19:00:00.000Z",
+"Argentina",
+1,
+"World Cup",
+"England"
+],
+"4653852": [
+"2026-07-11T21:00:00.000Z",
+"Norway",
+0,
+"World Cup",
+"England"
+],
+"4653847": [
+"2026-07-06T01:00:00.000Z",
+"Mexico",
+0,
+"World Cup",
+"England"
+],
+"4653714": [
+"2026-07-01T16:00:00.000Z",
+"DR Congo",
+61,
+"World Cup",
+"England"
+]
+},
 "nat": 8491
 },
 "863098": {
