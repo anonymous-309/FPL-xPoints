@@ -24,12 +24,26 @@
     attack: { f: (s) => -s.xga, show: (v) => (-v).toFixed(2), head: 'Concedes' }, // our goals depend on their defence
     defence: { f: (s) => s.xgf, show: (v) => v.toFixed(2), head: 'Scores' }, // our clean sheet depends on their attack
   };
+  // A side's strength = the club's average over all its coming matches (so who it happens to meet at home or away
+  // does not skew it), plus or minus half the league's home edge. The model's full home edge put 10 of the top 12
+  // sides as away trips; half of it gives about FPL's own mix (7 of its top 12 are away trips).
+  const VENUE_WEIGHT = 0.5;
+  const avgOf = (ms) => ({ xgf: ms.reduce((a, m) => a + (m.xgf || 0), 0) / (ms.length || 1), xga: ms.reduce((a, m) => a + m.xga, 0) / (ms.length || 1) });
+  let edgeMemo = null;
+  function homeEdge() {
+    if (edgeMemo) return edgeMemo;
+    const all = Object.values(data.teams).flatMap((t) => data.gws.flatMap((g) => t[g] || []));
+    const h = avgOf(all.filter((m) => m.home)), a = avgOf(all.filter((m) => !m.home));
+    edgeMemo = { xgf: (h.xgf - a.xgf) / 2, xga: (h.xga - a.xga) / 2 }; // half the home-away gap each way
+    return edgeMemo;
+  }
   function sideStrength(short, home) {
     const t = data.teams[short];
-    const ms = data.gws.flatMap((g) => (t[g] || []).filter((m) => m.home === home));
-    const use = ms.length ? ms : data.gws.flatMap((g) => t[g] || []);
-    const xgf = use.reduce((a, m) => a + (m.xgf || 0), 0) / (use.length || 1), xga = use.reduce((a, m) => a + m.xga, 0) / (use.length || 1);
-    return { xgf, xga, text: `expected goals a match ${home ? 'at home' : 'away'}: ${xgf.toFixed(2)} scored, ${xga.toFixed(2)} conceded (model: real goals 70%, xG 30%, recent matches weigh more)` };
+    const base = avgOf(data.gws.flatMap((g) => t[g] || []));
+    const e = homeEdge();
+    const k = (home ? 1 : -1) * VENUE_WEIGHT;
+    const xgf = base.xgf + k * e.xgf, xga = base.xga + k * e.xga;
+    return { xgf, xga, text: `expected goals a match ${home ? 'at home' : 'away'}: ${xgf.toFixed(2)} scored, ${xga.toFixed(2)} conceded (all its coming matches, half the league's home edge ${home ? 'added' : 'taken off'}; model: real goals 70%, xG 30%, recent matches weigh more)` };
   }
   function strength(kind) {
     const list = [];
