@@ -1566,8 +1566,49 @@ def load_history(data_dir: Path, seasons: list[str]) -> pd.DataFrame:
     return yellow_bans(clean(add_core(raw, data_dir, seasons), seasons))
 
 
+PEN_ORDER_WINDOW = 38  # team matches looked back over for who has been taking the penalties
+
+
+def pen_order_from_history(df: pd.DataFrame) -> pd.Series:
+    """For past matches (the backtest): each team's penalty order before the match from who actually took its
+    penalties in its previous PEN_ORDER_WINDOW matches (most taken first), where penalties are counted; FPL's order
+    stored for old seasons is often wrong or out of date. Falls back to that stored order where nobody took one."""
+    taken = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)).astype(float)
+    known = df["core_pen_scored"].notna() | df["core_pen_missed"].notna()
+    tm = df[["season", "fixture", "team", "kickoff_time"]].drop_duplicates(["season", "fixture", "team"]).sort_values("kickoff_time")
+    tm["i"] = tm.groupby("team").cumcount()
+    idx = df[["season", "fixture", "team"]].merge(tm[["season", "fixture", "team", "i"]], on=["season", "fixture", "team"], how="left")["i"].to_numpy()
+    d = pd.DataFrame({"team": df["team"].to_numpy(), "pid": df["pid"].to_numpy(), "i": idx, "taken": taken.to_numpy(), "known": known.to_numpy()})
+    count = np.zeros(len(d))
+    have = np.zeros(len(d), bool)  # any counted match for the team in the window
+    for team, g in d.groupby("team"):
+        wide = g.pivot_table(index="i", columns="pid", values="taken", aggfunc="sum", fill_value=0.0)
+        full = pd.RangeIndex(int(g["i"].min()), int(g["i"].max()) + 1)
+        wide = wide.reindex(full, fill_value=0.0)
+        before = wide.rolling(PEN_ORDER_WINDOW, min_periods=1).sum().shift(1).fillna(0.0)
+        k = g.groupby("i")["known"].any().reindex(full, fill_value=False).astype(float)
+        kb = k.rolling(PEN_ORDER_WINDOW, min_periods=1).sum().shift(1).fillna(0.0)
+        st = before.stack()
+        vals = st.reindex(pd.MultiIndex.from_arrays([g["i"].to_numpy(), g["pid"].to_numpy()])).fillna(0.0).to_numpy()
+        pos = g.index.to_numpy()  # positions in d (a plain 0..n-1 index)
+        count[pos] = vals
+        have[pos] = kb.reindex(g["i"].to_numpy()).to_numpy() > 0
+    d["count"] = count
+    rank = d[d["count"] > 0].groupby(["team", "i"])["count"].rank(method="first", ascending=False)
+    order = pd.Series(np.nan, index=df.index)
+    order.loc[df.index[rank.index]] = rank.to_numpy()
+    team_has = pd.Series(d["count"] > 0).groupby([d["team"], d["i"]]).transform("any").to_numpy()
+    old = pd.to_numeric(df["pen_order"], errors="coerce")
+    return order.where(team_has | have, old)
+
+
 def walk_forward(feat: pd.DataFrame, season: str, step: int, min_train_seasons: int = 1) -> pd.DataFrame:
     test = feat[feat["season"] == season]
+    # who takes the penalties, the way the site does it, with the order taken from who has been taking them
+    test = test.assign(pen_order=pen_order_from_history(feat).loc[test.index].to_numpy())
+    if "avail" not in test:
+        test = test.assign(avail=1.0)
+    test = test.assign(pen_cond=penalty_shares(test))
     if feat.loc[feat["season"] != season, "season"].nunique() < min_train_seasons:
         raise ValueError("Need at least one earlier season to backtest.")
     gws = sorted(test["GW"].unique())
