@@ -4,21 +4,18 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
-    strategy:
-      matrix:
-        hl: ["19", "10", "5"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-          cache: pip
-      - run: pip install -r requirements.txt
-      - uses: actions/cache@v4
-        with:
-          path: fpl_data/20*
-          key: fpl-history-v1
-      - run: python fpl_xpoints.py download
-      - run: sed -i "s/^RED_HALFLIFE_TF = 38 /RED_HALFLIFE_TF = ${{ matrix.hl }} /" fpl_xpoints.py && grep -n "^RED_HALFLIFE_TF" fpl_xpoints.py
-      - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; tail -25 bt.txt; grep -a -A13 'figure     n predicted' bt.txt; grep -a 'Penalt\|R2 ' bt.txt | head; sed -n '/=== /,$p' bt.txt | head -30
+      - run: |
+          curl -sfL https://anonymous-309.github.io/FPL-xPoints/data.json -o /tmp/data.json
+          python3 -c "
+          import json, collections
+          d=json.load(open('/tmp/data.json')); c=collections.Counter(); shown=collections.defaultdict(int)
+          for p in d['players']:
+              for g, ws in (p.get('pastWhy') or {}).items():
+                  ns=(p.get('pastNote') or {}).get(g, [])
+                  for w, n in zip(ws, ns):
+                      if w and shown[w] < 3: print(w, p['name'], 'GW'+g, '|', n); shown[w]+=1
+                      if w: c[(w, bool(n))]+=1
+          print(c)
+          "
