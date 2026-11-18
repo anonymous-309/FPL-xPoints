@@ -2543,7 +2543,7 @@ def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tupl
     return share, whole
 
 
-def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None) -> np.ndarray:
+def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed_order: bool = False) -> np.ndarray:
     """Share of his team's penalties a player takes while on the pitch, per future match (see pen_time_shares): the
     FPL number 1 takes them when on the pitch, each next taker the ones while those above him are off, and the rest
     go to the free kick and corner takers on the pitch. Who starts with whom matters: two takers who start together
@@ -2553,9 +2553,10 @@ def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None) -> np
     hist: played league matches (pid, team, season, fixture, kickoff_time, started, skip) for the start patterns."""
     out = np.zeros(len(target))
     prof = pitch_profile(target)
-    # one order per player, from his first coming match (the order the site shows and moves penalties with)
-    by_gw = target.sort_values(["GW", "fixture"]) if "GW" in target else target
-    order = pd.to_numeric(by_gw.groupby("pid")["pen_order"].transform(lambda x: x.iloc[0]), errors="coerce").reindex(target.index)
+    order = pd.to_numeric(target["pen_order"], errors="coerce")
+    if fixed_order:  # the site: one order per player, from his first coming match (the order it shows)
+        by_gw = target.sort_values(["GW", "fixture"])
+        order = pd.to_numeric(by_gw.groupby("pid")["pen_order"].transform(lambda x: x.iloc[0]), errors="coerce").reindex(target.index)
     listed_col = lambda c: pd.to_numeric(target[c], errors="coerce").notna().to_numpy() if c in target else np.zeros(len(target), bool)
     fk_any = listed_col("fk_order") | listed_col("corner_order")
     frame = pd.DataFrame({"fixture": target["fixture"].to_numpy(), "team": target["team"].to_numpy(), "pid": target["pid"].to_numpy(),
@@ -2851,7 +2852,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
         target = european_rotation(target, df, cache, offline)
     except Exception as e:  # a display flag only: never stop the site for it
         print(f"European weeks not flagged ({e})")
-    target["pen_cond"] = penalty_shares(target, pattern_history(df[df["season"].isin([CURRENT_SEASON, seasons[-1] if seasons else CURRENT_SEASON])]))
+    target["pen_cond"] = penalty_shares(target, pattern_history(df[df["season"].isin([CURRENT_SEASON, seasons[-1] if seasons else CURRENT_SEASON])]), fixed_order=True)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res
 
