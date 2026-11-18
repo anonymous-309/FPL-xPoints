@@ -67,7 +67,7 @@
       if (!d.setPieces) throw new Error('missing');
       data = d.setPieces;
       byId = Object.fromEntries(d.players.map((p) => [p.id, p]));
-      XMin.setPlayers(d.players);
+      XMin.setPlayers(d.players, d.penPatterns);
       const when = new Date(d.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
       $('status').textContent = `GW${data.gw}, updated ${when}`;
       render();

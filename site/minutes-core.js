@@ -44,7 +44,9 @@ window.XMin = (function () {
   }
 
   // Call once with all players so penalty shares can follow edited minutes of the takers above.
-  function setPlayers(players) {
+  let patterns = {};  // team -> [{ ids, pats: [[weight, started flags]] }]: who started together in recent matches
+  function setPlayers(players, pats) {
+    patterns = pats || {};
     takers = {};
     fkTakers = {};
     players.filter((p) => p.penOrder != null).forEach((p) => { (takers[p.team] = takers[p.team] || []).push(p); });
@@ -52,33 +54,93 @@ window.XMin = (function () {
     Object.values(takers).forEach((list) => list.sort((a, b) => a.penOrder - b.penOrder));
   }
 
-  // Share of 90 minutes player t is on the pitch in the match of fixture fx (gameweek g), or null if not in it.
-  function onPitch(overrides, t, g, fx) {
+  // Minutes of player t in the match of fixture fx (gameweek g), or null if not in it.
+  function matchMins(overrides, t, g, fx) {
     const k = t.byGw[g] && t.byGw[g].fx ? t.byGw[g].fx.indexOf(fx) : -1;
-    return k < 0 ? null : Math.min(90, minutes(overrides, t, g).mins[k]) / 90;
+    return k < 0 ? null : Math.min(90, minutes(overrides, t, g).mins[k]);
+  }
+  // How he is on the pitch (same as the model): the chance he starts, his minutes when he starts (from the kick-off)
+  // and when he does not (at the end), and the chance he is there at all, his minutes over his usual ones.
+  function pitch(overrides, t, g, fx) {
+    const m = matchMins(overrides, t, g, fx);
+    if (m === null) return null;
+    const u = t.pitch || { start: m >= 60 ? 1 : 0, ms: m, mb: 0 };
+    const usual = t.minUsual || 0;
+    const there = usual > 0 ? Math.min(1, m / usual) : 0;
+    const q = usual > 0 && m > usual ? m / usual : 1;  // minutes set above his usual: longer on the pitch
+    return { id: t.id, start: u.start, ms: Math.min(90, u.ms * q), mb: Math.min(90, u.mb * q), there };
+  }
+  const GRID = Array.from({ length: 90 }, (_, i) => i + 0.5);
+  // Share of the team's penalties each player takes while on the pitch, minute by minute (as the model does it):
+  // the first listed taker on the pitch takes them, and when none is on, the free kick and corner takers on it.
+  function shares(listed, fks, pats) {
+    const k = listed.length;
+    const onS = listed.map((x) => GRID.map((t) => (t < x.ms ? 1 : 0)));
+    const onB = listed.map((x) => GRID.map((t) => (t >= 90 - x.mb ? 1 : 0)));
+    let cases = pats;
+    if (!cases || !cases.length) {
+      cases = [];
+      for (let bits = 0; bits < 1 << k; bits++) {
+        const fl = listed.map((_, i) => (bits >> i) & 1);
+        const w = listed.reduce((a, x, i) => a * (fl[i] ? x.start : 1 - x.start), 1);
+        if (w > 0) cases.push([w, fl]);
+      }
+    }
+    const took = Array(k).fill(0), onT = Array(k).fill(0), free = Array(k).fill(0), unc = Array(90).fill(0);
+    cases.forEach(([w, fl]) => {
+      for (let there = 0; there < 1 << k; there++) {
+        const wt = w * listed.reduce((a, x, i) => a * ((there >> i) & 1 ? x.there : 1 - x.there), 1);
+        if (wt <= 0) continue;
+        const cov = Array(90).fill(0);
+        for (let i = 0; i < k; i++) {
+          const on = (there >> i) & 1 ? (fl[i] ? onS[i] : onB[i]) : null;
+          let fr = 0, tk = 0, o = 0;
+          for (let t = 0; t < 90; t++) { fr += 1 - cov[t]; if (on && on[t]) { o += 1; if (!cov[t]) { tk += 1; cov[t] = 1; } } }
+          free[i] += wt * fr / 90; took[i] += wt * tk / 90; onT[i] += wt * o / 90;
+        }
+        for (let t = 0; t < 90; t++) unc[t] += wt * (1 - cov[t]);
+      }
+    });
+    const out = {};
+    listed.forEach((x, i) => { out[x.id] = PEN_TAKE_ON_PITCH * (onT[i] > 1e-9 ? took[i] / onT[i] : free[i]); });
+    if (fks.length) {
+      const pj = fks.map((x) => GRID.map((t) => x.there * (x.start * (t < x.ms ? 1 : 0) + (1 - x.start) * (t >= 90 - x.mb ? 1 : 0))));
+      fks.forEach((x, j) => {
+        let got = 0, mine = 0;
+        for (let t = 0; t < 90; t++) {
+          const tot = pj.reduce((a, v) => a + v[t], 0);
+          const any = 1 - pj.reduce((a, v) => a * (1 - v[t]), 1);
+          if (tot > 0) got += unc[t] * any * pj[j][t] / tot;
+          mine += pj[j][t];
+        }
+        out[x.id] = Math.min(1, (out[x.id] || 0) + (mine > 1e-9 ? got / mine : 0));
+      });
+    }
+    return out;
   }
 
-  // His share of the team's penalties while he is on the pitch in match j of gameweek g: the first taker takes
-  // them when on, each next taker gets the ones left while those above him are off; those left while every listed
-  // taker is off go to the free kick and corner takers, split by their minutes (same rule as the model).
+  // His share of the team's penalties while he is on the pitch in match j of gameweek g. Who starts with whom
+  // matters: two takers who start together leave the next one the minutes after both have gone off; two who take
+  // turns to start always leave one of them on.
   function penCond(overrides, p, g, j) {
     const d = p.byGw[g];
     if (!d || !d.fx) return 0;
     const fx = d.fx[j];
-    let share = 0, left = 1;
-    for (const t of takers[p.team] || []) {
-      const m = onPitch(overrides, t, g, fx);
-      if (m === null) continue;
-      if (t.id === p.id) share = PEN_TAKE_ON_PITCH * left;
-      left *= 1 - m;
-    }
-    // (not the penalty takers themselves: these penalties come exactly when they are all off)
-    if (p.penOrder == null && (p.fkOrder != null || p.cornerOrder != null) && left > 0) {
-      const mine = onPitch(overrides, p, g, fx);
-      const total = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).reduce((s, t) => s + (onPitch(overrides, t, g, fx) || 0), 0);
-      if (mine > 0 && total > 0) share = Math.min(1, share + left / total);
-    }
-    return share;
+    const listed = (takers[p.team] || []).map((t) => pitch(overrides, t, g, fx)).filter(Boolean);
+    const fks = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).map((t) => pitch(overrides, t, g, fx)).filter((x) => x && x.there > 0);
+    if (!listed.some((x) => x.id === p.id) && !fks.some((x) => x.id === p.id)) return 0;
+    const ids = listed.map((x) => x.id).join();
+    const pt = (patterns[p.team] || []).find((x) => x.ids.join() === ids);
+    const pats = pt ? pt.pats : null;
+    return shares(listed, fks, pats)[p.id] || 0;
+  }
+
+  // The chance he starts in gameweek g (at least one start in a double): his Start times the share of his usual
+  // minutes he is expected to play.
+  function startChance(overrides, p, g) {
+    const d = p.byGw[g];
+    if (!d || !d.fx || !p.pitch) return null;
+    return 1 - d.fx.reduce((a, fx) => { const x = pitch(overrides, p, g, fx); return a * (1 - (x ? x.start * x.there : 0)); }, 1);
   }
 
   // Change in his full-90 goal, penalty miss and xG figures for match j when the penalty share moves.
@@ -132,5 +194,5 @@ window.XMin = (function () {
     return (p) => -(score.get(p.id) || 0);
   }
 
-  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, order };
+  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, order };
 })();
