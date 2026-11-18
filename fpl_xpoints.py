@@ -2537,6 +2537,31 @@ def start_patterns(hist: pd.DataFrame | None, team, pids: list) -> list[tuple[fl
     return [(float(wi / w.sum()), f) for wi, f in zip(w, out)]
 
 
+def start_cases(starts: list[float], patterns: list) -> list[tuple[float, tuple]]:
+    """Every case of who starts among these players with its chance. Each player starts as often as his own Start
+    says; the club's recent start patterns only decide who starts together (fitted to those chances, iterative
+    proportional fitting, with a little of the independent cases mixed in so no case is ruled out)."""
+    k = len(starts)
+    cells = [tuple(float(b >> i & 1) for i in range(k)) for b in range(2 ** k)]
+    indep = np.array([float(np.prod([s if f else 1 - s for s, f in zip(starts, c)])) for c in cells])
+    if not patterns:
+        return [(w, c) for w, c in zip(indep, cells) if w > 0]
+    seen = np.zeros(len(cells))
+    for w, fl in patterns:
+        seen[cells.index(tuple(float(f) for f in fl))] += w
+    p = 0.9 * seen / max(seen.sum(), 1e-12) + 0.1 * indep + 1e-9
+    p /= p.sum()
+    for _ in range(60):
+        for i, s in enumerate(starts):
+            on = np.array([c[i] == 1 for c in cells])
+            m = p[on].sum()
+            if 0 < m < 1:
+                p[on] *= s / m
+                p[~on] *= (1 - s) / (1 - m)
+            p /= p.sum()
+    return [(float(w), c) for w, c in zip(p, cells) if w > 1e-9]
+
+
 def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tuple[dict, dict]:
     """Share of the team's penalties each player takes while on the pitch, minute by minute: in every case of who
     starts (the club's recent start patterns, else each player's Start on its own) and who is there at all, the
@@ -2546,15 +2571,7 @@ def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tupl
     k = len(listed)
     on_s = [(PEN_GRID < x["ms"]).astype(float) for x in listed]
     on_b = [(PEN_GRID >= 90 - x["mb"]).astype(float) for x in listed]
-    if patterns:
-        cases = patterns
-    else:
-        cases = []
-        for bits in range(2 ** k):
-            fl = tuple(float(bits >> i & 1) for i in range(k))
-            w = float(np.prod([x["start"] if f else 1 - x["start"] for x, f in zip(listed, fl)]))
-            if w > 0:
-                cases.append((w, fl))
+    cases = start_cases([x["start"] for x in listed], patterns)
     took, on_t, free = np.zeros(k), np.zeros(k), np.zeros(k)
     uncovered = np.zeros(90)
     for w, fl in cases:
@@ -2576,12 +2593,13 @@ def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tupl
         whole[x["id"]] = PEN_TAKE_ON_PITCH * free[i]
         share[x["id"]] = PEN_TAKE_ON_PITCH * (took[i] / on_t[i] if on_t[i] > 1e-9 else free[i])
     if fks:
-        pj = np.array([x["there"] * (x["start"] * (PEN_GRID < x["ms"]) + (1 - x["start"]) * (PEN_GRID >= 90 - x["mb"])) for x in fks])
-        tot = pj.sum(axis=0)
-        anyon = 1 - np.prod(1 - pj, axis=0)
-        for j, x in enumerate(fks):
-            got = float((uncovered * anyon * np.where(tot > 0, pj[j] / np.maximum(tot, 1e-9), 0)).mean())
-            share[x["id"]] = min(1.0, share.get(x["id"], 0) + (got / pj[j].mean() if pj[j].mean() > 1e-9 else 0))
+        # penalties while no listed taker is on go to the free kick and corner takers, split by their expected
+        # minutes (the same extra share for each while he is on the pitch; starting or not does not matter here)
+        left = float(uncovered.mean())
+        mins = sum(x["m"] for x in fks)
+        for x in fks:
+            if x["m"] > 0 and mins > 0:
+                share[x["id"]] = min(1.0, share.get(x["id"], 0) + left / mins)
     return share, whole
 
 
@@ -2605,6 +2623,7 @@ def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed
                           "order": order.to_numpy(), "fk": fk_any, "pos": np.arange(len(target))})
     for c in ("start", "ms", "mb", "there"):
         frame[c] = prof[c].to_numpy()
+    frame["m"] = np.clip(np.nan_to_num(usual_minutes(target)["min"]) * target["avail"].fillna(1).to_numpy(float), 0, 90) / 90
     memo: dict = {}
     gone = (target["status"] == "u").to_numpy() if "status" in target else np.zeros(len(target), bool)
     frame = frame[~gone]  # players no longer at the club (not on the site either)
@@ -2612,7 +2631,7 @@ def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed
         lst = g[g["order"].notna()].sort_values("order")
         listed = [dict(id=r.pid, start=r.start, ms=r.ms, mb=r.mb, there=r.there) for r in lst.itertuples()]
         fkr = g[g["fk"] & g["order"].isna() & (g["there"] > 0)]
-        fks = [dict(id=r.pid, start=r.start, ms=r.ms, mb=r.mb, there=r.there) for r in fkr.itertuples()]
+        fks = [dict(id=r.pid, m=r.m) for r in fkr.itertuples()]
         key = (team, tuple(x["id"] for x in listed))
         if key not in memo:
             memo[key] = start_patterns(hist, team, list(key[1]))

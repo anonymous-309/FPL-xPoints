@@ -1,0 +1,55 @@
+name: Pen trial
+on:
+  push:
+    branches: [pen-trial2]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/cache/restore@v4
+        with:
+          path: fpl_data/20*
+          key: fpl-history-v1
+      - uses: actions/cache/restore@v4
+        with:
+          path: fpl_data/api_cache/fotmob
+          key: fotmob-none
+          restore-keys: fotmob-
+      - run: python fpl_xpoints.py download
+      - run: python fpl_xpoints.py site --out _site 2>&1 | grep -E "Set pieces|Traceback|Error|error" | head -60
+
+      - run: |
+          cat > check.js <<'J'
+          global.window = {}; global.localStorage = { getItem: () => null, setItem: () => {} };
+          require('./site/minutes-core.js');
+          const X = window.XMin;
+          const d = require('./_site/data.json');
+          X.setPlayers(d.players, d.penPatterns);
+          let n = 0, bad = 0, worst = [];
+          for (const p of d.players) for (const g of d.gws.map(String)) { const b = p.byGw[g]; if (!b || !b.fx) continue;
+            b.fx.forEach((_, j) => { const js = X.penCond({}, p, g, j), py = b.pc[j]; n++; if (Math.abs(js - py) > 0.002) { bad++; worst.push([Math.abs(js - py), p.name, p.team, g, py, js]); } }); }
+          worst.sort((a, b) => b[0] - a[0]);
+          console.log('compared', n, 'mismatches', bad, JSON.stringify(worst.slice(0, 12)));
+          const tot = {};
+          for (const p of d.players) { const b = p.byGw[gw0()]; if (!b || !b.fx) continue; tot[p.team] = (tot[p.team] || 0) + X.penCond({}, p, gw0(), 0) * b.mins[0] / 90; }
+          function gw0() { return String(d.gws[0]); }
+          console.log('team totals', JSON.stringify(Object.fromEntries(Object.entries(tot).map(([k, v]) => [k, Math.round(v * 100)]))));
+          console.log('patterns', JSON.stringify(d.penPatterns.CRY));
+          const gw = String(d.gws[0]);
+          const tops = d.players.filter((p) => p.pitch).map((p) => [p.name, p.team, X.startChance({}, p, gw)]).sort((a, b) => b[2] - a[2]);
+          console.log('start sample', tops.slice(0, 5), tops.filter((x) => ['Haaland', 'Salah', 'Saka', 'Palmer', 'Isak', 'Gyokeres'].includes(x[0])));
+          for (const t of ['ARS', 'MCI', 'LIV', 'CHE', 'SUN']) {
+            const lst = d.players.filter((p) => p.team === t && p.byGw[gw] && p.byGw[gw].pc && p.byGw[gw].pc[0] > 0.001).map((p) => `${p.name}${p.penOrder ? '#' + p.penOrder : ''} st ${p.pitch.start} ms ${p.pitch.ms} mb ${p.pitch.mb} pc ${p.byGw[gw].pc[0]}`);
+            console.log(t, lst.join(' | '));
+          }
+          J
+          node check.js
+          node -e "const d=require('./_site/data.json'); for (const p of d.players) if (p.team==='CRY' && (p.penOrder!=null||['c489706','c231747','c205533','c232185'].includes(p.id))) console.log('CRYP', p.id, p.name, p.penOrder, p.fkOrder, p.cornerOrder, Object.keys(p.byGw).slice(0,3).join(','), JSON.stringify(p.pitch), p.minUsual, JSON.stringify(p.byGw['13'] && {m:p.byGw['13'].mins, pc:p.byGw['13'].pc}))"
+
