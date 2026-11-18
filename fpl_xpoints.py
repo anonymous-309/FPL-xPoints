@@ -2563,6 +2563,8 @@ def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None) -> np
     for c in ("start", "ms", "mb", "there"):
         frame[c] = prof[c].to_numpy()
     memo: dict = {}
+    gone = (target["status"] == "u").to_numpy() if "status" in target else np.zeros(len(target), bool)
+    frame = frame[~gone]  # players no longer at the club (not on the site either)
     for (fx, team), g in frame.groupby(["fixture", "team"]):
         lst = g[g["order"].notna()].sort_values("order")
         listed = [dict(id=r.pid, start=r.start, ms=r.ms, mb=r.mb, there=r.there) for r in lst.itertuples()]
