@@ -7,15 +7,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: |
-          curl -sfL https://anonymous-309.github.io/FPL-xPoints/data.json -o /tmp/data.json
-          python3 -c "
-          import json, collections
-          d=json.load(open('/tmp/data.json')); c=collections.Counter(); shown=collections.defaultdict(int)
-          for p in d['players']:
-              for g, ws in (p.get('pastWhy') or {}).items():
-                  ns=(p.get('pastNote') or {}).get(g, [])
-                  for w, n in zip(ws, ns):
-                      if w and shown[w] < 3: print(w, p['name'], 'GW'+g, '|', n); shown[w]+=1
-                      if w: c[(w, bool(n))]+=1
-          print(c)
-          "
+          python3 - <<'PY'
+          import json, urllib.request, urllib.parse
+          H={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36","Accept":"application/json","Referer":"https://www.fotmob.com/"}
+          def get(p,q):
+              r=urllib.request.Request("https://www.fotmob.com/api/data/"+p+"?"+urllib.parse.urlencode(q),headers=H)
+              return json.loads(urllib.request.urlopen(r,timeout=30).read())
+          t=get("teams",{"id":9825,"ccode3":"GBR"})
+          fx=[m for m in t["fixtures"]["allFixtures"]["fixtures"] if m["tournament"]["name"]!="Premier League" and m["status"].get("finished")]
+          m=fx[-1]; print(m["tournament"]["name"], m["home"]["name"], m["away"]["name"], m["id"], m["status"].get("utcTime"))
+          d=get("matchDetails",{"matchId":m["id"]})
+          c=d.get("content") or {}
+          print("content keys", list(c.keys()))
+          lu=c.get("lineup") or {}
+          side=lu["homeTeam"] if lu["homeTeam"]["id"]==9825 else lu["awayTeam"]
+          print("side keys", list(side.keys()))
+          print(json.dumps(side["starters"][0])[:900])
+          print(json.dumps((side.get("subs") or [{}])[0])[:900])
+          ps=c.get("playerStats") or {}
+          k=next(iter(ps)) if ps else None
+          print("playerStats sample", json.dumps(ps.get(k))[:1200] if k else None)
+          PY
