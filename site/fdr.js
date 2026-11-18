@@ -15,7 +15,7 @@
 
   // As FPL does it, a match is rated by the opponent alone, home and away apart. Every club, once at home and once
   // away (40 sides), is ranked by its strength in our model (its average expected goals for and against over its
-  // coming matches at that venue); the 4 strongest are 5, the next 10 are 4, the next 16 are 3 and the last 10 are 2
+  // coming matches at that venue); as in FPL's own table, the 2 strongest are 5, the next 10 are 4, the next 17 are 3 and the last 11 are 2
   // (the spread of FPL's own ratings).
   const STRENGTH = {
     overall: { f: (s) => s.xgf - s.xga, text: (s) => `${s.xgf.toFixed(2)} for, ${s.xga.toFixed(2)} against`, show: (v) => (v >= 0 ? '+' : '') + v.toFixed(2) }, // scores more, concedes less
@@ -34,7 +34,7 @@
     });
     list.sort((x, y) => y.v - x.v);
     const tier = {};
-    list.forEach((x, i) => { x.tier = i < 4 ? 5 : i < 14 ? 4 : i < 30 ? 3 : 2; tier[`${x.short}|${x.home}`] = x.tier; });
+    list.forEach((x, i) => { x.tier = i < 2 ? 5 : i < 12 ? 4 : i < 29 ? 3 : 2; tier[`${x.short}|${x.home}`] = x.tier; });
     return { list, tier };
   }
 
