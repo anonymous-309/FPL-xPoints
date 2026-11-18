@@ -81,6 +81,7 @@
       const opp = (p.pastOpp && p.pastOpp[g]) || [];
       // Every match left out of the formula is shown in red, with the reason on hover.
       const why = (p.pastWhy && p.pastWhy[g]) || [];
+      const notes = (p.pastNote && p.pastNote[g]) || [];
       const WHY = {
         b: 'Banned: left out of the formula',
         c: 'Sent off in this match: left out of the formula',
@@ -95,7 +96,20 @@
       m.forEach((x, i) => {
         if (i) nums.append('+');
         const w = why[i];
-        nums.append(w ? el('b', { className: 'out-zero', textContent: String(Math.round(x)), title: WHY[w] || 'Left out of the formula' }) : String(Math.round(x)));
+        const tip = w ? `${notes[i] || WHY[w] || 'Left out of the formula'}${notes[i] ? '. Left out of the formula.' : ''}` : '';
+        if (!w) { nums.append(String(Math.round(x))); return; }
+        const b = el('b', { className: 'out-zero', textContent: String(Math.round(x)), title: tip, tabIndex: 0, role: 'button', ariaLabel: tip });
+        // a tap shows the reason too (phones have no hover)
+        b.addEventListener('click', (e) => {
+          e.stopPropagation();
+          const cell = b.closest('td');
+          const old = cell.querySelector('.why-note');
+          if (old) { old.remove(); if (old.dataset.i === String(i)) return; }
+          const n = el('small', { className: 'why-note', textContent: tip });
+          n.dataset.i = String(i);
+          cell.append(n);
+        });
+        nums.append(b);
       });
       return el('td', { className: 'past' }, nums, opp.length ? el('small', { textContent: opp.join(', ') }) : '');
     });

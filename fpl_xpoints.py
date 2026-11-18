@@ -1030,6 +1030,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     df["inj_skip"] = False
     df["inj_hurt"] = False
     df["inj_rest"] = False
+    df["inj_note"] = ""  # what the absence was, for the reason shown on the Minutes page
     season = ~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()
     for r in merged_injuries(log, admin or {"manual": [], "startOverrides": {}}):
         if r.get("season") != CURRENT_SEASON:
@@ -1037,6 +1038,11 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         end = r["endGw"] if r.get("manual") and r.get("endGw") is not None else (r["returnedGw"] - 1) if r.get("returnedGw") else 99
         rows = season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end)
         df.loc[rows if r.get("manual") else rows & (df["minutes"] == 0), "inj_skip"] = True
+        span = f"GW{r['startGw']}" + (f"-GW{end}" if r.get("returnedGw") or (r.get("manual") and r.get("endGw") is not None) else " on, not back yet")
+        what = str(r.get("type") or "Absence")
+        news = str(r.get("news") or "").strip()
+        note = f"{'Absence set by the admin' if r.get('manual') else what}, {span}" + (f": {news}" if news else "")
+        df.loc[(rows if r.get("manual") else rows & (df["minutes"] == 0)) & df["inj_note"].eq(""), "inj_note"] = note
         # The match he got hurt in: his last match before an injury absence, if he did not play all of it, is left out too.
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur"):
             before = df.index[season & (df["pid"] == r["pid"]) & (df["GW"] < r["startGw"])]
@@ -1046,6 +1052,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                 if int(df.at[last, "GW"]) not in (covered or set()) and 0 < float(df.at[last, "minutes"]) < 90:
                     df.at[last, "inj_skip"] = True
                     df.at[last, "inj_hurt"] = True
+                    df.at[last, "inj_note"] = (f"Played {int(df.at[last, 'minutes'])} minutes, his last match before the injury absence from GW{r['startGw']}"
+                                               + (f" ({r.get('news')})" if r.get("news") else "") + ": taken to be the match he got hurt in")
         # Cautionary rest: a 0 in his first match back from an injury is a rest, not a sign he lost his place
         # (one match only).
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
@@ -1054,6 +1062,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                 i = post.index[0]
                 df.at[i, "inj_skip"] = True
                 df.at[i, "inj_rest"] = True
+                df.at[i, "inj_note"] = (f"0 minutes in his first match back from the injury of GW{r['startGw']}-GW{int(r['returnedGw']) - 1}"
+                                        + (f" ({r.get('news')})" if r.get("news") else "") + ": a cautionary rest, not a lost place")
     # gameweeks whose matches FotMob's events cover (there, only a substitution for injury counts as getting hurt)
     df["fm_cov"] = season & df["GW"].isin(list(covered or []))
     # Taken off injured (FotMob): that match is left out, whatever came after.
@@ -1062,6 +1072,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         rows = season & keys.isin(hurt)
         df.loc[rows, "inj_skip"] = True
         df.loc[rows, "inj_hurt"] = True
+        df.loc[rows, "inj_note"] = "Taken off injured after " + df.loc[rows, "minutes"].fillna(0).astype(int).astype(str) + " minutes (FotMob's match events)"
     # A goalkeeper who came on for his injured team-mate: that part match says nothing of his role, left out too.
     df["gk_cover"] = False
     if "position" in df and df["inj_hurt"].any():
@@ -1070,6 +1081,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         cover = gk & ~df["inj_hurt"] & (df["minutes"] > 0) & (df["minutes"] < 90) & pd.Series(list(zip(df["fixture"], df["team"])), index=df.index).isin(hurt_fx)
         df.loc[cover, "inj_skip"] = True
         df.loc[cover, "gk_cover"] = True
+        df.loc[cover, "inj_note"] = "Came on for the injured starting goalkeeper and played " + df.loc[cover, "minutes"].fillna(0).astype(int).astype(str) + " minutes"
     print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, rests on return: {int(df['inj_rest'].sum())}")
     return df
 
@@ -2468,20 +2480,37 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         cov = played.get("fm_cov", pd.Series(False, index=played.index)).fillna(False).astype(bool)
         dmask = cutt.notna() & (((kick == cutt) & ~cov & played["minutes"].fillna(0).lt(90)) | ((kick > cutt) & played["minutes"].fillna(0).eq(0))) & why.eq("")
         why[dmask] = "d"
+    note = played.get("inj_note", pd.Series("", index=played.index)).fillna("").astype(str).copy()
     for _, g in played.groupby("pid"):
-        left = 0
-        for i, mins, red in zip(g.index, g["minutes"].fillna(0), g["red_cards"].fillna(0)):
+        left, red_gw, k = 0, None, 0
+        for i, mins, red, gw in zip(g.index, g["minutes"].fillna(0), g["red_cards"].fillna(0), g["GW"]):
             if red > 0:
-                left = MAX_BAN_MATCHES
+                left, red_gw, k = MAX_BAN_MATCHES, int(gw), 0
                 if why[i] == "":
                     why[i] = "c"  # sent off: the match itself is left out of the formula too (see ai_minutes)
+                    note[i] = f"Sent off in this match: a red card after playing {int(mins)} minutes"
             elif left > 0 and mins == 0:
+                k += 1
                 why[i], left = "b", left - 1
+                if not note[i]:
+                    note[i] = f"Banned after his red card in GW{red_gw}: match {k} of the ban"
             else:
                 left = 0
-    played = played.assign(why=why)
+    yb = played.get("yellow_ban", pd.Series(False, index=played.index)).fillna(False).astype(bool)
+    note[yb & why.eq("b") & note.eq("")] = "Banned for reaching the yellow card limit (5 by GW19, 10 by GW32)"
+    if len(cut):
+        news_now = res.drop_duplicates("pid").set_index("pid")["news"] if "news" in res else pd.Series(dtype=object)
+        dn = why.eq("d") & note.eq("")
+        note[dn] = played.loc[dn].apply(lambda r: (f"Flagged doubtful now ({news_now.get(r['pid'], '')}): "
+                                                  + (f"the match he got hurt in, played {int(r['minutes'] or 0)} minutes" if (r["minutes"] or 0) > 0
+                                                     else "a match missed since he got hurt")), axis=1)
+    note[why.eq("i") & note.eq("")] = "Injured or unavailable (FPL flag), 0 minutes"
+    note[why.eq("")] = ""
+    played = played.assign(why=why, why_note=note)
     past_why = {pid: {str(int(gw)): list(gg["why"]) for gw, gg in g.groupby("GW") if gg["why"].ne("").any()}
                 for pid, g in played[played["GW"].isin(past_gws)].groupby("pid")}
+    past_note = {pid: {str(int(gw)): list(gg["why_note"]) for gw, gg in g.groupby("GW") if gg["why"].ne("").any()}
+                 for pid, g in played[played["GW"].isin(past_gws)].groupby("pid")}
     usual = usual_minutes(res)
     res = res.assign(min_usual=usual["min"])
     players: dict[str, dict] = {}
@@ -2496,7 +2525,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "minUsual": round(float(r["min_usual"]), 1),
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
             "adminMin": None if pd.isna(r.get("admin_min", np.nan)) else round(float(r["admin_min"])), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
-            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "pastWhy": past_why.get(r["pid"], {}), "byGw": {},
+            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "pastWhy": past_why.get(r["pid"], {}), "pastNote": past_note.get(r["pid"], {}), "byGw": {},
             # penalty order and miss rate, so the site can move penalties to the next taker when minutes are edited
             "penOrder": None if pd.isna(pd.to_numeric(r.get("pen_order"), errors="coerce")) else int(pd.to_numeric(r["pen_order"], errors="coerce")),
             "fkOrder": None if pd.isna(pd.to_numeric(r.get("fk_order"), errors="coerce")) else int(pd.to_numeric(r["fk_order"], errors="coerce")),

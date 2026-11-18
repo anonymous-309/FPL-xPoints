@@ -501,3 +501,6 @@ td.fx-cell.blank { background: #fbe3df; }
 .tn-p b { max-width: 100%; margin-top: 2px; padding: 0 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; background: rgba(10,40,25,.78); border-radius: 3px; color: #fff; font-size: 11.5px; font-weight: 600; }
 .tn-p small { color: rgba(255,255,255,.85); font-size: 10px; }
 .tn-changes { margin: 0; color: var(--muted); font-size: 12px; }
+
+.out-zero { cursor: pointer; }
+td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 4px 6px; background: #fff4f2; border: 1px solid #f0c9c2; border-radius: 3px; color: var(--ink); font-size: 11.5px; line-height: 1.3; white-space: normal; text-align: left; }
