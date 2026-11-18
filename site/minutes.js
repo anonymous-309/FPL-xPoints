@@ -111,7 +111,10 @@
         });
         nums.append(b);
       });
-      return el('td', { className: 'past' }, nums, opp.length ? el('small', { textContent: opp.join(', ') }) : '');
+      // cup and European minutes that gameweek, for reference only (the formula uses league matches)
+      const cups = (p.cupPast && p.cupPast[g]) || [];
+      const cupLine = cups.length ? el('small', { className: 'cup-line' }, ...cups.map(([c, o, mins]) => el('span', { className: `cup c-${c}`, title: `${CUP_NAME[c] || c} v ${o}: ${mins} minutes (shown only, not used by the formula)` }, `${c} ${mins}`))) : '';
+      return el('td', { className: 'past' }, nums, opp.length ? el('small', { textContent: opp.join(', ') }) : '', cupLine);
     });
     const future = futureGws().map((g) => {
       const m = XMin.minutes(state.overrides, p, g);
@@ -121,13 +124,22 @@
       const td = el('td', { className: `fut ${m.source !== 'model' ? 'edited' : ''} ${sum(m.mins) === 0 ? 'zero' : ''}` },
         input(own ? o.gw[g] : undefined, XMin.join(m.source === 'all' ? m.mins : model.mins), `Minutes per match for ${p.name} in gameweek ${g}`, { gw: String(g) }),
         el('small', { textContent: p.byGw[g].opp.join(', ') }),
-        p.byGw[g].euro ? el('small', { className: 'euro-tag', title: p.byGw[g].euro.map((e) => `${e.replace(/ (\d+)d$/, ' match $1 days before')}`).join('; ') + ' (shown only: minutes are not changed for it)', textContent: p.byGw[g].euro.join(', ') }) : '');
+        cupNext(p, g));
       return td;
     });
     const note = el('td', { className: 'note', textContent: p.minNote || '', title: p.news || '' });
     const tr = el('tr', {}, name, ...past, usual, adjust, ...future, note);
     tr.dataset.pid = p.id;
     return tr;
+  }
+
+  const CUP_NAME = { UCL: 'Champions League', UEL: 'Europa League', UECL: 'Conference League', EFL: 'EFL Cup', FAC: 'FA Cup' };
+  // His club's cup and European matches in that gameweek window, for reference only (xMin is not changed for them).
+  function cupNext(p, g) {
+    const list = (state.data.cupNext && state.data.cupNext[p.team] && state.data.cupNext[p.team][g]) || [];
+    if (!list.length) return '';
+    const day = (t) => (t ? new Date(t).toLocaleDateString('en-GB', { weekday: 'short' }) : '');
+    return el('small', { className: 'cup-line' }, ...list.map(([c, o, t]) => el('span', { className: `cup c-${c}`, title: `${CUP_NAME[c] || c} v ${o}${t ? ', ' + new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''} (shown only: xMin is not changed for it)` }, `${c} ${o} ${day(t)}`)));
   }
 
   function render() {

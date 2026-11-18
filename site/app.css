@@ -504,3 +504,8 @@ td.fx-cell.blank { background: #fbe3df; }
 
 .out-zero { cursor: pointer; }
 td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 4px 6px; background: #fff4f2; border: 1px solid #f0c9c2; border-radius: 3px; color: var(--ink); font-size: 11.5px; line-height: 1.3; white-space: normal; text-align: left; }
+
+.cup-line { display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; margin-top: 2px; }
+.cup-line .cup { padding: 0 3px; border-radius: 2px; font-size: 10px; font-weight: 650; line-height: 14px; white-space: nowrap; }
+.cup.c-UCL { background: #163a8a; color: #fff; } .cup.c-UEL { background: #3f6fc4; color: #fff; } .cup.c-UECL { background: #a9c3ef; color: #0f2350; }
+.cup.c-EFL { background: #1e7a46; color: #fff; } .cup.c-FAC { background: #6b2fa0; color: #fff; }

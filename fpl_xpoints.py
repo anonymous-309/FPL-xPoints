@@ -743,6 +743,93 @@ def _club_short(name: str) -> str:
     return rest[0][:3].upper()
 
 
+CUP_MINUTES = Path("cup_minutes.json")  # FotMob minutes of Premier League players in cup and European matches, kept in the repo
+
+
+def cup_minutes(fx: dict, offline: bool) -> dict:
+    """{FotMob match id: {"teams": {team name: {player name: minutes}}}} for every finished cup or European match of a
+    Premier League club, read once from FotMob's player stats and kept in CUP_MINUTES. For reference on the Minutes
+    page only: the minutes formula does not use them."""
+    store = json.loads(CUP_MINUTES.read_text(encoding="utf-8")) if CUP_MINUTES.exists() else {}
+    want = {str(m["mid"]) for t in fx["teams"] for m in t["matches"] if m["comp"] != "PL" and m.get("score") is not None and m.get("mid")}
+    fetched = 0
+    for mid in sorted(want - set(store)):
+        if offline:
+            break
+        try:
+            d = _fotmob_get("matchDetails", {"matchId": mid})
+        except Exception as e:
+            print(f"FotMob match {mid} not read ({e})")
+            continue
+        teams = {}
+        for ps in ((d.get("content") or {}).get("playerStats") or {}).values():
+            mins = None
+            for blk in ps.get("stats") or []:
+                v = ((blk.get("stats") or {}).get("Minutes played") or {}).get("stat", {}).get("value")
+                if v is not None:
+                    mins = int(v)
+                    break
+            if mins is not None and ps.get("name"):
+                teams.setdefault(ps.get("teamName") or "", {})[ps["name"]] = mins
+        store[mid] = {"teams": teams}
+        fetched += 1
+        time.sleep(0.4)
+    if fetched:
+        CUP_MINUTES.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
+    print(f"Cup minutes: {len(want)} finished cup matches, {fetched} read from FotMob now")
+    return store
+
+
+def gw_of_time(t, gws: list[dict]) -> int | None:
+    """The gameweek whose window (its deadline up to the next one) a kick-off falls in."""
+    if not t:
+        return None
+    k = pd.Timestamp(t)
+    k = k.tz_localize("UTC") if k.tzinfo is None else k
+    dl = [(g["gw"], pd.Timestamp(g["deadline"])) for g in sorted(gws, key=lambda g: g["gw"])]
+    for (g, d), nxt in zip(dl, dl[1:] + [(None, None)]):
+        if k >= d and (nxt[1] is None or k < nxt[1]):
+            return g
+    return None
+
+
+def cup_tables(fx: dict, store: dict, boot: dict, players: dict) -> tuple[dict, dict]:
+    """Per player, cup and European minutes in each past gameweek window ([competition, opponent, minutes]); per
+    club, cup and European matches still to come in each gameweek window ([competition, opponent, kick-off])."""
+    by_name = {t["name"]: t for t in boot["teams"]}
+    squads = {}
+    for p in players.values():
+        squads.setdefault(p["team"], []).append(p)
+    past, nxt = {}, {}
+    for t in fx["teams"]:
+        squad = squads.get(t["short"], [])
+        for m in t["matches"]:
+            if m["comp"] == "PL":
+                continue
+            gw = gw_of_time(m.get("t"), fx["gws"])
+            if gw is None:
+                continue
+            opp = m["oppShort"].upper() if m["home"] else m["oppShort"].lower()
+            if m.get("score") is None:
+                nxt.setdefault(t["short"], {}).setdefault(str(gw), []).append([m["comp"], opp, m.get("t")])
+                continue
+            rec = store.get(str(m.get("mid"))) or {}
+            # this club's side in FotMob's names: the one whose players match the squad best
+            sides = rec.get("teams") or {}
+            def hits(names):
+                return sum(1 for p in squad for n in names if _name_key(n).split()[-1:] == _name_key(p.get("fullName") or p["name"]).split()[-1:])
+            side = max(sides.values(), key=hits, default={}) if sides else {}
+            for p in squad:
+                full = _name_key(p.get("fullName") or p["name"])
+                mins = next((v for n, v in side.items() if _name_key(n) == full), None)
+                if mins is None:
+                    mins = next((v for n, v in side.items() if _name_key(n).split()[-1:] == full.split()[-1:] and _name_key(n).split()[:1] == full.split()[:1]), None)
+                if mins is None:
+                    mins = next((v for n, v in side.items() if set(_name_key(p["name"]).split()) <= set(_name_key(n).split())), 0)
+                past.setdefault(p["id"], {}).setdefault(str(gw), []).append([m["comp"], opp, int(mins)])
+    return past, nxt
+
+
 def club_fixtures(cache: Path, offline: bool) -> dict:
     """{"gws": [{gw, deadline}], "teams": [{name, short, matches: [{t, comp, opp, oppShort, home, score, gw, stage}]}]}"""
     boot = _api("bootstrap-static/", cache, offline)
@@ -822,7 +909,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
             name = opp.get("name") or "TBC"
             short = key_short.get(_euro_key(name)) or _club_short(name)
             out[t["id"]].append({"t": st.get("utcTime"), "comp": CLUB_COMPS.get(tour, tour), "opp": name, "oppShort": short, "home": home,
-                                 "score": st.get("scoreStr") if st.get("finished") else None, "stage": (m.get("tournament") or {}).get("stage") or ""})
+                                 "score": st.get("scoreStr") if st.get("finished") else None, "stage": (m.get("tournament") or {}).get("stage") or "", "mid": m.get("id")})
     if missed:
         print(f"Club fixtures: no cup matches for {', '.join(missed)}")
     for ms in out.values():
@@ -2616,11 +2703,22 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     if INJURY_LOG.exists() or ADMIN_INJURIES.exists():
         log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
         (out_dir / "injury_log.json").write_text(json.dumps(merged_injuries(log, load_admin_injuries()), ensure_ascii=False), encoding="utf-8")
-    (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
+    fx = None
     try:
-        (out_dir / "fixtures.json").write_text(json.dumps(club_fixtures(data_dir / "api_cache", offline), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        fx = club_fixtures(data_dir / "api_cache", offline)
+        (out_dir / "fixtures.json").write_text(json.dumps(fx, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as e:  # never stop the site for this page
         print(f"Club fixtures not written ({e})")
+    if fx:
+        try:  # cup and European minutes and matches, for reference on the Minutes page
+            past_cup, next_cup = cup_tables(fx, cup_minutes(fx, offline), _api("bootstrap-static/", data_dir / "api_cache", offline), players)
+            for pid, d in past_cup.items():
+                if pid in players:
+                    players[pid]["cupPast"] = {g: v for g, v in d.items() if int(g) in past_gws}
+            payload["cupNext"] = {t: {g: v for g, v in d.items() if int(g) in payload["gws"]} for t, d in next_cup.items()}
+        except Exception as e:
+            print(f"Cup minutes not added ({e})")
+    (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     try:
         (out_dir / "team_news.json").write_text(json.dumps(team_news(data_dir / "api_cache", offline, players, payload["gws"][0]), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as e:  # never stop the site for this page
