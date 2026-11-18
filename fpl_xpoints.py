@@ -815,7 +815,7 @@ def gw_of_time(t, gws: list[dict]) -> int | None:
 
 
 def cup_tables(fx: dict, store: dict, boot: dict, players: dict) -> tuple[dict, dict]:
-    """Per player, cup and European minutes in each past gameweek window ([competition, opponent, minutes]); per
+    """Per player, cup and European minutes in each past gameweek window ([competition, opponent, minutes, kick-off]); per
     club, cup and European matches still to come in each gameweek window ([competition, opponent, kick-off])."""
     by_name = {t["name"]: t for t in boot["teams"]}
     squads = {}
@@ -847,7 +847,7 @@ def cup_tables(fx: dict, store: dict, boot: dict, players: dict) -> tuple[dict, 
                     mins = next((v for n, v in side.items() if _name_key(n).split()[-1:] == full.split()[-1:] and _name_key(n).split()[:1] == full.split()[:1]), None)
                 if mins is None:
                     mins = next((v for n, v in side.items() if set(_name_key(p["name"]).split()) <= set(_name_key(n).split())), 0)
-                past.setdefault(p["id"], {}).setdefault(str(gw), []).append([m["comp"], opp, int(mins)])
+                past.setdefault(p["id"], {}).setdefault(str(gw), []).append([m["comp"], opp, int(mins), m.get("t")])
     return past, nxt
 
 

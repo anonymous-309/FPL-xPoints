@@ -532,9 +532,16 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .manual-week .pick-add { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .manual-week input { min-width: 0; flex: 1 1 140px; }
 .linkbtn { background: none; border: 0; color: var(--turf); text-decoration: underline; cursor: pointer; }
-/* Minutes: cup and European matches in their own columns, chips as on the Fixtures page (reference only) */
-.minutes th.cupcol { min-width: 0; }
-.minutes th.cupcol .fx-m { padding: 0 5px; }
-.minutes td.cupcell { padding: 4px 6px; vertical-align: middle; }
-.minutes td.cupcell .fx-m { display: flex; width: max-content; margin: 1px auto; }
-.minutes td.cupcell .fx-m.nil { opacity: .45; }
+/* Minutes: a column per weekend and midweek, as on the Fixtures page; cup chips are for reference only */
+.mins-slots th.fx-gw { min-width: 84px; text-align: center; }
+.mins-slots th.fx-gw .gwb { margin: 2px auto 0; }
+.mins-slots th .th-static { padding: 0 2px; }
+.mins-slots th.fx-gw.intl, .mins-slots td.slotcell.intl { min-width: 56px; background: repeating-linear-gradient(135deg, #fff6cf 0 8px, #fdeeb0 8px 16px); }
+.mins-slots th.fx-gw.none, .mins-slots td.slotcell.nolg { min-width: 56px; background: #eef0ed; }
+.mins-slots th.fx-gw.mid { background: #f6f8f5; }
+.mins-slots th.fx-gw.past.mid, .mins-slots th.fx-gw.past.wkd { background: #f0f3ef; }
+.mins-slots td.slotcell { padding: 4px 6px; text-align: center; vertical-align: middle; }
+.mins-slots td span.fx-m, .mins-slots .fx-m { display: flex; gap: 4px; width: max-content; margin: 2px auto 0; font-size: 11.5px; line-height: 15px; }
+.mins-slots td.past .slotcups span.fx-m, .mins-slots td.fut .slotcups span.fx-m { margin: 2px 0 0 auto; }
+.mins-slots .fx-m.nil { opacity: .45; }
+.mins-slots .slotcups { margin-top: 2px; }

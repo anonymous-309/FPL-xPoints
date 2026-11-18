@@ -17,11 +17,12 @@
     const k = KIND[state.kind];
     const gws = data.gws.slice(0, state.range);
     document.querySelectorAll('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === state.kind)));
-    // fifths over every match shown, for the colours
+    // the official FPL spread over every match shown: 5 for the hardest 5%, 4 the next 25%, 3 the middle 43%,
+    // 2 the next 25%, and 1 only for the easiest 2% (FPL itself gives almost no 1s)
     const vals = [];
     Object.values(data.teams).forEach((t) => gws.forEach((g) => (t[g] || []).forEach((m) => vals.push(k.v(m)))));
     vals.sort((a, b) => a - b);
-    const cut = [0.2, 0.4, 0.6, 0.8].map((q) => vals[Math.min(vals.length - 1, Math.floor(q * vals.length))]);
+    const cut = [0.05, 0.30, 0.73, 0.98].map((q) => vals[Math.min(vals.length - 1, Math.floor(q * vals.length))]);
     const rating = (x) => 5 - cut.filter((c) => x >= c).length; // 1 easiest .. 5 hardest
     const rows = Object.entries(data.teams).map(([short, t]) => {
       const total = gws.reduce((s, g) => s + (t[g] || []).reduce((a, m) => a + k.v(m), 0), 0);
