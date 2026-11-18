@@ -5,9 +5,6 @@ jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    strategy:
-      matrix:
-        lineup: ["", "actual", "xmin"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,4 +17,4 @@ jobs:
           path: fpl_data/20*
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
-      - run: XP_LINEUP="${{ matrix.lineup }}" PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; echo "LINEUP=[${{ matrix.lineup }}]"; grep -a -A16 'figure     n predicted' bt.txt; grep -a 'Penalty goals:\|R2 \|anytime AUC' bt.txt | head; sed -n '/=== /,$p' bt.txt | head -40
+      - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1; tail -5 bt.txt | grep -a "Error\|Traceback" ; grep -a -A13 'figure     n predicted' bt.txt; grep -a 'Penalt\|R2 ' bt.txt | head; sed -n '/=== /,$p' bt.txt | head -30

@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import re
 import shutil
 import time
@@ -1278,27 +1277,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     df["is_DEF"] -= df["oop_share"]
     df["is_MID"] += df["oop_share"]
     df["pos_code"] = df["position"].map({p: i for i, p in enumerate(POSITIONS)})
-    mins = df["minutes"].where(~df["future"], df["min_long"]) if "minutes" in df else df["min_long"]
-    df["lu_team"], df["lu_opp"] = lineup_feats(df, mins)
     return df
-
-
-def lineup_feats(df: pd.DataFrame, mins) -> tuple[np.ndarray, np.ndarray]:
-    """Log of a side's attacking strength on the day against its usual one: the sum over its players of npxG + xA
-    per 90 times the minutes they play, against the same with their usual minutes. lu_team for his own side, lu_opp
-    for the other side in the same match."""
-    rate = (df["r_xg"].fillna(0) + df["r_xa"].fillna(0)).clip(lower=0).to_numpy(float)
-    m = np.clip(np.nan_to_num(np.asarray(mins, float)), 0, 90) / 90
-    m0 = np.clip(df["min_long"].fillna(0).to_numpy(float), 0, 90) / 90
-    key = [df["season"].to_numpy(), df["fixture"].to_numpy(), df["team"].to_numpy()]
-    t = pd.DataFrame({"season": key[0], "fixture": key[1], "team": key[2], "a": rate * m, "a0": rate * m0})
-    g = t.groupby(["season", "fixture", "team"], as_index=False)[["a", "a0"]].sum()
-    g["lu"] = np.log((g["a"] / g["a0"].replace(0, np.nan)).clip(0.5, 1.5)).fillna(0.0)
-    g["lu_fix"] = g.groupby(["season", "fixture"])["lu"].transform("sum")
-    g["n"] = g.groupby(["season", "fixture"])["lu"].transform("size")
-    g["lu_opp"] = np.where(g["n"] == 2, g["lu_fix"] - g["lu"], 0.0)
-    j = t[["season", "fixture", "team"]].merge(g[["season", "fixture", "team", "lu", "lu_opp"]], on=["season", "fixture", "team"], how="left")
-    return j["lu"].fillna(0).to_numpy(float), j["lu_opp"].fillna(0).to_numpy(float)
 
 
 # ---------------------------------------------------------------- model
@@ -1314,13 +1293,6 @@ TEAM_FEATS_LEARNED = ["l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", 
 # Clean sheets and goals conceded: real goals weighted 70%, xG 30%, with one home/away factor for all teams.
 TEAM_FEATS_DEFAULT = ["cs_def_mix70", "cs_att_mix70", "was_home"]
 TEAM_FEATS = TEAM_FEATS_DEFAULT
-# Trial: who plays. XP_LINEUP=xmin (expected minutes) or actual (the minutes really played, past matches only) adds
-# each side's attacking strength on the day against its usual one: lu_team to his goals and assists, lu_opp to
-# goals conceded and clean sheets.
-LINEUP = os.environ.get("XP_LINEUP", "")
-if LINEUP:
-    TEAM_FEATS = TEAM_FEATS + ["lu_opp"]
-    GLMS = {k: (y, f + ["lu_team"]) if k in ("goals", "assists") else (y, f) for k, (y, f) in GLMS.items()}
 # Expected BPS and defensive actions per 90 (shown on Chance 90min; they feed bonus and DefCon%).
 BPS_FEATS = ["l_bps", "form_bps", "rel_bps", "l_team_att", "gap_team_att", "l_team_def", "gap_team_def", "l_opp_att", "gap_opp_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM
 DC_FEATS = ["l_dc", "l_opp_att", "gap_opp_att", "l_team_att", "gap_team_att", "was_home", "is_MID", "is_FWD"]
@@ -1497,11 +1469,6 @@ class XPointsModel:
         p_60 = np.clip(base["p60"] * avail, 0, 1)
         pos = df["position"]
         n90 = xmin / 90
-        if LINEUP and (LINEUP == "xmin" or df["future"].any()):
-            # who is expected to play: expected minutes for coming matches (and, in the "xmin" trial, past ones too)
-            df = df.copy()
-            use = np.where(df["future"].to_numpy() | (LINEUP == "xmin"), xmin, df["minutes"].fillna(0).to_numpy(float) if "minutes" in df else xmin)
-            df["lu_team"], df["lu_opp"] = lineup_feats(df, use)
         rate90 = {k: self.rates[k].predict(df[f]) for k, (_, f) in GLMS.items()}
         # Penalties on top of open-play goals: his share of team penalties while on the pitch x team penalties per match.
         pen_cond = df["pen_cond"].to_numpy(float) if "pen_cond" in df else df["pen_share_hist"].fillna(0).to_numpy(float)
@@ -1599,8 +1566,49 @@ def load_history(data_dir: Path, seasons: list[str]) -> pd.DataFrame:
     return yellow_bans(clean(add_core(raw, data_dir, seasons), seasons))
 
 
+PEN_ORDER_WINDOW = 38  # team matches looked back over for who has been taking the penalties
+
+
+def pen_order_from_history(df: pd.DataFrame) -> pd.Series:
+    """For past matches (the backtest): each team's penalty order before the match from who actually took its
+    penalties in its previous PEN_ORDER_WINDOW matches (most taken first), where penalties are counted; FPL's order
+    stored for old seasons is often wrong or out of date. Falls back to that stored order where nobody took one."""
+    taken = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)).astype(float)
+    known = df["core_pen_scored"].notna() | df["core_pen_missed"].notna()
+    tm = df[["season", "fixture", "team", "kickoff_time"]].drop_duplicates(["season", "fixture", "team"]).sort_values("kickoff_time")
+    tm["i"] = tm.groupby("team").cumcount()
+    idx = df[["season", "fixture", "team"]].merge(tm[["season", "fixture", "team", "i"]], on=["season", "fixture", "team"], how="left")["i"].to_numpy()
+    d = pd.DataFrame({"team": df["team"].to_numpy(), "pid": df["pid"].to_numpy(), "i": idx, "taken": taken.to_numpy(), "known": known.to_numpy()})
+    count = np.zeros(len(d))
+    have = np.zeros(len(d), bool)  # any counted match for the team in the window
+    for team, g in d.groupby("team"):
+        wide = g.pivot_table(index="i", columns="pid", values="taken", aggfunc="sum", fill_value=0.0)
+        full = pd.RangeIndex(int(g["i"].min()), int(g["i"].max()) + 1)
+        wide = wide.reindex(full, fill_value=0.0)
+        before = wide.rolling(PEN_ORDER_WINDOW, min_periods=1).sum().shift(1).fillna(0.0)
+        k = g.groupby("i")["known"].any().reindex(full, fill_value=False).astype(float)
+        kb = k.rolling(PEN_ORDER_WINDOW, min_periods=1).sum().shift(1).fillna(0.0)
+        st = before.stack()
+        vals = st.reindex(pd.MultiIndex.from_arrays([g["i"].to_numpy(), g["pid"].to_numpy()])).fillna(0.0).to_numpy()
+        pos = g.index.to_numpy()  # positions in d (a plain 0..n-1 index)
+        count[pos] = vals
+        have[pos] = kb.reindex(g["i"].to_numpy()).to_numpy() > 0
+    d["count"] = count
+    rank = d[d["count"] > 0].groupby(["team", "i"])["count"].rank(method="first", ascending=False)
+    order = pd.Series(np.nan, index=df.index)
+    order.loc[df.index[rank.index]] = rank.to_numpy()
+    team_has = pd.Series(d["count"] > 0).groupby([d["team"], d["i"]]).transform("any").to_numpy()
+    old = pd.to_numeric(df["pen_order"], errors="coerce")
+    return order.where(team_has | have, old)
+
+
 def walk_forward(feat: pd.DataFrame, season: str, step: int, min_train_seasons: int = 1) -> pd.DataFrame:
     test = feat[feat["season"] == season]
+    # who takes the penalties, the way the site does it, with the order taken from who has been taking them
+    test = test.assign(pen_order=pen_order_from_history(feat).loc[test.index].to_numpy())
+    if "avail" not in test:
+        test = test.assign(avail=1.0)
+    test = test.assign(pen_cond=penalty_shares(test))
     if feat.loc[feat["season"] != season, "season"].nunique() < min_train_seasons:
         raise ValueError("Need at least one earlier season to backtest.")
     gws = sorted(test["GW"].unique())
@@ -2110,16 +2118,26 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
 def penalty_shares(target: pd.DataFrame) -> np.ndarray:
     """Share of his team's penalties a player takes while on the pitch, per future match.
 
-    The FPL number 1 takes them when on the pitch; each next taker gets the ones left while those above him are off."""
+    The FPL number 1 takes them when on the pitch; each next taker gets the ones left while those above him are off;
+    any left while all the listed takers are off go to the free kick and corner takers, split by their expected minutes."""
     out = np.zeros(len(target))
     on_pitch = pd.Series(usual_minutes(target)["min"] * target["avail"].fillna(1).to_numpy(), index=target.index).clip(0, 90) / 90
     order = pd.to_numeric(target["pen_order"], errors="coerce")
     frame = pd.DataFrame({"fixture": target["fixture"].to_numpy(), "team": target["team"].to_numpy(), "order": order.to_numpy(), "m": on_pitch.to_numpy()})
-    for _, g in frame[frame["order"].notna()].groupby(["fixture", "team"]):
+    listed = lambda c: pd.to_numeric(target[c], errors="coerce").notna().to_numpy() if c in target else np.zeros(len(target), bool)
+    frame["fk"] = np.where(listed("fk_order") | listed("corner_order"), 1.0, np.nan)  # on the free kick or corner list
+    for _, g in frame.groupby(["fixture", "team"]):
         left = 1.0
-        for i in g.sort_values("order").index:
+        listed = g[g["order"].notna()]
+        for i in listed.sort_values("order").index:
             out[i] = PEN_TAKE_ON_PITCH * left
             left *= 1 - g.at[i, "m"]
+        # Penalties given while none of the listed takers is on the pitch go to the free kick and corner takers, split
+        # by their expected minutes (so the same extra share for each while he is on the pitch).
+        # (not the penalty takers themselves: these penalties come exactly when they are all off)
+        fks = g[g["fk"].notna() & g["order"].isna() & (g["m"] > 0)]
+        if len(fks) and left > 0:
+            out[fks.index] = np.minimum(1.0, out[fks.index] + left / fks["m"].sum())
     return out
 
 
@@ -2393,7 +2411,7 @@ def set_piece_table(res: pd.DataFrame, gw: int) -> dict:
         g = g.copy()
         for c in ("pen_order", "fk_order", "corner_order"):
             g[c] = pd.to_numeric(g[c], errors="coerce")
-        pens = g[g["pen_order"].notna()].sort_values("pen_order")
+        pens = g[g["pen_order"].notna() | (g["pen_cond_used"] * g["xmin"] / 90 >= 0.0005)].sort_values(["pen_order", "xmin"], ascending=[True, False], na_position="last")
         def takers(col: str) -> list:
             t = g[g[col].notna()].sort_values(col)
             return [{"name": r["web_name"], "order": num(r[col]), "adjMin": round(float(r["xmin"]), 1)} for _, r in t.iterrows()]
@@ -2476,6 +2494,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "pastWhy": past_why.get(r["pid"], {}), "byGw": {},
             # penalty order and miss rate, so the site can move penalties to the next taker when minutes are edited
             "penOrder": None if pd.isna(pd.to_numeric(r.get("pen_order"), errors="coerce")) else int(pd.to_numeric(r["pen_order"], errors="coerce")),
+            "fkOrder": None if pd.isna(pd.to_numeric(r.get("fk_order"), errors="coerce")) else int(pd.to_numeric(r["fk_order"], errors="coerce")),
+            "cornerOrder": None if pd.isna(pd.to_numeric(r.get("corner_order"), errors="coerce")) else int(pd.to_numeric(r["corner_order"], errors="coerce")),
             "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
