@@ -52,17 +52,27 @@
 
   // Times are shown in the chosen zone (UTC unless changed); matches are grouped into weekend (Fri-Mon) and midweek
   // (Tue-Thu) slots by the date in England, so a slot means the same round of matches wherever you are.
-  const ZONES = [['UTC', 'GMT+0 (UTC, Ghana, Iceland)'], ['Europe/London', 'UK, Ireland, Portugal'],
-    ['Europe/Paris', 'Central Europe (Norway, Sweden, Denmark, Netherlands, Germany, France, Spain, Italy, Poland)'],
-    ['Africa/Lagos', 'GMT+1 (Nigeria)'], ['Europe/Athens', 'Eastern Europe (Greece, Finland, Romania)'], ['Africa/Cairo', 'Egypt'],
-    ['Africa/Johannesburg', 'GMT+2 (South Africa, Zambia, Zimbabwe)'], ['Africa/Nairobi', 'GMT+3 (Kenya, Uganda, Tanzania)'],
-    ['Asia/Riyadh', 'GMT+3 (Saudi Arabia, Qatar, Kuwait)'], ['Europe/Istanbul', 'Turkey'], ['Asia/Dubai', 'GMT+4 (UAE, Oman)'],
-    ['Asia/Karachi', 'GMT+5 (Pakistan)'], ['Asia/Kolkata', 'GMT+5:30 (India, Sri Lanka)'], ['Asia/Kathmandu', 'GMT+5:45 (Nepal)'],
-    ['Asia/Dhaka', 'GMT+6 (Bangladesh)'], ['Asia/Bangkok', 'GMT+7 (Vietnam, Thailand, Cambodia)'], ['Asia/Jakarta', 'GMT+7 (Indonesia, Jakarta)'],
-    ['Asia/Shanghai', 'GMT+8 (China, Hong Kong, Taiwan)'], ['Asia/Singapore', 'GMT+8 (Singapore, Malaysia, Philippines)'],
-    ['Asia/Tokyo', 'GMT+9 (Japan, Korea)'], ['Australia/Perth', 'Perth'], ['Australia/Sydney', 'Sydney, Melbourne'], ['Pacific/Auckland', 'New Zealand'],
-    ['America/Sao_Paulo', 'Brazil (São Paulo)'], ['America/New_York', 'US & Canada Eastern'], ['America/Chicago', 'US & Canada Central'],
-    ['America/Denver', 'US & Canada Mountain'], ['America/Los_Angeles', 'US & Canada Pacific'], ['local', 'This device']];
+  // Places for each time zone; the GMT offset is worked out in the browser for today's date, so summer time is right.
+  const ZONE_PLACES = [['UTC', 'UTC, Ghana, Iceland'], ['Europe/London', 'UK, Ireland, Portugal'],
+    ['Europe/Paris', 'Norway, Sweden, Denmark, Netherlands, Germany, France, Spain, Italy, Poland'], ['Africa/Lagos', 'Nigeria'],
+    ['Europe/Athens', 'Greece, Finland, Romania'], ['Africa/Cairo', 'Egypt'], ['Africa/Johannesburg', 'South Africa, Zambia, Zimbabwe'],
+    ['Africa/Nairobi', 'Kenya, Uganda, Tanzania'], ['Asia/Riyadh', 'Saudi Arabia, Qatar, Kuwait'], ['Europe/Istanbul', 'Turkey'],
+    ['Asia/Dubai', 'UAE, Oman'], ['Asia/Karachi', 'Pakistan'], ['Asia/Kolkata', 'India, Sri Lanka'], ['Asia/Kathmandu', 'Nepal'],
+    ['Asia/Dhaka', 'Bangladesh'], ['Asia/Bangkok', 'Vietnam, Thailand, Cambodia'], ['Asia/Jakarta', 'Indonesia, Jakarta'],
+    ['Asia/Shanghai', 'China, Hong Kong, Taiwan'], ['Asia/Singapore', 'Singapore, Malaysia, Philippines'], ['Asia/Tokyo', 'Japan, Korea'],
+    ['Australia/Perth', 'Perth'], ['Australia/Sydney', 'Sydney, Melbourne'], ['Pacific/Auckland', 'New Zealand'],
+    ['America/Sao_Paulo', 'Brazil, São Paulo'], ['America/New_York', 'US & Canada Eastern'], ['America/Chicago', 'US & Canada Central'],
+    ['America/Denver', 'US & Canada Mountain'], ['America/Los_Angeles', 'US & Canada Pacific']];
+  function gmtOffset(zone) {
+    try {
+      const p = new Intl.DateTimeFormat('en-GB', { timeZone: zone, timeZoneName: 'shortOffset' }).formatToParts(new Date()).find((x) => x.type === 'timeZoneName');
+      const m = /GMT([+-]\d+)(?::(\d+))?/.exec(p ? p.value : '');
+      return m ? Number(m[1]) + Math.sign(Number(m[1]) || 1) * (Number(m[2] || 0) / 60) : 0;
+    } catch (e) { return 0; }
+  }
+  const gmtText = (h) => `GMT${h < 0 ? '−' : '+'}${Math.floor(Math.abs(h))}${Math.abs(h) % 1 ? ':' + String(Math.round((Math.abs(h) % 1) * 60)).padStart(2, '0') : ''}`;
+  const ZONES = ZONE_PLACES.map(([z, n]) => [z, gmtOffset(z), n]).sort((a, b) => a[1] - b[1]).map(([z, h, n]) => [z, `${gmtText(h)} (${n})`])
+    .concat([['local', `This device (${gmtText(-new Date().getTimezoneOffset() / 60)})`]]);
   const tz = () => (state.tz === 'local' ? undefined : state.tz);
   const day = (d) => d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: tz() });
   const hm = (d) => d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', timeZone: tz() });
