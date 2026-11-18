@@ -600,3 +600,9 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .manual-squad .pick { cursor: default; }
 .manual-week select { max-width: 280px; }
 .manual-squad span.pick { display: inline-block; padding: 2px 8px; border: 1px solid var(--line); border-radius: 4px; background: #fff; font-size: 13px; }
+/* FDR ranking: every column centred, fixed widths so the rows line up */
+.fdr-rank table { table-layout: fixed; border-collapse: collapse; }
+.fdr-rank th, .fdr-rank td, .fdr-rank th.num, .fdr-rank td.num { text-align: center; vertical-align: middle; padding: 6px 4px; }
+.fdr-rank th:nth-child(1) { width: 18%; } .fdr-rank th:nth-child(2) { width: 47%; } .fdr-rank th:nth-child(3) { width: 35%; }
+.fdr-rank .fdr-m { display: inline-flex; justify-content: center; width: 104px; min-width: 0; }
+.fdr-rank td.num { font-variant-numeric: tabular-nums; }
