@@ -550,3 +550,23 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .mins-slots .slotcups { margin-top: 2px; }
 
 .more-rows { display: block; position: sticky; left: 10px; margin: 10px; }
+
+/* Minutes laid out as the Fixtures page: a white cell per weekend or midweek, a chip per match */
+.mins-slots th.fx-gw { text-align: left; min-width: 0; }
+.mins-slots th.fx-gw button { text-align: left; }
+.mins-slots th.fx-gw.done .gwt { color: var(--muted); }
+.mins-slots td.mslot { min-width: 74px; text-align: center; vertical-align: middle; padding: 4px 6px; }
+.mins-slots td.mslot.mid { background: #f6f8f5; }
+.mins-slots td.mslot .fx-m { margin: 2px auto; }
+.mins-slots td.mslot small { display: block; color: var(--muted); font-size: 11px; }
+.fx-m.lg { gap: 5px; }
+.fx-m.lg b { font-size: 12.5px; font-weight: 750; }
+.fx-m.lg.out { border-color: var(--warn); cursor: pointer; }
+.fx-m.lg .out-zero { color: var(--warn); }
+.fx-m.lg.nil { color: var(--muted); }
+/* the two columns you set minutes with stand apart from the gameweeks */
+.minutes th.keycol, .minutes td.keycol { background: #e3efdf; border-left: 2px solid var(--turf); border-right: 2px solid var(--turf); }
+.minutes th.keycol { color: var(--turf); }
+.minutes td.keycol.usual { font-size: 15px; }
+.mins-slots th.fx-gw { vertical-align: bottom; }
+.mins-slots th.fx-gw.intl, .mins-slots td.mslot.intl { background: repeating-linear-gradient(135deg, #fff6cf 0 8px, #fdeeb0 8px 16px); }

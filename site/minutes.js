@@ -100,7 +100,7 @@
     return [
       ['name', 'Player'],
       ...past.map((s) => [slotSortKey(s), s]),
-      ['usual', 'Usual', 'last 5'], ['adjust', 'Adjust min', 'all GWs'],
+      ['usual', 'Usual EPL min', 'last 5'], ['adjust', 'Adjust min', 'all GWs'],
       ...fut.map((s) => [slotSortKey(s), s]),
       ['note', 'Injury / ban'],
     ];
@@ -120,19 +120,20 @@
 
   function slotHead(s) {
     if (s.plain) return [el('span', { className: 'gwn', textContent: `GW${s.gws[0]}` }), el('small', { textContent: s.past ? 'played' : 'xMin' })];
-    const kids = [el('span', { className: 'gwn', textContent: s.kind === 'mid' ? 'Midweek' : 'Weekend' }),
-      el('span', { className: 'gwd', textContent: s.first != null ? (s.first === s.last ? dShort(s.first) : `${dShort(s.first)} – ${dShort(s.last)}`) : `${dShort(s.key)} – ${dShort(s.key + (s.kind === 'mid' ? 2 : 3) * 864e5)}` })];
-    if (s.gws.length) kids.push(el('span', { className: 'gwt', textContent: `${s.gws.map((g) => 'GW' + g).join(', ')} ${s.past ? 'played' : 'xMin'}` }));
+    // the dates are on hover, as the column title
+    const kids = [el('span', { className: 'gwn', textContent: s.kind === 'mid' ? 'Midweek' : 'Weekend' })];
+    if (s.gws.length) kids.push(el('span', { className: 'gwt', textContent: s.gws.map((g) => 'GW' + g).join(', ') }));
     else if (s.intl) kids.push(el('span', { className: 'gwb', textContent: 'International break' }));
     return kids;
   }
-  const slotClass = (s) => `${s.past ? 'past ' : ''}${s.plain ? '' : `fx-gw ${s.kind}`}${s.intl ? ' intl' : !s.gws.length ? ' none' : ''}`;
+  const slotClass = (s) => (s.plain ? (s.past ? 'past' : '') : `fx-gw ${s.kind}${s.past ? ' done' : ''}${s.intl ? ' intl' : ''}`);
+  const slotDates = (s) => (s.plain ? '' : `${s.kind === 'mid' ? 'Midweek' : 'Weekend'} ${s.first != null ? (s.first === s.last ? dShort(s.first) : `${dShort(s.first)} – ${dShort(s.last)}`) : `${dShort(s.key)} – ${dShort(s.key + (s.kind === 'mid' ? 2 : 3) * 864e5)}`}${s.gws.length ? `: GW${s.gws.join(', GW')} ${s.past ? '(minutes played)' : '(xMin, editable)'}` : s.intl ? ': international break' : ''}`);
 
   function header() {
     const head = el('tr', {}, ...columns().map(([key, label, sub]) => {
       const slot = typeof label === 'object' ? label : null;
       const kids = slot ? slotHead(slot) : [label, ...(sub ? [el('small', { textContent: sub })] : [])];
-      const th = el('th', { scope: 'col', className: slot ? slotClass(slot) : '' },
+      const th = el('th', { scope: 'col', className: slot ? slotClass(slot) : (key === 'usual' || key === 'adjust' ? 'keycol' : ''), title: slot ? slotDates(slot) : '' },
         key ? el('button', { type: 'button', onclick: () => {
           if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' || key === 'note' ? 1 : -1; }
           render();
@@ -155,25 +156,53 @@
     const name = el('td', { className: 'player', title: p.news || p.fullName }, el('b', { textContent: p.name }), meta);
     if (p.status && p.status !== 'a') meta.append(' ', el('span', { className: 'flag', textContent: 'Flagged' }));
     const o = state.overrides[p.id] || {};
-    const adjust = el('td', { className: 'xmin' }, input(o.all, String(Math.round(p.minUsual)), `Minutes per match for ${p.name} in every gameweek`, { all: '1' }));
+    const adjust = el('td', { className: 'xmin keycol' }, input(o.all, String(Math.round(p.minUsual)), `Minutes per match for ${p.name} in every gameweek`, { all: '1' }));
     const usual = p.adminMin !== null && p.adminMin !== undefined
-      ? el('td', { className: 'usual admin-set', textContent: Math.round(p.minUsual), title: `Set by admin (formula ${Math.round(p.minModel ?? p.minUsual)})` })
-      : el('td', { className: 'usual', textContent: Math.round(p.minUsual), title: p.w5Min !== null && Math.round(p.w5Min) !== Math.round(p.minUsual) ? `${Math.round(p.w5Min)} counting his current absence` : '' });
+      ? el('td', { className: 'usual keycol admin-set', textContent: Math.round(p.minUsual), title: `Set by admin (formula ${Math.round(p.minModel ?? p.minUsual)})` })
+      : el('td', { className: 'usual keycol', textContent: Math.round(p.minUsual), title: p.w5Min !== null && Math.round(p.w5Min) !== Math.round(p.minUsual) ? `${Math.round(p.w5Min)} counting his current absence` : '' });
     const { past: pastS, fut: futS } = slotCols();
     const cups = cupBySlot(p);
     // one cell per weekend or midweek: the league gameweek in it, then the club's cup matches
+    // as on the Fixtures page: one cell per weekend or midweek, a chip per match
     const slotCell = (s) => {
       const chips = cupChips(cups.get(String(s.key)) || []);
-      if (s.plain) { const td = s.past ? pastCell(s.gws[0]) : futCell(s.gws[0]); return td; }
-      if (!s.gws.length) {
-        const td = el('td', { className: `slotcell${s.past ? ' past' : ''}${s.intl ? ' intl' : ' nolg'}` });
-        if (chips.length) td.append(...chips);
-        return td;
+      if (s.plain) return s.past ? pastCell(s.gws[0]) : futCell(s.gws[0]);
+      const td = el('td', { className: `fx-cell mslot ${s.kind}${s.intl ? ' intl' : ''}` });
+      if (s.gws.length) {
+        if (s.past) td.append(...leaguePast(s.gws[0]));
+        else { const f = futCell(s.gws[0]); td.className += ` ${f.className}`; td.append(...f.childNodes); }
       }
-      const td = s.past ? pastCell(s.gws[0]) : futCell(s.gws[0]);
-      if (chips.length) td.append(el('div', { className: 'slotcups' }, ...chips));
+      td.append(...chips);
       return td;
     };
+    // played league matches: opponent and minutes; a match left out of the formula in red, the reason on hover or tap
+    function leaguePast(g) {
+      const m = pastMins(p, g);
+      if (!m) return [el('span', { className: 'fx-m lg nil', textContent: '–' })];
+      const opp = (p.pastOpp && p.pastOpp[g]) || [];
+      const why = (p.pastWhy && p.pastWhy[g]) || [];
+      const notes = (p.pastNote && p.pastNote[g]) || [];
+      return m.map((x, i) => {
+        const w = why[i];
+        const tip = w ? `${notes[i] || WHY[w] || 'Left out of the formula'}${notes[i] ? '. Left out of the formula.' : ''}` : `GW${g} v ${opp[i] || ''}: ${Math.round(x)} minutes`;
+        const n = el('b', { className: w ? 'out-zero' : '', textContent: String(Math.round(x)) });
+        const chip = el('span', { className: `fx-m lg${w ? ' out' : ''}`, title: tip }, opp[i] || '', n);
+        if (w) {
+          chip.tabIndex = 0;
+          chip.setAttribute('role', 'button');
+          chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const cell = chip.closest('td');
+            const old = cell.querySelector('.why-note');
+            if (old) { old.remove(); if (old.dataset.i === `${g}-${i}`) return; }
+            const note = el('small', { className: 'why-note', textContent: tip });
+            note.dataset.i = `${g}-${i}`;
+            cell.append(note);
+          });
+        }
+        return chip;
+      });
+    }
     const past = pastS.map(slotCell);
     function pastCell(g) {
       const m = pastMins(p, g);
@@ -182,7 +211,7 @@
       // Every match left out of the formula is shown in red, with the reason on hover.
       const why = (p.pastWhy && p.pastWhy[g]) || [];
       const notes = (p.pastNote && p.pastNote[g]) || [];
-      const WHY = {
+      const WHY0 = {
         b: 'Banned: left out of the formula',
         c: 'Sent off in this match: left out of the formula',
         g: 'Came on for the injured goalkeeper: left out of the formula',
@@ -196,7 +225,7 @@
       m.forEach((x, i) => {
         if (i) nums.append('+');
         const w = why[i];
-        const tip = w ? `${notes[i] || WHY[w] || 'Left out of the formula'}${notes[i] ? '. Left out of the formula.' : ''}` : '';
+        const tip = w ? `${notes[i] || WHY0[w] || 'Left out of the formula'}${notes[i] ? '. Left out of the formula.' : ''}` : '';
         if (!w) { nums.append(String(Math.round(x))); return; }
         const b = el('b', { className: 'out-zero', textContent: String(Math.round(x)), title: tip, tabIndex: 0, role: 'button', ariaLabel: tip });
         // a tap shows the reason too (phones have no hover)
@@ -230,6 +259,16 @@
     return tr;
   }
 
+  const WHY = {
+    b: 'Banned: left out of the formula',
+    c: 'Sent off in this match: left out of the formula',
+    g: 'Came on for the injured goalkeeper: left out of the formula',
+    i: 'Injured or unavailable: left out of the formula',
+    h: 'Taken off injured in this match: left out of the formula',
+    m: 'In an absence set by the admin: left out of the formula',
+    r: 'Cautionary rest: 0 in his first match back from injury, left out of the formula',
+    d: 'Flagged doubtful: the match he got hurt in, or missed since, left out of the formula',
+  };
   const CUP_NAME = { UCL: 'Champions League', UEL: 'Europa League', UECL: 'Conference League', EFL: 'EFL Cup', FAC: 'FA Cup', INT: 'International' };
   // Cup and European matches, for reference only: the formula and xMin use league matches.
   // Played: [competition, opponent, minutes, kick-off] per player; coming: [competition, opponent, kick-off] per club.
@@ -283,7 +322,7 @@
   const cupChips = (l) => l.filter((m) => !eplOnly && compsOn.has(m.c)).map((m) => (m.past
     ? el('span', { className: `fx-m c-${m.c}`, title: `${m.c === 'INT' ? `${m.nat}, ${m.comp}` : CUP_NAME[m.c]} v ${m.o}, ${when(m.t)}: ${m.mins} minutes (shown only, not used by the formula)` },
       el('b', { textContent: m.c === 'INT' ? natCode(m.nat) : m.c }), m.o, el('i', { textContent: `${m.mins}'` }))
-    : el('span', { className: `fx-m c-${m.c}`, title: `${CUP_NAME[m.c]} v ${m.o}, ${when(m.t)} (shown only: xMin is not changed for it)` }, el('b', { textContent: m.c }), m.o, el('i', { textContent: dd(m.t) }))));
+    : el('span', { className: `fx-m c-${m.c}`, title: `${CUP_NAME[m.c]} v ${m.o} (${m.o === m.o.toUpperCase() ? 'H' : 'A'}), ${when(m.t)} (shown only: xMin is not changed for it)` }, el('b', { textContent: m.c }), m.o)));
   // three letters for a national team: "Italy" ITA, "Côte d'Ivoire" CÔT
   const natCode = (n) => (n || 'INT').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z ]/g, '').trim().slice(0, 3).toUpperCase();
 
