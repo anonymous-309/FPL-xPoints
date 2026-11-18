@@ -814,6 +814,79 @@ def gw_of_time(t, gws: list[dict]) -> int | None:
     return None
 
 
+INTL_MINUTES = Path("intl_minutes.json")  # FotMob national-team matches of Premier League players, kept in the repo
+INTL_BATCH, INTL_AGE_H, INTL_FROM = 160, 20, "2026-07-01"
+
+
+def intl_minutes(cache: Path, offline: bool) -> dict:
+    """{FotMob player id: {name, club, fetched, matches: {match id: [kick-off, opponent, minutes, competition, nation]}}}:
+    national-team matches from each player's FotMob page (its recent matches), refreshed a batch at a time (the
+    players read longest ago first) and kept in INTL_MINUTES, since a page only lists the last few matches. For
+    reference on the Minutes page only."""
+    store = json.loads(INTL_MINUTES.read_text(encoding="utf-8")) if INTL_MINUTES.exists() else {}
+    mf = cache / "fotmob" / "members.json"
+    members = json.loads(mf.read_text()) if mf.exists() else {}
+    now = time.time()
+    todo = []
+    for club, ms in members.items():
+        for name, fid, nat, cname in ms:
+            rec = store.setdefault(str(fid), {"name": name, "club": club, "fetched": 0, "matches": {}})
+            rec.update(name=name, club=club, nat=nat)
+            if now - rec["fetched"] > INTL_AGE_H * 3600:
+                todo.append(str(fid))
+    todo.sort(key=lambda k: store[k]["fetched"])
+    fetched = 0
+    for fid in todo[:INTL_BATCH]:
+        if offline:
+            break
+        try:
+            d = _fotmob_get("playerData", {"id": fid})
+        except Exception as e:
+            print(f"FotMob player {fid} not read ({e})")
+            continue
+        rec = store[fid]
+        nat = rec.get("nat")
+        for m in d.get("recentMatches") or []:
+            t = (m.get("matchDate") or {}).get("utcTime") or ""
+            if t < INTL_FROM or not m.get("id"):
+                continue
+            if not ((nat and m.get("teamId") == nat) or (not nat and "national" in str(m.get("leagueName", "")).lower())):
+                continue
+            rec["matches"][str(m["id"])] = [t, m.get("opponentTeamName") or "", int(m.get("minutesPlayed") or 0), m.get("leagueName") or "", m.get("teamName") or ""]
+        rec["fetched"] = now
+        fetched += 1
+        time.sleep(0.35)
+    if fetched or todo:
+        INTL_MINUTES.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
+    print(f"International minutes: {len(store)} players, {fetched} read from FotMob now, {max(0, len(todo) - fetched)} left for later runs")
+    return store
+
+
+def _fm_find(p: dict, names: dict):
+    """The value for this FPL player in a {FotMob name: value} map of his club, or None."""
+    full = _name_key(p.get("fullName") or p["name"])
+    v = next((v for n, v in names.items() if _name_key(n) == full), None)
+    if v is None:
+        v = next((v for n, v in names.items() if _name_key(n).split()[-1:] == full.split()[-1:] and _name_key(n).split()[:1] == full.split()[:1]), None)
+    if v is None:
+        v = next((v for n, v in names.items() if set(_name_key(p["name"]).split()) <= set(_name_key(n).split())), None)
+    return v
+
+
+def intl_tables(store: dict, players: dict) -> dict:
+    """Per player, his national-team matches this season: [[nation, opponent, minutes, kick-off, competition]]."""
+    by_club = {}
+    for rec in store.values():
+        if rec.get("matches"):
+            by_club.setdefault(rec.get("club"), {})[rec["name"]] = rec["matches"]
+    out = {}
+    for p in players.values():
+        ms = _fm_find(p, by_club.get(p["team"], {}))
+        if ms:
+            out[p["id"]] = sorted(([nat, _club_short(opp), mins, t, comp] for t, opp, mins, comp, nat in ms.values()), key=lambda x: x[3])
+    return out
+
+
 def cup_tables(fx: dict, store: dict, boot: dict, players: dict) -> tuple[dict, dict]:
     """Per player, cup and European minutes in each past gameweek window ([competition, opponent, minutes, kick-off]); per
     club, cup and European matches still to come in each gameweek window ([competition, opponent, kick-off])."""
@@ -828,6 +901,8 @@ def cup_tables(fx: dict, store: dict, boot: dict, players: dict) -> tuple[dict, 
             if m["comp"] not in CUP_CODES:  # league, friendlies, Community Shield, Super Cup
                 continue
             gw = gw_of_time(m.get("t"), fx["gws"])
+            if gw is None and m.get("t") and fx["gws"] and pd.Timestamp(m["t"]) < pd.Timestamp(min(fx["gws"], key=lambda g: g["gw"])["deadline"]):
+                gw = 0  # before the first deadline: European qualifiers in the summer
             if gw is None:
                 continue
             opp = m["oppShort"].upper() if m["home"] else m["oppShort"].lower()
@@ -880,7 +955,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
     except Exception as e:
         table, note = [], f"FotMob not read ({e}): only league matches are shown"
         print(note)
-    missed, lineups = [], {}
+    missed, lineups, members = [], {}, {}
     for fm_id, fm_name in table:
         t = by_name.get(FOTMOB_TEAMS.get(fm_name, fm_name)) or next((x for x in boot["teams"] if _name_key(x["name"]).split()[0] == _name_key(fm_name).split()[0]), None)
         if not t:
@@ -895,7 +970,9 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
                 d = _fotmob_get("teams", {"id": fm_id, "ccode3": "GBR"})
                 fxs = ((d.get("fixtures") or {}).get("allFixtures") or {}).get("fixtures") or []
                 data = {"fixtures": fxs, "lineup": None,
-                        "roles": {m["name"]: m.get("positionIds") or "" for g in ((d.get("squad") or {}).get("squad") or []) for m in g.get("members") or [] if m.get("name")}}
+                        "roles": {m["name"]: m.get("positionIds") or "" for g in ((d.get("squad") or {}).get("squad") or []) for m in g.get("members") or [] if m.get("name")},
+                        "members": [[m["name"], m.get("id"), m.get("nationalTeamId"), m.get("cname")] for g in ((d.get("squad") or {}).get("squad") or [])
+                                    for m in g.get("members") or [] if m.get("name") and m.get("id") and (m.get("role") or {}).get("key") != "coach"]}
                 # the line-up of the club's last league match (a cup side is often rotated)
                 lm = [m for m in fxs if (m.get("tournament") or {}).get("name") == "Premier League" and (m.get("status") or {}).get("finished")]
                 if lm:
@@ -917,6 +994,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
                 if data is None:
                     missed.append(fm_name)
         if isinstance(data, dict):
+            members[t["short_name"]] = data.get("members") or []
             if (data.get("lineup") or {}).get("starters"):
                 lineups[t["short_name"]] = dict(data["lineup"], roles=data.get("roles") or {})
             data = data.get("fixtures")
@@ -936,6 +1014,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
     for ms in out.values():
         ms.sort(key=lambda m: m["t"] or "9999")
     (folder / "lineups.json").write_text(json.dumps(lineups, ensure_ascii=False))
+    (folder / "members.json").write_text(json.dumps(members, ensure_ascii=False))
     n = sum(len(v) for v in out.values())
     print(f"Club fixtures: {n} matches for {len(out)} teams, " + ", ".join(f"{c} {sum(m['comp'] == c for v in out.values() for m in v)}" for c in ["PL", *dict.fromkeys(CLUB_COMPS.values())]))
     return {"updatedAt": int(time.time() * 1000), "note": note,
@@ -2739,10 +2818,16 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             past_cup, next_cup = cup_tables(fx, cup_minutes(fx, offline), _api("bootstrap-static/", data_dir / "api_cache", offline), players)
             for pid, d in past_cup.items():
                 if pid in players:
-                    players[pid]["cupPast"] = {g: v for g, v in d.items() if int(g) in past_gws}
+                    players[pid]["cupPast"] = {g: v for g, v in d.items() if int(g) in past_gws or int(g) == 0}
             payload["cupNext"] = {t: {g: v for g, v in d.items() if int(g) in payload["gws"]} for t, d in next_cup.items()}
         except Exception as e:
             print(f"Cup minutes not added ({e})")
+        try:  # national-team matches, for reference on the Minutes page
+            for pid, l in intl_tables(intl_minutes(data_dir / "api_cache", offline), players).items():
+                if pid in players:
+                    players[pid]["intlPast"] = l
+        except Exception as e:
+            print(f"International minutes not added ({e})")
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     try:
         (out_dir / "team_news.json").write_text(json.dumps(team_news(data_dir / "api_cache", offline, players, payload["gws"][0]), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")

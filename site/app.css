@@ -542,6 +542,9 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .mins-slots th.fx-gw.past.mid, .mins-slots th.fx-gw.past.wkd { background: #f0f3ef; }
 .mins-slots td.slotcell { padding: 4px 6px; text-align: center; vertical-align: middle; }
 .mins-slots td span.fx-m, .mins-slots .fx-m { display: flex; gap: 4px; width: max-content; margin: 2px auto 0; font-size: 11.5px; line-height: 15px; }
-.mins-slots td.past .slotcups span.fx-m, .mins-slots td.fut .slotcups span.fx-m { margin: 2px 0 0 auto; }
-.mins-slots .fx-m.nil { opacity: .45; }
+/* every number in the middle of its column */
+.mins-slots td.past, .mins-slots td.fut, .mins-slots td.usual, .mins-slots td.xmin, .mins-slots td.none, .mins-slots td.slotcell { text-align: center; }
+.mins-slots td .xmin-input { text-align: center; }
+.mins-slots td.past .slotcups span.fx-m, .mins-slots td.fut .slotcups span.fx-m { margin: 2px auto 0; }
+.fx-m.c-INT, .fx-tog.c-INT[aria-pressed="true"] { background: #b8451f; border-color: #b8451f; color: #fff; }
 .mins-slots .slotcups { margin-top: 2px; }

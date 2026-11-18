@@ -50,7 +50,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add injury_log.json injury_subs.json cup_minutes.json 2>/dev/null || git add injury_log.json injury_subs.json 2>/dev/null || git add injury_log.json
+          git add injury_log.json injury_subs.json cup_minutes.json intl_minutes.json 2>/dev/null || git add injury_log.json injury_subs.json cup_minutes.json 2>/dev/null || git add injury_log.json injury_subs.json 2>/dev/null || git add injury_log.json
           if git diff --cached --quiet; then echo "Injury log unchanged"; exit 0; fi
           git commit -m "Injury log: update"
           git pull --rebase origin main

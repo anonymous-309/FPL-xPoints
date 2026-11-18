@@ -73,8 +73,18 @@
     let pEnd = fStart != null ? fStart : null;
     if (pEnd != null) { let k = p.length ? cal.gwSlot[p[0]] : pEnd; let prev = null; for (; k < pEnd; k = nextKey(k)) prev = k; pEnd = prev; }
     else pEnd = p.length ? cal.gwSlot[p[p.length - 1]] : null;
+    // start early enough for the summer's European qualifiers
+    let start = p.length ? cal.gwSlot[p[0]] : null;
+    if (start != null) {
+      let first = null;
+      state.data.players.forEach((pl) => {
+        Object.values(pl.cupPast || {}).forEach((l) => l.forEach((x) => { if (x[3] && (!first || x[3] < first)) first = x[3]; }));
+        (pl.intlPast || []).forEach((x) => { if (x[3] && (!first || x[3] < first)) first = x[3]; });
+      });
+      if (first && slotKey(first) < start) start = slotKey(first);
+    }
     return {
-      past: p.length ? slotsBetween(cal.gwSlot[p[0]], pEnd, p, true) : [],
+      past: p.length ? slotsBetween(start, pEnd, p, true) : [],
       fut: f.length ? slotsBetween(fStart, cal.gwSlot[f[f.length - 1]], f, false) : [],
     };
   }
@@ -215,13 +225,14 @@
     return tr;
   }
 
-  const CUP_NAME = { UCL: 'Champions League', UEL: 'Europa League', UECL: 'Conference League', EFL: 'EFL Cup', FAC: 'FA Cup' };
+  const CUP_NAME = { UCL: 'Champions League', UEL: 'Europa League', UECL: 'Conference League', EFL: 'EFL Cup', FAC: 'FA Cup', INT: 'International' };
   // Cup and European matches, for reference only: the formula and xMin use league matches.
   // Played: [competition, opponent, minutes, kick-off] per player; coming: [competition, opponent, kick-off] per club.
   function cupBySlot(p) {
     const out = new Map();
     const add = (k, x) => { if (!out.has(k)) out.set(k, []); out.get(k).push(x); };
     Object.values(p.cupPast || {}).forEach((l) => l.forEach(([c, o, mins, t]) => t && add(String(slotKey(t)), { c, o, mins, t, past: true })));
+    (p.intlPast || []).forEach(([nat, o, mins, t, comp]) => t && add(String(slotKey(t)), { c: 'INT', o, mins, t, past: true, nat, comp }));
     const nx = (state.data.cupNext && state.data.cupNext[p.team]) || {};
     Object.values(nx).forEach((l) => l.forEach(([c, o, t]) => t && add(String(slotKey(t)), { c, o, t, past: false })));
     out.forEach((l) => l.sort((x, y) => (x.t < y.t ? -1 : 1)));
@@ -232,7 +243,7 @@
   const hm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const dd = (t) => new Date(t).toLocaleDateString('en-GB', { weekday: 'short' });
   // which cups show (buttons as on the Fixtures page), remembered on this device
-  const COMP_BTNS = [['UCL', 'Champions League'], ['UEL', 'Europa League'], ['UECL', 'Conference League'], ['EFL', 'EFL Cup'], ['FAC', 'FA Cup']];
+  const COMP_BTNS = [['UCL', 'Champions League'], ['UEL', 'Europa League'], ['UECL', 'Conference League'], ['EFL', 'EFL Cup'], ['FAC', 'FA Cup'], ['INT', 'International']];
   let compsOn = new Set(COMP_BTNS.map(([c]) => c));
   try { const v = JSON.parse(localStorage.getItem('minutes-comps') || 'null'); if (Array.isArray(v)) compsOn = new Set(v); } catch (e) { /* private mode */ }
   function compButtons() {
@@ -250,8 +261,11 @@
     }));
   }
   const cupChips = (l) => l.filter((m) => compsOn.has(m.c)).map((m) => (m.past
-    ? el('span', { className: `fx-m c-${m.c}${m.mins ? '' : ' nil'}`, title: `${CUP_NAME[m.c]} v ${m.o}, ${when(m.t)}: ${m.mins} minutes (shown only, not used by the formula)` }, el('b', { textContent: m.c }), m.o, el('i', { textContent: `${m.mins}'` }))
-    : el('span', { className: `fx-m c-${m.c}`, title: `${CUP_NAME[m.c]} v ${m.o}, ${when(m.t)} (shown only: xMin is not changed for it)` }, el('b', { textContent: m.c }), m.o, el('i', { textContent: `${dd(m.t)} ${hm(m.t)}` }))));
+    ? el('span', { className: `fx-m c-${m.c}`, title: `${m.c === 'INT' ? `${m.nat}, ${m.comp}` : CUP_NAME[m.c]} v ${m.o}, ${when(m.t)}: ${m.mins} minutes (shown only, not used by the formula)` },
+      el('b', { textContent: m.c === 'INT' ? natCode(m.nat) : m.c }), m.o, el('i', { textContent: `${m.mins}'` }))
+    : el('span', { className: `fx-m c-${m.c}`, title: `${CUP_NAME[m.c]} v ${m.o}, ${when(m.t)} (shown only: xMin is not changed for it)` }, el('b', { textContent: m.c }), m.o, el('i', { textContent: dd(m.t) }))));
+  // three letters for a national team: "Italy" ITA, "Côte d'Ivoire" CÔT
+  const natCode = (n) => (n || 'INT').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z ]/g, '').trim().slice(0, 3).toUpperCase();
 
   function render() {
     if (!state.data) return;
