@@ -746,6 +746,23 @@ def _club_short(name: str) -> str:
 CUP_MINUTES = Path("cup_minutes.json")  # FotMob minutes of Premier League players in cup and European matches, kept in the repo
 
 
+def fdr_table(res: pd.DataFrame) -> dict:
+    """Fixture difficulty from our own model, per club and coming match: goals it is expected to score (the other
+    side's expected goals conceded) and to concede, and its clean sheet chance. For reference only."""
+    t = res.groupby(["GW", "fixture", "team"], as_index=False).agg(
+        short=("team_short", "first"), opp=("opp_short", "first"), home=("was_home", "first"), conc=("conc90", "first"), cs=("p_cs", "first"),
+        kick=("kickoff_time", "first") if "kickoff_time" in res else ("GW", "first"))
+    other = t[["fixture", "team", "conc"]].rename(columns={"team": "opp_team", "conc": "scored"})
+    t["opp_team"] = t.groupby("fixture")["team"].transform(lambda x: x.iloc[::-1].to_numpy() if len(x) == 2 else x.to_numpy())
+    t = t.merge(other, on=["fixture", "opp_team"], how="left")
+    out = {}
+    for _, r in t.sort_values(["GW", "kick"]).iterrows():
+        out.setdefault(str(r["short"]), {}).setdefault(str(int(r["GW"])), []).append({
+            "opp": str(r["opp"]).upper() if r["home"] else str(r["opp"]).lower(), "home": bool(r["home"]),
+            "xgf": round(float(r["scored"]), 3) if pd.notna(r["scored"]) else None, "xga": round(float(r["conc"]), 3), "cs": round(float(r["cs"]), 4)})
+    return {"gws": sorted(int(g) for g in res["GW"].unique()), "teams": out, "names": dict(zip(res["team_short"].astype(str), res["team"].astype(str)))}
+
+
 def cup_minutes(fx: dict, offline: bool) -> dict:
     """{FotMob match id: {"teams": {team name: {player name: minutes}}}} for every finished cup or European match of a
     Premier League club, read once from FotMob's player stats and kept in CUP_MINUTES. For reference on the Minutes
@@ -2703,6 +2720,10 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     if INJURY_LOG.exists() or ADMIN_INJURIES.exists():
         log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
         (out_dir / "injury_log.json").write_text(json.dumps(merged_injuries(log, load_admin_injuries()), ensure_ascii=False), encoding="utf-8")
+    try:
+        (out_dir / "fdr.json").write_text(json.dumps(fdr_table(res), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    except Exception as e:  # never stop the site for this page
+        print(f"FDR not written ({e})")
     fx = None
     try:
         fx = club_fixtures(data_dir / "api_cache", offline)

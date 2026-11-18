@@ -3,7 +3,7 @@
   'use strict';
   const GROUPS = [
     ['Points', [['index.html', 'xPoints', 'Expected points by gameweek'], ['planner.html', 'Planner', 'Best transfers for your team']]],
-    ['Players', [['fixtures.html', 'Fixtures', 'Every club, every competition'], ['teamnews.html', 'Team news', 'Out, doubts, bans and likely XI'],
+    ['Players', [['fixtures.html', 'Fixtures', 'Every club, every competition'], ['fdr.html', 'Fixture difficulty', 'Overall, attack and defence'], ['teamnews.html', 'Team news', 'Out, doubts, bans and likely XI'],
       ['minutes.html', 'Minutes', 'Played minutes and xMin'], ['chances.html', 'Chance 90min', 'Goals, assists, clean sheets…'],
       ['setpieces.html', 'Set pieces', 'Penalty, free kick and corner takers'], ['oop.html', 'OOP', 'Out of position players'],
       ['injuries.html', 'Injuries', 'Absence log']]],
