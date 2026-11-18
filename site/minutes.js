@@ -367,7 +367,7 @@
 
   function show(data) {
     state.data = data;
-    XMin.setPlayers(data.players);
+    XMin.setPlayers(data.players, data.penPatterns);
     $('empty').hidden = true;
     $('wrap').hidden = false;
     const when = new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
