@@ -593,3 +593,10 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .cuptag.c-UECL { background: #a9c3ef; color: #0f2350 !important; } .cuptag.c-EFL { background: #1e7a46; color: #fff !important; }
 .cuptag.c-FAC { background: #6b2fa0; color: #fff !important; } .cuptag.c-INT { background: #b8451f; color: #fff !important; }
 .mins-slots .mitem .fx-m { margin: 2px 0; }
+
+.manual-squad { margin: 6px 0 14px; padding: 10px 12px; border: 1px solid var(--line); background: var(--paper); }
+.manual-squad .squad-line { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 6px; }
+.manual-squad .pos { width: 34px; font-size: 12px; font-weight: 700; color: var(--muted); }
+.manual-squad .pick { cursor: default; }
+.manual-week select { max-width: 280px; }
+.manual-squad span.pick { display: inline-block; padding: 2px 8px; border: 1px solid var(--line); border-radius: 4px; background: #fff; font-size: 13px; }
