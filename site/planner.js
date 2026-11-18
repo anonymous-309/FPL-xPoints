@@ -412,7 +412,7 @@
     return out;
   }
 
-  async function makePlan() {
+  async function makePlan(manual) {
     const { chips, clash } = chosenChips();
     if (clash) { showError(clash); return; }
     readSettings();
@@ -421,7 +421,8 @@
     const T = gws.length;
     const all = players(gws);
     const st = state.settings;
-    const P = S.pool(all, state.team.squad.map((s) => s.id).concat(st.keep, st.avoid, st.forceIn, st.forceOut));
+    const manualIds = manual ? Object.values(manual).flat().flatMap((m) => [m.out, m.in]) : [];
+    const P = S.pool(all, state.team.squad.map((s) => s.id).concat(st.keep, st.avoid, st.forceIn, st.forceOut, manualIds));
     const index = new Map(P.map((p, i) => [p.id, i]));
     // After the transfer weeks the squad stays, so those gameweeks are searched as one (their points summed, each
     // weighed as usual) to keep the search small; their starting 11, captain and bench are picked afterwards.
@@ -441,7 +442,14 @@
     const ownedIds = new Set(state.team.squad.map((x) => x.id));
     const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
     const forcedN = Math.max(fIn.length, fOut.length);
-    if (forcedN) base.force = { buys: fIn.map((id) => index.get(id)), sells: fOut.map((id) => index.get(id)) };
+    if (forcedN && !manual) base.force = { buys: fIn.map((id) => index.get(id)), sells: fOut.map((id) => index.get(id)) };
+    if (manual) {
+      // a manual plan: exactly the moves chosen, each in its gameweek, and no others
+      base.forceWeeks = {};
+      Object.entries(manual).forEach(([t, ms]) => { if (Number(t) < depth && ms.length) base.forceWeeks[t] = { buys: ms.map((m) => index.get(m.in)), sells: ms.map((m) => index.get(m.out)) }; });
+      base.roll = [...Array(depth).keys()];
+      delete base.keep; delete base.avoid;
+    }
     const bw = benchWeights(P, T);
     base.benchW = bw.out.slice(0, Tm);
     base.benchWgk = bw.gk.slice(0, Tm);
@@ -452,7 +460,7 @@
     if (week0Chip) groups.push({ count: null, n: 3 });
     else planCounts(state.team.ft, forcedN).forEach(([k, n]) => groups.push({ count: k, n }));
     const saveBranches = depth > 1 && !week0Chip && !forcedN ? Math.max(1, countsFor(state.team.ft)[0]) : 1;
-    let planned = groups.reduce((a, g) => a + g.n, 0) + saveBranches - 1;
+    let planned = manual ? 1 : groups.reduce((a, g) => a + g.n, 0) + saveBranches - 1;
     const nPlans = planned; // the plans asked for; planned also grows when a plan is worked out again for the 0.5 rule
     let done = 0;
     const progress = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }),
@@ -514,7 +522,12 @@
     let dropped = 0;
     try {
       const options = [];
-      for (const g of groups) {
+      if (manual) {
+        const sol = await solveWith({});
+        if (!sol) throw new Error('These moves do not fit: check the money in the bank, at most 3 players per club, and that each player in is the same position as the one out.');
+        options.push({ t: 0, opt: S.option(sol.input, sol.values, 0), sol, count: (manual[0] || []).length, rank: 1, roll: false, manual: true });
+      }
+      for (const g of manual ? [] : groups) {
         const cuts = [];
         // a plan left out by the rule makes room for the next best one (a few extra tries at most)
         for (let r = 0, shown = 0; shown < g.n && r < g.n + 3; r++) {
@@ -690,7 +703,7 @@
   function optionsView(P, options, gws) {
     const depth = state.plan.depth;
     const bestRaw = Math.max(...options.map((o) => o.totalRaw ?? -Infinity)), bestT = Math.max(...options.map((o) => o.total)), bestWin = Math.max(...options.map((o) => o.win));
-    const label = (o) => (o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
+    const label = (o) => (o.manual ? 'Manual' : o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
       : o.roll ? (o.count ? 'Forced only' : 'Save') : o.count > state.team.ft ? `${state.team.ft} FT + ${o.count - state.team.ft} hit` : `${o.count} FT`);
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[b].price - P[a].price;
@@ -966,8 +979,76 @@
     }
   }
 
+  // Manual plan: the viewer's own transfers, gameweek by gameweek ({t: [{out, in}]}), kept in this browser.
+  state.manual = (() => { try { return JSON.parse(localStorage.getItem('planner-manual') || '{}'); } catch (e) { return {}; } })();
+  const saveManual = () => { try { localStorage.setItem('planner-manual', JSON.stringify(state.manual)); } catch (e) { /* private mode */ } };
+  const pname = (p) => `${p.name} (${p.team} ${p.position})`;
+  const findPlayer = (text) => state.data.players.find((x) => pname(x) === text) || state.data.players.find((x) => x.name.toLowerCase() === String(text).trim().toLowerCase());
+  // his squad (player ids) at the start of transfer week t, after the manual moves before it
+  function squadAt(t) {
+    const ids = new Set(state.team ? state.team.squad.map((x) => x.id) : []);
+    for (let k = 0; k < t; k++) (state.manual[k] || []).forEach((m) => { ids.delete(m.out); ids.add(m.in); });
+    return ids;
+  }
+  function manualWeeks() {
+    if (!state.data || !state.team) { $('manualWeeks').replaceChildren(el('p', { className: 'set-note', textContent: 'Enter your team ID first.' })); return; }
+    const gws = horizonGws();
+    const depth = Math.min(PLAN.depth, gws.length);
+    const byId = new Map(state.data.players.map((p) => [p.id, p]));
+    // moves for weeks no longer planned (or no longer in the squad) are dropped
+    Object.keys(state.manual).forEach((t) => { if (Number(t) >= depth) delete state.manual[t]; });
+    $('manualWeeks').replaceChildren(...[...Array(depth).keys()].map((t) => {
+      const squad = squadAt(t);
+      const outIn = el('input', { placeholder: 'Player out', ariaLabel: `Player out in GW${gws[t]}` });
+      const inIn = el('input', { placeholder: 'Player in', ariaLabel: `Player in in GW${gws[t]}` });
+      outIn.setAttribute('list', `squadNames${t}`);
+      inIn.setAttribute('list', 'playerNames');
+      const dl = el('datalist', { id: `squadNames${t}` }, ...[...squad].map((id) => byId.get(id)).filter(Boolean).sort((a, b) => 'GKDEFMIDFWD'.indexOf(a.position) - 'GKDEFMIDFWD'.indexOf(b.position) || a.name.localeCompare(b.name)).map((p) => el('option', { value: pname(p) })));
+      const add = el('button', { type: 'button', textContent: 'Add' });
+      add.addEventListener('click', () => {
+        const o = findPlayer(outIn.value), i = findPlayer(inIn.value);
+        if (!o || !squadAt(t).has(o.id)) { showError(`Pick a player in your squad for GW${gws[t]} to take out.`); return; }
+        if (!i || squadAt(t).has(i.id)) { showError(`Pick a player not in your squad for GW${gws[t]} to bring in.`); return; }
+        if (o.position !== i.position) { showError(`${o.name} is a ${o.position} and ${i.name} a ${i.position}: a transfer swaps players of the same position.`); return; }
+        $('error').hidden = true;
+        (state.manual[t] = state.manual[t] || []).push({ out: o.id, in: i.id });
+        // later moves that no longer fit (selling someone already sold) go
+        for (let k = t + 1; k < depth; k++) state.manual[k] = (state.manual[k] || []).filter((m) => squadAt(k).has(m.out) && !squadAt(k).has(m.in));
+        saveManual(); manualWeeks();
+      });
+      const list = el('div', { className: 'pick-list' }, ...(state.manual[t] || []).map((m, k) => {
+        const x = el('button', { type: 'button', className: 'pick', title: 'Remove this move' }, `${(byId.get(m.out) || {}).name || '?'} → ${(byId.get(m.in) || {}).name || '?'} ×`);
+        x.addEventListener('click', () => { state.manual[t].splice(k, 1); for (let j = t + 1; j < depth; j++) state.manual[j] = (state.manual[j] || []).filter((mm) => squadAt(j).has(mm.out) && !squadAt(j).has(mm.in)); saveManual(); manualWeeks(); });
+        return x;
+      }));
+      return el('div', { className: 'manual-week' }, el('b', { textContent: `GW${gws[t]}` }), el('span', { className: 'pick-add' }, outIn, el('span', { textContent: '→' }), inIn, add), dl, list,
+        (state.manual[t] || []).length ? null : el('small', { className: 'set-note', textContent: 'No transfers (save)' }));
+    }));
+  }
+  $('manualOpen').addEventListener('click', async () => {
+    const open = $('manual').hidden;
+    $('manual').hidden = !open;
+    $('manualOpen').setAttribute('aria-expanded', String(open));
+    if (open) {
+      const entry = $('entry').value.trim();
+      if (/^\d+$/.test(entry) && (!state.team || state.entry !== entry)) { try { await loadTeam(entry); } catch (e) { showError(e.message); } }
+      manualWeeks();
+    }
+  });
+  $('manualClear').addEventListener('click', () => { state.manual = {}; saveManual(); manualWeeks(); });
+  $('manualGo').addEventListener('click', async () => {
+    const entry = $('entry').value.trim();
+    if (!/^\d+$/.test(entry) || !state.data) { showError('Enter your FPL team ID first.'); return; }
+    try {
+      await loadTeam(entry);
+      manualWeeks();
+      if (!$('error').hidden) return;
+      await makePlan(state.manual);
+    } catch (e) { showError(e.message); }
+  });
+
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
-  $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); });
+  $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); if (!$('manual').hidden) manualWeeks(); });
   ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
     $(`${kind}Pick`).addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addPick(kind); } });

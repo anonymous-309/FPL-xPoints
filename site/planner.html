@@ -29,7 +29,17 @@
     <select id="horizon"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8" selected>8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option></select>
   </label>
   <div id="chips" class="chip-picks"></div>
-  <button id="go" class="update" type="submit">Make plan</button>
+  <div class="plan-modes">
+    <button id="go" class="update" type="submit">Auto plan</button>
+    <button id="manualOpen" class="update alt" type="button" aria-expanded="false" aria-controls="manual">Manual plan</button>
+  </div>
+  <section id="manual" class="manual" hidden aria-labelledby="manual-h">
+    <h2 id="manual-h">Manual plan</h2>
+    <p class="set-note">Choose your own transfers for each gameweek: a player out and one of the same position in. The planner then picks the best starting 11, captain and bench every week, counts free transfers and hits, and scores the plan the same way as the automatic ones; no other transfers are made.</p>
+    <div id="manualWeeks"></div>
+    <div class="plan-modes"><button id="manualGo" class="update" type="button">Work out manual plan</button><button id="manualClear" type="button" class="linkbtn">Clear all moves</button></div>
+  </section>
+  <datalist id="squadNames"></datalist>
   <details class="plan-settings">
     <summary>Settings</summary>
     <div class="set-picks">

@@ -111,10 +111,11 @@
           row([[1, bk], [-input.bankBuffer * t, a]], 0, Infinity);
         }
         // transfers the viewer has already made (or wants made) in the first gameweek
-        const forced = t === 0 && input.force ? input.force : null;
+        // forceWeeks (a manual plan): {t: {buys, sells}} for any transfer week
+        const forced = input.forceWeeks ? input.forceWeeks[t] || null : t === 0 && input.force ? input.force : null;
         if (forced) {
-          forced.buys.forEach((i) => { if (!P[i].owned) row([[1, `b0_${i}`]], 1, 1); });
-          forced.sells.forEach((i) => { if (P[i].owned) row([[1, `s0_${i}`]], 1, 1); });
+          forced.buys.forEach((i) => { if (t > 0 || !P[i].owned) row([[1, `b${t}_${i}`]], 1, 1); });
+          forced.sells.forEach((i) => { if (t > 0 || P[i].owned) row([[1, `s${t}_${i}`]], 1, 1); });
         }
         // saving the transfer: no transfers apart from the forced ones
         const forcedN = forced ? Math.max(forced.buys.length, forced.sells.length) : 0;
