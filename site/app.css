@@ -582,3 +582,14 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .mins-slots td.lgpast { color: var(--ink); }
 .mins-slots td.lgpast > span { display: block; font-size: 15px; font-weight: 600; }
 .mins-slots td.lgpast > small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+
+/* Minutes cells: matches side by side, each with the minutes over the opponent */
+.mins-slots .mrow { display: flex; justify-content: center; align-items: flex-start; gap: 10px; }
+.mins-slots .mitem { display: flex; flex-direction: column; align-items: center; }
+.mins-slots .mitem > span:not(.fx-m) { display: block; font-size: 15px; font-weight: 600; color: var(--ink); line-height: 1.25; }
+.mins-slots .mitem > small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.mins-slots .mitem small.cuptag { padding: 0 4px; border-radius: 3px; font-size: 10.5px; line-height: 15px; white-space: nowrap; }
+.cuptag.c-UCL { background: #163a8a; color: #fff !important; } .cuptag.c-UEL { background: #3f6fc4; color: #fff !important; }
+.cuptag.c-UECL { background: #a9c3ef; color: #0f2350 !important; } .cuptag.c-EFL { background: #1e7a46; color: #fff !important; }
+.cuptag.c-FAC { background: #6b2fa0; color: #fff !important; } .cuptag.c-INT { background: #b8451f; color: #fff !important; }
+.mins-slots .mitem .fx-m { margin: 2px 0; }

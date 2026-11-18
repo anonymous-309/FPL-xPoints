@@ -168,11 +168,14 @@
       const chips = cupChips(cups.get(String(s.key)) || []);
       if (s.plain) return s.past ? pastCell(s.gws[0]) : futCell(s.gws[0]);
       const td = el('td', { className: `fx-cell mslot ${s.kind}${s.intl ? ' intl' : ''}` });
+      // every match of the weekend or midweek side by side: league, then cups and internationals in date order
+      const items = [];
       if (s.gws.length) {
-        if (s.past) { const pc = pastCell(s.gws[0]); td.className += ' lgpast'; td.append(...pc.childNodes); }
-        else { const f = futCell(s.gws[0]); td.className += ` ${f.className}`; td.append(...f.childNodes); }
+        if (s.past) items.push(el('div', { className: 'mitem lg' }, ...pastCell(s.gws[0]).childNodes));
+        else { const f = futCell(s.gws[0]); td.className += ` ${f.className}`; items.push(el('div', { className: 'mitem' }, ...f.childNodes)); }
       }
-      td.append(...chips);
+      items.push(...chips);
+      if (items.length) td.append(el('div', { className: 'mrow' }, ...items));
       return td;
     };
     // played league matches: opponent and minutes; a match left out of the formula in red, the reason on hover or tap
@@ -320,10 +323,12 @@
       return b;
     }));
   }
+  // a played cup or international match: his minutes on top, the competition and opponent under it (as league
+  // matches show the minutes over the opponent); a coming one: a chip with the competition and opponent
   const cupChips = (l) => l.filter((m) => !eplOnly && compsOn.has(m.c)).map((m) => (m.past
-    ? el('span', { className: `fx-m c-${m.c}`, title: `${m.c === 'INT' ? `${m.nat}, ${m.comp}` : CUP_NAME[m.c]} v ${m.o}, ${when(m.t)}: ${m.mins} minutes (shown only, not used by the formula)` },
-      el('b', { textContent: m.c === 'INT' ? natCode(m.nat) : m.c }), m.o, el('i', { textContent: `${m.mins}'` }))
-    : el('span', { className: `fx-m c-${m.c}`, title: `${CUP_NAME[m.c]} v ${m.o} (${m.o === m.o.toUpperCase() ? 'H' : 'A'}), ${when(m.t)} (shown only: xMin is not changed for it)` }, el('b', { textContent: m.c }), m.o)));
+    ? el('div', { className: 'mitem cup', title: `${m.c === 'INT' ? `${m.nat}, ${m.comp}` : CUP_NAME[m.c]} v ${m.o}, ${when(m.t)}: ${m.mins} minutes (shown only, not used by the formula)` },
+      el('span', { textContent: String(m.mins) }), el('small', { className: `cuptag c-${m.c}` }, el('b', { textContent: m.c === 'INT' ? natCode(m.nat) : m.c }), ` ${m.o}`))
+    : el('div', { className: 'mitem' }, el('span', { className: `fx-m c-${m.c}`, title: `${CUP_NAME[m.c]} v ${m.o} (${m.o === m.o.toUpperCase() ? 'H' : 'A'}), ${when(m.t)} (shown only: xMin is not changed for it)` }, el('b', { textContent: m.c }), m.o))));
   // three letters for a national team: "Italy" ITA, "Côte d'Ivoire" CÔT
   const natCode = (n) => (n || 'INT').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z ]/g, '').trim().slice(0, 3).toUpperCase();
 
