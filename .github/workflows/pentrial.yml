@@ -35,8 +35,8 @@ jobs:
           for (const p of d.players) for (const g of d.gws.map(String)) { const b = p.byGw[g]; if (!b || !b.fx) continue;
             b.fx.forEach((_, j) => { const js = X.penCond({}, p, g, j), py = b.pc[j]; n++; if (Math.abs(js - py) > 0.002) { bad++; worst.push([Math.abs(js - py), p.name, p.team, g, py, js]); } }); }
           worst.sort((a, b) => b[0] - a[0]);
-          console.log('compared', n, 'mismatches', bad, worst.slice(0, 10));
-          console.log('patterns', JSON.stringify(d.penPatterns).slice(0, 1500));
+          console.log('compared', n, 'mismatches', bad, JSON.stringify(worst.slice(0, 12)));
+          console.log('patterns', JSON.stringify(d.penPatterns.CRY));
           const gw = String(d.gws[0]);
           const tops = d.players.filter((p) => p.pitch).map((p) => [p.name, p.team, X.startChance({}, p, gw)]).sort((a, b) => b[2] - a[2]);
           console.log('start sample', tops.slice(0, 5), tops.filter((x) => ['Haaland', 'Salah', 'Saka', 'Palmer', 'Isak', 'Gyokeres'].includes(x[0])));

@@ -44,7 +44,7 @@ window.XMin = (function () {
   }
 
   // Call once with all players so penalty shares can follow edited minutes of the takers above.
-  let patterns = {};  // team -> { ids, pats: [[weight, started flags]] }: who started together in recent matches
+  let patterns = {};  // team -> [{ ids, pats: [[weight, started flags]] }]: who started together in recent matches
   function setPlayers(players, pats) {
     patterns = pats || {};
     takers = {};
@@ -129,8 +129,9 @@ window.XMin = (function () {
     const listed = (takers[p.team] || []).map((t) => pitch(overrides, t, g, fx)).filter(Boolean);
     const fks = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).map((t) => pitch(overrides, t, g, fx)).filter((x) => x && x.there > 0);
     if (!listed.some((x) => x.id === p.id) && !fks.some((x) => x.id === p.id)) return 0;
-    const pt = patterns[p.team];
-    const pats = pt && pt.ids.join() === listed.map((x) => x.id).join() ? pt.pats : null;
+    const ids = listed.map((x) => x.id).join();
+    const pt = (patterns[p.team] || []).find((x) => x.ids.join() === ids);
+    const pats = pt ? pt.pats : null;
     return shares(listed, fks, pats)[p.id] || 0;
   }
 

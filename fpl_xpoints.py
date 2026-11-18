@@ -3043,7 +3043,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     to_short = dict(zip(res["team"].astype(str), res["team_short"].astype(str)))
     payload["penPatterns"] = {}
     for (team, ids), pats in PEN_PATTERNS.items():
-        payload["penPatterns"].setdefault(to_short.get(str(team), str(team)), {"ids": list(ids), "pats": [[round(w, 4), [int(f) for f in fl]] for w, fl in pats]})
+        payload["penPatterns"].setdefault(to_short.get(str(team), str(team)), []).append({"ids": list(ids), "pats": [[round(w, 4), [int(f) for f in fl]] for w, fl in pats]})
     first_rows = res[res["GW"] == payload["gws"][0]]
     payload["roleMedians"] = {pos: {"box90": round(float(first_rows[f"med_role_box90_{pos}"].iloc[0]), 2), "xgi90": round(float(first_rows[f"med_role_xgi90_{pos}"].iloc[0]), 3)}
                               for pos in ("MID", "FWD") if len(first_rows) and pd.notna(first_rows[f"med_role_box90_{pos}"].iloc[0])}
