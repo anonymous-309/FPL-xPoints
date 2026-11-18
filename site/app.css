@@ -606,3 +606,9 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .fdr-rank th:nth-child(1) { width: 18%; } .fdr-rank th:nth-child(2) { width: 47%; } .fdr-rank th:nth-child(3) { width: 35%; }
 .fdr-rank .fdr-m { display: inline-flex; justify-content: center; width: 104px; min-width: 0; }
 .fdr-rank td.num { font-variant-numeric: tabular-nums; }
+/* FDR table: everything on one line per club, chips the same width, centred under their gameweek */
+.fdr td, .fdr th { vertical-align: middle; }
+.fdr td.num { text-align: center; font-variant-numeric: tabular-nums; }
+.fdr td.fdr-cell { vertical-align: middle; text-align: center; padding: 6px 4px; }
+.fdr td.fdr-cell .fdr-m { width: 96px; margin: 2px auto; }
+.fdr th.num { text-align: center; }
