@@ -8,21 +8,46 @@ jobs:
       - uses: actions/checkout@v4
       - run: |
           python3 - <<'PY'
-          import json, urllib.request, urllib.parse, time
-          H={"User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36","Accept":"application/json","Referer":"https://www.fotmob.com/"}
-          def get(p,q):
-              r=urllib.request.Request("https://www.fotmob.com/api/data/"+p+"?"+urllib.parse.urlencode(q),headers=H)
-              return json.loads(urllib.request.urlopen(r,timeout=30).read())
-          t=get("teams",{"id":8456,"ccode3":"GBR"})
-          mem=[m for g in t["squad"]["squad"] for m in g["members"]]
-          print("squad", len(mem), json.dumps(mem[3])[:400])
-          for m in mem[:6]:
-              pid=m["id"]
-              for ep in ["playerData"]:
-                  try:
-                      d=get(ep,{"id":pid}); print(ep, m["name"], list(d.keys()))
-                      rm=d.get("recentMatches")
-                      print(" recentMatches type", type(rm).__name__, json.dumps(rm)[:1500])
-                  except Exception as e: print(ep, "fail", e)
-              time.sleep(0.5)
+          import json, urllib.request, collections
+          H={"User-Agent":"Mozilla/5.0"}
+          g=lambda u: json.loads(urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=30).read())
+          b=g("https://fantasy.premierleague.com/api/bootstrap-static/"); f=g("https://fantasy.premierleague.com/api/fixtures/")
+          T={t["id"]:t["short_name"] for t in b["teams"]}
+          # official rating of facing each side: visiting X (X at home) = team_a_difficulty; X visiting = team_h_difficulty
+          side={}
+          for x in f:
+              side.setdefault((T[x["team_h"]],"A"),set()).add(x["team_a_difficulty"])
+              side.setdefault((T[x["team_a"]],"H"),set()).add(x["team_h_difficulty"])
+          print("sides with more than one value:", {k:v for k,v in side.items() if len(v)>1})
+          off={k:max(v) for k,v in side.items()}
+          print("OFFICIAL per side counts", sorted(collections.Counter(off.values()).items()))
+          c=collections.Counter(); fut=collections.Counter()
+          for x in f:
+              for d in (x["team_h_difficulty"],x["team_a_difficulty"]):
+                  c[d]+=1
+                  if not x["finished"]: fut[d]+=1
+          n=sum(c.values()); print("OFFICIAL all fixtures", [(k,v,round(100*v/n,1)) for k,v in sorted(c.items())])
+          n=sum(fut.values()); print("OFFICIAL coming fixtures", [(k,v,round(100*v/n,1)) for k,v in sorted(fut.items())])
+          print("OFFICIAL table:", " ".join(f"{k[0]}({k[1]})={v}" for k,v in sorted(off.items(), key=lambda kv:(-kv[1],kv[0]))))
+          # ours, from the site
+          d=g("https://anonymous-309.github.io/FPL-xPoints/fdr.json")
+          for kind in ["overall","attack","defence"]:
+              lst=[]
+              for short,t in d["teams"].items():
+                  for home in (True,False):
+                      ms=[m for gw in d["gws"] for m in t.get(str(gw),[]) if m["home"]==home] or [m for gw in d["gws"] for m in t.get(str(gw),[])]
+                      xgf=sum(m.get("xgf") or 0 for m in ms)/len(ms); xga=sum(m["xga"] for m in ms)/len(ms)
+                      v={"overall":xgf-xga,"attack":-xga,"defence":xgf}[kind]
+                      lst.append((v,short,"A" if home else "H"))
+              lst.sort(reverse=True)
+              ours={(s,h):(5 if i<4 else 4 if i<14 else 3 if i<30 else 2) for i,(v,s,h) in enumerate(lst)}
+              cc=collections.Counter(); ff=collections.Counter()
+              for short,t in d["teams"].items():
+                  for gw in d["gws"]:
+                      for m in t.get(str(gw),[]):
+                          r=ours[(m["opp"].upper(),"H" if m["home"] else "A")]; cc[r]+=1
+              n=sum(cc.values())
+              agree=sum(ours[k]==off.get(k) for k in ours)
+              print(kind.upper(), "ours per side", sorted(collections.Counter(ours.values()).items()), "| ours coming fixtures", [(k,v,round(100*v/n,1)) for k,v in sorted(cc.items())], "| same as FPL on", agree, "of 40 sides")
+              if kind=="overall": print("OURS overall:", " ".join(f"{s}({h})={r}" for (v,s,h) in lst for r in [ours[(s,h)]]))
           PY
