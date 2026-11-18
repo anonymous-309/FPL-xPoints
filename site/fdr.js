@@ -13,33 +13,57 @@
     defence: { v: (m) => m.cs, text: (x) => `${Math.round(x * 100)}%`, title: (m) => `clean sheet ${Math.round(m.cs * 100)}%, expected conceded ${m.xga.toFixed(2)}` },
   };
 
-  function render() {
-    const k = KIND[state.kind];
-    const gws = data.gws.slice(0, state.range);
-    document.querySelectorAll('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === state.kind)));
-    // As FPL does it, a match is rated by the opponent alone, at home and away apart: every club is ranked by its
-    // strength from our model (its average expected goals for and against over its coming matches at that venue),
-    // then the 2 strongest are 5, the next 5 are 4, the next 8 are 3 and the last 5 are 2.
-    const STRENGTH = {
-      overall: (s) => s.xgf - s.xga, // stronger side: scores more, concedes less
-      attack: (s) => -s.xga, // our goals depend on their defence: conceding little is hard to score against
-      defence: (s) => s.xgf, // our clean sheet depends on their attack
-    };
-    const avg = {};
+  // As FPL does it, a match is rated by the opponent alone, home and away apart. Every club, once at home and once
+  // away (40 sides), is ranked by its strength in our model (its average expected goals for and against over its
+  // coming matches at that venue); the 4 strongest are 5, the next 10 are 4, the next 16 are 3 and the last 10 are 2
+  // (the spread of FPL's own ratings).
+  const STRENGTH = {
+    overall: { f: (s) => s.xgf - s.xga, text: (s) => `${s.xgf.toFixed(2)} for, ${s.xga.toFixed(2)} against`, show: (v) => (v >= 0 ? '+' : '') + v.toFixed(2) }, // scores more, concedes less
+    attack: { f: (s) => -s.xga, text: (s) => `concedes ${s.xga.toFixed(2)} a match`, show: (v) => (-v).toFixed(2) }, // our goals depend on their defence
+    defence: { f: (s) => s.xgf, text: (s) => `scores ${s.xgf.toFixed(2)} a match`, show: (v) => v.toFixed(2) }, // our clean sheet depends on their attack
+  };
+  function strength(kind) {
+    const list = [];
     Object.entries(data.teams).forEach(([short, t]) => {
       [true, false].forEach((home) => {
         const ms = data.gws.flatMap((g) => (t[g] || []).filter((m) => m.home === home));
-        const all = data.gws.flatMap((g) => t[g] || []);
-        const use = ms.length ? ms : all;
-        avg[`${short}|${home}`] = { xgf: use.reduce((a, m) => a + (m.xgf || 0), 0) / (use.length || 1), xga: use.reduce((a, m) => a + m.xga, 0) / (use.length || 1) };
+        const use = ms.length ? ms : data.gws.flatMap((g) => t[g] || []);
+        const s = { xgf: use.reduce((a, m) => a + (m.xgf || 0), 0) / (use.length || 1), xga: use.reduce((a, m) => a + m.xga, 0) / (use.length || 1) };
+        list.push({ short, home, s, v: STRENGTH[kind].f(s) });
       });
     });
+    list.sort((x, y) => y.v - x.v);
     const tier = {};
-    [true, false].forEach((home) => {
-      Object.keys(data.teams).map((short) => [short, STRENGTH[state.kind](avg[`${short}|${home}`])])
-        .sort((x, y) => y[1] - x[1])
-        .forEach(([short], i) => { tier[`${short}|${home}`] = i < 2 ? 5 : i < 7 ? 4 : i < 15 ? 3 : 2; });
-    });
+    list.forEach((x, i) => { x.tier = i < 4 ? 5 : i < 14 ? 4 : i < 30 ? 3 : 2; tier[`${x.short}|${x.home}`] = x.tier; });
+    return { list, tier };
+  }
+
+  // Ranking: the 40 sides from hardest to easiest to face, for each table. "ARS (A)" is a trip to Arsenal.
+  function renderRanking() {
+    $('#ranking').replaceChildren(...[['overall', 'Overall'], ['attack', 'Attack'], ['defence', 'Defence']].map(([kind, name]) => {
+      const { list } = strength(kind);
+      return el('div', { className: 'fdr-rank' }, el('table', { className: 'minutes' },
+        el('caption', { textContent: name }),
+        el('thead', {}, el('tr', {}, el('th', { scope: 'col', className: 'num', textContent: '#' }), el('th', { scope: 'col', textContent: 'Opponent' }),
+          el('th', { scope: 'col', className: 'num', textContent: kind === 'overall' ? 'xG +/-' : kind === 'attack' ? 'xG conceded' : 'xG scored' }))),
+        el('tbody', {}, ...list.map((x, i) => el('tr', { title: `${data.names[x.short] || x.short} ${x.home ? 'at home' : 'away'}: ${STRENGTH[kind].text(x.s)}, FDR ${x.tier}` },
+          el('td', { className: 'num', textContent: String(i + 1) }),
+          el('td', {}, el('span', { className: `fdr-m r${x.tier}` }, el('b', { textContent: `${x.short} (${x.home ? 'A' : 'H'})` }), el('small', { textContent: String(x.tier) }))),
+          el('td', { className: 'num', textContent: STRENGTH[kind].show(x.v) }))))));
+    }));
+  }
+
+  function render() {
+    document.querySelectorAll('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === state.kind)));
+    const ranking = state.kind === 'ranking';
+    $('#ranking').hidden = !ranking;
+    $('.fdr-wrap').hidden = ranking;
+    $('#range').closest('label').hidden = ranking;
+    store.set('fdr-view', JSON.stringify(state));
+    if (ranking) { renderRanking(); return; }
+    const k = KIND[state.kind];
+    const gws = data.gws.slice(0, state.range);
+    const { tier } = strength(state.kind);
     const rate = new Map();
     Object.values(data.teams).forEach((t) => data.gws.forEach((g) => (t[g] || []).forEach((m) => {
       rate.set(m, tier[`${m.opp.toUpperCase()}|${!m.home}`] || 3); // the opponent plays at the other venue
@@ -67,7 +91,7 @@
   fetch('fdr.json', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(`fdr.json: HTTP ${r.status}`); return r.json(); }).then((d) => {
     data = d;
     try { Object.assign(state, JSON.parse(store.get('fdr-view') || '{}')); } catch (e) { /* ignore */ }
-    if (!KIND[state.kind]) state.kind = 'overall';
+    if (!KIND[state.kind] && state.kind !== 'ranking') state.kind = 'overall';
     state.range = Math.min(Math.max(1, Number(state.range) || 6), data.gws.length);
     $('#range').replaceChildren(...data.gws.map((g, i) => el('option', { value: String(i + 1), textContent: String(i + 1) })));
     $('#range').value = String(state.range);

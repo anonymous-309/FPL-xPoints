@@ -570,3 +570,11 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .minutes td.keycol.usual { font-size: 15px; }
 .mins-slots th.fx-gw { vertical-align: bottom; }
 .mins-slots th.fx-gw.intl, .mins-slots td.mslot.intl { background: repeating-linear-gradient(135deg, #fff6cf 0 8px, #fdeeb0 8px 16px); }
+
+/* FDR ranking: three lists side by side */
+.fdr-ranks { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; align-items: start; }
+.fdr-rank table { width: 100%; background: var(--paper); border: 1px solid var(--line); }
+.fdr-rank caption { text-align: left; font: 700 17px/1.2 var(--display); padding: 0 0 6px; }
+.fdr-rank td { padding: 3px 8px; }
+.fdr-rank .fdr-m { display: inline-flex; min-width: 76px; }
+.fdr-ranks[hidden], .fdr-wrap[hidden] { display: none; }
