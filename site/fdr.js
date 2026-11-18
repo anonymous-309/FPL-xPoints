@@ -17,28 +17,34 @@
     const k = KIND[state.kind];
     const gws = data.gws.slice(0, state.range);
     document.querySelectorAll('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === state.kind)));
-    // the official FPL spread over every match shown: 5 for the hardest 5%, 4 the next 25%, 3 the middle 43%,
-    // 2 the next 25%, and 1 only for the easiest 2% (FPL itself gives almost no 1s)
-    const vals = [];
-    Object.values(data.teams).forEach((t) => gws.forEach((g) => (t[g] || []).forEach((m) => vals.push(k.v(m)))));
-    vals.sort((a, b) => a - b);
-    const cut = [0.05, 0.30, 0.73, 0.98].map((q) => vals[Math.min(vals.length - 1, Math.floor(q * vals.length))]);
-    const rating = (x) => 5 - cut.filter((c) => x >= c).length; // 1 easiest .. 5 hardest
+    // Each club against its own fixtures: its coming matches (every gameweek we have, so a rating does not move
+    // with the range picked) ranked from hardest to easiest, then FPL's own spread: the hardest 5% get 5, the next
+    // 25% get 4, the middle 43% get 3, the next 25% get 2, and only the easiest 2% get 1.
+    const rate = new Map();
+    Object.values(data.teams).forEach((t) => {
+      const ms = data.gws.flatMap((g) => t[g] || []);
+      const order = ms.slice().sort((x, y) => k.v(x) - k.v(y));
+      order.forEach((m, i) => {
+        const q = (i + 0.5) / order.length;
+        rate.set(m, q < 0.05 ? 5 : q < 0.30 ? 4 : q < 0.73 ? 3 : q < 0.98 ? 2 : 1);
+      });
+    });
+    const rating = (x, m) => rate.get(m);
     const rows = Object.entries(data.teams).map(([short, t]) => {
       const total = gws.reduce((s, g) => s + (t[g] || []).reduce((a, m) => a + k.v(m), 0), 0);
-      const rs = gws.flatMap((g) => (t[g] || []).map((m) => rating(k.v(m))));
+      const rs = gws.flatMap((g) => (t[g] || []).map((m) => rating(0, m)));
       return { short, t, total, avg: rs.length ? rs.reduce((a, b) => a + b, 0) / rs.length : null };
     }).sort((a, b) => b.total - a.total);
-    $('.fdr thead').replaceChildren(el('tr', {}, el('th', { scope: 'col', textContent: 'Team' }), el('th', { scope: 'col', className: 'num', textContent: 'Avg FDR' }),
+    $('.fdr thead').replaceChildren(el('tr', {}, el('th', { scope: 'col', textContent: 'Team' }), el('th', { scope: 'col', className: 'num', textContent: 'Total' }),
       ...gws.map((g) => el('th', { scope: 'col', textContent: `GW${g}` }))));
-    $('.fdr tbody').replaceChildren(...rows.map(({ short, t, avg }) => el('tr', {},
+    $('.fdr tbody').replaceChildren(...rows.map(({ short, t, total }) => el('tr', {},
       el('td', { className: 'player', textContent: data.names[short] || short }),
-      el('td', { className: 'num', textContent: avg == null ? '–' : avg.toFixed(1) }),
+      el('td', { className: 'num', textContent: k.text(total) }),
       ...gws.map((g) => {
         const ms = t[g] || [];
         if (!ms.length) return el('td', { className: 'fdr-cell blank', textContent: 'Blank' });
-        return el('td', { className: `fdr-cell${ms.length > 1 ? ' double' : ''}` }, ...ms.map((m) => el('span', { className: `fdr-m r${rating(k.v(m))}`, title: `${m.opp} (${m.home ? 'H' : 'A'}): FDR ${rating(k.v(m))}, ${k.title(m)}` },
-          el("b", { textContent: `${m.opp.toUpperCase()} (${m.home ? "H" : "A"})` }), el('small', { textContent: String(rating(k.v(m))) }))));
+        return el('td', { className: `fdr-cell${ms.length > 1 ? ' double' : ''}` }, ...ms.map((m) => el('span', { className: `fdr-m r${rating(0, m)}`, title: `${m.opp} (${m.home ? 'H' : 'A'}): FDR ${rating(0, m)}, ${k.title(m)}` },
+          el("b", { textContent: `${m.opp.toUpperCase()} (${m.home ? "H" : "A"})` }), el('small', { textContent: String(rating(0, m)) }))));
       }))));
     store.set('fdr-view', JSON.stringify(state));
   }
