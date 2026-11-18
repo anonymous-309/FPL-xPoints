@@ -1021,6 +1021,21 @@ def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
             "yellowLimit": {"gw": limit[0], "cards": limit[1]} if limit else None, "teams": out}
 
 
+def gw_span(a, b) -> str:
+    return f"GW{a}" if int(a) == int(b) else f"GW{a}-GW{b}"
+
+
+def absence_news(r: dict) -> str:
+    """FPL's news for an absence, for the reasons on the Minutes page; absences filled in from Sofascore's record have
+    no FPL news kept."""
+    news = str(r.get("news") or "").strip()
+    if not news:
+        return ""
+    if "from sofascore" in news.lower():
+        return " (from Sofascore's injury record)"
+    return f" (FPL: {news})"
+
+
 def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, hurt: set | None = None, covered: set | None = None) -> pd.DataFrame:
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
@@ -1038,10 +1053,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         end = r["endGw"] if r.get("manual") and r.get("endGw") is not None else (r["returnedGw"] - 1) if r.get("returnedGw") else 99
         rows = season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end)
         df.loc[rows if r.get("manual") else rows & (df["minutes"] == 0), "inj_skip"] = True
-        span = f"GW{r['startGw']}" + (f"-GW{end}" if r.get("returnedGw") or (r.get("manual") and r.get("endGw") is not None) else " on, not back yet")
-        what = str(r.get("type") or "Absence")
-        news = str(r.get("news") or "").strip()
-        note = f"{'Absence set by the admin' if r.get('manual') else what}, {span}" + (f": {news}" if news else "")
+        span = gw_span(r["startGw"], end) if r.get("returnedGw") or (r.get("manual") and r.get("endGw") is not None) else f"GW{r['startGw']} on, not back yet"
+        note = f"{'Absence set by the admin' if r.get('manual') else str(r.get('type') or 'Absence')}, {span}" + absence_news(r)
         df.loc[(rows if r.get("manual") else rows & (df["minutes"] == 0)) & df["inj_note"].eq(""), "inj_note"] = note
         # The match he got hurt in: his last match before an injury absence, if he did not play all of it, is left out too.
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur"):
@@ -1053,7 +1066,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                     df.at[last, "inj_skip"] = True
                     df.at[last, "inj_hurt"] = True
                     df.at[last, "inj_note"] = (f"Played {int(df.at[last, 'minutes'])} minutes, his last match before the injury absence from GW{r['startGw']}"
-                                               + (f" ({r.get('news')})" if r.get("news") else "") + ": taken to be the match he got hurt in")
+                                               + absence_news(r) + ": taken to be the match he got hurt in")
         # Cautionary rest: a 0 in his first match back from an injury is a rest, not a sign he lost his place
         # (one match only).
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
@@ -1062,8 +1075,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                 i = post.index[0]
                 df.at[i, "inj_skip"] = True
                 df.at[i, "inj_rest"] = True
-                df.at[i, "inj_note"] = (f"0 minutes in his first match back from the injury of GW{r['startGw']}-GW{int(r['returnedGw']) - 1}"
-                                        + (f" ({r.get('news')})" if r.get("news") else "") + ": a cautionary rest, not a lost place")
+                df.at[i, "inj_note"] = (f"0 minutes in his first match back from the injury of {gw_span(r['startGw'], int(r['returnedGw']) - 1)}"
+                                        + absence_news(r) + ": a cautionary rest, not a lost place")
     # gameweeks whose matches FotMob's events cover (there, only a substitution for injury counts as getting hurt)
     df["fm_cov"] = season & df["GW"].isin(list(covered or []))
     # Taken off injured (FotMob): that match is left out, whatever came after.
