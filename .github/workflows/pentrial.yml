@@ -24,6 +24,7 @@ jobs:
           restore-keys: fotmob-
       - run: python fpl_xpoints.py download
       - run: python fpl_xpoints.py site --out _site 2>&1 | grep -E "Set pieces|Traceback|Error|error" | head -60
+      - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest 2>&1 | grep -iE "pen|goal|score" | head -40
       - run: |
           cat > check.js <<'J'
           global.window = {}; global.localStorage = { getItem: () => null, setItem: () => {} };
