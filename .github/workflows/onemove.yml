@@ -8,15 +8,8 @@ jobs:
       - run: |
           python3 - <<'PY'
           import json, urllib.request
-          d=json.loads(urllib.request.urlopen("https://anonymous-309.github.io/FPL-xPoints/fdr.json").read())
-          ms=lambda t,h=None:[m for g in d["gws"] for m in d["teams"][t].get(str(g),[]) if h is None or m["home"]==h]
-          avg=lambda l,k: sum(m[k] or 0 for m in l)/max(1,len(l))
-          for kind,f in [("overall",lambda a,b:a-b),("attack",lambda a,b:-b),("defence",lambda a,b:a)]:
-              base={t:f(avg(ms(t),"xgf"),avg(ms(t),"xga")) for t in d["teams"]}
-              ven={(t,h):f(avg(ms(t,h),"xgf"),avg(ms(t,h),"xga")) for t in d["teams"] for h in (True,False)}
-              hh=sum(ven[(t,True)]-ven[(t,False)] for t in d["teams"])/20
-              print(kind.upper(),"league home edge",round(hh,3))
-              for label,val in [("now (venue averages)",ven),("team + uniform edge",{(t,h):base[t]+(hh/2 if h else -hh/2) for t in d["teams"] for h in (True,False)}),("team + half edge",{(t,h):base[t]+(hh/4 if h else -hh/4) for t in d["teams"] for h in (True,False)})]:
-                  top=sorted(val,key=lambda k:-val[k])
-                  print(" ",label,"| (A) in top 12:",sum(1 for t,h in top[:12] if h),"| top 12:"," ".join(f"{t}({'A' if h else 'H'})" for t,h in top[:12]))
+          b=json.loads(urllib.request.urlopen(urllib.request.Request("https://fantasy.premierleague.com/api/bootstrap-static/",headers={"User-Agent":"Mozilla/5.0"})).read())
+          for p in b["elements"]:
+              if p["web_name"] in ("Collins","Zubimendi","Gvardiol","Martinez","Gudmundsson"):
+                  print("P", p["web_name"], p["team"], p["status"], p["chance_of_playing_next_round"], p["news_added"], "|", p["news"])
           PY
