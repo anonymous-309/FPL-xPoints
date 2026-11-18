@@ -68,7 +68,7 @@ jobs:
           season=$(grep -m1 '^CURRENT_SEASON' fpl_xpoints.py | cut -d'"' -f2)
           dir="archive/$season/gw${{ github.event.inputs.archive_gw }}"
           mkdir -p "$dir"
-          for f in data.json team_news.json fixtures.json injury_log.json backtest.txt; do
+          for f in data.json team_news.json fixtures.json fdr.json injury_log.json backtest.txt; do
             [ -f "_site/$f" ] && gzip -9 -c "_site/$f" > "$dir/$f.gz"
           done
           [ -d _site/plans ] && tar -czf "$dir/plans.tar.gz" -C _site plans
