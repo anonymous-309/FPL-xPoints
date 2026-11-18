@@ -1265,8 +1265,12 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         rows = season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end)
         df.loc[rows if r.get("manual") else rows & (df["minutes"] == 0), "inj_skip"] = True
         span = gw_span(r["startGw"], end) if r.get("returnedGw") or (r.get("manual") and r.get("endGw") is not None) else f"GW{r['startGw']} on, not back yet"
-        note = f"{'Absence set by the admin' if r.get('manual') else str(r.get('type') or 'Absence')}, {span}" + absence_news(r)
-        df.loc[(rows if r.get("manual") else rows & (df["minutes"] == 0)) & df["inj_note"].eq(""), "inj_note"] = note
+        if r.get("manual"):  # the admin's own type and note
+            admin_note = str(r.get("news") or "").strip()
+            note = f"{str(r.get('type') or 'Absence')} (set by the admin), {span}" + (f": {admin_note}" if admin_note else "")
+        else:
+            note = f"{str(r.get('type') or 'Absence')}, {span}" + absence_news(r)
+        df.loc[(rows if r.get("manual") else rows & (df["minutes"] == 0)) & (df["inj_note"].eq("") | bool(r.get("manual"))), "inj_note"] = note
         # The match he got hurt in: his last match before an injury absence, if he did not play all of it, is left out too.
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur"):
             before = df.index[season & (df["pid"] == r["pid"]) & (df["GW"] < r["startGw"])]
@@ -2729,6 +2733,19 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                                                   + (f"the match he got hurt in, played {int(r['minutes'] or 0)} minutes" if (r["minutes"] or 0) > 0
                                                      else "a match missed since he got hurt")), axis=1)
     note[why.eq("i") & note.eq("")] = "Injured or unavailable (FPL flag), 0 minutes"
+    # Any other match the Usual minutes do not use, among its latest 5, in red too: a player out now has his 0s since
+    # the absence began left out (the formula runs on the matches before it).
+    back = res.drop_duplicates("pid").set_index("pid")["from_return"].fillna(False).astype(bool) if "from_return" in res else pd.Series(dtype=bool)
+    admin_set = set(res.loc[res["admin_min"].notna(), "pid"]) if "admin_min" in res else set()
+    for pid, g in played[played["minutes"].notna()].groupby("pid"):
+        if pid in admin_set:
+            continue
+        idx = [i for i in g.index if why[i] == ""]
+        if back.get(pid, False):
+            while idx and float(played.at[idx[-1], "minutes"] or 0) == 0:
+                i = idx.pop()
+                why[i] = "x"
+                note[i] = "0 minutes while he is out now: the Usual minutes use the matches before this absence"
     note[why.eq("")] = ""
     played = played.assign(why=why, why_note=note)
     past_why = {pid: {str(int(gw)): list(gg["why"]) for gw, gg in g.groupby("GW") if gg["why"].ne("").any()}
@@ -2828,7 +2845,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
         (out_dir / "injury_log.json").write_text(json.dumps(merged_injuries(log, load_admin_injuries()), ensure_ascii=False), encoding="utf-8")
     try:
-        (out_dir / "fdr.json").write_text(json.dumps(fdr_table(res, df), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        (out_dir / "fdr.json").write_text(json.dumps(fdr_table(res), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as e:  # never stop the site for this page
         print(f"FDR not written ({e})")
     fx = None
