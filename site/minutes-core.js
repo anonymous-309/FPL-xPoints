@@ -71,21 +71,35 @@ window.XMin = (function () {
     return { id: t.id, start: u.start, ms: Math.min(90, u.ms * q), mb: Math.min(90, u.mb * q), there };
   }
   const GRID = Array.from({ length: 90 }, (_, i) => i + 0.5);
+  // Every case of who starts among the listed takers with its chance: each starts as often as his Start says; the
+  // club's recent start patterns decide who starts together (fitted to those chances, as the model does).
+  function startCases(starts, pats) {
+    const k = starts.length;
+    const cells = Array.from({ length: 1 << k }, (_, b) => starts.map((_, i) => (b >> i) & 1));
+    const indep = cells.map((c) => c.reduce((a, f, i) => a * (f ? starts[i] : 1 - starts[i]), 1));
+    if (!pats || !pats.length) return cells.map((c, n) => [indep[n], c]).filter(([w]) => w > 0);
+    const seen = cells.map(() => 0);
+    pats.forEach(([w, fl]) => { const n = fl.reduce((a, f, i) => a + (f ? 1 << i : 0), 0); seen[n] += w; });
+    const ss = seen.reduce((a, v) => a + v, 0) || 1;
+    let p = cells.map((_, n) => 0.9 * seen[n] / ss + 0.1 * indep[n] + 1e-9);
+    const norm = () => { const t = p.reduce((a, v) => a + v, 0); p = p.map((v) => v / t); };
+    norm();
+    for (let it = 0; it < 60; it++) {
+      starts.forEach((st, i) => {
+        const m = p.reduce((a, v, n) => a + (cells[n][i] ? v : 0), 0);
+        if (m > 0 && m < 1) p = p.map((v, n) => v * (cells[n][i] ? st / m : (1 - st) / (1 - m)));
+        norm();
+      });
+    }
+    return cells.map((c, n) => [p[n], c]).filter(([w]) => w > 1e-9);
+  }
   // Share of the team's penalties each player takes while on the pitch, minute by minute (as the model does it):
   // the first listed taker on the pitch takes them, and when none is on, the free kick and corner takers on it.
   function shares(listed, fks, pats) {
     const k = listed.length;
     const onS = listed.map((x) => GRID.map((t) => (t < x.ms ? 1 : 0)));
     const onB = listed.map((x) => GRID.map((t) => (t >= 90 - x.mb ? 1 : 0)));
-    let cases = pats;
-    if (!cases || !cases.length) {
-      cases = [];
-      for (let bits = 0; bits < 1 << k; bits++) {
-        const fl = listed.map((_, i) => (bits >> i) & 1);
-        const w = listed.reduce((a, x, i) => a * (fl[i] ? x.start : 1 - x.start), 1);
-        if (w > 0) cases.push([w, fl]);
-      }
-    }
+    const cases = startCases(listed.map((x) => x.start), pats);
     const took = Array(k).fill(0), onT = Array(k).fill(0), free = Array(k).fill(0), unc = Array(90).fill(0);
     cases.forEach(([w, fl]) => {
       for (let there = 0; there < 1 << k; there++) {
@@ -104,17 +118,10 @@ window.XMin = (function () {
     const out = {};
     listed.forEach((x, i) => { out[x.id] = PEN_TAKE_ON_PITCH * (onT[i] > 1e-9 ? took[i] / onT[i] : free[i]); });
     if (fks.length) {
-      const pj = fks.map((x) => GRID.map((t) => x.there * (x.start * (t < x.ms ? 1 : 0) + (1 - x.start) * (t >= 90 - x.mb ? 1 : 0))));
-      fks.forEach((x, j) => {
-        let got = 0, mine = 0;
-        for (let t = 0; t < 90; t++) {
-          const tot = pj.reduce((a, v) => a + v[t], 0);
-          const any = 1 - pj.reduce((a, v) => a * (1 - v[t]), 1);
-          if (tot > 0) got += unc[t] * any * pj[j][t] / tot;
-          mine += pj[j][t];
-        }
-        out[x.id] = Math.min(1, (out[x.id] || 0) + (mine > 1e-9 ? got / mine : 0));
-      });
+      // while no listed taker is on: the free kick and corner takers, split by their minutes (starting or not)
+      const left = unc.reduce((a, v) => a + v, 0) / 90;
+      const mins = fks.reduce((a, x) => a + x.m, 0);
+      fks.forEach((x) => { if (x.m > 0 && mins > 0) out[x.id] = Math.min(1, (out[x.id] || 0) + left / mins); });
     }
     return out;
   }
@@ -126,13 +133,16 @@ window.XMin = (function () {
     const d = p.byGw[g];
     if (!d || !d.fx) return 0;
     const fx = d.fx[j];
-    const listed = (takers[p.team] || []).map((t) => pitch(overrides, t, g, fx)).filter(Boolean);
-    const fks = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).map((t) => pitch(overrides, t, g, fx)).filter((x) => x && x.there > 0);
+    // listed takers: started his last match -> on from the kick-off for his minutes, else on at the end for them
+    const listed = (takers[p.team] || []).map((t) => {
+      const x = pitch(overrides, t, g, fx);
+      if (!x) return null;
+      const len = Math.min(90, (t.minUsual || 0) * (t.minUsual > 0 ? Math.max(1, matchMins(overrides, t, g, fx) / t.minUsual) : 1));
+      return { ...x, start: t.pitch ? t.pitch.last : x.start, ms: len, mb: len };
+    }).filter(Boolean);
+    const fks = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).map((t) => { const m = matchMins(overrides, t, g, fx); return m ? { id: t.id, m: m / 90 } : null; }).filter(Boolean);
     if (!listed.some((x) => x.id === p.id) && !fks.some((x) => x.id === p.id)) return 0;
-    const ids = listed.map((x) => x.id).join();
-    const pt = (patterns[p.team] || []).find((x) => x.ids.join() === ids);
-    const pats = pt ? pt.pats : null;
-    return shares(listed, fks, pats)[p.id] || 0;
+    return shares(listed, fks, null)[p.id] || 0;
   }
 
   // The chance he starts in gameweek g (at least one start in a double): his Start times the share of his usual

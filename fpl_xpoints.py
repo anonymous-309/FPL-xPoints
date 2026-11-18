@@ -365,7 +365,7 @@ def ai_starts(keys: np.ndarray, mins: np.ndarray, starts: np.ndarray, matches: n
     """The Start figure (the chance he starts, 5-4-3-2-1 over the last 5 matches) before each row of each key, with the
     same matches left out as in ai_minutes, and his minutes when starting and when not; then the same three for a
     player coming back from an absence (the zero-minute matches at the end left out)."""
-    out = np.full((len(mins), 6), np.nan)
+    out = np.full((len(mins), 8), np.nan)
     hist: list[tuple[float, float]] = []
     ban_left = 0
     prev = object()
@@ -375,7 +375,8 @@ def ai_starts(keys: np.ndarray, mins: np.ndarray, starts: np.ndarray, matches: n
         end = len(hist)
         while end > 0 and hist[end - 1][0] == 0:
             end -= 1
-        out[i] = _start_detail(hist) + (_start_detail(hist[:end]) if end else (np.nan, np.nan, np.nan))
+        out[i] = (_start_detail(hist) + (_start_detail(hist[:end]) if end else (np.nan, np.nan, np.nan))
+                  + (hist[-1][1] if hist else np.nan, hist[end - 1][1] if end else np.nan))
         if n > 0 and b >= n:
             continue
         if n > 0:
@@ -387,7 +388,7 @@ def ai_starts(keys: np.ndarray, mins: np.ndarray, starts: np.ndarray, matches: n
             else:
                 ban_left = 0
                 hist.append((minutes, min(1.0, float(st) / n)))
-    return tuple(out[:, j] for j in range(6))
+    return tuple(out[:, j] for j in range(8))
 
 
 def team_pre(keys: np.ndarray, x: np.ndarray, periods: np.ndarray) -> np.ndarray:
@@ -1447,7 +1448,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     for c in ["g", "xg", "xgot", "xgk"]:
         p[f"F_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_FINISH)
     p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
-    p["w5_st"], p["w5_ms"], p["w5_mb"], p["ret_st"], p["ret_ms"], p["ret_mb"] = ai_starts(keys, p["mins"].to_numpy(float), p["st"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
+    p["w5_st"], p["w5_ms"], p["w5_mb"], p["ret_st"], p["ret_ms"], p["ret_mb"], p["w5_last"], p["ret_last"] = ai_starts(keys, p["mins"].to_numpy(float), p["st"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     for c in ["n90", "xg", "xa", "box", "boxn90"]:
         p[f"R_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_ROLE)
     p = p.drop(columns=stat)
@@ -1605,11 +1606,11 @@ def usual_minutes(df: pd.DataFrame) -> dict[str, np.ndarray]:
     ret = df["from_return"].fillna(False).astype(bool).to_numpy() if "from_return" in df else np.zeros(len(df), bool)
     out = {}
     for key, w5, r in (("min", "w5_min", "ret_min"), ("p1", "w5_p1", "ret_p1"), ("p60", "w5_p60", "ret_p60"),
-                       ("st", "w5_st", "ret_st"), ("ms", "w5_ms", "ret_ms"), ("mb", "w5_mb", "ret_mb")):
+                       ("st", "w5_st", "ret_st"), ("ms", "w5_ms", "ret_ms"), ("mb", "w5_mb", "ret_mb"), ("last", "w5_last", "ret_last")):
         if w5 not in df:
             out[key] = np.full(len(df), np.nan)
             continue
-        normal = df[w5].fillna(np.nan if key in ("st", "ms", "mb") else 0.0).to_numpy(float)
+        normal = df[w5].fillna(np.nan if key in ("st", "ms", "mb", "last") else 0.0).to_numpy(float)
         back = df[r].to_numpy(float) if r in df else np.full(len(df), np.nan)
         out[key] = np.where(ret & ~np.isnan(back), back, normal)
     return out
@@ -2513,7 +2514,8 @@ def pitch_profile(frame: pd.DataFrame) -> pd.DataFrame:
     base = st * ms + (1 - st) * mb
     k = np.where(base > 0, usual / np.maximum(base, 1e-9), 0.0)  # the 5-match averages to his usual minutes
     there = np.where(usual > 0, np.clip(xmin / np.maximum(usual, 1e-9), 0, 1), 0.0)
-    return pd.DataFrame({"start": st, "ms": np.clip(ms * k, 0, 90), "mb": np.clip(mb * k, 0, 90), "there": there,
+    last = np.where(np.isnan(u["last"]), np.round(st), u["last"])  # did he start his last match (counted as in Usual)
+    return pd.DataFrame({"start": st, "last": last, "ms": np.clip(ms * k, 0, 90), "mb": np.clip(mb * k, 0, 90), "there": there,
                          "p_start": st * there}, index=frame.index)
 
 
@@ -2537,6 +2539,31 @@ def start_patterns(hist: pd.DataFrame | None, team, pids: list) -> list[tuple[fl
     return [(float(wi / w.sum()), f) for wi, f in zip(w, out)]
 
 
+def start_cases(starts: list[float], patterns: list) -> list[tuple[float, tuple]]:
+    """Every case of who starts among these players with its chance. Each player starts as often as his own Start
+    says; the club's recent start patterns only decide who starts together (fitted to those chances, iterative
+    proportional fitting, with a little of the independent cases mixed in so no case is ruled out)."""
+    k = len(starts)
+    cells = [tuple(float(b >> i & 1) for i in range(k)) for b in range(2 ** k)]
+    indep = np.array([float(np.prod([s if f else 1 - s for s, f in zip(starts, c)])) for c in cells])
+    if not patterns:
+        return [(w, c) for w, c in zip(indep, cells) if w > 0]
+    seen = np.zeros(len(cells))
+    for w, fl in patterns:
+        seen[cells.index(tuple(float(f) for f in fl))] += w
+    p = 0.9 * seen / max(seen.sum(), 1e-12) + 0.1 * indep + 1e-9
+    p /= p.sum()
+    for _ in range(60):
+        for i, s in enumerate(starts):
+            on = np.array([c[i] == 1 for c in cells])
+            m = p[on].sum()
+            if 0 < m < 1:
+                p[on] *= s / m
+                p[~on] *= (1 - s) / (1 - m)
+            p /= p.sum()
+    return [(float(w), c) for w, c in zip(p, cells) if w > 1e-9]
+
+
 def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tuple[dict, dict]:
     """Share of the team's penalties each player takes while on the pitch, minute by minute: in every case of who
     starts (the club's recent start patterns, else each player's Start on its own) and who is there at all, the
@@ -2546,15 +2573,7 @@ def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tupl
     k = len(listed)
     on_s = [(PEN_GRID < x["ms"]).astype(float) for x in listed]
     on_b = [(PEN_GRID >= 90 - x["mb"]).astype(float) for x in listed]
-    if patterns:
-        cases = patterns
-    else:
-        cases = []
-        for bits in range(2 ** k):
-            fl = tuple(float(bits >> i & 1) for i in range(k))
-            w = float(np.prod([x["start"] if f else 1 - x["start"] for x, f in zip(listed, fl)]))
-            if w > 0:
-                cases.append((w, fl))
+    cases = start_cases([x["start"] for x in listed], patterns)
     took, on_t, free = np.zeros(k), np.zeros(k), np.zeros(k)
     uncovered = np.zeros(90)
     for w, fl in cases:
@@ -2576,23 +2595,24 @@ def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tupl
         whole[x["id"]] = PEN_TAKE_ON_PITCH * free[i]
         share[x["id"]] = PEN_TAKE_ON_PITCH * (took[i] / on_t[i] if on_t[i] > 1e-9 else free[i])
     if fks:
-        pj = np.array([x["there"] * (x["start"] * (PEN_GRID < x["ms"]) + (1 - x["start"]) * (PEN_GRID >= 90 - x["mb"])) for x in fks])
-        tot = pj.sum(axis=0)
-        anyon = 1 - np.prod(1 - pj, axis=0)
-        for j, x in enumerate(fks):
-            got = float((uncovered * anyon * np.where(tot > 0, pj[j] / np.maximum(tot, 1e-9), 0)).mean())
-            share[x["id"]] = min(1.0, share.get(x["id"], 0) + (got / pj[j].mean() if pj[j].mean() > 1e-9 else 0))
+        # penalties while no listed taker is on go to the free kick and corner takers, split by their expected
+        # minutes (the same extra share for each while he is on the pitch; starting or not does not matter here)
+        left = float(uncovered.mean())
+        mins = sum(x["m"] for x in fks)
+        for x in fks:
+            if x["m"] > 0 and mins > 0:
+                share[x["id"]] = min(1.0, share.get(x["id"], 0) + left / mins)
     return share, whole
 
 
 def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed_order: bool = False) -> np.ndarray:
-    """Share of his team's penalties a player takes while on the pitch, per future match (see pen_time_shares): the
-    FPL number 1 takes them when on the pitch, each next taker the ones while those above him are off, and the rest
-    go to the free kick and corner takers on the pitch. Who starts with whom matters: two takers who start together
-    leave the next one only the minutes after both have gone off; two who take turns to start always leave one of
-    them on, so the next one gets fewer.
+    """Share of his team's penalties a player takes while on the pitch, per future match, minute by minute (see
+    pen_time_shares): each listed taker who started his last match is on from the kick-off for his usual minutes, one
+    who did not comes on for them at the end; the first listed taker on the pitch takes the penalty, and penalties while
+    none of them is on go to the free kick and corner takers, split by their expected minutes. So two takers who both
+    started leave the next one only the end of the match, after they have gone off.
 
-    hist: played league matches (pid, team, season, fixture, kickoff_time, started, skip) for the start patterns."""
+    hist: not used any more (start patterns), kept for the callers."""
     out = np.zeros(len(target))
     prof = pitch_profile(target)
     order = pd.to_numeric(target["pen_order"], errors="coerce")
@@ -2605,6 +2625,13 @@ def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed
                           "order": order.to_numpy(), "fk": fk_any, "pos": np.arange(len(target))})
     for c in ("start", "ms", "mb", "there"):
         frame[c] = prof[c].to_numpy()
+    # Kept simple for penalties: if he started his last match he is on from the kick-off for his usual minutes, if not
+    # he comes on for them at the end (either way his expected minutes add up)
+    frame["start"] = prof["last"].to_numpy()
+    usual_m = np.clip(np.nan_to_num(usual_minutes(target)["min"]), 0, 90)
+    frame["ms"] = usual_m
+    frame["mb"] = usual_m
+    frame["m"] = np.clip(np.nan_to_num(usual_minutes(target)["min"]) * target["avail"].fillna(1).to_numpy(float), 0, 90) / 90
     memo: dict = {}
     gone = (target["status"] == "u").to_numpy() if "status" in target else np.zeros(len(target), bool)
     frame = frame[~gone]  # players no longer at the club (not on the site either)
@@ -2612,11 +2639,8 @@ def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed
         lst = g[g["order"].notna()].sort_values("order")
         listed = [dict(id=r.pid, start=r.start, ms=r.ms, mb=r.mb, there=r.there) for r in lst.itertuples()]
         fkr = g[g["fk"] & g["order"].isna() & (g["there"] > 0)]
-        fks = [dict(id=r.pid, start=r.start, ms=r.ms, mb=r.mb, there=r.there) for r in fkr.itertuples()]
-        key = (team, tuple(x["id"] for x in listed))
-        if key not in memo:
-            memo[key] = start_patterns(hist, team, list(key[1]))
-        share, _ = pen_time_shares(listed, fks, memo[key])
+        fks = [dict(id=r.pid, m=r.m) for r in fkr.itertuples()]
+        share, _ = pen_time_shares(listed, fks, [])
         for r in g.itertuples():
             if r.pid in share:
                 out[r.pos] = share[r.pid]
@@ -2860,7 +2884,7 @@ def admin_minutes(target: pd.DataFrame, path: Path = ADMIN_FILE) -> pd.DataFrame
         target.loc[rows, col] = (m > 0).astype(float)
     for col in ("w5_p60", "ret_p60"):
         target.loc[rows, col] = (m >= 60).astype(float)
-    for col in ("w5_st", "ret_st"):  # admin minutes: a starter from 45, his minutes when starting are those
+    for col in ("w5_st", "ret_st", "w5_last", "ret_last"):  # admin minutes: a starter from 45, his minutes when starting are those
         target.loc[rows, col] = (m >= 45).astype(float)
     for col in ("w5_ms", "ret_ms"):
         target.loc[rows, col] = m.where(m >= 45)
@@ -3011,7 +3035,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     usual = usual_minutes(res)
     res = res.assign(min_usual=usual["min"])
     prof = pitch_profile(res)
-    res = res.assign(pit_start=prof["start"].fillna(0), pit_ms=prof["ms"].fillna(0), pit_mb=prof["mb"].fillna(0))
+    res = res.assign(pit_start=prof["start"].fillna(0), pit_last=prof["last"].fillna(0), pit_ms=prof["ms"].fillna(0), pit_mb=prof["mb"].fillna(0))
     players: dict[str, dict] = {}
     for r in res.sort_values(["GW", "fixture"]).to_dict("records"):
         p = players.setdefault(r["pid"], {
@@ -3031,7 +3055,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "cornerOrder": None if pd.isna(pd.to_numeric(r.get("corner_order"), errors="coerce")) else int(pd.to_numeric(r["corner_order"], errors="coerce")),
             "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None,
             # Start (5-4-3-2-1 over his last 5 matches) and his minutes when starting and not, for penalty shares
-            "pitch": {"start": round(float(r["pit_start"]), 3), "ms": round(float(r["pit_ms"]), 1), "mb": round(float(r["pit_mb"]), 1)}})
+            "pitch": {"start": round(float(r["pit_start"]), 3), "last": int(r["pit_last"]), "ms": round(float(r["pit_ms"]), 1), "mb": round(float(r["pit_mb"]), 1)}})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
