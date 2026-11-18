@@ -78,7 +78,7 @@ PEN_SAVE_SHARE = 0.12  # share of penalties saved, used until penalties are coun
 SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_order", "corners_and_indirect_freekicks_order": "corner_order"}
 HL_FINISH, K_XGOT, K_FINISH_XG = 12, 8.0, 15.0  # finishing: same half-life as the rest, shrunk by xG volume
 HISTORY_MATCHES = 38  # every decayed record uses only each player's or team's latest 38 matches
-PEN_XGOT = 0.76  # xGOT of a penalty taken (FotMob), taken out of a player's xGOT
+PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty (FotMob rates each one by where it went)
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
 # goals, xG, xGOT weights, and how many average xG each player's record is padded with (smaller = closer to a plain average)
@@ -1113,7 +1113,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     pen_goals = df["core_pen_scored"].fillna(0).where(known, expected_pens * PEN_CONVERSION)
     df["np_xg"] = (df["expected_goals"] - pens_taken * PEN_XG).clip(lower=0)
     df["np_goals"] = (df["goals_scored"] - pen_goals).clip(lower=0)
-    pen_xgot = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)) * PEN_XGOT
+    pen_xgot = df["core_pen_scored"].fillna(0) * PEN_XGOT_SCORED + df["core_pen_missed"].fillna(0) * PEN_XGOT_MISSED
     df["np_xgot"] = (df["core_xgot"] - pen_xgot).clip(lower=0).where(known, 0.0)
     df["np_xg_known"] = df["np_xg"].where(known, 0.0)
     dc = df["defensive_contribution"]
