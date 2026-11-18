@@ -750,7 +750,7 @@ def _club_short(name: str) -> str:
 CUP_MINUTES = Path("cup_minutes.json")  # FotMob minutes of Premier League players in cup and European matches, kept in the repo
 
 
-def fdr_table(res: pd.DataFrame) -> dict:
+def fdr_table(res: pd.DataFrame, df: pd.DataFrame | None = None) -> dict:
     """Fixture difficulty from our own model, per club and coming match: goals it is expected to score (the other
     side's expected goals conceded) and to concede, and its clean sheet chance. For reference only."""
     t = res.groupby(["GW", "fixture", "team"], as_index=False).agg(
@@ -764,7 +764,31 @@ def fdr_table(res: pd.DataFrame) -> dict:
         out.setdefault(str(r["short"]), {}).setdefault(str(int(r["GW"])), []).append({
             "opp": str(r["opp"]).upper() if r["home"] else str(r["opp"]).lower(), "home": bool(r["home"]),
             "xgf": round(float(r["scored"]), 3) if pd.notna(r["scored"]) else None, "xga": round(float(r["conc"]), 3), "cs": round(float(r["cs"]), 4)})
-    return {"gws": sorted(int(g) for g in res["GW"].unique()), "teams": out, "names": dict(zip(res["team_short"].astype(str), res["team"].astype(str)))}
+    payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "teams": out, "names": dict(zip(res["team_short"].astype(str), res["team"].astype(str)))}
+    if df is not None:
+        try:
+            payload.update(fdr_strength(df, res))
+        except Exception as e:  # the page falls back to the model's coming matches
+            print(f"FDR strength not added ({e})")
+    return payload
+
+
+def fdr_strength(df: pd.DataFrame, res: pd.DataFrame) -> dict:
+    """Each club's season so far, per match: real goals and xG, for and against, and the league's home advantage
+    (real goals and xG mixed half and half). The FDR page ranks the clubs on this mix."""
+    hist = df[~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()]
+    fx = hist.groupby(["fixture", "team", "opp"], as_index=False).agg(xg=("expected_goals", "sum"), gf=("gf", "first"), home=("was_home", "first"))
+    fx["gf"] = fx["gf"].fillna(0.0)
+    fx = fx.merge(fx[["fixture", "team", "xg", "gf"]].rename(columns={"team": "opp", "xg": "xga", "gf": "ga"}), on=["fixture", "opp"], how="left")
+    short = dict(zip(res["team"].astype(str), res["team_short"].astype(str)))
+    teams = {}
+    for team, g in fx.groupby("team"):
+        if str(team) in short:
+            teams[short[str(team)]] = {"n": int(len(g)), "gf": round(float(g["gf"].mean()), 3), "ga": round(float(g["ga"].mean()), 3),
+                                        "xg": round(float(g["xg"].mean()), 3), "xga": round(float(g["xga"].mean()), 3)}
+    mix = 0.5 * fx["gf"] + 0.5 * fx["xg"]
+    home_adv = float(mix[fx["home"] == 1].mean() / mix[fx["home"] == 0].mean())
+    return {"strength": teams, "homeAdv": round(home_adv, 3), "mixGoals": 0.5}
 
 
 def cup_minutes(fx: dict, offline: bool) -> dict:
@@ -2804,7 +2828,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
         (out_dir / "injury_log.json").write_text(json.dumps(merged_injuries(log, load_admin_injuries()), ensure_ascii=False), encoding="utf-8")
     try:
-        (out_dir / "fdr.json").write_text(json.dumps(fdr_table(res), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        (out_dir / "fdr.json").write_text(json.dumps(fdr_table(res, df), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as e:  # never stop the site for this page
         print(f"FDR not written ({e})")
     fx = None

@@ -17,18 +17,34 @@
   // away (40 sides), is ranked by its strength in our model (its average expected goals for and against over its
   // coming matches at that venue); as in FPL's own table, the 2 strongest are 5, the next 10 are 4, the next 17 are 3 and the last 11 are 2
   // (the spread of FPL's own ratings).
+  // A club's strength: its season so far per match, real goals and xG half and half, for and against; at home it
+  // is lifted (and away lowered) by the league's home advantage. Without that, the model's coming matches.
+  const mixed = (st) => ({ f: 0.5 * st.gf + 0.5 * st.xg, a: 0.5 * st.ga + 0.5 * st.xga });
   const STRENGTH = {
-    overall: { f: (s) => s.xgf - s.xga, text: (s) => `${s.xgf.toFixed(2)} for, ${s.xga.toFixed(2)} against`, show: (v) => (v >= 0 ? '+' : '') + v.toFixed(2) }, // scores more, concedes less
-    attack: { f: (s) => -s.xga, text: (s) => `concedes ${s.xga.toFixed(2)} a match`, show: (v) => (-v).toFixed(2) }, // our goals depend on their defence
-    defence: { f: (s) => s.xgf, text: (s) => `scores ${s.xgf.toFixed(2)} a match`, show: (v) => v.toFixed(2) }, // our clean sheet depends on their attack
+    overall: { f: (s) => s.xgf - s.xga, show: (v) => (v >= 0 ? '+' : '') + v.toFixed(2), head: 'For − against' }, // scores more, concedes less
+    attack: { f: (s) => -s.xga, show: (v) => (-v).toFixed(2), head: 'Concedes' }, // our goals depend on their defence
+    defence: { f: (s) => s.xgf, show: (v) => v.toFixed(2), head: 'Scores' }, // our clean sheet depends on their attack
   };
+  function sideStrength(short, home) {
+    const st = data.strength && data.strength[short];
+    if (st) {
+      const m = mixed(st);
+      const h = Math.sqrt(data.homeAdv || 1);
+      const k = home ? h : 1 / h;
+      return { xgf: m.f * k, xga: m.a / k,
+        text: `${st.n} matches: goals ${st.gf.toFixed(2)} and xG ${st.xg.toFixed(2)} for, goals ${st.ga.toFixed(2)} and xG ${st.xga.toFixed(2)} against a match (half and half, ${home ? 'home' : 'away'} adjusted)` };
+    }
+    const t = data.teams[short];
+    const ms = data.gws.flatMap((g) => (t[g] || []).filter((m) => m.home === home));
+    const use = ms.length ? ms : data.gws.flatMap((g) => t[g] || []);
+    const xgf = use.reduce((a, m) => a + (m.xgf || 0), 0) / (use.length || 1), xga = use.reduce((a, m) => a + m.xga, 0) / (use.length || 1);
+    return { xgf, xga, text: `model: ${xgf.toFixed(2)} for, ${xga.toFixed(2)} against a match` };
+  }
   function strength(kind) {
     const list = [];
-    Object.entries(data.teams).forEach(([short, t]) => {
+    Object.keys(data.teams).forEach((short) => {
       [true, false].forEach((home) => {
-        const ms = data.gws.flatMap((g) => (t[g] || []).filter((m) => m.home === home));
-        const use = ms.length ? ms : data.gws.flatMap((g) => t[g] || []);
-        const s = { xgf: use.reduce((a, m) => a + (m.xgf || 0), 0) / (use.length || 1), xga: use.reduce((a, m) => a + m.xga, 0) / (use.length || 1) };
+        const s = sideStrength(short, home);
         list.push({ short, home, s, v: STRENGTH[kind].f(s) });
       });
     });
@@ -45,8 +61,8 @@
       return el('div', { className: 'fdr-rank' }, el('table', { className: 'minutes' },
         el('caption', { textContent: name }),
         el('thead', {}, el('tr', {}, el('th', { scope: 'col', className: 'num', textContent: '#' }), el('th', { scope: 'col', textContent: 'Opponent' }),
-          el('th', { scope: 'col', className: 'num', textContent: kind === 'overall' ? 'xG +/-' : kind === 'attack' ? 'xG conceded' : 'xG scored' }))),
-        el('tbody', {}, ...list.map((x, i) => el('tr', { title: `${data.names[x.short] || x.short} ${x.home ? 'at home' : 'away'}: ${STRENGTH[kind].text(x.s)}, FDR ${x.tier}` },
+          el('th', { scope: 'col', className: 'num', textContent: STRENGTH[kind].head, title: 'A match, real goals and xG half and half' }))),
+        el('tbody', {}, ...list.map((x, i) => el('tr', { title: `${data.names[x.short] || x.short} ${x.home ? 'at home' : 'away'}, FDR ${x.tier}. ${x.s.text}` },
           el('td', { className: 'num', textContent: String(i + 1) }),
           el('td', {}, el('span', { className: `fdr-m r${x.tier}` }, el('b', { textContent: `${x.short} (${x.home ? 'A' : 'H'})` }), el('small', { textContent: String(x.tier) }))),
           el('td', { className: 'num', textContent: STRENGTH[kind].show(x.v) }))))));
