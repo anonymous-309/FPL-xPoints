@@ -2555,7 +2555,7 @@ def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None) -> np
     prof = pitch_profile(target)
     # one order per player, from his first coming match (the order the site shows and moves penalties with)
     by_gw = target.sort_values(["GW", "fixture"]) if "GW" in target else target
-    order = pd.to_numeric(by_gw.groupby("pid")["pen_order"].transform("first"), errors="coerce").reindex(target.index)
+    order = pd.to_numeric(by_gw.groupby("pid")["pen_order"].transform(lambda x: x.iloc[0]), errors="coerce").reindex(target.index)
     listed_col = lambda c: pd.to_numeric(target[c], errors="coerce").notna().to_numpy() if c in target else np.zeros(len(target), bool)
     fk_any = listed_col("fk_order") | listed_col("corner_order")
     frame = pd.DataFrame({"fixture": target["fixture"].to_numpy(), "team": target["team"].to_numpy(), "pid": target["pid"].to_numpy(),
