@@ -109,7 +109,6 @@
       el('span', { className: 'gwd', textContent: s.first != null ? (s.first === s.last ? dShort(s.first) : `${dShort(s.first)} – ${dShort(s.last)}`) : `${dShort(s.key)} – ${dShort(s.key + (s.kind === 'mid' ? 2 : 3) * 864e5)}` })];
     if (s.gws.length) kids.push(el('span', { className: 'gwt', textContent: `${s.gws.map((g) => 'GW' + g).join(', ')} ${s.past ? 'played' : 'xMin'}` }));
     else if (s.intl) kids.push(el('span', { className: 'gwb', textContent: 'International break' }));
-    else kids.push(el('span', { className: 'gwb', textContent: s.empty ? 'No matches' : 'No league matches' }));
     return kids;
   }
   const slotClass = (s) => `${s.past ? 'past ' : ''}${s.plain ? '' : `fx-gw ${s.kind}`}${s.intl ? ' intl' : !s.gws.length ? ' none' : ''}`;
@@ -232,7 +231,25 @@
   // Same chips as the Fixtures page: competition, opponent (capitals at home), then minutes played or day and kick-off.
   const hm = (t) => new Date(t).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   const dd = (t) => new Date(t).toLocaleDateString('en-GB', { weekday: 'short' });
-  const cupChips = (l) => l.map((m) => (m.past
+  // which cups show (buttons as on the Fixtures page), remembered on this device
+  const COMP_BTNS = [['UCL', 'Champions League'], ['UEL', 'Europa League'], ['UECL', 'Conference League'], ['EFL', 'EFL Cup'], ['FAC', 'FA Cup']];
+  let compsOn = new Set(COMP_BTNS.map(([c]) => c));
+  try { const v = JSON.parse(localStorage.getItem('minutes-comps') || 'null'); if (Array.isArray(v)) compsOn = new Set(v); } catch (e) { /* private mode */ }
+  function compButtons() {
+    const box = document.querySelector('.fx-comps');
+    box.replaceChildren(...COMP_BTNS.map(([c, n]) => {
+      const b = el('button', { type: 'button', className: `toggle fx-tog c-${c}`, textContent: n });
+      b.setAttribute('aria-pressed', String(compsOn.has(c)));
+      b.addEventListener('click', () => {
+        compsOn.has(c) ? compsOn.delete(c) : compsOn.add(c);
+        try { localStorage.setItem('minutes-comps', JSON.stringify([...compsOn])); } catch (e) { /* private mode */ }
+        b.setAttribute('aria-pressed', String(compsOn.has(c)));
+        render();
+      });
+      return b;
+    }));
+  }
+  const cupChips = (l) => l.filter((m) => compsOn.has(m.c)).map((m) => (m.past
     ? el('span', { className: `fx-m c-${m.c}${m.mins ? '' : ' nil'}`, title: `${CUP_NAME[m.c]} v ${m.o}, ${when(m.t)}: ${m.mins} minutes (shown only, not used by the formula)` }, el('b', { textContent: m.c }), m.o, el('i', { textContent: `${m.mins}'` }))
     : el('span', { className: `fx-m c-${m.c}`, title: `${CUP_NAME[m.c]} v ${m.o}, ${when(m.t)} (shown only: xMin is not changed for it)` }, el('b', { textContent: m.c }), m.o, el('i', { textContent: `${dd(m.t)} ${hm(m.t)}` }))));
 
@@ -261,6 +278,7 @@
     $('status').textContent = `From GW${data.gws[0]}, updated ${when}`;
     $('team').replaceChildren(el('option', { value: '', textContent: 'All' }), ...[...new Set(data.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
     updateReset();
+    compButtons();
     render();
   }
 
