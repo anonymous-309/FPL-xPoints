@@ -6,6 +6,11 @@ on:
     - cron: "47 17-23/2 * * 4"  # every 2 hours, Friday 00:47-06:47 Vietnam time
     - cron: "47 1-23/2 * * 5,6" # every 2 hours, Friday 08:47 to Sunday 06:47 Vietnam time
   workflow_dispatch:
+    inputs:
+      archive_gw:
+        description: "Gameweek to archive after this run (set by archive.yml about 30 minutes before the deadline)"
+        required: false
+        default: ""
   push:
     branches: [main]
 
@@ -16,7 +21,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false  # queue instead, so the run before a deadline is never cancelled
 
 jobs:
   build-and-deploy:
@@ -56,6 +61,24 @@ jobs:
       - name: Measure accuracy on last season
         continue-on-error: true
         run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest 2>&1 | tee _site/backtest.txt
+      - name: Archive the numbers before the deadline
+        if: ${{ github.event.inputs.archive_gw != '' && github.event.inputs.archive_gw != null }}
+        continue-on-error: true
+        run: |
+          season=$(grep -m1 '^CURRENT_SEASON' fpl_xpoints.py | cut -d'"' -f2)
+          dir="archive/$season/gw${{ github.event.inputs.archive_gw }}"
+          mkdir -p "$dir"
+          for f in data.json team_news.json fixtures.json injury_log.json backtest.txt; do
+            [ -f "_site/$f" ] && gzip -9 -c "_site/$f" > "$dir/$f.gz"
+          done
+          [ -d _site/plans ] && tar -czf "$dir/plans.tar.gz" -C _site plans
+          date -u +"%Y-%m-%dT%H:%MZ" > "$dir/saved_at.txt"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$dir"
+          git commit -m "Archive: $season GW${{ github.event.inputs.archive_gw }} before the deadline"
+          git pull --rebase origin main
+          git push origin HEAD:main
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

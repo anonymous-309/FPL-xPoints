@@ -1,0 +1,49 @@
+name: Archive before deadline
+
+# Every 10 minutes: if the next FPL deadline is 20-45 minutes away and that gameweek is not archived yet, run the full
+# update (fresh numbers on the site) and save its numbers in archive/<season>/gw<N>/.
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Is a deadline coming?
+        id: due
+        run: |
+          python3 - <<'PY' >> "$GITHUB_OUTPUT"
+          import json, os, re, urllib.request, datetime as dt
+          season = re.search(r'^CURRENT_SEASON = "([^"]+)"', open("fpl_xpoints.py").read(), re.M).group(1)
+          req = urllib.request.Request("https://fantasy.premierleague.com/api/bootstrap-static/", headers={"User-Agent": "Mozilla/5.0"})
+          ev = json.loads(urllib.request.urlopen(req, timeout=30).read())["events"]
+          now = dt.datetime.now(dt.timezone.utc)
+          nxt = min((e for e in ev if dt.datetime.fromisoformat(e["deadline_time"].replace("Z", "+00:00")) > now),
+                    key=lambda e: e["deadline_time"], default=None)
+          if nxt:
+              left = (dt.datetime.fromisoformat(nxt["deadline_time"].replace("Z", "+00:00")) - now).total_seconds() / 60
+              done = os.path.exists(f"archive/{season}/gw{nxt['id']}/saved_at.txt")
+              print(f"gw={nxt['id']}")
+              print(f"due={'yes' if 20 <= left <= 45 and not done else 'no'}")
+          PY
+          cat "$GITHUB_OUTPUT"
+      - name: Is a run for it already going?
+        id: busy
+        if: steps.due.outputs.due == 'yes'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          n=$(gh run list --workflow update.yml --event workflow_dispatch --json status,createdAt -q '[.[] | select(.status != "completed")] | length')
+          echo "running=$n" >> "$GITHUB_OUTPUT"
+      - name: Run the update and archive
+        if: steps.due.outputs.due == 'yes' && steps.busy.outputs.running == '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run update.yml -f archive_gw=${{ steps.due.outputs.gw }}
