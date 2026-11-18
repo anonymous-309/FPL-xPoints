@@ -63,30 +63,34 @@
     }
     return out;
   }
+  const prevKey = (k) => k - (new Date(k).getUTCDay() === 5 ? 3 : 4) * 864e5;
+  // worked out once per gameweek range (not for every row)
+  let colsMemo = { key: null, val: null };
   function slotCols() {
+    const memoKey = `${$('horizon').value}|${state.data.gws[0]}|${cal.days.size}`;
+    if (colsMemo.key === memoKey) return colsMemo.val;
     const past = pastGws().map(String), fut = futureGws().map(String);
     const known = (l) => l.filter((g) => cal.gwSlot[g] != null);
     const p = known(past), f = known(fut);
-    // without the calendar, one column per gameweek as before
-    if (!cal.days.size) return { past: past.map((g) => ({ key: g, gws: [g], past: true, plain: true })), fut: fut.map((g) => ({ key: g, gws: [g], plain: true })) };
-    const fStart = f.length ? cal.gwSlot[f[0]] : null;
-    let pEnd = fStart != null ? fStart : null;
-    if (pEnd != null) { let k = p.length ? cal.gwSlot[p[0]] : pEnd; let prev = null; for (; k < pEnd; k = nextKey(k)) prev = k; pEnd = prev; }
-    else pEnd = p.length ? cal.gwSlot[p[p.length - 1]] : null;
-    // start early enough for the summer's European qualifiers
-    let start = p.length ? cal.gwSlot[p[0]] : null;
-    if (start != null) {
-      let first = null;
-      state.data.players.forEach((pl) => {
-        Object.values(pl.cupPast || {}).forEach((l) => l.forEach((x) => { if (x[3] && (!first || x[3] < first)) first = x[3]; }));
-        (pl.intlPast || []).forEach((x) => { if (x[3] && (!first || x[3] < first)) first = x[3]; });
-      });
-      if (first && slotKey(first) < start) start = slotKey(first);
+    let val;
+    if (!cal.days.size) {
+      // without the calendar, one column per gameweek as before
+      val = { past: past.map((g) => ({ key: g, gws: [g], past: true, plain: true })), fut: fut.map((g) => ({ key: g, gws: [g], plain: true })) };
+    } else {
+      const fStart = f.length ? cal.gwSlot[f[0]] : null;
+      let pEnd = fStart != null ? fStart : null;
+      if (pEnd != null) { let k = p.length ? cal.gwSlot[p[0]] : pEnd; let prev = null; for (; k < pEnd; k = nextKey(k)) prev = k; pEnd = prev; }
+      else pEnd = p.length ? cal.gwSlot[p[p.length - 1]] : null;
+      // from the midweek just before GW1 (pre-season friendlies and earlier matches left out)
+      const first = cal.gwSlot['1'] != null ? cal.gwSlot['1'] : (p.length ? cal.gwSlot[p[0]] : null);
+      const start = first != null ? prevKey(first) : null;
+      val = {
+        past: p.length ? slotsBetween(start, pEnd, p, true) : [],
+        fut: f.length ? slotsBetween(fStart, cal.gwSlot[f[f.length - 1]], f, false) : [],
+      };
     }
-    return {
-      past: p.length ? slotsBetween(start, pEnd, p, true) : [],
-      fut: f.length ? slotsBetween(fStart, cal.gwSlot[f[f.length - 1]], f, false) : [],
-    };
+    colsMemo = { key: memoKey, val };
+    return val;
   }
   const slotSortKey = (s) => (s.gws.length ? `${s.past ? 'p' : 'f'}${s.gws[0]}` : null);
 
@@ -276,12 +280,26 @@
     const value = sortValue(state.sort);
     const list = state.data.players
       .filter((p) => (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
-        && (!state.flagged || flaggedPlayer(p)) && (!q || p.name.toLowerCase().includes(q) || p.fullName.toLowerCase().includes(q)))
-      .sort((a, b) => { const x = value(a), y = value(b); return (x < y ? -1 : x > y ? 1 : 0) * state.dir; });
-    const body = list.length ? list.map(row)
-      : [el('tr', {}, el('td', { colSpan: columns().length, className: 'none', textContent: 'No players match these filters.' }))];
-    $('table').tBodies[0].replaceChildren(...body);
+        && (!state.flagged || flaggedPlayer(p)) && (!q || p.name.toLowerCase().includes(q) || p.fullName.toLowerCase().includes(q)));
+    const v = new Map(list.map((p) => [p, value(p)]));
+    list.sort((a, b) => { const x = v.get(a), y = v.get(b); return (x < y ? -1 : x > y ? 1 : 0) * state.dir; });
+    // rows are drawn a page at a time as you scroll, so the page opens quickly
+    pending = list.slice();
+    $('table').tBodies[0].replaceChildren(...(list.length ? [] : [el('tr', {}, el('td', { colSpan: columns().length, className: 'none', textContent: 'No players match these filters.' }))]));
+    more();
   }
+  const PAGE = 40;
+  let pending = [];
+  function more() {
+    const chunk = pending.splice(0, PAGE);
+    if (chunk.length) $('table').tBodies[0].append(...chunk.map(row));
+    $('more').hidden = !pending.length;
+    $('more').textContent = `Show more (${pending.length} left)`;
+  }
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting) && pending.length) more(); }, { rootMargin: '600px' }).observe(document.getElementById('more'));
+  }
+  document.getElementById('more').addEventListener('click', more);
 
   function show(data) {
     state.data = data;
@@ -334,7 +352,7 @@
 
   // the calendar (fixtures.json) only adds the weekend and midweek columns; without it, one column per gameweek
   const fx = fetch('fixtures.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  fetch('data.json', { cache: 'no-store' })
+  fetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((d) => fx.then((f) => { calendar(f); show(d); }))
     .catch(() => {

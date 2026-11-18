@@ -548,3 +548,5 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .mins-slots td.past .slotcups span.fx-m, .mins-slots td.fut .slotcups span.fx-m { margin: 2px auto 0; }
 .fx-m.c-INT, .fx-tog.c-INT[aria-pressed="true"] { background: #b8451f; border-color: #b8451f; color: #fff; }
 .mins-slots .slotcups { margin-top: 2px; }
+
+.more-rows { display: block; position: sticky; left: 10px; margin: 10px; }

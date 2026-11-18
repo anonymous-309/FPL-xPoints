@@ -17,18 +17,33 @@
     const k = KIND[state.kind];
     const gws = data.gws.slice(0, state.range);
     document.querySelectorAll('[data-kind]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.kind === state.kind)));
-    // Each club against its own fixtures: its coming matches (every gameweek we have, so a rating does not move
-    // with the range picked) ranked from hardest to easiest, then FPL's own spread: the hardest 5% get 5, the next
-    // 25% get 4, the middle 43% get 3, the next 25% get 2, and only the easiest 2% get 1.
-    const rate = new Map();
-    Object.values(data.teams).forEach((t) => {
-      const ms = data.gws.flatMap((g) => t[g] || []);
-      const order = ms.slice().sort((x, y) => k.v(x) - k.v(y));
-      order.forEach((m, i) => {
-        const q = (i + 0.5) / order.length;
-        rate.set(m, q < 0.05 ? 5 : q < 0.30 ? 4 : q < 0.73 ? 3 : q < 0.98 ? 2 : 1);
+    // As FPL does it, a match is rated by the opponent alone, at home and away apart: every club is ranked by its
+    // strength from our model (its average expected goals for and against over its coming matches at that venue),
+    // then the 2 strongest are 5, the next 5 are 4, the next 8 are 3 and the last 5 are 2.
+    const STRENGTH = {
+      overall: (s) => s.xgf - s.xga, // stronger side: scores more, concedes less
+      attack: (s) => -s.xga, // our goals depend on their defence: conceding little is hard to score against
+      defence: (s) => s.xgf, // our clean sheet depends on their attack
+    };
+    const avg = {};
+    Object.entries(data.teams).forEach(([short, t]) => {
+      [true, false].forEach((home) => {
+        const ms = data.gws.flatMap((g) => (t[g] || []).filter((m) => m.home === home));
+        const all = data.gws.flatMap((g) => t[g] || []);
+        const use = ms.length ? ms : all;
+        avg[`${short}|${home}`] = { xgf: use.reduce((a, m) => a + (m.xgf || 0), 0) / (use.length || 1), xga: use.reduce((a, m) => a + m.xga, 0) / (use.length || 1) };
       });
     });
+    const tier = {};
+    [true, false].forEach((home) => {
+      Object.keys(data.teams).map((short) => [short, STRENGTH[state.kind](avg[`${short}|${home}`])])
+        .sort((x, y) => y[1] - x[1])
+        .forEach(([short], i) => { tier[`${short}|${home}`] = i < 2 ? 5 : i < 7 ? 4 : i < 15 ? 3 : 2; });
+    });
+    const rate = new Map();
+    Object.values(data.teams).forEach((t) => data.gws.forEach((g) => (t[g] || []).forEach((m) => {
+      rate.set(m, tier[`${m.opp.toUpperCase()}|${!m.home}`] || 3); // the opponent plays at the other venue
+    })));
     const rating = (x, m) => rate.get(m);
     const rows = Object.entries(data.teams).map(([short, t]) => {
       const total = gws.reduce((s, g) => s + (t[g] || []).reduce((a, m) => a + k.v(m), 0), 0);
