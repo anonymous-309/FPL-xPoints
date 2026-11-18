@@ -586,7 +586,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
-RED_HALFLIFE_TF = 38  # gameweeks (about a season) for a red card's weight in the position average to halve
+RED_HALFLIFE_TF = 19  # gameweeks (about half a season) for a red card's weight in the position average to halve
 OOP_MIN_SHARE = 0.10  # at or below this share he counts as a plain defender
 OOP_KNOWN = 3  # with at least this many league starts known to FotMob, his places decide (not his stats)
 OOP_MID_ROLES = {"AM", "RM", "LM", "RW", "LW", "ST"}  # wing, wide or attacking midfield (not holding/central midfield, not wing-back)
