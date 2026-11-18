@@ -453,6 +453,7 @@
     else planCounts(state.team.ft, forcedN).forEach(([k, n]) => groups.push({ count: k, n }));
     const saveBranches = depth > 1 && !week0Chip && !forcedN ? Math.max(1, countsFor(state.team.ft)[0]) : 1;
     let planned = groups.reduce((a, g) => a + g.n, 0) + saveBranches - 1;
+    const nPlans = planned; // the plans asked for; planned also grows when a plan is worked out again for the 0.5 rule
     let done = 0;
     const progress = (text) => $('out').replaceChildren(el('p', { className: 'working', textContent: text }),
       el('div', { className: 'progress', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': String(planned), 'aria-valuenow': String(done) }, el('span', { style: `width:${Math.round((100 * done) / planned)}%` })));
@@ -472,7 +473,7 @@
         return null;
       }
       done++;
-      progress(`Working out the plans: ${done} of ${planned}…`);
+      progress(`Working out ${nPlans} plans: step ${done} of ${planned}${planned > nPlans ? ' (some plans worked out again to keep the 0.5-a-transfer rule)' : ''}…`);
       if (!sol.values || !Object.keys(sol.values).length || /infeasible/i.test(sol.status)) return null;
       if (!/optimal/i.test(sol.status)) worst = sol.status;
       let weeks = S.decode(input, model, sol.values);
