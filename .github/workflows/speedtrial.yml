@@ -17,7 +17,7 @@ jobs:
         with:
           path: fpl_data/20*
           key: fpl-history-v1
-      - run: python fpl_xpoints.py download && python fpl_xpoints.py site --out _site > /dev/null 2>&1
+      - run: python fpl_xpoints.py download && python fpl_xpoints.py site --out _site > /dev/null 2>&1 && python planner.py --site _site --ids planner_ids.txt
       - run: npm i playwright@1.47.2 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
       - run: |
           mk() { rm -rf "s_$1"; cp -r _site "s_$1"; sed -i "$2" "s_$1/planner.js"; }
