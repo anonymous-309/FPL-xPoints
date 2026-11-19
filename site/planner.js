@@ -710,15 +710,11 @@
     if (remove) { await makePlan(state.manual); return; }
     $('manual').hidden = false;
     $('manualOpen').setAttribute('aria-expanded', 'true');
+    state.mt = t;
+    state.replacing = outId;
     manualWeeks();
-    const wk = document.querySelectorAll('.manual-week')[t];
-    if (!wk) return;
-    const sel = wk.querySelector('select');
-    sel.value = outId;
-    sel.dispatchEvent(new Event('change'));
-    wk.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    const inSel = wk.querySelectorAll('select')[1];
-    if (inSel) inSel.focus();
+    const ch = document.querySelector('.chooser');
+    if (ch) ch.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function weekView(w) {
@@ -1063,9 +1059,30 @@
     for (let k = 0; k < t; k++) (state.manual[k] || []).forEach((m) => { ids.delete(m.out); ids.add(m.in); });
     return ids;
   }
-  // Manual plan: your squad first, then for each gameweek pick who goes out (from that week's squad) and who comes in
-  // (same position, not in the squad, best expected points over the plan first).
+  // Manual plan on the pitch, as on FPL's transfers page: one tab per transfer gameweek showing the squad that week;
+  // tap a player for his figures, then Replace (pick who comes in: same position, affordable, best first) or, for one
+  // bought that week, Remove (take the move back). Then "Work out manual plan" scores it like the automatic ones.
   const ORDER = (p) => 'GKDEFMIDFWD'.indexOf(p.position);
+  state.mt = 0;          // the gameweek tab on show in Manual plan
+  state.replacing = null; // the player being replaced (id), while the list of players to bring in is open
+  function manualCtx() {
+    const gws = horizonGws();
+    const depth = Math.min(PLAN.depth, gws.length);
+    const byId = new Map(state.data.players.map((p) => [p.id, p]));
+    const sellNow = new Map(state.team.squad.map((x) => [x.id, x.sell !== undefined ? x.sell : x.price]));
+    const sellOf = (id) => (sellNow.has(id) ? sellNow.get(id) : (byId.get(id) || {}).price || 0);
+    const priceOf = (id) => (byId.get(id) || {}).price || 0;
+    const bankAt = (t) => { let b = state.team.bank; for (let k = 0; k < t; k++) (state.manual[k] || []).forEach((m) => { b += sellOf(m.out) - priceOf(m.in); }); return b; };
+    const bankAfter = (t) => bankAt(t) + (state.manual[t] || []).reduce((a, m) => a + sellOf(m.out) - priceOf(m.in), 0);
+    const view = (p, g) => XMin.view(state.overrides, p, String(g));
+    const xpAt = (p, g) => { const v = view(p, g); return v ? v.xpts : 0; };
+    const longXp = (p) => gws.reduce((a, g, k) => a + Math.pow(PLAN.decay, k) * xpAt(p, g), 0);
+    const tidy = (from) => { for (let k = from; k < depth; k++) state.manual[k] = (state.manual[k] || []).filter((m) => squadAt(k).has(m.out) && !squadAt(k).has(m.in)); };
+    return { gws, depth, byId, sellOf, priceOf, bankAt, bankAfter, view, xpAt, longXp, tidy };
+  }
+  // the squad in week t, after that week's own moves
+  const squadAfter = (t) => { const ids = squadAt(t); (state.manual[t] || []).forEach((m) => { ids.delete(m.out); ids.add(m.in); }); return ids; };
+
   function manualWeeks() {
     const box = $('manualWeeks');
     if (!state.data || !state.team) {
@@ -1075,62 +1092,106 @@
         if (!/^\d+$/.test(entry)) { showError('Enter your FPL team ID at the top first.'); return; }
         try { await loadTeam(entry); manualWeeks(); } catch (e) { showError(e.message); }
       });
-      box.replaceChildren(el('p', { className: 'set-note', textContent: 'Your squad is loaded from FPL first; then choose the transfers week by week.' }), load);
+      box.replaceChildren(el('p', { className: 'set-note', textContent: 'Your squad is loaded from FPL first; then make your transfers on the pitch, gameweek by gameweek.' }), load);
       return;
     }
-    const gws = horizonGws();
-    const depth = Math.min(PLAN.depth, gws.length);
-    const byId = new Map(state.data.players.map((p) => [p.id, p]));
-    const xp = (p) => gws.reduce((a, g) => a + ((p.byGw && p.byGw[g] && p.byGw[g].xpts) || 0), 0);
-    const label = (p) => `${p.name} (${p.team}) £${(p.price || 0).toFixed(1)} · ${xp(p).toFixed(1)} xPts`;
-    Object.keys(state.manual).forEach((t) => { if (Number(t) >= depth) delete state.manual[t]; });
-    // money in the bank before week t's moves: selling price of a player from the squad now, buying price otherwise
-    const sellNow = new Map(state.team.squad.map((x) => [x.id, x.sell !== undefined ? x.sell : x.price]));
-    const sellOf = (id) => (sellNow.has(id) ? sellNow.get(id) : (byId.get(id) || {}).price || 0);
-    const bankAt = (t) => { let b = state.team.bank; for (let k = 0; k < t; k++) (state.manual[k] || []).forEach((m) => { b += sellOf(m.out) - ((byId.get(m.in) || {}).price || 0); }); return b; };
-    const tidy = (from) => { for (let k = from; k < depth; k++) state.manual[k] = (state.manual[k] || []).filter((m) => squadAt(k).has(m.out) && !squadAt(k).has(m.in)); };
-
-    // the squad as it is now
-    const now = [...squadAt(0)].map((id) => byId.get(id)).filter(Boolean).sort((x, y) => ORDER(x) - ORDER(y) || xp(y) - xp(x));
-    const squadBox = el('div', { className: 'manual-squad' },
-      el('b', { textContent: `Your squad · bank £${state.team.bank.toFixed(1)} · ${state.team.ft} free transfer${state.team.ft === 1 ? '' : 's'}` }),
-      ...['GK', 'DEF', 'MID', 'FWD'].map((pos) => el('div', { className: 'squad-line' }, el('span', { className: 'pos', textContent: pos }),
-        ...now.filter((p) => p.position === pos).map((p) => el('span', { className: 'pick', title: label(p), textContent: `${p.name} ${p.team}` })))));
-
-    const weeks = [...Array(depth).keys()].map((t) => {
-      const squad = [...squadAt(t)].map((id) => byId.get(id)).filter(Boolean).sort((x, y) => ORDER(x) - ORDER(y) || x.name.localeCompare(y.name));
-      const outSel = el('select', { ariaLabel: `Out in GW${gws[t]}` }, el('option', { value: '', textContent: 'Out: who?' }),
-        ...['GK', 'DEF', 'MID', 'FWD'].map((pos) => el('optgroup', { label: pos }, ...squad.filter((p) => p.position === pos).map((p) => el('option', { value: p.id, textContent: label(p) })))));
-      const inSel = el('select', { ariaLabel: `In in GW${gws[t]}`, disabled: true }, el('option', { value: '', textContent: 'In: who?' }));
-      outSel.addEventListener('change', () => {
-        const o = byId.get(outSel.value);
-        inSel.disabled = !o;
-        const have = squadAt(t);
-        // same position, not in the squad, affordable with this week's bank and his selling price
-        let money = o ? bankAt(t) + sellOf(o.id) : 0;
-        (state.manual[t] || []).forEach((m) => { money += sellOf(m.out) - ((byId.get(m.in) || {}).price || 0); });
-        const cands = o ? state.data.players.filter((p) => p.position === o.position && !have.has(p.id) && (p.price || 0) <= money + 1e-6).sort((x, y) => xp(y) - xp(x)) : [];
-        inSel.replaceChildren(el('option', { value: '', textContent: o ? `In: who? (${o.position}, up to £${money.toFixed(1)})` : 'In: who?' }), ...cands.map((p) => el('option', { value: p.id, textContent: label(p) })));
-      });
-      const add = el('button', { type: 'button', textContent: 'Add' });
-      add.addEventListener('click', () => {
-        const o = byId.get(outSel.value), i = byId.get(inSel.value);
-        if (!o || !i) { showError(`GW${gws[t]}: choose who goes out and who comes in.`); return; }
-        $('error').hidden = true;
-        (state.manual[t] = state.manual[t] || []).push({ out: o.id, in: i.id });
-        tidy(t + 1);
-        saveManual(); manualWeeks();
-      });
-      const list = el('div', { className: 'pick-list' }, ...(state.manual[t] || []).map((m, k) => {
-        const x = el('button', { type: 'button', className: 'pick', title: 'Remove this move' }, `Out ${(byId.get(m.out) || {}).name || '?'} → In ${(byId.get(m.in) || {}).name || '?'} ×`);
-        x.addEventListener('click', () => { state.manual[t].splice(k, 1); tidy(t + 1); saveManual(); manualWeeks(); });
-        return x;
-      }));
-      return el('div', { className: 'manual-week' }, el('b', { textContent: `GW${gws[t]}` }), el('small', { className: 'set-note', textContent: `bank £${bankAt(t).toFixed(1)}` }), el('span', { className: 'pick-add' }, outSel, inSel, add), list,
-        (state.manual[t] || []).length ? '' : el('small', { className: 'set-note', textContent: 'No transfers: the free transfer is saved' }));
-    });
-    box.replaceChildren(squadBox, ...weeks);
+    const c = manualCtx();
+    Object.keys(state.manual).forEach((t) => { if (Number(t) >= c.depth) delete state.manual[t]; });
+    state.mt = Math.min(state.mt, c.depth - 1);
+    const t = state.mt, g = c.gws[t];
+    const tabs = el('div', { className: 'seg week-tabs', role: 'tablist' }, ...[...Array(c.depth).keys()].map((k) => {
+      const n = (state.manual[k] || []).length;
+      const b = el('button', { type: 'button', role: 'tab', onclick: () => { state.mt = k; state.replacing = null; manualWeeks(); } },
+        el('span', { textContent: `GW${c.gws[k]}` }), el('small', { textContent: n ? `${n} move${n > 1 ? 's' : ''}` : 'save' }));
+      b.setAttribute('aria-pressed', String(k === t));
+      return b;
+    }));
+    const moves = state.manual[t] || [];
+    const bought = new Set(moves.map((m) => m.in));
+    const squad = [...squadAfter(t)].map((id) => c.byId.get(id)).filter(Boolean);
+    const total = squad.reduce((a, p) => a + c.xpAt(p, g), 0);
+    const mcard = (p) => {
+      const v = c.view(p, g);
+      const cardEl = el('div', { className: `pp-card${state.replacing === p.id ? ' on' : ''}`, tabIndex: 0, role: 'button', title: `${p.name}: tap for the details, Replace or Remove` },
+        el('div', { className: 'pp-badges' }, bought.has(p.id) ? el('span', { className: 'pp-badge new', textContent: 'IN', title: 'Bought this gameweek' }) : ''),
+        shirt(p.team, p.position === 'GK'),
+        el('span', { className: 'pp-name', textContent: p.name }),
+        el('span', { className: 'pp-pts', textContent: f1(v ? v.xpts : 0) }),
+        el('span', { className: 'pp-opp', textContent: v ? fixture(v.opp) : 'Blank' }));
+      const open = () => manualDetail(p.id);
+      cardEl.addEventListener('click', open);
+      cardEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+      return cardEl;
+    };
+    // the whole squad by position, like FPL's transfers page
+    const rows = ['GK', 'DEF', 'MID', 'FWD'].map((pos) => el('div', { className: 'pp-row' },
+      ...squad.filter((p) => p.position === pos).sort((x, y) => c.xpAt(y, g) - c.xpAt(x, g)).map(mcard)));
+    const list = el('div', { className: 'pick-list' }, ...moves.map((m, k) => {
+      const x = el('button', { type: 'button', className: 'pick', title: 'Take this move back' }, `${(c.byId.get(m.out) || {}).name || '?'} → ${(c.byId.get(m.in) || {}).name || '?'} ×`);
+      x.addEventListener('click', () => { state.manual[t].splice(k, 1); c.tidy(t + 1); saveManual(); manualWeeks(); });
+      return x;
+    }));
+    const head = el('div', { className: 'week-head' },
+      el('h2', {}, `GW${g}`),
+      el('div', { className: 'week-pts' }, el('b', { textContent: f1(total) }), el('span', { textContent: ' xPts, all 15' })));
+    const facts = el('p', { className: 'meta', textContent: `${moves.length ? `${moves.length} transfer${moves.length > 1 ? 's' : ''}` : 'No transfer: the free transfer is saved'} · bank £${c.bankAfter(t).toFixed(1)} after. Tap a player to replace him.` });
+    const parts = [tabs, el('section', { className: 'week-view' }, head, facts, list,
+      el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows))];
+    if (state.replacing) parts.splice(1, 0, chooser(c, t, state.replacing));
+    box.replaceChildren(...parts);
   }
+
+  // Players who can come in for the one being replaced: same position, not in the squad, affordable that week.
+  function chooser(c, t, outId) {
+    const o = c.byId.get(outId);
+    const have = squadAfter(t);
+    const money = c.bankAfter(t) + c.sellOf(outId);
+    const g = c.gws[t];
+    const search = el('input', { type: 'search', placeholder: 'Search player or team', ariaLabel: 'Search' });
+    const listBox = el('div', { className: 'choose-list' });
+    const cands = state.data.players.filter((p) => p.position === o.position && !have.has(p.id) && (p.price || 0) <= money + 1e-6)
+      .map((p) => ({ p, long: c.longXp(p), now: c.xpAt(p, g) })).sort((x, y) => y.long - x.long);
+    const fill = () => {
+      const q = search.value.trim().toLowerCase();
+      listBox.replaceChildren(...cands.filter(({ p }) => !q || p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q) || (p.fullName || '').toLowerCase().includes(q)).slice(0, 40)
+        .map(({ p, long, now }) => el('button', { type: 'button', className: 'choose-row', onclick: () => {
+          (state.manual[t] = state.manual[t] || []).push({ out: outId, in: p.id });
+          c.tidy(t + 1); saveManual(); state.replacing = null; $('error').hidden = true; manualWeeks();
+        } }, el('b', { textContent: p.name }), el('span', { textContent: `${p.team} £${p.price.toFixed(1)}` }),
+          el('span', { textContent: `GW${g} ${f1(now)}` }), el('span', { textContent: `long ${f1(long)}` }))));
+    };
+    search.addEventListener('input', fill);
+    fill();
+    const cancel = el('button', { type: 'button', className: 'linkbtn', textContent: 'Cancel', onclick: () => { state.replacing = null; manualWeeks(); } });
+    return el('section', { className: 'chooser' },
+      el('p', {}, el('b', { textContent: `Replace ${o.name}` }), ` (${o.team} ${o.position}, sells £${c.sellOf(outId).toFixed(1)}): up to £${money.toFixed(1)}, best over GW${c.gws[0]}-${c.gws[c.gws.length - 1]} first (long: weighed 0.85 a week).`),
+      search, listBox, cancel);
+  }
+
+  // A player tapped in Manual plan: his figures, then Replace or Remove.
+  function manualDetail(id) {
+    const c = manualCtx();
+    const t = state.mt, g = c.gws[t];
+    const p = c.byId.get(id);
+    if (!p) return;
+    $('detail-text').textContent = `Long term GW${c.gws[0]}-${c.gws[c.gws.length - 1]} (decay ${PLAN.decay}): ${f1(c.longXp(p))} xPts\n\n${XMin.detailText(state.overrides, p, String(g))}`;
+    const move = (state.manual[t] || []).find((m) => m.in === id);
+    const acts = [el('button', { type: 'button', className: 'update', textContent: 'Replace', onclick: () => {
+      $('detail').hidden = true;
+      // replacing a player bought this week: take that move back and replace the one he came in for
+      let outId = id;
+      if (move) { outId = move.out; state.manual[t] = state.manual[t].filter((m) => m !== move); c.tidy(t + 1); saveManual(); }
+      state.replacing = outId; manualWeeks();
+      const ch = document.querySelector('.chooser');
+      if (ch) ch.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } })];
+    if (move) acts.push(el('button', { type: 'button', className: 'update alt', textContent: 'Remove', onclick: () => {
+      state.manual[t] = state.manual[t].filter((m) => m !== move); c.tidy(t + 1); saveManual(); $('detail').hidden = true; manualWeeks();
+    } }));
+    $('detail-acts').replaceChildren(...acts);
+    $('detail').hidden = false;
+  }
+
   $('manualOpen').addEventListener('click', async () => {
     const open = $('manual').hidden;
     $('manual').hidden = !open;
