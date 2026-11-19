@@ -2,7 +2,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
-  let data = null, byId = {}, overrides = XMin.load();
+  let data = null, all = {}, byId = {}, overrides = XMin.load();
 
   // Minutes and penalty share with the viewer's own xMin edits (Minutes page) applied: when a taker above him
   // plays less, the next taker on the list gets more of the penalties.
@@ -58,6 +58,11 @@
     $('grid').replaceChildren(...(teams.length ? teams.map(card) : [el('p', { className: 'sp-none', textContent: 'No team or player matches this search.' })]));
   }
 
+  $('gw').addEventListener('change', () => {
+    data = all[$('gw').value];
+    try { localStorage.setItem('setpieces-gw', $('gw').value); } catch (e) { /* private mode */ }
+    render();
+  });
   $('filters').addEventListener('input', render);
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') { overrides = XMin.load(); if (data) render(); } });
   $('filters').addEventListener('submit', (e) => e.preventDefault());
@@ -65,11 +70,16 @@
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((d) => {
       if (!d.setPieces) throw new Error('missing');
-      data = d.setPieces;
+      all = d.setPiecesByGw || { [d.setPieces.gw]: d.setPieces };
+      const gws = Object.keys(all).map(Number).sort((a, b) => a - b);
+      let pick = gws[0];
+      try { const v = Number(localStorage.getItem('setpieces-gw')); if (gws.includes(v)) pick = v; } catch (e) { /* private mode */ }
+      $('gw').replaceChildren(...gws.map((g) => el('option', { value: g, textContent: `GW${g}`, selected: g === pick })));
+      data = all[pick];
       byId = Object.fromEntries(d.players.map((p) => [p.id, p]));
       XMin.setPlayers(d.players, d.penPatterns);
       const when = new Date(d.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
-      $('status').textContent = `GW${data.gw}, updated ${when}`;
+      $('status').textContent = `From GW${gws[0]}, updated ${when}`;
       render();
     })
     .catch(() => {

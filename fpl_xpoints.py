@@ -3114,6 +3114,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws, "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])
+    payload["setPiecesByGw"] = {str(g): set_piece_table(res, g) for g in payload["gws"]}  # every gameweek, for the GW picker
     # who started together among each club's listed penalty takers (the site moves penalties with them when minutes change)
     to_short = dict(zip(res["team"].astype(str), res["team_short"].astype(str)))
     payload["penPatterns"] = {}
