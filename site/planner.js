@@ -1184,7 +1184,7 @@
     if (!moves.length) movesEl = el('p', { className: 'meta', textContent: 'No transfer: save it. Tap a player to replace him.' });
     else {
       movesEl = el('table', { className: 'moves-table' },
-        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Out' }), el('th', { scope: 'col', textContent: 'In' }), el('th', { scope: 'col', className: 'num', textContent: `Gain to GW${c.gws[c.gws.length - 1]} (this GW)` }), el('th', { textContent: '' }))),
+        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Out' }), el('th', { scope: 'col', textContent: 'In' }), el('th', { scope: 'col', className: 'num', textContent: `Real gain to GW${c.gws[c.gws.length - 1]} (this GW)`, title: 'Team points with the move minus without it: best 11 and captain each week, hits taken off' }), el('th', { textContent: '' }))),
         el('tbody', {}, ...moves.map((m, k) => {
           const o = c.byId.get(m.out), n = c.byId.get(m.in);
           const undo = el('button', { type: 'button', className: 'linkbtn', textContent: '×', title: 'Take this move back' });
@@ -1192,7 +1192,9 @@
           return el('tr', {},
             el('td', { className: 'outp' }, el('b', { textContent: o.name }), el('small', { textContent: ` ${o.team} ${o.position} £${c.sellOf(o.id).toFixed(1)} · ${f1(xpOf(o, g))} xPts` })),
             el('td', { className: 'inp' }, el('b', { textContent: n.name }), el('small', { textContent: ` ${n.team} ${n.position} £${n.price.toFixed(1)} · ${f1(xpOf(n, g))} xPts` })),
-            el('td', { className: 'num' }, el('b', { textContent: signed(swapGain(c, t, o, n, d)) }), el('small', { textContent: ` (GW${g} ${signed(xpOf(n, g) - xpOf(o, g))})` })),
+            (() => { const r = realGain(c, t, m, d); return el('td', { className: 'num', title: `Player for player: ${signed(swapGain(c, t, o, n, d))} to the last gameweek` },
+              el('span', { className: `gain-pill ${r.total >= 0.05 ? 'up' : r.total <= -0.05 ? 'down' : 'flat'}`, textContent: signed(r.total) }),
+              el('small', { textContent: ` (GW${g} ${signed(r.week)}${r.hit ? `, −${r.hit} hit` : ''})` })); })(),
             el('td', {}, undo));
         })));
     }
@@ -1204,6 +1206,27 @@
     const parts = [tabs, view];
     if (state.replacing) parts.splice(1, 0, chooser(c, t, state.replacing));
     box.replaceChildren(...parts);
+  }
+  // The real gain of a move in week t: the team's points with it minus without it (best starting 11 and captain each
+  // week, so a player who only sits on the bench adds little), from week t to the last gameweek planned, counted as
+  // the plans count (Normal or Decay), while the player bought is still in the squad; a hit it causes is taken off.
+  function realGain(c, t, m, d) {
+    const team = (ids, g) => { const L = lineUp([...ids].map((id) => c.byId.get(id)).filter(Boolean), g); return L.xi.reduce((a, p) => a + L.xp.get(p.id), 0) + (L.cap ? L.xp.get(L.cap.id) : 0); };
+    let total = 0, week = 0;
+    for (let k = t; k < c.gws.length; k++) {
+      const withIt = k < c.depth ? squadAfter(k) : squadAfter(c.depth - 1);
+      if (!withIt.has(m.in)) break;
+      const without = new Set(withIt); without.delete(m.in); without.add(m.out);
+      const diff = team(withIt, c.gws[k]) - team(without, c.gws[k]);
+      total += Math.pow(d, k) * diff;
+      if (k === t) week = diff;
+    }
+    // a hit: the moves of week t beyond its free transfers cost 4 each, charged to the last ones made
+    let ft = state.team.ft;
+    for (let k = 0; k < t; k++) ft = Math.min(S.MAX_FT, Math.max(0, ft - (state.manual[k] || []).length) + 1);
+    const idx = (state.manual[t] || []).indexOf(m);
+    const hit = idx >= ft ? S.HIT : 0;
+    return { total: total - Math.pow(d, t) * hit, week: week - hit, hit };
   }
   // What a swap gains from gameweek t to the last one planned, counted as the plans count (Normal or Decay).
   const swapGain = (c, t, o, n, d) => c.gws.slice(t).reduce((a, g, k) => a + Math.pow(d, t + k) * (xpOf(n, g) - xpOf(o, g)), 0);
