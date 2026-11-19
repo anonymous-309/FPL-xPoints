@@ -25,4 +25,5 @@ jobs:
           mk par4 's/xx//'
           mk par5 's/const PLAN = { depth: 4,/const PLAN = { depth: 5,/'
           mk seq5 's/const PLAN = { depth: 4,/const PLAN = { depth: 5,/; s/const PARALLEL_MAX = 3;/const PARALLEL_MAX = 1;/'
-          for v in par4 seq4 par5 seq5; do (cd s_$v && python -m http.server 8800 >/dev/null 2>&1 &) ; sleep 2; node tools/plan_timing.js "http://127.0.0.1:8800/planner.html?id=11081" $v || true; pkill -f "http.server 8800"; sleep 1; done
+          grep -o 'const PLAN = { depth: [0-9]' s_*/planner.js
+          for v in par5 par4; do (cd s_$v && python -m http.server 8800 >/dev/null 2>&1 &) ; sleep 2; node tools/plan_timing.js "http://127.0.0.1:8800/planner.html?id=11081" $v || true; pkill -f "http.server 8800"; sleep 1; done

@@ -13,6 +13,7 @@ const { chromium } = require('playwright');
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   const rows = await pg.$$eval('table tbody tr', (l) => l.slice(0, 12).map((r) => r.innerText.replace(/\s+/g, ' ').slice(0, 110)));
   console.log(`POST ${label}: error=${await pg.textContent('#error').catch(() => '')}`);
+  console.log(`HEAD ${label}: ${await pg.$$eval('table thead tr', (l) => l.slice(0, 1).map((r) => r.innerText.replace(/\s+/g, ' ')).join())}`);
   const verdict = await pg.textContent('.summary').catch(() => '');
   console.log(`RESULT ${label}: ${secs}s, cores ${await pg.evaluate(() => navigator.hardwareConcurrency)}`);
   rows.forEach((r) => console.log(`ROW ${label}: ${r}`));
