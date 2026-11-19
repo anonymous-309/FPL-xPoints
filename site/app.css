@@ -650,3 +650,33 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .xp-row th { background: transparent !important; }
 .manual .moves-table td small { display: block; white-space: normal; }
 .manual .moves-table td.outp, .manual .moves-table td.inp { text-align: left; }
+
+/* popup: the plan's gameweek marked, the one on show highlighted; tap a gameweek to see it */
+.xp-row th, .xp-row td { cursor: pointer; }
+.xp-row .now { background: rgba(255,255,255,.12); }
+.xp-row .pick { background: #ffd23f !important; color: #1b1b1b !important; }
+.xp-row .pick small { color: #3a3a3a !important; }
+/* Replace Player, after FPL's */
+.chooser { margin: 10px 0; padding: 12px; border: 0; border-radius: 10px; background: #2a0a33; color: #fff; }
+.choose-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.choose-top h3 { margin: 0; flex: 1; text-align: center; font-size: 20px; color: #fff; }
+.choose-back { width: 36px; height: 36px; border-radius: 50%; border: 0; background: #4a1a55; color: #fff; font-size: 18px; cursor: pointer; }
+.choose-bank { padding: 10px; border-radius: 8px; text-align: center; font-weight: 750; color: #2a0a33; background: linear-gradient(90deg, #58e6f4, #6c7cf6); }
+.chooser input[type=search] { width: 100%; max-width: none; margin: 10px 0; padding: 10px 12px; border-radius: 8px; border: 1px solid #6a3a75; background: transparent; color: #fff; }
+.choose-label { margin: 6px 2px; color: #d9c7df; font-weight: 650; font-size: 13px; }
+.choose-out { display: grid; grid-template-columns: 36px 1fr auto auto; gap: 10px; align-items: center; padding: 10px; border-radius: 8px; background: #3a1245; }
+.choose-out .shirt, .choose-table .shirt { width: 32px; height: 32px; }
+.choose-out small, .choose-table small { display: block; color: #d9c7df; font-size: 11.5px; }
+.choose-out .num { text-align: center; }
+.choose-wrap { max-height: 420px; overflow-y: auto; margin-top: 10px; border-radius: 8px; background: #33103d; }
+.choose-table { width: 100%; border-collapse: collapse; color: #fff; }
+.choose-table th { position: sticky; top: 0; background: #33103d; color: #d9c7df; font-size: 12.5px; padding: 8px 6px; text-align: left; }
+.choose-table th.num, .choose-table td.num { text-align: right; }
+.choose-table th.sortable { cursor: pointer; } .choose-table th.on { color: #fff; text-decoration: underline; }
+.choose-table td { padding: 8px 6px; border-top: 1px solid #4a1a55; }
+.choose-table tbody tr { cursor: pointer; } .choose-table tbody tr:hover, .choose-table tbody tr:focus { background: #45165a; outline: none; }
+.choose-table td.who { display: flex; align-items: center; gap: 8px; }
+.gain-pill { display: inline-block; min-width: 46px; padding: 2px 7px; border-radius: 999px; font-weight: 750; font-size: 12.5px; text-align: center; }
+.gain-pill.up { background: #01fc7a; color: #10301c; } .gain-pill.down { background: #ff1751; color: #fff; } .gain-pill.flat { background: #e7e7e7; color: #333; }
+.chooser .set-note { color: #d9c7df; }
+.choose-table td.who, .choose-table td.who span, .choose-out span:not(.num) { text-align: left; }

@@ -36,7 +36,7 @@
   </div>
   <section id="manual" class="manual" hidden aria-labelledby="manual-h">
     <h2 id="manual-h">Manual plan</h2>
-    <p class="set-note">Your squad on the pitch as in a plan (starting 11, captain and bench picked for you), one tab per transfer gameweek. Tap a player for his xPoints row, then <b>Replace</b> him (pick who comes in: same position, affordable, with the gain that gameweek and to the last gameweek) or <b>Remove</b> a player you bought that week; the line-up updates at once. Then press Work out manual plan: the planner picks the best starting 11, captain and bench every week, counts free transfers and hits, and scores it like the automatic plans; no other transfers are made.</p>
+    <p class="set-note">Your squad on the pitch as in a plan (starting 11, captain and bench picked for you), one tab per transfer gameweek. Tap a player for his xPoints row, then <b>Replace</b> him (pick who comes in: same position, affordable, with the gain that gameweek and to the last gameweek) or <b>Remove</b> him (or take back a player you bought that week); tap any gameweek in his row to see its figures. Replace Player lists who can come in with the gain that gameweek and to the last; the line-up updates at once. Then press Work out manual plan: the planner picks the best starting 11, captain and bench every week, counts free transfers and hits, and scores it like the automatic plans; no other transfers are made.</p>
     <div id="manualWeeks"></div>
     <div class="plan-modes"><button id="manualGo" class="update" type="button">Work out manual plan</button><button id="manualClear" type="button" class="linkbtn">Clear all moves</button></div>
   </section>
@@ -64,7 +64,7 @@
 <aside id="detail" hidden aria-live="polite">
   <div id="detail-acts" class="detail-acts"></div>
   <div id="detail-row"></div>
-  <details class="detail-more"><summary>This gameweek in detail</summary><p id="detail-text"></p></details>
+  <details class="detail-more" open><summary id="detail-gw">This gameweek in detail</summary><p id="detail-text"></p></details>
   <button id="close" type="button" aria-label="Close" onclick="document.getElementById('detail').hidden = true">×</button>
 </aside>
 <footer>

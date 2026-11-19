@@ -689,14 +689,22 @@
     const d = modeDecay(mode);
     const cells = gws.map((g) => { const v = XMin.view(state.overrides, p, String(g)); return { g, xp: v ? v.xpts : 0, opp: v ? v.opp.join(', ') : 'Blank' }; });
     const total = cells.reduce((a, c, k) => a + Math.pow(d, k) * c.xp, 0);
+    let shown = t;
+    const pick = (k) => {  // tap a gameweek to see its figures; the plan's gameweek stays marked
+      shown = k;
+      $('detail-row').querySelectorAll('[data-k]').forEach((x) => x.classList.toggle('pick', Number(x.dataset.k) === k));
+      $('detail-gw').textContent = `GW${gws[k]} in detail`;
+      $('detail-text').textContent = XMin.detailText(state.overrides, p, String(gws[k]));
+    };
+    const cell = (tag, k, kids) => { const x = el(tag, { className: `${k === t ? 'now' : ''}${k === shown ? ' pick' : ''}`, title: `GW${gws[k]}: tap for the details` }, ...kids); x.dataset.k = k; x.addEventListener('click', () => pick(k)); return x; };
     const row = el('div', { className: 'xp-row-wrap' }, el('table', { className: 'xp-row' },
-      el('thead', {}, el('tr', {}, ...cells.map((c, k) => el('th', { className: k === t ? 'now' : '', textContent: `GW${c.g}` })), el('th', { textContent: d === 1 ? 'Total' : 'Total (decay)' }))),
-      el('tbody', {}, el('tr', {}, ...cells.map((c, k) => el('td', { className: k === t ? 'now' : '' }, el('b', { textContent: f1(c.xp) }), el('small', { textContent: c.opp }))),
+      el('thead', {}, el('tr', {}, ...cells.map((c, k) => cell('th', k, [`GW${c.g}`])), el('th', { textContent: d === 1 ? 'Total' : 'Total (decay)' }))),
+      el('tbody', {}, el('tr', {}, ...cells.map((c, k) => cell('td', k, [el('b', { textContent: f1(c.xp) }), el('small', { textContent: c.opp })])),
         el('td', {}, el('b', { textContent: f1(total) }))))));
     $('detail-acts').replaceChildren(...acts);
     $('detail-row').replaceChildren(el('p', { className: 'xp-who' }, el('b', { textContent: p.name }), ` ${p.team} ${p.position} £${(p.price || 0).toFixed(1)}`), row);
-    $('detail-text').textContent = XMin.detailText(state.overrides, p, String(gws[t]));
     $('detail').hidden = false;
+    pick(t);
   }
   function showDetail(id, g) {
     const p = state.data && state.data.players.find((x) => x.id === id);
@@ -1201,33 +1209,64 @@
   const swapGain = (c, t, o, n, d) => c.gws.slice(t).reduce((a, g, k) => a + Math.pow(d, t + k) * (xpOf(n, g) - xpOf(o, g)), 0);
   const signed = (x) => `${x >= 0 ? '+' : '−'}${f1(Math.abs(x))}`;
 
-  // Players who can come in for the one being replaced: same position, not in the squad, affordable that week,
-  // best gain to the last gameweek first.
+  // Replace Player, laid out like FPL's: the bank, a search, the player going out, then everyone who can come in
+  // (same position, not in the squad, affordable that week) with the gain this gameweek and to the last gameweek;
+  // tap a column to sort by it.
+  state.chooseSort = 'total';
   function chooser(c, t, outId) {
     const o = c.byId.get(outId);
     const have = squadAfter(t);
     const money = c.bankAfter(t) + c.sellOf(outId);
     const d = modeDecay();
-    const last = c.gws[c.gws.length - 1];
-    const search = el('input', { type: 'search', placeholder: 'Search player or team', ariaLabel: 'Search' });
-    const listBox = el('div', { className: 'choose-list' });
+    const g = c.gws[t], last = c.gws[c.gws.length - 1];
+    const outNow = xpOf(o, g);
+    const outLong = c.gws.slice(t).reduce((a, gg, k) => a + Math.pow(d, t + k) * xpOf(o, gg), 0);
+    const search = el('input', { type: 'search', placeholder: 'Search by name or club', ariaLabel: 'Search' });
     const cands = state.data.players.filter((p) => p.position === o.position && !have.has(p.id) && (p.price || 0) <= money + 1e-6)
-      .map((p) => ({ p, gain: swapGain(c, t, o, p, d), now: xpOf(p, c.gws[t]) })).sort((x, y) => y.gain - x.gain);
+      .map((p) => ({ p, now: xpOf(p, g), week: xpOf(p, g) - outNow, total: swapGain(c, t, o, p, d) }));
+    const body = el('tbody');
+    const pill = (x) => el('span', { className: `gain-pill ${x >= 0.05 ? 'up' : x <= -0.05 ? 'down' : 'flat'}`, textContent: signed(x) });
+    const head = (key, label) => {
+      const th = el('th', { scope: 'col', className: `num sortable${state.chooseSort === key ? ' on' : ''}`, textContent: label });
+      th.addEventListener('click', () => { state.chooseSort = key; manualWeeks(); });
+      return th;
+    };
     const fill = () => {
       const q = search.value.trim().toLowerCase();
-      listBox.replaceChildren(...cands.filter(({ p }) => !q || p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q) || (p.fullName || '').toLowerCase().includes(q)).slice(0, 40)
-        .map(({ p, gain, now }) => el('button', { type: 'button', className: 'choose-row', onclick: () => {
+      const key = state.chooseSort;
+      const list = cands.filter(({ p }) => !q || p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q) || (p.fullName || '').toLowerCase().includes(q))
+        .sort((x, y) => (key === 'price' ? y.p.price - x.p.price : y[key] - x[key])).slice(0, 50);
+      body.replaceChildren(...list.map(({ p, now, week, total }) => {
+        const tr = el('tr', { tabIndex: 0, title: `Bring ${p.name} in for ${o.name}` },
+          el('td', { className: 'who' }, shirt(p.team, p.position === 'GK'), el('span', {}, el('b', { textContent: p.name }), el('small', { textContent: `${p.team} ${p.position} · GW${g} ${f1(now)} xPts` }))),
+          el('td', { className: 'num', textContent: `£${p.price.toFixed(1)}` }),
+          el('td', { className: 'num' }, pill(week)),
+          el('td', { className: 'num' }, pill(total)));
+        const choose = () => {
           (state.manual[t] = state.manual[t] || []).push({ out: outId, in: p.id });
           c.tidy(t + 1); saveManual(); state.replacing = null; $('error').hidden = true; manualWeeks();
-        } }, el('b', { textContent: p.name }), el('span', { textContent: `${p.team} £${p.price.toFixed(1)}` }),
-          el('span', { textContent: `GW${c.gws[t]} ${f1(now)} (${signed(now - xpOf(o, c.gws[t]))})` }), el('span', { className: gain >= 0 ? 'gain-up' : 'gain-down', textContent: `${signed(gain)} to GW${last}` }))));
+        };
+        tr.addEventListener('click', choose);
+        tr.addEventListener('keydown', (e) => { if (e.key === 'Enter') choose(); });
+        return tr;
+      }));
     };
     search.addEventListener('input', fill);
     fill();
-    const cancel = el('button', { type: 'button', className: 'linkbtn', textContent: 'Cancel', onclick: () => { state.replacing = null; manualWeeks(); } });
+    const back = el('button', { type: 'button', className: 'choose-back', textContent: '←', title: 'Back', ariaLabel: 'Back', onclick: () => { state.replacing = null; manualWeeks(); } });
     return el('section', { className: 'chooser' },
-      el('p', {}, el('b', { textContent: `Replace ${o.name}` }), ` (${o.team} ${o.position}, sells £${c.sellOf(outId).toFixed(1)}): up to £${money.toFixed(1)}. Gain = their expected points minus his, GW${c.gws[t]} to GW${last}${d === 1 ? '' : ', each later gameweek × 0.85'}.`),
-      search, listBox, cancel);
+      el('div', { className: 'choose-top' }, back, el('h3', { textContent: 'Replace Player' })),
+      el('div', { className: 'choose-bank', textContent: `Bank £${c.bankAfter(t).toFixed(1)}m · up to £${money.toFixed(1)}m with his sale` }),
+      search,
+      el('p', { className: 'choose-label', textContent: 'Outgoing player' }),
+      el('div', { className: 'choose-out' }, shirt(o.team, o.position === 'GK'),
+        el('span', {}, el('b', { textContent: o.name }), el('small', { textContent: `${o.team} ${o.position} · sells £${c.sellOf(outId).toFixed(1)}m` })),
+        el('span', { className: 'num' }, el('small', { textContent: `GW${g}` }), el('b', { textContent: f1(outNow) })),
+        el('span', { className: 'num' }, el('small', { textContent: `GW${g}-${last}` }), el('b', { textContent: f1(outLong) }))),
+      el('div', { className: 'choose-wrap' }, el('table', { className: 'choose-table' },
+        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Player' }), head('price', 'Price'), head('week', `GW${g} gain`), head('total', `Gain to GW${last}`))),
+        body)),
+      el('p', { className: 'set-note', textContent: `Gain = his expected points minus ${o.name}'s, in GW${g} and from GW${g} to GW${last}${d === 1 ? '' : ' (each later gameweek × 0.85, as you chose)'}.` }));
   }
 
   // A player tapped in Manual plan: Replace (and Remove for one bought this week), then his xPoints row.
@@ -1237,18 +1276,20 @@
     const p = c.byId.get(id);
     if (!p) return;
     const move = (state.manual[t] || []).find((m) => m.in === id);
-    const acts = [el('button', { type: 'button', className: 'update', textContent: 'Replace', onclick: () => {
+    // Replace, or Remove: both take him out and open the list of players to bring in (Remove on a player bought
+    // this week just takes that transfer back)
+    const out = () => {
       $('detail').hidden = true;
-      // replacing a player bought this week: take that move back and replace the one he came in for
       let outId = id;
       if (move) { outId = move.out; state.manual[t] = state.manual[t].filter((m) => m !== move); c.tidy(t + 1); saveManual(); }
       state.replacing = outId; manualWeeks();
       const ch = document.querySelector('.chooser');
       if (ch) ch.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    } })];
-    if (move) acts.push(el('button', { type: 'button', className: 'update alt', textContent: 'Remove', onclick: () => {
-      state.manual[t] = state.manual[t].filter((m) => m !== move); c.tidy(t + 1); saveManual(); $('detail').hidden = true; manualWeeks();
-    } }));
+    };
+    const acts = [el('button', { type: 'button', className: 'update', textContent: 'Replace', onclick: out }),
+      el('button', { type: 'button', className: 'update alt', textContent: move ? 'Remove (undo this transfer)' : 'Remove', onclick: move ? () => {
+        state.manual[t] = state.manual[t].filter((m) => m !== move); c.tidy(t + 1); saveManual(); $('detail').hidden = true; manualWeeks();
+      } : out })];
     playerPopup(p, c.gws, t, acts);
   }
 
