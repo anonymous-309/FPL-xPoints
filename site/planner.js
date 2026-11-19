@@ -339,14 +339,14 @@
     };
   }
 
-  // How plans are judged (fixed for now). Transfers are planned for 4 gameweeks, each later gameweek weighed 0.85
+  // How plans are judged (fixed for now). Transfers are planned for PLAN.depth (5) gameweeks, each later gameweek weighed 0.85
   // times the one before. A free transfer used costs X (weighed like its gameweek), scaled by how many free transfers
   // are left in hand after it: 100% when it is the last one, then 75%, 50%, 25%, 0% (with 5 in hand one would be lost
   // anyway). So a move is only made early when it gains more than that. Free transfers left after the last transfer
   // week are worth Y each, the 1st 100%, then 75%, 50%, 25%, 0%; Y is 4 points weighed like that gameweek.
   // Prices can change before a later week's transfers, so a buy in the n-th gameweek from now leaves 0.1m x n in the bank.
   const BANK_BUFFER = 0.1;
-  const PLAN = { depth: 4, decay: 0.85, X: 0.5, ftPts: 4, steps: [1, 0.75, 0.5, 0.25, 0] };
+  const PLAN = { depth: 5, decay: 0.85, X: 0.5, ftPts: 4, steps: [1, 0.75, 0.5, 0.25, 0] };
   const stepSum = (k) => PLAN.steps.slice(0, Math.max(0, k)).reduce((a, b) => a + b, 0);
   // FT bonus: every transfer week, each free transfer left after that week's transfers is worth 0.5 (4 at most, so 2
   // points), weighed like its gameweek; those left after the last transfer week earn it in every gameweek to the end.
@@ -455,7 +455,7 @@
     base.benchW = bw.out.slice(0, Tm);
     base.benchWgk = bw.gk.slice(0, Tm);
     // The options this gameweek: the best plan for each number of transfers used now (saving them, 1, 2, ... up to
-    // all free transfers); each plan then makes its own best moves for the next 3 gameweeks.
+    // all free transfers); each plan then makes its own best moves for the next PLAN.depth - 1 gameweeks.
     const week0Chip = (chips.wildcard || []).includes(0) || (chips.freehit || []).includes(0);
     const groups = [];
     if (week0Chip) groups.push({ count: null, n: 3 });
