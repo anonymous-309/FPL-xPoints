@@ -356,8 +356,12 @@
   // The weight of each transfer week's bonus. The free transfers left after the last transfer week also earn it in every
   // gameweek after (no transfers then); the free transfers gained in those weeks are the same for every plan, so they
   // are left out.
-  const ftbWeights = (depth, T) => [...Array(depth).keys()].map((t) => FTB_X * (t < depth - 1 ? Math.pow(PLAN.decay, t)
-    : [...Array(Math.max(1, T - t)).keys()].reduce((a, j) => a + Math.pow(PLAN.decay, t + j), 0)));
+  const ftbWeights = (depth, T, d = PLAN.decay) => [...Array(depth).keys()].map((t) => FTB_X * (t < depth - 1 ? Math.pow(d, t)
+    : [...Array(Math.max(1, T - t)).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
+  // What the plans are optimised for, chosen before Auto plan: Decay (each later gameweek 0.85 times the one before)
+  // or Normal (every gameweek the same). The switch over the results still shows either kind of figure.
+  state.optMode = (() => { try { return localStorage.getItem('planner-opt') === 'normal' ? 'normal' : 'decay'; } catch (e) { return 'decay'; } })();
+  const optDecay = () => (state.optMode === 'normal' ? 1 : PLAN.decay);
   const ftLeft = (w) => (w.chip === 'wildcard' || w.chip === 'freehit' ? w.freeTransfers : Math.max(w.freeTransfers - Math.min(w.ins.length, w.freeTransfers), 0));
 
   // the transfer cost and the value of free transfers kept, for a plan's weeks
@@ -430,15 +434,16 @@
     const depth = Math.min(PLAN.depth, T);
     const merge = T > depth + 1 && !Object.values(chips).some((arr) => (arr || []).some((t) => t >= depth));
     const Tm = merge ? depth + 1 : T;
-    const Pm = merge ? P.map((p) => ({ ...p, xp: p.xp.slice(0, depth).concat([p.xp.slice(depth).reduce((a, x, j) => a + Math.pow(PLAN.decay, j) * x, 0)]),
+    const OD = optDecay();
+    const Pm = merge ? P.map((p) => ({ ...p, xp: p.xp.slice(0, depth).concat([p.xp.slice(depth).reduce((a, x, j) => a + Math.pow(OD, j) * x, 0)]),
       p1: p.p1.slice(0, depth + 1) })) : P;
     const Y = PLAN.ftPts * Math.pow(PLAN.decay, depth - 1);
     const base = { players: Pm, T: Tm, ft: state.team.ft, bank: state.team.bank, chips,
-      settings: { ...S.DEFAULTS, depth, decay: PLAN.decay, reserve: FTB ? [0, 0, 0, 0, 0] : PLAN.steps.map((m) => m * Y), minGain: 0, bankValue: 0, maxHits: null },
-      ftMult: 1 / Math.pow(PLAN.decay, depth),
+      settings: { ...S.DEFAULTS, depth, decay: OD, reserve: FTB ? [0, 0, 0, 0, 0] : PLAN.steps.map((m) => m * Y), minGain: 0, bankValue: 0, maxHits: null },
+      ftMult: 1 / Math.pow(OD, depth),
       bankBuffer: BANK_BUFFER,
       useCost: FTB ? null : { x: [...Array(depth).keys()].map((t) => PLAN.X * Math.pow(PLAN.decay, t)), steps: PLAN.steps },
-      ftBonus: FTB ? { x: ftbWeights(depth, T), cap: FTB_CAP } : null,
+      ftBonus: FTB ? { x: ftbWeights(depth, T, OD), cap: FTB_CAP } : null,
       keep: st.keep.filter((id) => index.has(id)).map((id) => index.get(id)), avoid: st.avoid.filter((id) => index.has(id)).map((id) => index.get(id)) };
     const ownedIds = new Set(state.team.squad.map((x) => x.id));
     const fIn = st.forceIn.filter((id) => index.has(id) && !ownedIds.has(id)), fOut = st.forceOut.filter((id) => index.has(id) && ownedIds.has(id));
@@ -588,8 +593,12 @@
       const res = simulateAll(P, gws, options.map((o) => o.sol));
       const N = res[0].total.length;
       // each run scored like the plans: weighed points, less the transfer cost, plus the free transfers kept
-      const scored = res.map((r, k) => { const out = new Float32Array(N); r.week.forEach((arr, t) => { for (let s = 0; s < N; s++) out[s] += wt(t) * arr[s]; });
-        for (let s = 0; s < N; s++) out[s] += options[k].kept - options[k].cost; return out; });
+      // the runs are scored the way the plans were optimised (Decay or Normal)
+      const normal = state.optMode === 'normal';
+      const owt = (t) => Math.pow(OD, t);
+      const scored = res.map((r, k) => { const out = new Float32Array(N); r.week.forEach((arr, t) => { for (let s = 0; s < N; s++) out[s] += owt(t) * arr[s]; });
+        const extra = normal ? options[k].keptRaw - options[k].costRaw : options[k].kept - options[k].cost;
+        for (let s = 0; s < N; s++) out[s] += extra; return out; });
       const wins = options.map(() => 0);
       for (let s = 0; s < N; s++) {
         let best = -Infinity, win = [];
@@ -597,10 +606,12 @@
         win.forEach((k) => { wins[k] += 1 / win.length / N; });
       }
       options.forEach((o, k) => { o.win = wins[k]; });
-      const rec = options.reduce((b, o) => (o.total > b.total ? o : b), options[0]);
+      const score = (o) => (normal ? o.totalRaw : o.total);
+      const rec = options.reduce((b, o) => (score(o) > score(b) ? o : b), options[0]);
+      state.decayView = !normal; // the results open on the figures the plans were optimised for
       const holdW = holdWeeks(P, T);
       options.forEach((o) => { o.gainDecay = o.dpts - holdW.reduce((a, x, t) => a + wt(t) * x, 0); });
-      state.plan = { gws, P, options, chips, skipped, dropped, force: base.force, status: worst, hold: holdW.reduce((a, b) => a + b, 0), holdW, pick: options.indexOf(rec), rec, depth };
+      state.plan = { gws, P, options, chips, skipped, dropped, force: base.force, status: worst, hold: holdW.reduce((a, b) => a + b, 0), holdW, pick: options.indexOf(rec), rec, depth, mode: state.optMode };
       state.week = 0;
       render();
     } catch (e) {
@@ -832,7 +843,8 @@
       el('div', { className: 'opt-head' }, el('h3', {}, `Plans from GW${gws[0]}: tap one to see it week by week`),
         el('label', { className: 'decay-toggle' }, el('input', { type: 'checkbox', checked: decayOn, onchange: (e) => { state.decayView = e.target.checked; try { localStorage.setItem('planner-decay', e.target.checked ? '1' : '0'); } catch (err) { /* ignore */ } render(); } }), ' Decay')),
       el('p', { className: 'opt-verdict rec' }, 'Best plan: ', el('b', { textContent: say(rec) }), (decayOn ? ` (score ${f2(rec.total)}: ${f1(rec.dpts)} xPts decay + ${f2(rec.kept)} FT bonus).`
-          : ` (score ${f2(rec.totalRaw)}: ${f1(rec.pts)} xPts + ${f2(rec.keptRaw)} FT bonus; picked on the weighed score).`),
+          : ` (score ${f2(rec.totalRaw)}: ${f1(rec.pts)} xPts + ${f2(rec.keptRaw)} FT bonus).`),
+        ` Optimised for ${state.plan.mode === 'normal' ? 'Normal points (every gameweek the same)' : 'Decay (each later gameweek × 0.85)'}; the switch only changes the figures shown.`,
         mostWins === rec ? ' It is also the top scorer most often.' : el('span', {}, ' Top scorer most often: ', el('b', { textContent: say(mostWins) }), ` (${pctFine(mostWins.win)}).`)),
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' },
         el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses now' }),
@@ -841,7 +853,7 @@
           el('th', { scope: 'col', className: 'num', textContent: 'FT bonus' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. Decay switch (on by default): every figure (xPts, Gain, FT bonus, Score) with each later gameweek counting ${PLAN.decay} times the one before; off: plain sums. The Best plan is always picked on the weighed Score. xPts (Decay): expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Gain (Decay): the plan's expected points against keeping your squad as it is; it is the sum of the figures under each gameweek's moves. Under each gameweek's moves: FT saved, the free transfers left after that gameweek's transfers; ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan against the squad before them (weighed 0.85 a week from the first gameweek when Decay is on). FT bonus: in every transfer gameweek each free transfer saved is worth ${FTB_X} (${FTB_CAP} at most, so ${FTB_X * FTB_CAP} points), and those saved after GW${gws[depth - 1]} earn it again in every gameweek to GW${gws[gws.length - 1]} (not the free transfers gained in those weeks, which are the same for every plan). Score: xPts + FT bonus; the plan with the most is marked Best. Rule for every gameweek without a hit: its moves must gain at least ${FTB_X} for each free transfer they use, in that same gameweek, except the 5th free transfer with 5 in hand, which cannot be saved anyway (a week with a hit is exempt, since a hit pays back over the weeks after); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out and the next best takes its place. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
+      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. Decay switch (on by default): every figure (xPts, Gain, FT bonus, Score) with each later gameweek counting ${PLAN.decay} times the one before; off: plain sums. The plans are worked out, and the Best one picked, the way you chose before planning (Optimise for: Decay or Normal); the switch only changes the figures shown. xPts (Decay): expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Gain (Decay): the plan's expected points against keeping your squad as it is; it is the sum of the figures under each gameweek's moves. Under each gameweek's moves: FT saved, the free transfers left after that gameweek's transfers; ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan against the squad before them (weighed 0.85 a week from the first gameweek when Decay is on). FT bonus: in every transfer gameweek each free transfer saved is worth ${FTB_X} (${FTB_CAP} at most, so ${FTB_X * FTB_CAP} points), and those saved after GW${gws[depth - 1]} earn it again in every gameweek to GW${gws[gws.length - 1]} (not the free transfers gained in those weeks, which are the same for every plan). Score: xPts + FT bonus; the plan with the most is marked Best. Rule for every gameweek without a hit: its moves must gain at least ${FTB_X} for each free transfer they use, in that same gameweek, except the 5th free transfer with 5 in hand, which cannot be saved anyway (a week with a hit is exempt, since a hit pays back over the weeks after); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out and the next best takes its place. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
@@ -1215,6 +1227,8 @@
   });
 
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
+  $('optMode').value = state.optMode;
+  $('optMode').addEventListener('change', () => { state.optMode = $('optMode').value; try { localStorage.setItem('planner-opt', state.optMode); } catch (e) { /* private mode */ } });
   $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); if (!$('manual').hidden) manualWeeks(); });
   ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
