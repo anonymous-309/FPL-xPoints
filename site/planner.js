@@ -309,12 +309,13 @@
   // One worker for the whole tree of plans; each solve gets a fresh HiGHS inside it.
   // A fresh worker for every solve: HiGHS in WebAssembly does not give memory back, and after several solves in one
   // worker it can run out and abort. A solve that aborts is tried once more in a new worker.
+  const PARALLEL_MAX = 3;  // solves at once at most (each HiGHS worker needs its own memory; phones have little)
   function openSolver() {
-    let current = null;
+    const running = new Set();  // several solves can run at once, each in its own worker
     const once = (lp, options) => new Promise((resolve, reject) => {
       const w = new Worker(`planner-worker.js?v=${state.data.updatedAt}`);
-      current = w;
-      const done = (fn, arg) => { clearTimeout(timer); w.terminate(); if (current === w) current = null; fn(arg); };
+      running.add(w);
+      const done = (fn, arg) => { clearTimeout(timer); w.terminate(); running.delete(w); fn(arg); };
       const timer = setTimeout(() => done(reject, new Error('The solver took too long. Try fewer gameweeks.')), 120000);
       w.onmessage = (e) => (e.data.ok ? done(resolve, e.data) : done(reject, new Error(e.data.error)));
       w.onerror = (e) => done(reject, new Error(e.message || 'The solver could not load. Check your connection and try again.'));
@@ -334,7 +335,7 @@
         }
         throw last;
       },
-      close: () => { if (current) current.terminate(); },
+      close: () => { running.forEach((w) => w.terminate()); running.clear(); },
     };
   }
 
@@ -527,7 +528,10 @@
         if (!sol) throw new Error('These moves do not fit: check the money in the bank, at most 3 players per club, and that each player in is the same position as the one out.');
         options.push({ t: 0, opt: S.option(sol.input, sol.values, 0), sol, count: (manual[0] || []).length, rank: 1, roll: false, manual: true });
       }
-      for (const g of manual ? [] : groups) {
+      // Each kind of plan (save, 1 FT, 2 FT, a hit, ...) is worked out on its own, several at once on devices with
+      // more cores (each solve in its own worker); within a kind the plans follow one another (each rules out the last).
+      const runGroup = async (g) => {
+        const local = [];
         const cuts = [];
         // a plan left out by the rule makes room for the next best one (a few extra tries at most)
         for (let r = 0, shown = 0; shown < g.n && r < g.n + 3; r++) {
@@ -538,24 +542,38 @@
           if (!sol) continue;
           const opt = S.option(sol.input, sol.values, 0);
           cuts.push(opt);
-          if (options.some((o) => S.sameOption(o.opt, opt))) continue;
+          if (local.some((o) => S.sameOption(o.opt, opt))) continue;
           if (sol.firstBreaks && g.count !== null && g.count > forcedN) { dropped++; continue; }
-          options.push({ t: 0, opt, sol, count: g.count, rank: options.filter((o) => o.count === g.count).length + 1, roll: g.count !== null && g.count === forcedN });
+          local.push({ t: 0, opt, sol, count: g.count, roll: g.count !== null && g.count === forcedN });
           shown++;
         }
         // Saving now: more branches with different moves next gameweek, so one strong move there does not hide the
         // rest (3 with 1-2 free transfers, 2 with 3, none more with 4-5).
-        const save = options.find((o) => o.roll && o.count === g.count && o.rank === 1);
+        const save = local.find((o) => o.roll && o.count === g.count);
         if (save && g.count === forcedN && depth > 1) {
           const nextCuts = [S.option(save.sol.input, save.sol.values, 1)];
           for (let r = 2; r <= saveBranches; r++) {
             const sol = await solveRule({ count: [{ t: 0, n: g.count }], cut: nextCuts.slice() });
             if (!sol) break;
-            options.push({ t: 0, opt: S.option(sol.input, sol.values, 0), sol, count: g.count, rank: r, roll: true });
+            local.push({ t: 0, opt: S.option(sol.input, sol.values, 0), sol, count: g.count, roll: true, branch: true });
             nextCuts.push(S.option(sol.input, sol.values, 1));
           }
         }
-      }
+        return local;
+      };
+      const todo = manual ? [] : groups.slice();
+      const found = new Array(todo.length);
+      const lanes = Math.max(1, Math.min(PARALLEL_MAX, navigator.hardwareConcurrency || 2));
+      let next = 0;
+      await Promise.all([...Array(Math.min(lanes, todo.length)).keys()].map(async () => {
+        while (next < todo.length) { const k = next++; found[k] = await runGroup(todo[k]); }
+      }));
+      found.forEach((list) => list.forEach((o) => {
+        // the saving branches share their first gameweek by design (they differ the week after)
+        if (!o.branch && options.some((x) => S.sameOption(x.opt, o.opt))) return;
+        const { branch, ...rest } = o;
+        options.push({ ...rest, rank: options.filter((x) => x.count === o.count).length + 1 });
+      }));
       if (!options.length) throw new Error(skipped ? 'The solver ran out of memory on this device. Try fewer gameweeks to plan.' : 'No plan fits these settings (check the players to keep and the chips).');
       const wt = (t) => Math.pow(PLAN.decay, t);
       options.forEach((o) => {
