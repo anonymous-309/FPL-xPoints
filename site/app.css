@@ -612,3 +612,6 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .fdr td.fdr-cell { vertical-align: middle; text-align: center; padding: 6px 4px; }
 .fdr td.fdr-cell .fdr-m { width: 96px; margin: 2px auto; }
 .fdr th.num { text-align: center; }
+
+.pp-card[role="button"] { cursor: pointer; }
+#detail-text { white-space: pre-line; }

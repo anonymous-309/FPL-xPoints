@@ -204,5 +204,23 @@ window.XMin = (function () {
     return (p) => -(score.get(p.id) || 0);
   }
 
-  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, order };
+  // The same text as a gameweek cell on the xPoints page: expected points, minutes, Chance 90min and points by part.
+  const PART_LABEL = { app: 'Appearance', goal: 'Goals', assist: 'Assists', bonus: 'Bonus', cs: 'Clean sheet', conceded: 'Goals conceded', saves: 'Saves', pensave: 'Penalty saves', penmiss: 'Penalty misses', own: 'Own goals', defcon: 'DefCon', cards: 'Cards' };
+  const CHANCES = [
+    ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'], ['pScore', 'Score 1+', 'pct'], ['xGoals', 'xGoals', 2],
+    ['pAssist', 'Fantasy Assist 1+', 'pct'], ['xAssists', 'xAssists', 2], ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2],
+    ['pDefcon', 'DefCon', 'pct'], ['xSaves', 'Saves', 1], ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'],
+    ['pOwnGoal', 'Own goal', 'pct1'], ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['bonus', 'Bonus', 2],
+  ];
+  function detailText(overrides, p, g) {
+    const d = view(overrides, p, g), raw = p.byGw[g];
+    if (!d || !raw) return `${p.name}, GW${g}: no match`;
+    const m = minutes(overrides, p, g);
+    const chances = CHANCES.filter(([key]) => raw[key] != null && !(key === 'pDefcon' && p.position === 'GK') && !((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK'))
+      .map(([key, label, fmt]) => `${label}: ${fmt === 'pct' ? `${Math.round(raw[key] * 100)}%` : fmt === 'pct1' ? `${(raw[key] * 100).toFixed(1)}%` : raw[key].toFixed(fmt)}`).join('\n');
+    const parts = Object.entries(PART_LABEL).filter(([k]) => Math.abs(d.parts[k]) >= 0.005).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n');
+    return `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${d.xpts.toFixed(1)} points, ${join(m.mins)} minutes${d.edited ? ' (yours)' : ''}\n\nChance 90min\n${chances}\n\nPoints\n${parts}`;
+  }
+
+  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, order, detailText };
 })();

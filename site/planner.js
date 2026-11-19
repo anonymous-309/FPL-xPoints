@@ -641,11 +641,22 @@
     if (i === w.cap) badges.push(el('span', { className: 'pp-badge cap', textContent: w.mult === 3 ? 'TC' : 'C', title: w.mult === 3 ? 'Triple captain' : 'Captain' }));
     else if (i === w.vice) badges.push(el('span', { className: 'pp-badge vice', textContent: 'V', title: 'Vice-captain' }));
     if (isNew) badges.push(el('span', { className: 'pp-badge new', textContent: 'IN', title: 'Bought this gameweek' }));
-    return el('div', { className: 'pp-card', title: `${p.name}, ${p.team} ${p.position} £${p.price.toFixed(1)}: ${f1(p.xp[t])} xPts${i === w.cap ? ` × ${w.mult}` : ''}, plays ${Math.round(p.p1[t] * 100)}%` },
+    const c = el('div', { className: 'pp-card', tabIndex: 0, role: 'button', title: `${p.name}, ${p.team} ${p.position} £${p.price.toFixed(1)}: ${f1(p.xp[t])} xPts${i === w.cap ? ` × ${w.mult}` : ''}, plays ${Math.round(p.p1[t] * 100)}%. Tap for the details` },
       el('div', { className: 'pp-badges' }, ...badges), shirt(p.team, p.position === 'GK'),
       el('span', { className: 'pp-name', textContent: p.name }),
       el('span', { className: 'pp-pts', textContent: f1(pts) }),
       el('span', { className: 'pp-opp', textContent: fixture(p.opp[t]) }));
+    // tap or Enter: the same figures as on the xPoints page for this gameweek
+    const open = () => showDetail(p.id, state.plan.gws[t]);
+    c.addEventListener('click', open);
+    c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+    return c;
+  }
+  function showDetail(id, g) {
+    const p = state.data && state.data.players.find((x) => x.id === id);
+    if (!p) return;
+    $('detail-text').textContent = XMin.detailText(state.overrides, p, String(g));
+    $('detail').hidden = false;
   }
 
   function weekView(w) {
