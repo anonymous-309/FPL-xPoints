@@ -608,7 +608,6 @@
       options.forEach((o, k) => { o.win = wins[k]; });
       const score = (o) => (normal ? o.totalRaw : o.total);
       const rec = options.reduce((b, o) => (score(o) > score(b) ? o : b), options[0]);
-      state.decayView = !normal; // the results open on the figures the plans were optimised for
       const holdW = holdWeeks(P, T);
       options.forEach((o) => { o.gainDecay = o.dpts - holdW.reduce((a, x, t) => a + wt(t) * x, 0); });
       state.plan = { gws, P, options, chips, skipped, dropped, force: base.force, status: worst, hold: holdW.reduce((a, b) => a + b, 0), holdW, pick: options.indexOf(rec), rec, depth, mode: state.optMode };
@@ -681,15 +680,28 @@
     c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
     return c;
   }
-  // Tap a player: his long-term expected points (weighed 0.85 a week, over the plan's gameweeks), then the same
-  // figures as the xPoints page for this gameweek; Replace (choose who comes in for him, in Manual plan) and, for a
-  // player this plan buys this gameweek, Remove (undo that move and plan again).
+  // How later gameweeks count: as chosen before planning (Normal: all the same; Decay: 0.85 times the one before).
+  const modeDecay = (mode) => ((mode || state.optMode) === 'normal' ? 1 : PLAN.decay);
+  const xpOf = (p, g) => { const v = XMin.view(state.overrides, p, String(g)); return v ? v.xpts : 0; };
+  // A tapped player: Replace / Remove first, then his row from the xPoints table (every gameweek planned, with the
+  // opponents), the total as the plans count it, and the breakdown of the gameweek on show.
+  function playerPopup(p, gws, t, acts, mode) {
+    const d = modeDecay(mode);
+    const cells = gws.map((g) => { const v = XMin.view(state.overrides, p, String(g)); return { g, xp: v ? v.xpts : 0, opp: v ? v.opp.join(', ') : 'Blank' }; });
+    const total = cells.reduce((a, c, k) => a + Math.pow(d, k) * c.xp, 0);
+    const row = el('div', { className: 'xp-row-wrap' }, el('table', { className: 'xp-row' },
+      el('thead', {}, el('tr', {}, ...cells.map((c, k) => el('th', { className: k === t ? 'now' : '', textContent: `GW${c.g}` })), el('th', { textContent: d === 1 ? 'Total' : 'Total (decay)' }))),
+      el('tbody', {}, el('tr', {}, ...cells.map((c, k) => el('td', { className: k === t ? 'now' : '' }, el('b', { textContent: f1(c.xp) }), el('small', { textContent: c.opp }))),
+        el('td', {}, el('b', { textContent: f1(total) }))))));
+    $('detail-acts').replaceChildren(...acts);
+    $('detail-row').replaceChildren(el('p', { className: 'xp-who' }, el('b', { textContent: p.name }), ` ${p.team} ${p.position} £${(p.price || 0).toFixed(1)}`), row);
+    $('detail-text').textContent = XMin.detailText(state.overrides, p, String(gws[t]));
+    $('detail').hidden = false;
+  }
   function showDetail(id, g) {
     const p = state.data && state.data.players.find((x) => x.id === id);
     if (!p) return;
     const gws = state.plan ? state.plan.gws : [g];
-    const long = gws.reduce((a, gw, k) => { const v = XMin.view(state.overrides, p, String(gw)); return a + (v ? Math.pow(PLAN.decay, k) * v.xpts : 0); }, 0);
-    $('detail-text').textContent = `Long term GW${gws[0]}-${gws[gws.length - 1]} (decay ${PLAN.decay}): ${f1(long)} xPts\n\n${XMin.detailText(state.overrides, p, String(g))}`;
     const t = state.plan ? gws.indexOf(Number(g)) : -1;
     const w = t >= 0 && state.plan.weeks ? state.plan.weeks[t] : null;
     const P = state.plan ? state.plan.P : [];
@@ -699,8 +711,7 @@
       acts.push(el('button', { type: 'button', className: 'update', textContent: 'Replace', onclick: () => editPlan(t, id, k, false) }));
       if (k >= 0) acts.push(el('button', { type: 'button', className: 'update alt', textContent: 'Remove', onclick: () => editPlan(t, id, k, true) }));
     }
-    $('detail-acts').replaceChildren(...acts);
-    $('detail').hidden = false;
+    playerPopup(p, gws, Math.max(0, t), acts, state.plan && state.plan.mode);
   }
   // The plan on show as Manual plan moves, then Replace or Remove this player in gameweek t.
   async function editPlan(t, id, k, remove) {
@@ -790,8 +801,7 @@
     const holdW = state.plan.holdW || [];
     const sign = (x) => `${x >= 0 ? '+' : '−'}${f1(Math.abs(x))}`;
     // under each gameweek's moves: money left, and that gameweek's expected points against keeping the squad
-    if (state.decayView === undefined) { try { state.decayView = localStorage.getItem('planner-decay') !== '0'; } catch (e) { state.decayView = true; } }
-    const decayOn = state.decayView;
+    const decayOn = state.plan.mode !== 'normal'; // figures as the plans were optimised: Decay or Normal
     const T = gws.length;
     // under each gameweek's moves: money left, what the moves gain that gameweek and over the rest of the plan
     const facts = (w, g) => {
@@ -840,11 +850,10 @@
     const mostWins = options.reduce((b, o) => (o.win > b.win ? o : b), options[0]);
     const say = (o) => `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}`;
     return el('section', { className: 'options' },
-      el('div', { className: 'opt-head' }, el('h3', {}, `Plans from GW${gws[0]}: tap one to see it week by week`),
-        el('label', { className: 'decay-toggle' }, el('input', { type: 'checkbox', checked: decayOn, onchange: (e) => { state.decayView = e.target.checked; try { localStorage.setItem('planner-decay', e.target.checked ? '1' : '0'); } catch (err) { /* ignore */ } render(); } }), ' Decay')),
+      el('div', { className: 'opt-head' }, el('h3', {}, `Plans from GW${gws[0]}: tap one to see it week by week`)),
       el('p', { className: 'opt-verdict rec' }, 'Best plan: ', el('b', { textContent: say(rec) }), (decayOn ? ` (score ${f2(rec.total)}: ${f1(rec.dpts)} xPts decay + ${f2(rec.kept)} FT bonus).`
           : ` (score ${f2(rec.totalRaw)}: ${f1(rec.pts)} xPts + ${f2(rec.keptRaw)} FT bonus).`),
-        ` Optimised for ${state.plan.mode === 'normal' ? 'Normal points (every gameweek the same)' : 'Decay (each later gameweek × 0.85)'}; the switch only changes the figures shown.`,
+        ` Optimised for ${state.plan.mode === 'normal' ? 'Normal points (every gameweek the same)' : 'Decay (each later gameweek × 0.85)'}, and the figures are shown that way.`,
         mostWins === rec ? ' It is also the top scorer most often.' : el('span', {}, ' Top scorer most often: ', el('b', { textContent: say(mostWins) }), ` (${pctFine(mostWins.win)}).`)),
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' },
         el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses now' }),
@@ -853,7 +862,7 @@
           el('th', { scope: 'col', className: 'num', textContent: 'FT bonus' }),
           el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
         el('tbody', {}, ...rows))),
-      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. Decay switch (on by default): every figure (xPts, Gain, FT bonus, Score) with each later gameweek counting ${PLAN.decay} times the one before; off: plain sums. The plans are worked out, and the Best one picked, the way you chose before planning (Optimise for: Decay or Normal); the switch only changes the figures shown. xPts (Decay): expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Gain (Decay): the plan's expected points against keeping your squad as it is; it is the sum of the figures under each gameweek's moves. Under each gameweek's moves: FT saved, the free transfers left after that gameweek's transfers; ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan against the squad before them (weighed 0.85 a week from the first gameweek when Decay is on). FT bonus: in every transfer gameweek each free transfer saved is worth ${FTB_X} (${FTB_CAP} at most, so ${FTB_X * FTB_CAP} points), and those saved after GW${gws[depth - 1]} earn it again in every gameweek to GW${gws[gws.length - 1]} (not the free transfers gained in those weeks, which are the same for every plan). Score: xPts + FT bonus; the plan with the most is marked Best. Rule for every gameweek without a hit: its moves must gain at least ${FTB_X} for each free transfer they use, in that same gameweek, except the 5th free transfer with 5 in hand, which cannot be saved anyway (a week with a hit is exempt, since a hit pays back over the weeks after); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out and the next best takes its place. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
+      el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. Figures follow your choice before planning (Optimise for): Decay counts each later gameweek ${PLAN.decay} times the one before, Normal counts every gameweek the same; the plans are worked out and the Best one picked the same way. xPts (Decay): expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Gain (Decay): the plan's expected points against keeping your squad as it is; it is the sum of the figures under each gameweek's moves. Under each gameweek's moves: FT saved, the free transfers left after that gameweek's transfers; ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan against the squad before them (weighed 0.85 a week from the first gameweek when Decay is on). FT bonus: in every transfer gameweek each free transfer saved is worth ${FTB_X} (${FTB_CAP} at most, so ${FTB_X * FTB_CAP} points), and those saved after GW${gws[depth - 1]} earn it again in every gameweek to GW${gws[gws.length - 1]} (not the free transfers gained in those weeks, which are the same for every plan). Score: xPts + FT bonus; the plan with the most is marked Best. Rule for every gameweek without a hit: its moves must gain at least ${FTB_X} for each free transfer they use, in that same gameweek, except the 5th free transfer with 5 in hand, which cannot be saved anyway (a week with a hit is exempt, since a hit pays back over the weeks after); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out and the next best takes its place. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` }));
   }
 
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
@@ -1095,6 +1104,22 @@
   // the squad in week t, after that week's own moves
   const squadAfter = (t) => { const ids = squadAt(t); (state.manual[t] || []).forEach((m) => { ids.delete(m.out); ids.add(m.in); }); return ids; };
 
+  // The best starting 11 of a squad for gameweek g (1 GK, at least 3 DEF, 2 MID, 1 FWD), the bench in order
+  // (goalkeeper first) and the captain and vice-captain: highest expected points first.
+  function lineUp(players, g) {
+    const xp = new Map(players.map((p) => [p.id, xpOf(p, g)]));
+    const by = (a, b) => xp.get(b.id) - xp.get(a.id);
+    const gks = players.filter((p) => p.position === 'GK').sort(by);
+    const out = players.filter((p) => p.position !== 'GK').sort(by);
+    const xi = [gks[0]].filter(Boolean);
+    const need = { DEF: 3, MID: 2, FWD: 1 };
+    Object.entries(need).forEach(([pos, n]) => out.filter((p) => p.position === pos).slice(0, n).forEach((p) => xi.push(p)));
+    out.filter((p) => !xi.includes(p)).forEach((p) => { if (xi.length < 11) xi.push(p); });
+    const bench = gks.slice(1).concat(out.filter((p) => !xi.includes(p)));
+    const caps = xi.slice().sort(by);
+    return { xi, bench, cap: caps[0], vice: caps[1], xp };
+  }
+
   function manualWeeks() {
     const box = $('manualWeeks');
     if (!state.data || !state.team) {
@@ -1111,6 +1136,9 @@
     Object.keys(state.manual).forEach((t) => { if (Number(t) >= c.depth) delete state.manual[t]; });
     state.mt = Math.min(state.mt, c.depth - 1);
     const t = state.mt, g = c.gws[t];
+    // free transfers and hits, week by week (one more each week, 5 at most)
+    let ft = state.team.ft, hits = 0;
+    for (let k = 0; k <= t; k++) { const n = (state.manual[k] || []).length; if (k === t) hits = Math.max(0, n - ft); else ft = Math.min(S.MAX_FT, Math.max(0, ft - n) + 1); }
     const tabs = el('div', { className: 'seg week-tabs', role: 'tablist' }, ...[...Array(c.depth).keys()].map((k) => {
       const n = (state.manual[k] || []).length;
       const b = el('button', { type: 'button', role: 'tab', onclick: () => { state.mt = k; state.replacing = null; manualWeeks(); } },
@@ -1121,72 +1149,93 @@
     const moves = state.manual[t] || [];
     const bought = new Set(moves.map((m) => m.in));
     const squad = [...squadAfter(t)].map((id) => c.byId.get(id)).filter(Boolean);
-    const total = squad.reduce((a, p) => a + c.xpAt(p, g), 0);
+    const L = lineUp(squad, g);
+    const total = L.xi.reduce((a, p) => a + L.xp.get(p.id), 0) + (L.cap ? L.xp.get(L.cap.id) : 0) - hits * S.HIT;
     const mcard = (p) => {
       const v = c.view(p, g);
-      const cardEl = el('div', { className: `pp-card${state.replacing === p.id ? ' on' : ''}`, tabIndex: 0, role: 'button', title: `${p.name}: tap for the details, Replace or Remove` },
-        el('div', { className: 'pp-badges' }, bought.has(p.id) ? el('span', { className: 'pp-badge new', textContent: 'IN', title: 'Bought this gameweek' }) : ''),
-        shirt(p.team, p.position === 'GK'),
+      const isCap = L.cap && p.id === L.cap.id;
+      const badges = [];
+      if (isCap) badges.push(el('span', { className: 'pp-badge cap', textContent: 'C', title: 'Captain' }));
+      else if (L.vice && p.id === L.vice.id) badges.push(el('span', { className: 'pp-badge vice', textContent: 'V', title: 'Vice-captain' }));
+      if (bought.has(p.id)) badges.push(el('span', { className: 'pp-badge new', textContent: 'IN', title: 'Bought this gameweek' }));
+      const cardEl = el('div', { className: `pp-card${state.replacing === p.id ? ' on' : ''}`, tabIndex: 0, role: 'button', title: `${p.name}: tap to replace him or see his figures` },
+        el('div', { className: 'pp-badges' }, ...badges), shirt(p.team, p.position === 'GK'),
         el('span', { className: 'pp-name', textContent: p.name }),
-        el('span', { className: 'pp-pts', textContent: f1(v ? v.xpts : 0) }),
+        el('span', { className: 'pp-pts', textContent: f1((v ? v.xpts : 0) * (isCap ? 2 : 1)) }),
         el('span', { className: 'pp-opp', textContent: v ? fixture(v.opp) : 'Blank' }));
       const open = () => manualDetail(p.id);
       cardEl.addEventListener('click', open);
       cardEl.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
       return cardEl;
     };
-    // the whole squad by position, like FPL's transfers page
-    const rows = ['GK', 'DEF', 'MID', 'FWD'].map((pos) => el('div', { className: 'pp-row' },
-      ...squad.filter((p) => p.position === pos).sort((x, y) => c.xpAt(y, g) - c.xpAt(x, g)).map(mcard)));
-    const list = el('div', { className: 'pick-list' }, ...moves.map((m, k) => {
-      const x = el('button', { type: 'button', className: 'pick', title: 'Take this move back' }, `${(c.byId.get(m.out) || {}).name || '?'} → ${(c.byId.get(m.in) || {}).name || '?'} ×`);
-      x.addEventListener('click', () => { state.manual[t].splice(k, 1); c.tidy(t + 1); saveManual(); manualWeeks(); });
-      return x;
-    }));
-    const head = el('div', { className: 'week-head' },
-      el('h2', {}, `GW${g}`),
-      el('div', { className: 'week-pts' }, el('b', { textContent: f1(total) }), el('span', { textContent: ' xPts, all 15' })));
-    const facts = el('p', { className: 'meta', textContent: `${moves.length ? `${moves.length} transfer${moves.length > 1 ? 's' : ''}` : 'No transfer: the free transfer is saved'} · bank £${c.bankAfter(t).toFixed(1)} after. Tap a player to replace him.` });
-    const parts = [tabs, el('section', { className: 'week-view' }, head, facts, list,
-      el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows))];
+    const rows = ['GK', 'DEF', 'MID', 'FWD'].map((pos) => el('div', { className: 'pp-row' }, ...L.xi.filter((p) => p.position === pos).map(mcard)));
+    const bench = el('div', { className: 'pp-bench' }, ...L.bench.map((p, k) => el('div', { className: 'pp-slot' },
+      el('span', { className: 'pp-slot-label', textContent: k === 0 ? 'GKP' : `${k}. ${POS_LABEL[p.position]}` }), mcard(p))));
+    const d = modeDecay();
+    let movesEl;
+    if (!moves.length) movesEl = el('p', { className: 'meta', textContent: 'No transfer: save it. Tap a player to replace him.' });
+    else {
+      movesEl = el('table', { className: 'moves-table' },
+        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Out' }), el('th', { scope: 'col', textContent: 'In' }), el('th', { scope: 'col', className: 'num', textContent: `Gain to GW${c.gws[c.gws.length - 1]} (this GW)` }), el('th', { textContent: '' }))),
+        el('tbody', {}, ...moves.map((m, k) => {
+          const o = c.byId.get(m.out), n = c.byId.get(m.in);
+          const undo = el('button', { type: 'button', className: 'linkbtn', textContent: '×', title: 'Take this move back' });
+          undo.addEventListener('click', () => { state.manual[t].splice(k, 1); c.tidy(t + 1); saveManual(); manualWeeks(); });
+          return el('tr', {},
+            el('td', { className: 'outp' }, el('b', { textContent: o.name }), el('small', { textContent: ` ${o.team} ${o.position} £${c.sellOf(o.id).toFixed(1)} · ${f1(xpOf(o, g))} xPts` })),
+            el('td', { className: 'inp' }, el('b', { textContent: n.name }), el('small', { textContent: ` ${n.team} ${n.position} £${n.price.toFixed(1)} · ${f1(xpOf(n, g))} xPts` })),
+            el('td', { className: 'num' }, el('b', { textContent: signed(swapGain(c, t, o, n, d)) }), el('small', { textContent: ` (GW${g} ${signed(xpOf(n, g) - xpOf(o, g))})` })),
+            el('td', {}, undo));
+        })));
+    }
+    const facts = `${ft} free transfer${ft === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''} (−${hits * S.HIT})` : 'no hit'}, bank £${c.bankAfter(t).toFixed(1)} after.`;
+    const view = el('section', { className: 'week-view' },
+      el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), el('div', { className: 'week-pts' }, el('b', { textContent: f1(total) }), el('span', { textContent: ' xPts' }))),
+      el('p', { className: 'meta', textContent: facts }), movesEl,
+      el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows), bench);
+    const parts = [tabs, view];
     if (state.replacing) parts.splice(1, 0, chooser(c, t, state.replacing));
     box.replaceChildren(...parts);
   }
+  // What a swap gains from gameweek t to the last one planned, counted as the plans count (Normal or Decay).
+  const swapGain = (c, t, o, n, d) => c.gws.slice(t).reduce((a, g, k) => a + Math.pow(d, t + k) * (xpOf(n, g) - xpOf(o, g)), 0);
+  const signed = (x) => `${x >= 0 ? '+' : '−'}${f1(Math.abs(x))}`;
 
-  // Players who can come in for the one being replaced: same position, not in the squad, affordable that week.
+  // Players who can come in for the one being replaced: same position, not in the squad, affordable that week,
+  // best gain to the last gameweek first.
   function chooser(c, t, outId) {
     const o = c.byId.get(outId);
     const have = squadAfter(t);
     const money = c.bankAfter(t) + c.sellOf(outId);
-    const g = c.gws[t];
+    const d = modeDecay();
+    const last = c.gws[c.gws.length - 1];
     const search = el('input', { type: 'search', placeholder: 'Search player or team', ariaLabel: 'Search' });
     const listBox = el('div', { className: 'choose-list' });
     const cands = state.data.players.filter((p) => p.position === o.position && !have.has(p.id) && (p.price || 0) <= money + 1e-6)
-      .map((p) => ({ p, long: c.longXp(p), now: c.xpAt(p, g) })).sort((x, y) => y.long - x.long);
+      .map((p) => ({ p, gain: swapGain(c, t, o, p, d), now: xpOf(p, c.gws[t]) })).sort((x, y) => y.gain - x.gain);
     const fill = () => {
       const q = search.value.trim().toLowerCase();
       listBox.replaceChildren(...cands.filter(({ p }) => !q || p.name.toLowerCase().includes(q) || p.team.toLowerCase().includes(q) || (p.fullName || '').toLowerCase().includes(q)).slice(0, 40)
-        .map(({ p, long, now }) => el('button', { type: 'button', className: 'choose-row', onclick: () => {
+        .map(({ p, gain, now }) => el('button', { type: 'button', className: 'choose-row', onclick: () => {
           (state.manual[t] = state.manual[t] || []).push({ out: outId, in: p.id });
           c.tidy(t + 1); saveManual(); state.replacing = null; $('error').hidden = true; manualWeeks();
         } }, el('b', { textContent: p.name }), el('span', { textContent: `${p.team} £${p.price.toFixed(1)}` }),
-          el('span', { textContent: `GW${g} ${f1(now)}` }), el('span', { textContent: `long ${f1(long)}` }))));
+          el('span', { textContent: `GW${c.gws[t]} ${f1(now)} (${signed(now - xpOf(o, c.gws[t]))})` }), el('span', { className: gain >= 0 ? 'gain-up' : 'gain-down', textContent: `${signed(gain)} to GW${last}` }))));
     };
     search.addEventListener('input', fill);
     fill();
     const cancel = el('button', { type: 'button', className: 'linkbtn', textContent: 'Cancel', onclick: () => { state.replacing = null; manualWeeks(); } });
     return el('section', { className: 'chooser' },
-      el('p', {}, el('b', { textContent: `Replace ${o.name}` }), ` (${o.team} ${o.position}, sells £${c.sellOf(outId).toFixed(1)}): up to £${money.toFixed(1)}, best over GW${c.gws[0]}-${c.gws[c.gws.length - 1]} first (long: weighed 0.85 a week).`),
+      el('p', {}, el('b', { textContent: `Replace ${o.name}` }), ` (${o.team} ${o.position}, sells £${c.sellOf(outId).toFixed(1)}): up to £${money.toFixed(1)}. Gain = their expected points minus his, GW${c.gws[t]} to GW${last}${d === 1 ? '' : ', each later gameweek × 0.85'}.`),
       search, listBox, cancel);
   }
 
-  // A player tapped in Manual plan: his figures, then Replace or Remove.
+  // A player tapped in Manual plan: Replace (and Remove for one bought this week), then his xPoints row.
   function manualDetail(id) {
     const c = manualCtx();
-    const t = state.mt, g = c.gws[t];
+    const t = state.mt;
     const p = c.byId.get(id);
     if (!p) return;
-    $('detail-text').textContent = `Long term GW${c.gws[0]}-${c.gws[c.gws.length - 1]} (decay ${PLAN.decay}): ${f1(c.longXp(p))} xPts\n\n${XMin.detailText(state.overrides, p, String(g))}`;
     const move = (state.manual[t] || []).find((m) => m.in === id);
     const acts = [el('button', { type: 'button', className: 'update', textContent: 'Replace', onclick: () => {
       $('detail').hidden = true;
@@ -1200,8 +1249,7 @@
     if (move) acts.push(el('button', { type: 'button', className: 'update alt', textContent: 'Remove', onclick: () => {
       state.manual[t] = state.manual[t].filter((m) => m !== move); c.tidy(t + 1); saveManual(); $('detail').hidden = true; manualWeeks();
     } }));
-    $('detail-acts').replaceChildren(...acts);
-    $('detail').hidden = false;
+    playerPopup(p, c.gws, t, acts);
   }
 
   $('manualOpen').addEventListener('click', async () => {

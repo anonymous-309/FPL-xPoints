@@ -628,3 +628,25 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .choose-list { display: grid; gap: 4px; max-height: 360px; overflow-y: auto; }
 .choose-row { display: grid; grid-template-columns: 1.4fr 1fr .9fr .9fr; gap: 6px; align-items: center; text-align: left; padding: 6px 8px; background: #fff; border: 1px solid var(--line); border-radius: 4px; cursor: pointer; font-size: 13px; }
 .choose-row:hover, .choose-row:focus { border-color: var(--turf); }
+
+/* Planner popup: the player's xPoints row */
+.detail-acts { margin: 0 0 8px; }
+.xp-who { margin: 0 0 6px; }
+.xp-row-wrap { overflow-x: auto; }
+.xp-row { border-collapse: collapse; font-size: 13px; }
+.xp-row th, .xp-row td { padding: 4px 6px; text-align: center; border: 1px solid var(--line); white-space: nowrap; }
+.xp-row td small { display: block; color: var(--muted); font-size: 10.5px; }
+.xp-row .now { background: #fff6cf; }
+.detail-more { margin-top: 8px; font-size: 13px; }
+.gain-up { color: var(--turf); font-weight: 700; } .gain-down { color: var(--warn); font-weight: 700; }
+.xp-row th, .xp-row td { color: inherit; border-color: rgba(255,255,255,.25); }
+.xp-row .now { background: rgba(255,255,255,.16); }
+.xp-row td small { color: rgba(255,255,255,.7); }
+.manual .week-view { min-width: 0; max-width: 100%; }
+.manual .moves-table { width: 100%; table-layout: fixed; }
+.manual .moves-table th:nth-child(3), .manual .moves-table td:nth-child(3) { width: 26%; }
+.manual .moves-table th:nth-child(4), .manual .moves-table td:nth-child(4) { width: 28px; }
+.manual .moves-table td { overflow-wrap: anywhere; }
+.xp-row th { background: transparent !important; }
+.manual .moves-table td small { display: block; white-space: normal; }
+.manual .moves-table td.outp, .manual .moves-table td.inp { text-align: left; }
