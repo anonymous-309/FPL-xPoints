@@ -615,3 +615,7 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 
 .pp-card[role="button"] { cursor: pointer; }
 #detail-text { white-space: pre-line; }
+
+.detail-acts { display: flex; gap: 8px; margin-top: 10px; }
+.detail-acts:empty { display: none; }
+#detail { max-height: 80vh; overflow-y: auto; }

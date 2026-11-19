@@ -652,11 +652,55 @@
     c.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
     return c;
   }
+  // Tap a player: his long-term expected points (weighed 0.85 a week, over the plan's gameweeks), then the same
+  // figures as the xPoints page for this gameweek; Replace (choose who comes in for him, in Manual plan) and, for a
+  // player this plan buys this gameweek, Remove (undo that move and plan again).
   function showDetail(id, g) {
     const p = state.data && state.data.players.find((x) => x.id === id);
     if (!p) return;
-    $('detail-text').textContent = XMin.detailText(state.overrides, p, String(g));
+    const gws = state.plan ? state.plan.gws : [g];
+    const long = gws.reduce((a, gw, k) => { const v = XMin.view(state.overrides, p, String(gw)); return a + (v ? Math.pow(PLAN.decay, k) * v.xpts : 0); }, 0);
+    $('detail-text').textContent = `Long term GW${gws[0]}-${gws[gws.length - 1]} (decay ${PLAN.decay}): ${f1(long)} xPts\n\n${XMin.detailText(state.overrides, p, String(g))}`;
+    const t = state.plan ? gws.indexOf(Number(g)) : -1;
+    const w = t >= 0 && state.plan.weeks ? state.plan.weeks[t] : null;
+    const P = state.plan ? state.plan.P : [];
+    const k = w ? w.ins.findIndex((i) => P[i].id === id) : -1;
+    const acts = [];
+    if (t >= 0 && t < state.plan.depth) {
+      acts.push(el('button', { type: 'button', className: 'update', textContent: 'Replace', onclick: () => editPlan(t, id, k, false) }));
+      if (k >= 0) acts.push(el('button', { type: 'button', className: 'update alt', textContent: 'Remove', onclick: () => editPlan(t, id, k, true) }));
+    }
+    $('detail-acts').replaceChildren(...acts);
     $('detail').hidden = false;
+  }
+  // The plan on show as Manual plan moves, then Replace or Remove this player in gameweek t.
+  async function editPlan(t, id, k, remove) {
+    const { P, weeks } = state.plan;
+    state.manual = {};
+    weeks.slice(0, state.plan.depth).forEach((w, j) => {
+      if (w.chip === 'freehit' || w.chip === 'wildcard') return;
+      const moves = w.outs.map((o, n) => (w.ins[n] !== undefined ? { out: P[o].id, in: P[w.ins[n]].id } : null)).filter(Boolean);
+      if (moves.length) state.manual[j] = moves;
+    });
+    let outId = id;
+    if (k >= 0) {  // he was bought this week: take that move back; replacing him means another player for the one sold
+      const m = (state.manual[t] || []).find((x) => x.in === id);
+      if (m) { outId = m.out; state.manual[t] = state.manual[t].filter((x) => x !== m); }
+    }
+    saveManual();
+    $('detail').hidden = true;
+    if (remove) { await makePlan(state.manual); return; }
+    $('manual').hidden = false;
+    $('manualOpen').setAttribute('aria-expanded', 'true');
+    manualWeeks();
+    const wk = document.querySelectorAll('.manual-week')[t];
+    if (!wk) return;
+    const sel = wk.querySelector('select');
+    sel.value = outId;
+    sel.dispatchEvent(new Event('change'));
+    wk.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const inSel = wk.querySelectorAll('select')[1];
+    if (inSel) inSel.focus();
   }
 
   function weekView(w) {
