@@ -1,0 +1,28 @@
+name: Speed trial
+on:
+  push:
+    branches: [speed-trial]
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/cache/restore@v4
+        with:
+          path: fpl_data/20*
+          key: fpl-history-v1
+      - run: python fpl_xpoints.py download && python fpl_xpoints.py site --out _site > /dev/null 2>&1
+      - run: npm i playwright@1.47.2 >/dev/null 2>&1 && npx playwright install --with-deps chromium >/dev/null 2>&1
+      - run: |
+          mk() { rm -rf "s_$1"; cp -r _site "s_$1"; sed -i "$2" "s_$1/planner.js"; }
+          mk seq4 's/const PARALLEL_MAX = 3;/const PARALLEL_MAX = 1;/'
+          mk par4 's/xx//'
+          mk par5 's/const PLAN = { depth: 4,/const PLAN = { depth: 5,/'
+          mk seq5 's/const PLAN = { depth: 4,/const PLAN = { depth: 5,/; s/const PARALLEL_MAX = 3;/const PARALLEL_MAX = 1;/'
+          for v in seq4 par4 par5 seq5; do (cd s_$v && python -m http.server 8800 >/dev/null 2>&1 &) ; sleep 2; node tools/plan_timing.js "http://127.0.0.1:8800/planner.html?id=11081" $v || true; pkill -f "http.server 8800"; sleep 1; done
