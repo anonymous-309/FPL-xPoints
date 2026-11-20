@@ -120,6 +120,10 @@ def main():
         was_out = False
         hist.append(mins[i])
     df["usual"], df["back"] = usual, back
+    # Was he listed injured for his club's next league match? (marks an injury picked up in this match)
+    nxt = df.groupby("pid")
+    df["next_inj"] = (nxt["absent"].shift(-1).fillna(False).astype(bool) & (nxt["absent_type"].shift(-1).fillna("") == "injury"))
+    df["next_mins"] = nxt["minutes"].shift(-1)
     ev = df[df["season"].isin(SEASONS) & df["usual"].notna()].copy()
     # Leave out players outside the picture (usual 0 and not playing): they would flatter every rule
     ev = ev[(ev["usual"] > 0) | (ev["minutes"] > 0)]
@@ -168,7 +172,7 @@ def main():
     if len(sp):
         print(f"\nInjury spells (FotMob, first match missed to the match he was back for): {len(sp)}; days: median {np.median(sp):.0f}, "
               f"25% {np.percentile(sp, 25):.0f}, 75% {np.percentile(sp, 75):.0f}, 90% {np.percentile(sp, 90):.0f}")
-    ev[["season", "GW", "name", "team", "position", "minutes", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
+    ev[["season", "GW", "name", "team", "position", "minutes", "starts", "red_cards", "next_inj", "next_mins", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
 
 
 if __name__ == "__main__":

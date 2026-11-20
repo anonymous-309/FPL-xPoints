@@ -19,17 +19,11 @@ jobs:
         with:
           path: fpl_data/20*
           key: fpl-history-v1
-      - uses: actions/download-artifact@v4
-        with:
-          name: injuries
-          path: archive/injuries
-          run-id: 44676489048
-          github-token: ${{ github.token }}
       - run: python fpl_xpoints.py download
       - run: python tools/xmin_backtest.py
       - name: Keep the files on the branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f archive/injuries/*.json.gz xmin_backtest_rows.csv
+          git add -f xmin_backtest_rows.csv
           git commit -m "injury archive + backtest rows [skip ci]" && git push origin HEAD:analysis-41
