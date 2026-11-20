@@ -2220,6 +2220,39 @@ def chance_report(pred: pd.DataFrame) -> None:
 
 
 TOP_SCORERS = {"GK": 10, "DEF": 20, "MID": 20, "FWD": 10}
+POINT_PARTS = ["Appearance", "Goals", "Assists", "Bonus", "Clean sheet", "Goals conceded", "Saves", "Penalties", "Own goals", "Cards", "DefCon and other"]
+
+
+def parts_at_real_minutes(pred: pd.DataFrame) -> pd.DataFrame:
+    """The model's points per part with the minutes he really played instead of xMin: the Chance 90min figures
+    (full-90 values) times real minutes / 90, clean sheet and goals conceded only with 60+, appearance points as
+    earned. This takes the minutes guess out, to judge the per-90 figures alone."""
+    m = pred["minutes"].fillna(0).to_numpy(float)
+    n90, on60 = m / 90, (m >= 60).astype(float)
+    g = lambda c: pred[c].fillna(0).to_numpy(float) if c in pred else np.zeros(len(pred))
+    return pd.DataFrame({
+        "Appearance": (m > 0).astype(float) + on60, "Goals": g("full_goal") * n90, "Assists": g("full_assist") * n90, "Bonus": g("full_bonus") * n90,
+        "Clean sheet": g("full_cs") * on60, "Goals conceded": g("full_conceded") * on60, "Saves": g("full_saves") * n90,
+        "Penalties": (g("full_pensave") + g("full_penmiss")) * n90, "Own goals": g("full_own") * n90, "Cards": g("full_cards") * n90,
+        "DefCon and other": g("full_defcon") * n90}, index=pred.index)
+
+
+def real_parts(pred: pd.DataFrame) -> pd.DataFrame:
+    """His real points per part (clean sheet and goals conceded from his team's goals against when he played 60+;
+    whatever is left of his total, mostly DefCon, under DefCon and other)."""
+    m = pred["minutes"].fillna(0).to_numpy(float)
+    on60 = m >= 60
+    pos = pred["position"]
+    g = lambda c: pred[c].fillna(0).to_numpy(float) if c in pred else np.zeros(len(pred))
+    ga = g("ga")
+    gkdef = pos.isin(["GK", "DEF"]).to_numpy()
+    out = pd.DataFrame({
+        "Appearance": (m > 0).astype(float) + on60, "Goals": g("goals_scored") * pos.map(GOAL_PTS).to_numpy(float), "Assists": g("assists") * 3,
+        "Bonus": g("bonus"), "Clean sheet": (on60 & (ga == 0)) * pos.map(CS_PTS).to_numpy(float), "Goals conceded": -(on60 & gkdef).astype(float) * np.floor(ga / 2),
+        "Saves": np.floor(g("saves") / 3), "Penalties": g("penalties_saved") * PEN_SAVE_PTS + g("penalties_missed") * PEN_MISS_PTS,
+        "Own goals": g("own_goals") * OWN_GOAL_PTS, "Cards": -g("yellow_cards") - 3 * g("red_cards")}, index=pred.index)
+    out["DefCon and other"] = g("total_points") - out.sum(axis=1)
+    return out
 
 
 def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
@@ -2227,8 +2260,13 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     pred["pred_pts4"] = pred["pts4"].fillna(pred["ppg_all"]).fillna(0.0)
     pred["pred_ppg"] = pred["ppg_all"].fillna(0.0)
     pred["pred_w5"] = pred["w5_min"].fillna(0.0)
+    am, rp = parts_at_real_minutes(pred), real_parts(pred)
+    pred["xpts_real_min"] = am.sum(axis=1)
+    for c in POINT_PARTS:
+        pred[f"am_{c}"], pred[f"rp_{c}"] = am[c], rp[c]
     models = {"Model": "xpts", "Trailing 4 GW": "pred_pts4", "Long-run PPG": "pred_ppg"}
-    agg = {c: "sum" for c in ["total_points", "minutes", "xpts", "pred_pts4", "pred_ppg", "xmin", "pred_w5"]}
+    agg = {c: "sum" for c in ["total_points", "minutes", "xpts", "pred_pts4", "pred_ppg", "xmin", "pred_w5", "xpts_real_min"]
+           + [f"am_{c}" for c in POINT_PARTS] + [f"rp_{c}" for c in POINT_PARTS]}
     agg |= {"name": "last", "team": "last", "position": "last", "min_long": "last"}
     gw = pred.groupby(["season", "GW", "pid"], as_index=False).agg(agg)
     gw.to_csv(out_csv, index=False)
@@ -2251,21 +2289,32 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     rows = []
     for pos in list(TOP_SCORERS) + ["All"]:
         d = tg if pos == "All" else tg[tg["position"] == pos]
-        for m, c in models.items():
+        for m, c in (models | {"Model, real minutes": "xpts_real_min"}).items():
             sc = _score(d["total_points"], d[c])
             rows.append({"group": pos, "way": m, "n": len(d), "MAE": sc["MAE"], "bias": float((d[c] - d["total_points"]).mean()), "Pearson": sc["Pearson"]})
     print("group | way | n | MAE | bias | Pearson")
     for r in rows:
         print(f"{r['group']} | {r['way']} | {r['n']} | {r['MAE']:.3f} | {r['bias']:+.3f} | {r['Pearson']:.3f}")
-    season = tg.groupby("pid", as_index=False).agg(actual=("total_points", "sum"), predicted=("xpts", "sum"), gws=("GW", "nunique"))
+    season = tg.groupby("pid", as_index=False).agg(actual=("total_points", "sum"), predicted=("xpts", "sum"), gws=("GW", "nunique"),
+                                                   real_min=("xpts_real_min", "sum"), minutes=("minutes", "sum"), xmin=("xmin", "sum"))
     season = season.merge(top[["pid", "name", "team", "position"]], on="pid")
     season["diff"] = season["predicted"] - season["actual"]
     order = {p: i for i, p in enumerate(TOP_SCORERS)}
     season = season.sort_values(["position", "actual"], key=lambda c: c.map(order) if c.name == "position" else -c)
-    print("\nTop scorers, season totals (predicted = sum of the model's points for each gameweek, made before it)")
-    print("position | name | team | actual | predicted | diff | gws")
+    print("\nTop scorers, season totals (predicted = sum of the model's points for each gameweek, made before it; "
+          "at real minutes = the same per-90 figures with the minutes he really played)")
+    print("position | name | team | actual | predicted | diff | gws | at real minutes | diff at real minutes | minutes | xMin")
     for r in season.itertuples():
-        print(f"{r.position} | {r.name} | {r.team} | {r.actual:.0f} | {r.predicted:.1f} | {r.diff:+.1f} | {r.gws}")
+        print(f"{r.position} | {r.name} | {r.team} | {r.actual:.0f} | {r.predicted:.1f} | {r.diff:+.1f} | {r.gws} | {r.real_min:.1f} | {r.real_min - r.actual:+.1f} | {r.minutes:.0f} | {r.xmin:.0f}")
+    print("\nTop scorers, points by part (all 60, season totals: real | at real minutes | predicted with xMin)")
+    print("part | real | at real minutes | predicted")
+    tp = pred[pred["pid"].isin(top["pid"])]
+    cols = {"Appearance": ["pts_app"], "Goals": ["pts_goal"], "Assists": ["pts_ast"], "Bonus": ["pts_bonus"], "Clean sheet": ["pts_cs"],
+            "Goals conceded": ["pts_conc"], "Saves": ["pts_save"], "Penalties": ["pts_pensave", "pts_penmiss"], "Own goals": ["pts_own"],
+            "Cards": ["pts_card"], "DefCon and other": ["pts_defcon"]}
+    for c in POINT_PARTS:
+        print(f"{c} | {tg[f'rp_{c}'].sum():.0f} | {tg[f'am_{c}'].sum():.1f} | {sum(tp[k].sum() for k in cols[c] if k in tp):.1f}")
+    print(f"Total | {tg['total_points'].sum():.0f} | {tg['xpts_real_min'].sum():.1f} | {tg['xpts'].sum():.1f}")
 
     print("\n=== Decisions: mean actual points per GW ===")
     rows = {}
