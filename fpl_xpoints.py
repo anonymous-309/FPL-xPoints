@@ -2397,8 +2397,8 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     # Picking players ahead: a season total of "points in his last 4 GWs" would be his real points a few weeks late,
     # so the fair test is each 4-gameweek stretch: each way's top players by what it predicted for those 4 GWs
     # (made before them: its figure for the first of the 4) against the real top over the same 4 GWs, averaged over the stretches.
-    print("\n=== Finding the best players, each 4 GWs: top by predicted points for the next 4 GWs (GK 5, DEF 15, MID 20, FWD 10) against the real top, average over the season ===")
-    TOP4 = {"GK": 5, "DEF": 15, "MID": 20, "FWD": 10}
+    print("\n=== Finding the best players, each 4 GWs: top by predicted points for the next 4 GWs (core sizes: GK 15, DEF 35, MID 35, FWD 15) against the real top, average over the season ===")
+    TOP4 = CORE_GROUP  # the same numbers as the core group
     gws = sorted(gw["GW"].unique())
     acc = {}
     for b in range(0, len(gws), 4):

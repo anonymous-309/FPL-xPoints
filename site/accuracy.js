@@ -94,7 +94,7 @@
     if (f4Key) {
       const f4 = pipe(S[f4Key], /^position \| way \| share/);
       out.push(card('Picking players before each 4 gameweeks',
-        p('Each way names its top players before 4 gameweeks start (GK 5, DEF 15, MID 20, FWD 10), using only what it knew then, against the real top of those 4 gameweeks, averaged over the season. Over just 4 gameweeks luck decides most of it, so no way finds even half; what matters is which finds more.'),
+        p('Each way names its top players before 4 gameweeks start, the same numbers as the core group (GK 15, DEF 35, MID 35, FWD 15), using only what it knew then, against the real top of those 4 gameweeks, averaged over the season. Over just 4 gameweeks luck decides most of it, so no way finds even half; what matters is which finds more.'),
         table(['Position', 'Way of guessing', 'Real top found', 'Points of its picks / points of the real top'],
           f4.map((r) => [POSN[r[0]] || r[0], NAMES[r[1]] || r[1], r[2], r[3]]), { mark: (r) => r[1] === 'This site' })));
     }
