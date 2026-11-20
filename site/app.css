@@ -363,6 +363,7 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .acc-card h2 { margin: 0 0 8px; font-size: 1.1rem; }
 .acc-card h3 { margin: 12px 0 4px; font-size: 0.95rem; }
 .acc-card p { margin: 8px 0; line-height: 1.5; }
+.acc .wrap { min-height: 0; max-height: none; }
 .acc-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .acc-table th, .acc-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
 .acc-table .num { text-align: right; white-space: nowrap; }

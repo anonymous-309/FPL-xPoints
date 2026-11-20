@@ -33,7 +33,7 @@
   const p = (...kids) => el('p', {}, ...kids);
   const b = (t) => el('b', { textContent: t });
 
-  function render(text) {
+  function render(text, xm) {
     const season = (text.match(/training before (\d{4}-\d{2})/) || [])[1] || 'a past season';
     const S = sections(text);
     const out = [];
@@ -114,6 +114,23 @@
           'Players on 85-90 minutes really average around 80: some go off injured, are rested or dropped without warning. The minutes rules (injuries, bans, rests) take care of what is known before the deadline.')));
     }
 
+    // 4b. minutes of the players worth buying (xMin 60+), from tools/xmin_backtest.py
+    if (xm && xm.bands) {
+      const pc = (x) => `${Math.round(x * 100)}%`, sg = (x) => `${x >= 0 ? '+' : ''}${f(x)}`;
+      const top = xm.bands[0], tp = xm.top_by_pos || {};
+      out.push(card('Minutes of the players worth buying (xMin 60+)',
+        p(`Every league match of ${xm.seasons.join(' and ')} where a player's xMin before the match was 60 or more, with the injuries and bans known from FotMob and Soccerway taken into account. Matches with a red card (${xm.removed.red}), a ban (${xm.removed.ban}) or an injury picked up in the match (${xm.removed.injured_in_match}) are left out: no forecast can see those coming. `,
+          b('Average miss'), ' is how far xMin was from his real minutes; ', b('Bias'), ' above 0 means xMin was too high.'),
+        table(['xMin', 'xMin (avg)', 'Real (avg)', 'Bias', 'Average miss', 'Within 10 min', 'Real 60+', 'Matches'],
+          xm.bands.map((r) => [r.band, f(r.pred), f(r.real), sg(r.bias), f(r.mae), pc(r.within10), pc(r.real60), String(r.n)]), { mark: (r) => r[0] === '80–90' }),
+        el('h3', { textContent: 'What really happened' }),
+        table(['xMin', '0 min', '1–59', '60–89', '90', 'Not in the starting XI', 'When he started: average miss', 'Bias'],
+          xm.bands.map((r) => [r.band, pc(r.zero), pc(r.sub), pc(r.p60_89), pc(r.full), `${r.not_started} (${pc(r.not_started / r.n)})`, f(r.started_mae), sg(r.started_bias)])),
+        p(b('80–90'), `: regular starters. They started ${pc(1 - top.not_started / top.n)} of these matches, and when they started xMin was off by only ${f(top.started_mae)} minutes. Almost all the bias comes from the ${pc(top.not_started / top.n)} of matches (about 1 in ${Math.round(top.n / top.not_started)}) where he was left out of the starting XI without an injury or ban on record: `,
+          ['GK', 'DEF', 'MID', 'FWD'].filter((k) => tp[k]).map((k) => `${k} ${pc(tp[k].not_started / tp[k].n)}`).join(', '), '. Some of these were surely unrecorded knocks, so the true share of surprise benchings is a little lower.'),
+        p(b('70–80'), ' and ', b('60–70'), ': rotation risks. They miss the starting XI in about 1 match in 6 and 1 in 3. When they do start they play more than their xMin, so the figure is right as an average (for expected points) but any one match is a gamble.')));
+    }
+
     // 5. chances
     const ch = (S['Chance 90min: each chance against what happened (test season)'] || []).filter((l) => /\d/.test(l) && !/^Skill/.test(l.trim()));
     if (ch.length) {
@@ -156,8 +173,9 @@
     $('status').textContent = `The model tested on ${season}, a season it was not trained on`;
   }
 
+  const xmin = fetch('xmin_accuracy.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
   fetch('backtest.txt', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
-    .then((t) => render(t.split('\n').filter((l) => !/Warning|^\s+(df|self|tm|return)\b/.test(l)).join('\n')))
+    .then(async (t) => render(t.split('\n').filter((l) => !/Warning|^\s+(df|self|tm|return)\b/.test(l)).join('\n'), await xmin))
     .catch(() => { $('error').hidden = false; $('error').textContent = 'Could not load the test results. They appear here once the GitHub update has run.'; $('status').textContent = ''; });
 })();

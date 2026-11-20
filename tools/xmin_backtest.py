@@ -88,6 +88,36 @@ def main():
                     df.loc[i, ["absent", "absent_type"]] = [True, un.get("type") or ""]
                     df.loc[i, "absent_id"] = un.get("injuryId", np.nan)
     print(f"FotMob unavailable entries matched to FPL players: {matched}, not matched: {unmatched}")
+    # Soccerway injury spells (From / Until): out for a match inside a spell; a spell starting on the match day (when he
+    # played) or within 2 days after it is an injury picked up in that match.
+    df["fm_absent"] = df["absent"]
+    sw = json.loads(gzip.decompress(Path("archive/injuries/soccerway_players.json.gz").read_bytes()))["players"]
+    names = df.drop_duplicates("pid")[["pid", "name"]]
+    tok = {pid: frozenset(norm(n).split()) for pid, n in zip(names["pid"], names["name"])}
+    spells, ok = {}, 0
+    for p in sw:
+        t = frozenset(norm(p["slug"].replace("-", " ")).split())
+        hit = [pid for pid, tk in tok.items() if tk == t] or [pid for pid, tk in tok.items() if t <= tk or tk <= t]
+        if len(hit) != 1 or not p["injuries"]:
+            continue
+        ok += 1
+        for r in p["injuries"]:
+            a = pd.Timestamp(pd.to_datetime(r["from"], format="%d.%m.%Y"))
+            b = pd.Timestamp(pd.to_datetime(r["until"], format="%d.%m.%Y")) if r["until"] else pd.Timestamp("2027-01-01")
+            spells.setdefault(hit[0], []).append((a, b))
+    print(f"Soccerway players matched to FPL: {ok} of {len(sw)}")
+    kd = pd.to_datetime(df["kickoff_time"]).dt.tz_localize(None).dt.normalize()
+    sw_out = np.zeros(len(df), bool); sw_in = np.zeros(len(df), bool)
+    for n, (pid, k, m) in enumerate(zip(df["pid"], kd, df["minutes"])):
+        for a, b in spells.get(pid, ()):
+            if a < k < b or (a == k and m == 0):
+                sw_out[n] = True
+            elif m > 0 and k <= a <= k + pd.Timedelta(days=2):
+                sw_in[n] = True
+    df["sw_out"], df["sw_inmatch"] = sw_out, sw_in & ~sw_out
+    new = df["sw_out"] & ~df["absent"]
+    print(f"Matches out on Soccerway: {int(sw_out.sum())}, of them not listed by FotMob: {int(new.sum())}; injuries picked up in a match: {int(df['sw_inmatch'].sum())}")
+    df.loc[new, ["absent", "absent_type"]] = [True, "injury"]
 
     # Usual minutes before each match, the formula's way
     df = df.sort_values(["pid", "kickoff_time", "fixture"])
@@ -120,6 +150,19 @@ def main():
         was_out = False
         hist.append(mins[i])
     df["usual"], df["back"] = usual, back
+    # Suspended: a yellow-card ban, or a match he missed after a red card (up to 3)
+    susp = np.zeros(len(df), bool); prev, left = None, 0
+    for i, k in enumerate(df["pid"].to_numpy()):
+        if k != prev: prev, left = k, 0
+        if ban[i]: susp[i] = True
+        elif left > 0 and mins[i] == 0: susp[i] = True; left -= 1
+        elif left > 0: left = 0
+        if reds[i] > 0: left = 3
+    df["susp"] = susp
+    # Was he listed injured for his club's next league match? (marks an injury picked up in this match)
+    nxt = df.groupby("pid")
+    df["next_inj"] = (nxt["absent"].shift(-1).fillna(False).astype(bool) & (nxt["absent_type"].shift(-1).fillna("") == "injury"))
+    df["next_mins"] = nxt["minutes"].shift(-1)
     ev = df[df["season"].isin(SEASONS) & df["usual"].notna()].copy()
     # Leave out players outside the picture (usual 0 and not playing): they would flatter every rule
     ev = ev[(ev["usual"] > 0) | (ev["minutes"] > 0)]
@@ -168,8 +211,33 @@ def main():
     if len(sp):
         print(f"\nInjury spells (FotMob, first match missed to the match he was back for): {len(sp)}; days: median {np.median(sp):.0f}, "
               f"25% {np.percentile(sp, 25):.0f}, 75% {np.percentile(sp, 75):.0f}, 90% {np.percentile(sp, 90):.0f}")
-    ev[["season", "GW", "name", "team", "position", "minutes", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
+    ev[["season", "GW", "name", "team", "position", "minutes", "starts", "red_cards", "yellow_ban", "susp", "fm_absent", "sw_out", "sw_inmatch", "next_inj", "next_mins", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
+    summary(pd.read_csv("xmin_backtest_rows.csv"))
 
 
-if __name__ == "__main__":
+def summary(rows, out="site/xmin_accuracy.json"):
+    """The Accuracy page's xMin card: players on 60+ xMin, matches with a red card, a ban or an injury picked up in
+    the match left out. `rows` is xmin_backtest_rows.csv."""
+    e = rows[rows["pred"] >= 60]
+    bad = (e["red_cards"] > 0) | e["susp"] | e["sw_inmatch"] | (e["next_inj"] & (e["minutes"] < 90))
+    c = e[~bad]
+    res = {"seasons": sorted(rows["season"].unique().tolist()), "removed": {"red": int((e["red_cards"] > 0).sum()), "ban": int(e["susp"].sum()),
+           "injured_in_match": int((e["sw_inmatch"] | (e["next_inj"] & (e["minutes"] < 90))).sum())}, "bands": []}
+    for lo, hi, lab in ((80, 91, "80–90"), (70, 80, "70–80"), (60, 70, "60–70"), (60, 91, "All 60+")):
+        s = c[(c["pred"] >= lo) & (c["pred"] < hi)]
+        er, m, st = s["pred"] - s["minutes"], s["minutes"], s[s["starts"] == 1]
+        res["bands"].append({"band": lab, "n": len(s), "pred": round(s["pred"].mean(), 1), "real": round(m.mean(), 1), "bias": round(er.mean(), 1),
+                             "mae": round(er.abs().mean(), 1), "within10": round((er.abs() <= 10).mean(), 3), "real60": round((m >= 60).mean(), 3),
+                             "zero": round((m == 0).mean(), 3), "sub": round(((m > 0) & (m < 60)).mean(), 3), "p60_89": round(((m >= 60) & (m < 90)).mean(), 3),
+                             "full": round((m >= 90).mean(), 3), "not_started": int((s["starts"] == 0).sum()),
+                             "started_mae": round((st["pred"] - st["minutes"]).abs().mean(), 1), "started_bias": round((st["pred"] - st["minutes"]).mean(), 1)})
+    top = c[c["pred"] >= 80]
+    res["top_by_pos"] = {p: {"n": int((top["position"] == p).sum()), "not_started": int(((top["position"] == p) & (top["starts"] == 0)).sum())} for p in ("GK", "DEF", "MID", "FWD")}
+    Path(out).write_text(json.dumps(res, ensure_ascii=False, indent=1))
+    return res
+
+
+if __name__ == "__main__" and "--summary" in sys.argv:
+    summary(pd.read_csv(sys.argv[sys.argv.index("--summary") + 1]))
+elif __name__ == "__main__":
     main()
