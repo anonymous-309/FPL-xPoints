@@ -15,4 +15,5 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: pip install -r requirements.txt >/dev/null
+      - run: pip install requests >/dev/null
       - run: python tools/probe_sites.py
