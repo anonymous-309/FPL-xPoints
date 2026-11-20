@@ -15,15 +15,4 @@ jobs:
           python-version: "3.13"
           cache: pip
       - run: pip install -r requirements.txt >/dev/null
-      - uses: actions/cache@v4
-        with:
-          path: fpl_data/20*
-          key: fpl-history-v1
-      - run: python fpl_xpoints.py download
-      - run: python tools/xmin_backtest.py
-      - name: Keep the files on the branch
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f xmin_backtest_rows.csv
-          git commit -m "injury archive + backtest rows [skip ci]" && git push origin HEAD:analysis-41
+      - run: python tools/probe_sites.py
