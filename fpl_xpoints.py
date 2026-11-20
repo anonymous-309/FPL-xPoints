@@ -2349,13 +2349,17 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
             print(f"{pos} | {m} | {len(picks & real_top)} | {len(real_top)} | {rc:.2f} | {d[d['pid'].isin(picks)]['real'].sum():.0f} | {best['real'].sum():.0f}")
     # The season totals above flatter "points in his last 4 GWs": added up over a season it is his real points a few
     # weeks late. A fair test: each 4-gameweek stretch, each way's top players by what it predicted for those 4 GWs
-    # (made before them) against the real top over the same 4 GWs, averaged over the stretches.
+    # (made before them: its figure for the first of the 4) against the real top over the same 4 GWs, averaged over the stretches.
     print("\n=== Finding the best players, each 4 GWs: top by predicted points for the next 4 GWs (GK 5, DEF 15, MID 20, FWD 10) against the real top, average over the season ===")
     TOP4 = {"GK": 5, "DEF": 15, "MID": 20, "FWD": 10}
     gws = sorted(gw["GW"].unique())
     acc = {}
     for b in range(0, len(gws), 4):
-        blk = gw[gw["GW"].isin(gws[b:b + 4])].groupby(["pid", "position"], as_index=False).agg(real=("total_points", "sum"), **{c: (c, "sum") for c in models.values()})
+        # every way judged only on what it said before the stretch began: its figure for the first gameweek
+        # (a later one would already know the real points of the gameweeks before it inside the stretch)
+        real = gw[gw["GW"].isin(gws[b:b + 4])].groupby(["pid", "position"], as_index=False)["total_points"].sum().rename(columns={"total_points": "real"})
+        first = gw[gw["GW"] == gws[b]][["pid"] + list(models.values())]
+        blk = real.merge(first, on="pid", how="left").fillna(0.0)
         for pos, n in TOP4.items():
             d = blk[blk["position"] == pos]
             real_top = set(d.nlargest(n, "real")["pid"])
