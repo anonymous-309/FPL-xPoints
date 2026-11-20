@@ -1,0 +1,175 @@
+"""How right is the xMin formula? Tested on past seasons with FotMob's lists of unavailable players
+(archive/injuries/fotmob_<season>.json.gz, from tools/history_injuries.py) as the injury log.
+
+For every league match of a player in his club's squad, the formula's minutes before the match are compared with
+the minutes he played:
+  - Usual minutes: his last 5 counted matches weighted 5-4-3-2-1 (newest first); matches he missed through an
+    absence FotMob listed, a yellow-card ban or the match he was sent off in are not counted.
+  - Listed unavailable for the match: 0.
+  - First match back after an injury absence: half his usual minutes (the site's rule), also tried at 0 and full.
+Run after `python fpl_xpoints.py download`: python tools/xmin_backtest.py"""
+import gzip
+import json
+import re
+import sys
+import unicodedata
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+
+sys.path.insert(0, ".")
+import fpl_xpoints as F  # noqa: E402
+
+SEASONS = {"2024-25": "archive/injuries/fotmob_2024-25.json.gz", "2025-26": "archive/injuries/fotmob_2025-26.json.gz"}
+W = F.MINUTE_WEIGHTS
+
+
+def norm(s):
+    s = unicodedata.normalize("NFKD", str(s or "")).encode("ascii", "ignore").decode().lower()
+    return " ".join(re.sub(r"[^a-z ]", "", re.sub(r"[-.']", " ", s)).split())
+
+
+def team_key(s):
+    s = norm(s).replace("afc ", "").replace(" fc", "")
+    alias = {"manchester city": "man city", "manchester united": "man utd", "tottenham hotspur": "spurs", "nottingham forest": "nottm forest",
+             "brighton hove albion": "brighton", "wolverhampton wanderers": "wolves", "newcastle united": "newcastle", "west ham united": "west ham",
+             "leicester city": "leicester", "ipswich town": "ipswich", "leeds united": "leeds", "sunderland": "sunderland", "burnley": "burnley"}
+    return alias.get(s, s)
+
+
+def find(name, rows):
+    """FPL row for a FotMob name among one side's squad rows (full names), or None when unsure."""
+    n = norm(name)
+    tests = (lambda r: norm(r) == n,
+             lambda r: norm(r).split()[-1:] == n.split()[-1:] and norm(r).split()[:1] == n.split()[:1],
+             lambda r: set(n.split()) <= set(norm(r).split()),
+             lambda r: n.split()[-1:] == norm(r).split()[-1:])
+    for t in tests:
+        hit = [i for i, r in rows if t(r)]
+        if len(hit) == 1:
+            return hit[0]
+        if len(hit) > 1:
+            return None
+    return None
+
+
+def main():
+    seasons = F.HIST_SEASONS
+    df = F.load_history(Path("fpl_data"), seasons)
+    df = df[~df["future"] & df["minutes"].notna()].copy()
+    df["absent"], df["absent_type"], df["absent_id"] = False, "", np.nan
+    matched = unmatched = 0
+    for season, path in SEASONS.items():
+        data = json.loads(gzip.decompress(Path(path).read_bytes()))
+        s = df[df["season"] == season]
+        fx = s.groupby("fixture").agg(k=("kickoff_time", "first"), home=("team", lambda x: None)).reset_index()
+        sides = s.groupby(["fixture", "was_home"])["team"].first().unstack()
+        fx = s.drop_duplicates("fixture")[["fixture", "kickoff_time"]].merge(sides.rename(columns={1: "home", 0: "away"}).reset_index(), on="fixture")
+        fx["hk"], fx["ak"] = fx["home"].map(team_key), fx["away"].map(team_key)
+        for m in data["matches"]:
+            t = pd.Timestamp(m["utcTime"]) if m.get("utcTime") else None
+            hk, ak = team_key(m["home"]), team_key(m["away"])
+            cand = fx[(fx["hk"].str.split().str[0] == hk.split()[0]) & (fx["ak"].str.split().str[0] == ak.split()[0])]
+            if len(cand) != 1:
+                unmatched += 1
+                continue
+            fixture = cand["fixture"].iloc[0]
+            for side, home in (("homeUnavailable", 1), ("awayUnavailable", 0)):
+                rows = s[(s["fixture"] == fixture) & (s["was_home"] == home)]
+                pool = list(zip(rows.index, rows["name"]))
+                for u in m[side]:
+                    i = find(u["name"], pool)
+                    if i is None:
+                        unmatched += 1
+                        continue
+                    matched += 1
+                    un = u.get("unavailability") or {}
+                    df.loc[i, ["absent", "absent_type"]] = [True, un.get("type") or ""]
+                    df.loc[i, "absent_id"] = un.get("injuryId", np.nan)
+    print(f"FotMob unavailable entries matched to FPL players: {matched}, not matched: {unmatched}")
+
+    # Usual minutes before each match, the formula's way
+    df = df.sort_values(["pid", "kickoff_time", "fixture"])
+    usual = np.full(len(df), np.nan)
+    back = np.zeros(len(df), bool)  # first match after an injury absence
+    gap = np.zeros(len(df))         # days since his previous counted match
+    reds = df["red_cards"].fillna(0).to_numpy()
+    ban = df["yellow_ban"].fillna(False).to_numpy()
+    absent = df["absent"].to_numpy()
+    atype = df["absent_type"].to_numpy()
+    mins = df["minutes"].to_numpy(float)
+    kick = df["kickoff_time"].to_numpy()
+    prev, hist, was_out, red_ban, last_t = None, [], False, 0, None
+    for i, k in enumerate(df["pid"].to_numpy()):
+        if k != prev:
+            prev, hist, was_out, red_ban, last_t = k, [], False, 0, None
+        win = hist[::-1][:5]
+        usual[i] = np.dot(win, W[:len(win)]) / W[:len(win)].sum() if win else np.nan
+        back[i] = was_out and not absent[i]
+        if absent[i]:
+            was_out = was_out or atype[i] == "injury"
+            continue
+        if ban[i] or (red_ban > 0 and mins[i] == 0):
+            red_ban = max(0, red_ban - 1)
+            continue
+        if reds[i] > 0:
+            red_ban = 3
+            was_out = False
+            continue
+        was_out = False
+        hist.append(mins[i])
+    df["usual"], df["back"] = usual, back
+    ev = df[df["season"].isin(SEASONS) & df["usual"].notna()].copy()
+    # Leave out players outside the picture (usual 0 and not playing): they would flatter every rule
+    ev = ev[(ev["usual"] > 0) | (ev["minutes"] > 0)]
+    ev["pred"] = np.where(ev["absent"], 0.0, np.where(ev["back"], ev["usual"] / 2, ev["usual"]))
+    ev["pred_noinj"] = ev["usual"]  # no injury log: absent players predicted as usual
+
+    def report(name, sub, col="pred"):
+        e = sub[col] - sub["minutes"]
+        print(f"  {name:44s} n={len(sub):6d}  MAE {e.abs().mean():5.1f}  bias {e.mean():+5.1f}  "
+              f"predicted {sub[col].mean():5.1f} vs played {sub['minutes'].mean():5.1f}")
+
+    print("\nAll player-matches (2024-25 and 2025-26)")
+    report("formula with the injury log", ev)
+    report("formula without it (absences counted as usual)", ev, "pred_noinj")
+    print("\nBy situation")
+    report("listed unavailable (predicted 0)", ev[ev["absent"]])
+    played_absent = ev[ev["absent"] & (ev["minutes"] > 0)]
+    print(f"  listed unavailable but played: {len(played_absent)} of {int(ev['absent'].sum())} ({len(played_absent) / max(1, ev['absent'].sum()):.1%})")
+    report("not listed, normal match", ev[~ev["absent"] & ~ev["back"]])
+    rb = ev[ev["back"]]
+    print(f"\nFirst match back after an injury ({len(rb)} cases): played {rb['minutes'].mean():.1f} min on average, usual before {rb['usual'].mean():.1f}")
+    for share, label in ((0.0, "0 (rest)"), (0.5, "half (site rule)"), (0.75, "three quarters"), (1.0, "full usual")):
+        e = rb["usual"] * share - rb["minutes"]
+        print(f"  predict {label:18s} MAE {e.abs().mean():5.1f}  bias {e.mean():+5.1f}")
+    print(f"  share of usual actually played: median {np.median(rb['minutes'] / rb['usual'].clip(lower=1)):.2f}, mean {(rb['minutes'] / rb['usual'].clip(lower=1)).clip(upper=1.5).mean():.2f}; "
+          f"0 minutes in {(rb['minutes'] == 0).mean():.0%}")
+    print("\nBy usual minutes band (normal matches)")
+    nm = ev[~ev["absent"] & ~ev["back"]]
+    for lo, hi in ((0, 30), (30, 60), (60, 80), (80, 91)):
+        report(f"usual {lo}-{hi}", nm[(nm["usual"] >= lo) & (nm["usual"] < hi)])
+    print("\nBy position (normal matches)")
+    for pos in ("GK", "DEF", "MID", "FWD"):
+        report(pos, nm[nm["position"] == pos])
+
+    # How long injuries last (FotMob listing): consecutive matches listed with an injury, days to the next match played
+    sp = []
+    for pid, g in df[df["season"].isin(SEASONS)].groupby("pid"):
+        start = None
+        for a, typ, t, m in zip(g["absent"], g["absent_type"], g["kickoff_time"], g["minutes"]):
+            if a and typ == "injury":
+                start = start or t
+            elif start is not None:
+                sp.append((t - start).days)
+                start = None
+    sp = np.array(sp)
+    if len(sp):
+        print(f"\nInjury spells (FotMob, first match missed to the match he was back for): {len(sp)}; days: median {np.median(sp):.0f}, "
+              f"25% {np.percentile(sp, 25):.0f}, 75% {np.percentile(sp, 75):.0f}, 90% {np.percentile(sp, 90):.0f}")
+    ev[["season", "GW", "name", "team", "position", "minutes", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
+
+
+if __name__ == "__main__":
+    main()
