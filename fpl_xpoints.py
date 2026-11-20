@@ -2332,6 +2332,29 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
         print(f"{c} | {tg[f'rp_{c}'].sum():.0f} | {tg[f'am_{c}'].sum():.1f} | {v:.1f}")
     print(f"Total | {tg['real_no_pens'].sum():.0f} | {tg['xpts_real_min'].sum():.1f} | {xmin_tot:.1f}")
 
+    # Do we find the right players? Each way's top 100 by its season total of predictions (made before each GW),
+    # by position, against the real top 100.
+    print("\n=== Finding the best players: top 100 by predicted season points (GK 10, DEF 30, MID 40, FWD 20) against the real top 100 ===")
+    TOP100 = {"GK": 10, "DEF": 30, "MID": 40, "FWD": 20}
+    st = gw.groupby(["pid", "position"], as_index=False).agg(real=("total_points", "sum"), name=("name", "last"), team=("team", "last"),
+                                                            **{c: (c, "sum") for c in models.values()})
+    print("position | way | in the real top | of | rank correlation inside the real top | real points of its picks | real points of the real top")
+    for pos, n in list(TOP100.items()) + [("All", 100)]:
+        d = st if pos == "All" else st[st["position"] == pos]
+        real_top = set(d.nlargest(n, "real")["pid"]) if pos != "All" else set().union(*[set(st[st["position"] == p].nlargest(k, "real")["pid"]) for p, k in TOP100.items()])
+        best = d[d["pid"].isin(real_top)]
+        for m, c in models.items():
+            picks = set(d.nlargest(n, c)["pid"]) if pos != "All" else set().union(*[set(st[st["position"] == p].nlargest(k, c)["pid"]) for p, k in TOP100.items()])
+            rc = best["real"].corr(best[c], method="spearman")
+            print(f"{pos} | {m} | {len(picks & real_top)} | {len(real_top)} | {rc:.2f} | {d[d['pid'].isin(picks)]['real'].sum():.0f} | {best['real'].sum():.0f}")
+    print("\nModel's top by position (predicted season total, real total, real rank)")
+    print("position | model rank | name | team | predicted | real | real rank")
+    for pos, n in TOP100.items():
+        d = st[st["position"] == pos].copy()
+        d["real_rank"] = d["real"].rank(ascending=False, method="min").astype(int)
+        for i, r in enumerate(d.nlargest(n, "xpts").itertuples(), 1):
+            print(f"{pos} | {i} | {r.name} | {r.team} | {r.xpts:.1f} | {r.real:.0f} | {r.real_rank}")
+
     print("\n=== Decisions: mean actual points per GW ===")
     rows = {}
     for m, c in models.items():
