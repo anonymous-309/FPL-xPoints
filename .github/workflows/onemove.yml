@@ -17,5 +17,5 @@ jobs:
           path: fpl_data/20*
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
-      - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > new.txt 2>&1 || tail -40 new.txt
-      - run: sed -n '/=== Top FPL scorers/,/=== Decisions/p' new.txt
+      - run: PYTHONWARNINGS=ignore python fpl_xpoints.py goal-tune --modes g50 xg_only goals_only goals_only_k5 goals_only_k2 > tune.txt 2>&1 || tail -40 tune.txt
+      - run: sed -n '/=== Chance to score/,$p' tune.txt

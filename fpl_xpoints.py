@@ -84,7 +84,8 @@ HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
 # goals, xG, xGOT weights, and how many average xG each player's record is padded with (smaller = closer to a plain average)
 GOAL_MODES = {"learned": (None, None, None, None), "equal": (1 / 3, 1 / 3, 1 / 3, 15.0), "g50": (0.5, 0.25, 0.25, 15.0), "xg40": (0.3, 0.4, 0.3, 15.0),
-              "g50_k5": (0.5, 0.25, 0.25, 5.0), "g50_k2": (0.5, 0.25, 0.25, 2.0), "equal_k5": (1 / 3, 1 / 3, 1 / 3, 5.0), "equal_k2": (1 / 3, 1 / 3, 1 / 3, 2.0)}
+              "g50_k5": (0.5, 0.25, 0.25, 5.0), "g50_k2": (0.5, 0.25, 0.25, 2.0), "equal_k5": (1 / 3, 1 / 3, 1 / 3, 5.0), "equal_k2": (1 / 3, 1 / 3, 1 / 3, 2.0),
+              "xg_only": (0.0, 1.0, 0.0, 15.0), "goals_only": (1.0, 0.0, 0.0, 15.0), "goals_only_k5": (1.0, 0.0, 0.0, 5.0), "goals_only_k2": (1.0, 0.0, 0.0, 2.0)}
 CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "mix30": (0.3, False), "venue70": (0.7, True)}
 PAST_GWS = 38  # played gameweeks shown on the Minutes page (the whole season so far)
 MINUTE_WEIGHTS = np.array([5.0, 4.0, 3.0, 2.0, 1.0])  # newest to oldest of the last 5 matches
@@ -3638,10 +3639,21 @@ def goal_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, mode
         ex = XPointsModel().fit(feat[feat["season"] != seasons[-1]]).explain()
         g = ex[ex["target"] == "goals"]
         row["coefs"] = ", ".join(f"{f}={c}" for f, c in zip(g["feature"], g["coef"]))
-        res = predict_frame(data_dir, seasons, 1, offline)
-        res = res.groupby("web_name", as_index=False).agg(g90=("g90", "first"), pen90=("pen90", "first"))
-        look = dict(zip(res["web_name"], 1 - np.exp(-(res["g90"] + res["pen90"] * PEN_CONVERSION))))
-        row["score90"] = ", ".join(f"{n} {look[n]:.0%}" for n in names if n in look)
+        try:
+            res = predict_frame(data_dir, seasons, 1, offline)
+            res = res.groupby("web_name", as_index=False).agg(g90=("g90", "first"), pen90=("pen90", "first"))
+            look = dict(zip(res["web_name"], 1 - np.exp(-(res["g90"] + res["pen90"] * PEN_CONVERSION))))
+            row["score90"] = ", ".join(f"{n} {look[n]:.0%}" for n in names if n in look)
+        except Exception as e:  # noqa: BLE001
+            row["score90"] = f"(live figures not read: {e})"
+        # the top 60 scorers of the test season: non-penalty goals at their real minutes, predicted against real
+        tot = pred.groupby(["pid", "position"], as_index=False)["total_points"].sum()
+        top = pd.concat([tot[tot["position"] == p].nlargest(n, "total_points") for p, n in TOP_SCORERS.items()])["pid"]
+        t = played[played["pid"].isin(top)]
+        row["top60_np_goals_pred"] = float((t["g90"] - t["pen90"] * 0 + 0).mul(t["minutes"] / 90).sum() - (t["pen90"] - t["pm90"]).mul(t["minutes"] / 90).sum())
+        row["top60_np_goals_real"] = float(t["np_goals"].sum()) if "np_goals" in t else float("nan")
+        r = played[played["minutes"] >= 60]
+        row["np_goal_MAE_60+"] = float(((r["g90"] - (r["pen90"] - r["pm90"])) * r["minutes"] / 90 - r["np_goals"]).abs().mean())
         rows.append(row)
     GLMS["goals"] = learned
     out = pd.DataFrame(rows)
