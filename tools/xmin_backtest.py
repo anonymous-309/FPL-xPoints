@@ -120,6 +120,15 @@ def main():
         was_out = False
         hist.append(mins[i])
     df["usual"], df["back"] = usual, back
+    # Suspended: a yellow-card ban, or a match he missed after a red card (up to 3)
+    susp = np.zeros(len(df), bool); prev, left = None, 0
+    for i, k in enumerate(df["pid"].to_numpy()):
+        if k != prev: prev, left = k, 0
+        if ban[i]: susp[i] = True
+        elif left > 0 and mins[i] == 0: susp[i] = True; left -= 1
+        elif left > 0: left = 0
+        if reds[i] > 0: left = 3
+    df["susp"] = susp
     # Was he listed injured for his club's next league match? (marks an injury picked up in this match)
     nxt = df.groupby("pid")
     df["next_inj"] = (nxt["absent"].shift(-1).fillna(False).astype(bool) & (nxt["absent_type"].shift(-1).fillna("") == "injury"))
@@ -172,7 +181,7 @@ def main():
     if len(sp):
         print(f"\nInjury spells (FotMob, first match missed to the match he was back for): {len(sp)}; days: median {np.median(sp):.0f}, "
               f"25% {np.percentile(sp, 25):.0f}, 75% {np.percentile(sp, 75):.0f}, 90% {np.percentile(sp, 90):.0f}")
-    ev[["season", "GW", "name", "team", "position", "minutes", "starts", "red_cards", "next_inj", "next_mins", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
+    ev[["season", "GW", "name", "team", "position", "minutes", "starts", "red_cards", "yellow_ban", "susp", "next_inj", "next_mins", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
 
 
 if __name__ == "__main__":
