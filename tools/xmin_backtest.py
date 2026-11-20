@@ -88,6 +88,36 @@ def main():
                     df.loc[i, ["absent", "absent_type"]] = [True, un.get("type") or ""]
                     df.loc[i, "absent_id"] = un.get("injuryId", np.nan)
     print(f"FotMob unavailable entries matched to FPL players: {matched}, not matched: {unmatched}")
+    # Soccerway injury spells (From / Until): out for a match inside a spell; a spell starting on the match day (when he
+    # played) or within 2 days after it is an injury picked up in that match.
+    df["fm_absent"] = df["absent"]
+    sw = json.loads(gzip.decompress(Path("archive/injuries/soccerway_players.json.gz").read_bytes()))["players"]
+    names = df.drop_duplicates("pid")[["pid", "name"]]
+    tok = {pid: frozenset(norm(n).split()) for pid, n in zip(names["pid"], names["name"])}
+    spells, ok = {}, 0
+    for p in sw:
+        t = frozenset(norm(p["slug"].replace("-", " ")).split())
+        hit = [pid for pid, tk in tok.items() if tk == t] or [pid for pid, tk in tok.items() if t <= tk or tk <= t]
+        if len(hit) != 1 or not p["injuries"]:
+            continue
+        ok += 1
+        for r in p["injuries"]:
+            a = pd.Timestamp(pd.to_datetime(r["from"], format="%d.%m.%Y"))
+            b = pd.Timestamp(pd.to_datetime(r["until"], format="%d.%m.%Y")) if r["until"] else pd.Timestamp("2027-01-01")
+            spells.setdefault(hit[0], []).append((a, b))
+    print(f"Soccerway players matched to FPL: {ok} of {len(sw)}")
+    kd = pd.to_datetime(df["kickoff_time"]).dt.tz_localize(None).dt.normalize()
+    sw_out = np.zeros(len(df), bool); sw_in = np.zeros(len(df), bool)
+    for n, (pid, k, m) in enumerate(zip(df["pid"], kd, df["minutes"])):
+        for a, b in spells.get(pid, ()):
+            if a < k < b or (a == k and m == 0):
+                sw_out[n] = True
+            elif m > 0 and k <= a <= k + pd.Timedelta(days=2):
+                sw_in[n] = True
+    df["sw_out"], df["sw_inmatch"] = sw_out, sw_in & ~sw_out
+    new = df["sw_out"] & ~df["absent"]
+    print(f"Matches out on Soccerway: {int(sw_out.sum())}, of them not listed by FotMob: {int(new.sum())}; injuries picked up in a match: {int(df['sw_inmatch'].sum())}")
+    df.loc[new, ["absent", "absent_type"]] = [True, "injury"]
 
     # Usual minutes before each match, the formula's way
     df = df.sort_values(["pid", "kickoff_time", "fixture"])
@@ -181,7 +211,7 @@ def main():
     if len(sp):
         print(f"\nInjury spells (FotMob, first match missed to the match he was back for): {len(sp)}; days: median {np.median(sp):.0f}, "
               f"25% {np.percentile(sp, 25):.0f}, 75% {np.percentile(sp, 75):.0f}, 90% {np.percentile(sp, 90):.0f}")
-    ev[["season", "GW", "name", "team", "position", "minutes", "starts", "red_cards", "yellow_ban", "susp", "next_inj", "next_mins", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
+    ev[["season", "GW", "name", "team", "position", "minutes", "starts", "red_cards", "yellow_ban", "susp", "fm_absent", "sw_out", "sw_inmatch", "next_inj", "next_mins", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
 
 
 if __name__ == "__main__":
