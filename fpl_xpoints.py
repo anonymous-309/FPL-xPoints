@@ -2248,7 +2248,7 @@ def real_parts(pred: pd.DataFrame) -> pd.DataFrame:
     gkdef = pos.isin(["GK", "DEF"]).to_numpy()
     out = pd.DataFrame({
         "Appearance": (m > 0).astype(float) + on60, "Goals": g("goals_scored") * pos.map(GOAL_PTS).to_numpy(float), "Assists": g("assists") * 3,
-        "Bonus": g("bonus"), "Clean sheet": (on60 & (ga == 0)) * pos.map(CS_PTS).to_numpy(float), "Goals conceded": -(on60 & gkdef) * np.floor(ga / 2),
+        "Bonus": g("bonus"), "Clean sheet": (on60 & (ga == 0)) * pos.map(CS_PTS).to_numpy(float), "Goals conceded": -(on60 & gkdef).astype(float) * np.floor(ga / 2),
         "Saves": np.floor(g("saves") / 3), "Penalties": g("penalties_saved") * PEN_SAVE_PTS + g("penalties_missed") * PEN_MISS_PTS,
         "Own goals": g("own_goals") * OWN_GOAL_PTS, "Cards": -g("yellow_cards") - 3 * g("red_cards")}, index=pred.index)
     out["DefCon and other"] = g("total_points") - out.sum(axis=1)
