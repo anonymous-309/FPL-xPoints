@@ -3512,6 +3512,61 @@ MARKET_CS_GW11 = {"Man City": 43, "Arsenal": 38, "Brighton": 38, "Spurs": 38, "B
                   "Man Utd": 17, "Newcastle": 14, "Hull City": 13, "Ipswich Town": 13, "Fulham": 10}
 
 
+def mid_tune(data_dir: Path, seasons: list[str], step: int) -> None:
+    """Midfielders rank worst inside the core group: tries more weight on their own bonus/BPS record and on their
+    long-run finishing, and reports the core ranking, the core's real/predicted and the usual decision figures."""
+    global BONUS_SIM_SHARE
+    feat = build_features(load_history(data_dir, seasons))
+    mid = feat["is_MID"].fillna(0).clip(0, 1)
+    fg = np.log((feat["F_g"] + K_FINISH) / (feat["F_xg"] + K_FINISH))
+    feat["mid_fg"] = mid * fg
+    feat["mid_l_bon"] = mid * feat["l_bon"]
+    feat["mid_l_bps"] = mid * feat["l_bps"]
+    feat["blend_mid_k5"] = np.where(mid > 0.5, feat["blend_goals_only_k5"], feat["blend_g50"])
+    base_goals, base_bonus, base_share = GLMS["goals"], GLMS["bonus"], BONUS_SIM_SHARE
+    gl_rest = base_goals[1][1:]
+    variants = {
+        "base": {},
+        "bonus: simulation 75%": {"share": 0.75},
+        "bonus: simulation 100%": {"share": 1.0},
+        "bonus: MID own record": {"bonus": ("bonus", base_bonus[1] + ["mid_l_bon", "mid_l_bps"])},
+        "goals: MID finishing": {"goals": ("np_goals", base_goals[1] + ["mid_fg"])},
+        "goals: MID goals-only k5": {"goals": ("np_goals", ["blend_mid_k5"] + gl_rest)},
+        "both: MID finishing + MID own bonus": {"goals": ("np_goals", base_goals[1] + ["mid_fg"]), "bonus": ("bonus", base_bonus[1] + ["mid_l_bon", "mid_l_bps"])},
+        "both: MID finishing + simulation 75%": {"goals": ("np_goals", base_goals[1] + ["mid_fg"]), "share": 0.75},
+    }
+    season = seasons[-1]
+    rows = []
+    for name, v in variants.items():
+        GLMS["goals"], GLMS["bonus"] = v.get("goals", base_goals), v.get("bonus", base_bonus)
+        BONUS_SIM_SHARE = v.get("share", base_share)
+        print(f"--- {name}")
+        pred = walk_forward(feat, season, step)
+        gw = pred.groupby(["GW", "pid"], as_index=False).agg(total_points=("total_points", "sum"), xpts=("xpts", "sum"), position=("position", "last"), min_long=("min_long", "last"))
+        tot = gw.groupby(["pid", "position"], as_index=False).agg(real=("total_points", "sum"), pred=("xpts", "sum"))
+        core = pd.concat([tot[tot["position"] == p].nlargest(n, "real") for p, n in CORE_GROUP.items()])
+        row = {"variant": name}
+        for p in CORE_GROUP:
+            x = core[core["position"] == p]
+            row[f"{p} order"] = x["real"].corr(x["pred"], method="spearman")
+        row["core order"] = core["real"].corr(core["pred"], method="spearman")
+        x = core[core["position"] == "MID"]
+        row["MID core real/pred"] = x["real"].sum() / x["pred"].sum()
+        found = sum(len(set(tot[tot["position"] == p].nlargest(n, "pred")["pid"]) & set(core.loc[core["position"] == p, "pid"])) for p, n in CORE_GROUP.items())
+        row["core found"] = found
+        reg = gw[gw["min_long"] >= 45]
+        row["MAE regulars"] = (reg["total_points"] - reg["xpts"]).abs().mean()
+        row["order regulars"] = reg["total_points"].corr(reg["xpts"], method="spearman")
+        row["captain"] = gw.loc[gw.groupby("GW")["xpts"].idxmax(), "total_points"].mean()
+        row["top10"] = gw.sort_values("xpts", ascending=False).groupby("GW").head(10)["total_points"].mean()
+        mreg = reg[reg["position"] == "MID"]
+        row["MID regulars order"] = mreg["total_points"].corr(mreg["xpts"], method="spearman")
+        rows.append(row)
+    GLMS["goals"], GLMS["bonus"], BONUS_SIM_SHARE = base_goals, base_bonus, base_share
+    print("\n=== Midfielder variants (core order: 1 = same order as real points; higher captain/top10, lower MAE are better) ===")
+    print(pd.DataFrame(rows).round(3).to_string(index=False))
+
+
 def rare_tune(data_dir: Path, seasons: list[str]) -> None:
     """Compares memory (half-life, match cap) and shrinkage k for rare events, on the last season's matches.
 
@@ -3786,7 +3841,7 @@ def home_away(data_dir: Path, seasons: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune", "euro-check"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune", "euro-check", "mid-tune"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -3815,6 +3870,8 @@ def main() -> None:
         home_away(a.data_dir, a.seasons)
     elif a.command == "euro-check":
         euro_check(a.data_dir, a.seasons, a.offline)
+    elif a.command == "mid-tune":
+        mid_tune(a.data_dir, a.seasons, a.step)
     elif a.command == "rare-tune":
         rare_tune(a.data_dir, HIST_SEASONS)
     elif a.command == "tune":
