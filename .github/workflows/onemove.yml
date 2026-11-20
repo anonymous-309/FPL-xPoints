@@ -17,9 +17,5 @@ jobs:
           path: fpl_data/20*
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
-      - run: curl -sL https://anonymous-309.github.io/FPL-xPoints/backtest.txt -o old.txt; wc -l old.txt
       - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > new.txt 2>&1; tail -3 new.txt
-      - name: Compare
-        run: |
-          for f in old.txt new.txt; do echo "##### $f"; grep -E "Past-season absences|^Model|^Trailing|^Long-run|Minutes MAE|Appearance|Score 1\+|Assist 1\+|Clean sheet" $f | head -30; sed -n '/=== Minutes by weighted/,/Minutes MAE/p' $f; sed -n '/=== Decisions/,/^$/p' $f; done
-      - run: python fpl_xpoints.py site --out _site --offline 2>&1 | tail -3 || true
+      - run: sed -n '/=== Top FPL scorers/,/=== Decisions/p' new.txt
