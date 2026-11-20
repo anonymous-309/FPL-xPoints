@@ -43,9 +43,8 @@ def main():
     for season in ("2024-2025", "2025-2026"):
         for page in ("results/", "fixtures/", ""):
             _, t = get(f"/england/premier-league-{season}/{page}")
-            for slug, tid in re.findall(r"/(?:team|match)/([a-z0-9-]+)-([A-Za-z0-9]{8})/", t) + re.findall(r"/team/([a-z0-9-]+)/([A-Za-z0-9]{8})/", t):
-                if any(slug == c or slug.startswith(c) for c in CLUBS):
-                    teams.setdefault(slug, tid)
+            for tid, slug in re.findall(r"P[XY]÷([A-Za-z0-9]{8})¬(?:[^~]*?)W[UV]÷([a-z0-9-]+)", t):
+                teams.setdefault(slug, tid)
     print("clubs found:", len(teams), sorted(teams))
     players = {}
     for slug, tid in sorted(teams.items()):
@@ -57,7 +56,7 @@ def main():
     out = []
     for i, p in enumerate(players.values()):
         code, t = get(f"/player/{p['slug']}/{p['id']}/injury-history")
-        nm = re.search(r"<title>([^<|]+)", t)
+        nm = re.search(r"(?:England|[A-Z][a-z]+) ([^0-9]{3,60}?) (?:Goalkeeper|Defender|Midfielder|Forward|Coach) ", text(t))
         rows, raw = injuries(t) if code == 200 else ([], None)
         out.append({**p, "name": nm.group(1).strip() if nm else p["slug"], "status": code, "injuries": rows, "raw": raw})
         if i % 50 == 0:
