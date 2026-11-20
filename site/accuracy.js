@@ -40,23 +40,6 @@
     const out = [];
     const NAMES = { 'Model': 'This site', 'Model, real minutes': 'This site at his real minutes', 'Trailing 4 GW': 'Points in his last 4 GWs', 'Long-run PPG': 'Points per game, long run' };
 
-    // 1. points
-    const acc = S['Prediction accuracy'] || [];
-    const all = block(acc, 'All player-GWs'), reg = block(acc, 'Regulars (prior avg >=45 min)');
-    if (all.length) {
-      const row = (name) => all.find((r) => r[0] === name);
-      const m = row('Model'), t4 = row('Trailing 4 GW');
-      const better = m && t4 ? (1 - num(m[3]) / num(t4[3])) * 100 : NaN;
-      out.push(card('How close are the points?',
-        p(`Tested on every player in every gameweek of ${season}. `, b('Average miss'), ' is how far, on average, the prediction was from the points he really scored. ', b('Order'),
-          ' is a rank correlation: every player in every gameweek is ranked twice, once by the prediction and once by the points he really scored, and the two rankings are compared. 1 = exactly the same order, 0 = no relation (a random guess). "All players" includes the many who do not play, who are easy to rank at the bottom; "regular starters" (45+ minutes a match on average before) is the hard part: telling which starter will have the big week.'),
-        table(['Way of guessing', 'Average miss (points)', 'Order (all players)', 'Order (regular starters)'],
-          all.filter((r) => !/^FPL xP/.test(r[0])).map((r) => { const rr = reg.find((x) => x[0] === r[0]); return [NAMES[r[0]] || r[0], f(num(r[3]), 2), f(num(r[5]), 2), rr ? f(num(rr[5]), 2) : '–']; }),
-          { mark: (r) => r[0] === 'This site' }),
-        Number.isFinite(better) ? p('This site misses by about ', b(`${f(better, 0)}% less`), ' than going by recent points, and puts players in a better order than either simple way. Any one gameweek is still very random: a regular starter is typically off by 2 to 3 points either way, from goals, assists and bonus nobody can call.') : null,
-));
-    }
-
     // pipe tables: the rows after a header line that matches, up to the first line that is not a row
     const pipe = (lines, re) => {
       const i = lines.findIndex((l) => re.test(l.trim()));
