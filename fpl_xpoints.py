@@ -84,7 +84,8 @@ HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
 # goals, xG, xGOT weights, and how many average xG each player's record is padded with (smaller = closer to a plain average)
 GOAL_MODES = {"learned": (None, None, None, None), "equal": (1 / 3, 1 / 3, 1 / 3, 15.0), "g50": (0.5, 0.25, 0.25, 15.0), "xg40": (0.3, 0.4, 0.3, 15.0),
-              "g50_k5": (0.5, 0.25, 0.25, 5.0), "g50_k2": (0.5, 0.25, 0.25, 2.0), "equal_k5": (1 / 3, 1 / 3, 1 / 3, 5.0), "equal_k2": (1 / 3, 1 / 3, 1 / 3, 2.0)}
+              "g50_k5": (0.5, 0.25, 0.25, 5.0), "g50_k2": (0.5, 0.25, 0.25, 2.0), "equal_k5": (1 / 3, 1 / 3, 1 / 3, 5.0), "equal_k2": (1 / 3, 1 / 3, 1 / 3, 2.0),
+              "xg_only": (0.0, 1.0, 0.0, 15.0), "goals_only": (1.0, 0.0, 0.0, 15.0), "goals_only_k5": (1.0, 0.0, 0.0, 5.0), "goals_only_k2": (1.0, 0.0, 0.0, 2.0)}
 CS_MODES = {"learned": None, "goals": (1.0, False), "mix90": (0.9, False), "mix70": (0.7, False), "mix50": (0.5, False), "mix30": (0.3, False), "venue70": (0.7, True)}
 PAST_GWS = 38  # played gameweeks shown on the Minutes page (the whole season so far)
 MINUTE_WEIGHTS = np.array([5.0, 4.0, 3.0, 2.0, 1.0])  # newest to oldest of the last 5 matches
@@ -2264,6 +2265,68 @@ def real_parts(pred: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
+CORE_GROUP = {"GK": 15, "DEF": 35, "MID": 35, "FWD": 15}  # the "core": the top scorers of the test season by position
+
+
+def core_report(pred: pd.DataFrame, gw: pd.DataFrame) -> None:
+    """The core group (CORE_GROUP by real season points): how right xMin is for them, how right the Chance 90min figures
+    are once their real minutes are put in, and whether the season ranking is right."""
+    tot = gw.groupby(["pid", "position"], as_index=False).agg(real=("total_points", "sum"), pred=("xpts", "sum"), name=("name", "last"), team=("team", "last"),
+                                                             mins=("minutes", "sum"), xmin=("xmin", "sum"), am=("xpts_real_min", "sum"), real_np=("real_no_pens", "sum"))
+    core = pd.concat([tot[tot["position"] == p].nlargest(n, "real") for p, n in CORE_GROUP.items()])
+    d = pred[pred["pid"].isin(core["pid"]) & pred["minutes"].notna()].copy()
+    print(f"\n=== Core group: the top {sum(CORE_GROUP.values())} by real points ({', '.join(f'{n} {p}' for p, n in CORE_GROUP.items())}) ===")
+    # 1. xMin, per match
+    print("\nxMin, per match (all their league matches; 'known out' = listed injured or banned before the match)")
+    print("group | matches | xMin | real | bias | average miss | within 10 min | chance of 60+ | real 60+")
+    out = d.get("hist_out", pd.Series(False, index=d.index)).astype(bool)
+    for pos in list(CORE_GROUP) + ["All"]:
+        x = d if pos == "All" else d[d["position"] == pos]
+        for lab, y in (("", x), (" (not known out)", x[~out.loc[x.index]])):
+            e = y["xmin"] - y["minutes"]
+            print(f"{pos}{lab} | {len(y)} | {y['xmin'].mean():.1f} | {y['minutes'].mean():.1f} | {e.mean():+.1f} | {e.abs().mean():.1f} | {(e.abs() <= 10).mean():.0%} | {y['p_60'].mean():.0%} | {(y['minutes'] >= 60).mean():.0%}")
+    # 2. Chance 90min at real minutes, season totals per part
+    print("\nChance 90min at their real minutes, season totals by part (penalty goals and misses left out): real | at real minutes | real / predicted")
+    print("group | part | real | at real minutes | ratio")
+    for pos in list(CORE_GROUP) + ["All"]:
+        x = d if pos == "All" else d[d["position"] == pos]
+        for c in POINT_PARTS:
+            r, a = x[f"rp_{c}"].sum(), x[f"am_{c}"].sum()
+            if abs(r) + abs(a) >= 1:
+                print(f"{pos} | {c} | {r:.0f} | {a:.1f} | {r / a if a else float('nan'):.2f}")
+        print(f"{pos} | Total | {real_no_pens(x).sum():.0f} | {x['xpts_real_min'].sum():.1f} | {real_no_pens(x).sum() / x['xpts_real_min'].sum():.2f}")
+    # chances per match, when he played: predicted against what happened
+    pl = d[d["minutes"] > 0]
+    n90 = pl["minutes"] / 90
+    np90 = (pl["g90"] - (pl["pen90"] - pl["pm90"])).clip(lower=0)
+    print("\nChance 90min per match at real minutes (matches he played): predicted share against real share, and sorting (AUC, 0.5 = coin flip)")
+    print("figure | matches | predicted | real | AUC")
+    checks = [("Score 1+ (no pens)", 1 - np.exp(-np90 * n90), pl["np_goals"] >= 1),
+              ("Assist 1+", 1 - np.exp(-pl["a90"] * n90), pl["assists"] >= 1)]
+    on = pl[pl["minutes"] >= 60]
+    checks.append(("Clean sheet (60+)", on["p_cs"], on["ga"].fillna(9) == 0))
+    if "p_defcon" in on:
+        dcm = on[on["position"] != "GK"]
+        checks.append(("DefCon (60+)", dcm["p_defcon"], real_parts(dcm)["DefCon and other"] >= 2))
+    for name, prob, hit in checks:
+        prob, hit = np.asarray(prob, float), np.asarray(hit, float)
+        print(f"{name} | {len(hit)} | {prob.mean():.1%} | {hit.mean():.1%} | {_auc(prob, hit):.3f}")
+    # 3. ranking
+    print("\nRanking inside the core, season totals: rank correlation (1 = same order) of the prediction and of the prediction at real minutes")
+    print("group | predicted (xMin) | at real minutes | xMin total vs real minutes")
+    for pos in list(CORE_GROUP) + ["All"]:
+        x = core if pos == "All" else core[core["position"] == pos]
+        print(f"{pos} | {x['real'].corr(x['pred'], method='spearman'):.2f} | {x['real_np'].corr(x['am'], method='spearman'):.2f} | {x['mins'].corr(x['xmin'], method='spearman'):.2f}")
+    print("\nCore players: real rank, model rank (predicted total), predicted, real, at real minutes (no pens), real without pens, minutes, xMin")
+    print("position | real rank | model rank | name | team | predicted | real | at real minutes | real no pens | minutes | xMin")
+    for pos, n in CORE_GROUP.items():
+        x = tot[tot["position"] == pos].copy()
+        x["rr"] = x["real"].rank(ascending=False, method="min").astype(int)
+        x["mr"] = x["pred"].rank(ascending=False, method="min").astype(int)
+        for r in x.nsmallest(n, "rr").itertuples():
+            print(f"{pos} | {r.rr} | {r.mr} | {r.name} | {r.team} | {r.pred:.1f} | {r.real:.0f} | {r.am:.1f} | {r.real_np:.0f} | {r.mins:.0f} | {r.xmin:.0f}")
+
+
 def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     pred = pred.copy()
     pred["pred_pts4"] = pred["pts4"].fillna(pred["ppg_all"]).fillna(0.0)
@@ -2330,6 +2393,58 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
         xmin_tot += v
         print(f"{c} | {tg[f'rp_{c}'].sum():.0f} | {tg[f'am_{c}'].sum():.1f} | {v:.1f}")
     print(f"Total | {tg['real_no_pens'].sum():.0f} | {tg['xpts_real_min'].sum():.1f} | {xmin_tot:.1f}")
+
+    # Do we find the right players? Each way's top 100 by its season total of predictions (made before each GW),
+    # by position, against the real top 100.
+    print("\n=== Finding the best players: top 100 by predicted season points (GK 10, DEF 30, MID 40, FWD 20) against the real top 100 ===")
+    TOP100 = {"GK": 10, "DEF": 30, "MID": 40, "FWD": 20}
+    st = gw.groupby(["pid", "position"], as_index=False).agg(real=("total_points", "sum"), name=("name", "last"), team=("team", "last"),
+                                                            **{c: (c, "sum") for c in models.values()})
+    print("position | way | in the real top | of | rank correlation inside the real top | real points of its picks | real points of the real top")
+    for pos, n in list(TOP100.items()) + [("All", 100)]:
+        d = st if pos == "All" else st[st["position"] == pos]
+        real_top = set(d.nlargest(n, "real")["pid"]) if pos != "All" else set().union(*[set(st[st["position"] == p].nlargest(k, "real")["pid"]) for p, k in TOP100.items()])
+        best = d[d["pid"].isin(real_top)]
+        for m, c in models.items():
+            picks = set(d.nlargest(n, c)["pid"]) if pos != "All" else set().union(*[set(st[st["position"] == p].nlargest(k, c)["pid"]) for p, k in TOP100.items()])
+            rc = best["real"].corr(best[c], method="spearman")
+            print(f"{pos} | {m} | {len(picks & real_top)} | {len(real_top)} | {rc:.2f} | {d[d['pid'].isin(picks)]['real'].sum():.0f} | {best['real'].sum():.0f}")
+    # The season totals above flatter "points in his last 4 GWs": added up over a season it is his real points a few
+    # weeks late. A fair test: each 4-gameweek stretch, each way's top players by what it predicted for those 4 GWs
+    # (made before them: its figure for the first of the 4) against the real top over the same 4 GWs, averaged over the stretches.
+    print("\n=== Finding the best players, each 4 GWs: top by predicted points for the next 4 GWs (GK 5, DEF 15, MID 20, FWD 10) against the real top, average over the season ===")
+    TOP4 = {"GK": 5, "DEF": 15, "MID": 20, "FWD": 10}
+    gws = sorted(gw["GW"].unique())
+    acc = {}
+    for b in range(0, len(gws), 4):
+        # every way judged only on what it said before the stretch began: its figure for the first gameweek
+        # (a later one would already know the real points of the gameweeks before it inside the stretch)
+        real = gw[gw["GW"].isin(gws[b:b + 4])].groupby(["pid", "position"], as_index=False)["total_points"].sum().rename(columns={"total_points": "real"})
+        first = gw[gw["GW"] == gws[b]][["pid"] + list(models.values())]
+        blk = real.merge(first, on="pid", how="left").fillna(0.0)
+        for pos, n in TOP4.items():
+            d = blk[blk["position"] == pos]
+            real_top = set(d.nlargest(n, "real")["pid"])
+            for m, c in models.items():
+                picks = set(d.nlargest(n, c)["pid"])
+                a = acc.setdefault((pos, m), [0, 0, 0.0, 0.0])
+                a[0] += len(picks & real_top); a[1] += n; a[2] += d[d["pid"].isin(picks)]["real"].sum(); a[3] += d[d["pid"].isin(real_top)]["real"].sum()
+    print("position | way | share of the real top found | real points of its picks / real points of the real top")
+    for pos in list(TOP4) + ["All"]:
+        for m in models:
+            keys = [(p, m) for p in TOP4] if pos == "All" else [(pos, m)]
+            t = [sum(acc[k][i] for k in keys) for i in range(4)]
+            print(f"{pos} | {m} | {t[0] / t[1]:.0%} | {t[2] / t[3]:.0%}")
+
+    print("\nModel's top by position (predicted season total, real total, real rank)")
+    print("position | model rank | name | team | predicted | real | real rank")
+    for pos, n in TOP100.items():
+        d = st[st["position"] == pos].copy()
+        d["real_rank"] = d["real"].rank(ascending=False, method="min").astype(int)
+        for i, r in enumerate(d.nlargest(n, "xpts").itertuples(), 1):
+            print(f"{pos} | {i} | {r.name} | {r.team} | {r.xpts:.1f} | {r.real:.0f} | {r.real_rank}")
+
+    core_report(pred, gw)
 
     print("\n=== Decisions: mean actual points per GW ===")
     rows = {}
@@ -3638,10 +3753,21 @@ def goal_tune(data_dir: Path, seasons: list[str], step: int, offline: bool, mode
         ex = XPointsModel().fit(feat[feat["season"] != seasons[-1]]).explain()
         g = ex[ex["target"] == "goals"]
         row["coefs"] = ", ".join(f"{f}={c}" for f, c in zip(g["feature"], g["coef"]))
-        res = predict_frame(data_dir, seasons, 1, offline)
-        res = res.groupby("web_name", as_index=False).agg(g90=("g90", "first"), pen90=("pen90", "first"))
-        look = dict(zip(res["web_name"], 1 - np.exp(-(res["g90"] + res["pen90"] * PEN_CONVERSION))))
-        row["score90"] = ", ".join(f"{n} {look[n]:.0%}" for n in names if n in look)
+        try:
+            res = predict_frame(data_dir, seasons, 1, offline)
+            res = res.groupby("web_name", as_index=False).agg(g90=("g90", "first"), pen90=("pen90", "first"))
+            look = dict(zip(res["web_name"], 1 - np.exp(-(res["g90"] + res["pen90"] * PEN_CONVERSION))))
+            row["score90"] = ", ".join(f"{n} {look[n]:.0%}" for n in names if n in look)
+        except Exception as e:  # noqa: BLE001
+            row["score90"] = f"(live figures not read: {e})"
+        # the top 60 scorers of the test season: non-penalty goals at their real minutes, predicted against real
+        tot = pred.groupby(["pid", "position"], as_index=False)["total_points"].sum()
+        top = pd.concat([tot[tot["position"] == p].nlargest(n, "total_points") for p, n in TOP_SCORERS.items()])["pid"]
+        t = played[played["pid"].isin(top)]
+        row["top60_np_goals_pred"] = float((t["g90"] - t["pen90"] * 0 + 0).mul(t["minutes"] / 90).sum() - (t["pen90"] - t["pm90"]).mul(t["minutes"] / 90).sum())
+        row["top60_np_goals_real"] = float(t["np_goals"].sum()) if "np_goals" in t else float("nan")
+        r = played[played["minutes"] >= 60]
+        row["np_goal_MAE_60+"] = float(((r["g90"] - (r["pen90"] - r["pm90"])) * r["minutes"] / 90 - r["np_goals"]).abs().mean())
         rows.append(row)
     GLMS["goals"] = learned
     out = pd.DataFrame(rows)

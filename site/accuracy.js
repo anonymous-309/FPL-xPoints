@@ -29,6 +29,7 @@
   const table = (head, rows, opts = {}) => el('div', { className: 'wrap' }, el('table', { className: 'acc-table' },
     el('thead', {}, el('tr', {}, ...head.map((h, k) => el('th', { scope: 'col', className: k ? 'num' : '', textContent: h })))),
     el('tbody', {}, ...rows.map((r) => el('tr', { className: opts.mark && opts.mark(r) ? 'on' : '' }, ...r.map((c, k) => el('td', { className: k ? 'num' : '', textContent: c })))))));
+  const sum100 = (s) => (s.match(/\d+/g) || []).reduce((a, x) => a + Number(x), 0);
   const card = (title, ...kids) => el('section', { className: 'acc-card' }, el('h2', { textContent: title }), ...kids);
   const p = (...kids) => el('p', {}, ...kids);
   const b = (t) => el('b', { textContent: t });
@@ -98,6 +99,61 @@
             'So the part of the gap that the minutes explain is the difference between those two; the rest is in the per-90 figures, and partly in the luck these 60 had, since they were picked out after the season for scoring the most.') : null,
           am && md ? p(`Per gameweek (without penalties): with real minutes the average miss is ${f(num(am[3]), 2)} points and the order ${f(num(am[5]), 2)}, against ${f(num(md[3]), 2)} and ${f(num(md[5]), 2)} with xMin.`) : null));
       }
+    }
+
+    // pipe tables: the rows after a header line that matches, up to the first line that is not a row
+    const pipe = (lines, re) => {
+      const i = lines.findIndex((l) => re.test(l.trim()));
+      const rows = [];
+      const n = i >= 0 ? lines[i].split('|').length : 0;  // a row has as many cells as the header
+      for (let j = i + 1; i >= 0 && j < lines.length && lines[j].trim() && lines[j].split('|').length === n; j++) rows.push(lines[j].split('|').map((x) => x.trim()));
+      return rows;
+    };
+    const POSN = { GK: 'Goalkeepers', DEF: 'Defenders', MID: 'Midfielders', FWD: 'Forwards', All: 'All' };
+
+    // 1c. the core group
+    const coreKey = Object.keys(S).find((k) => k.startsWith('Core group'));
+    if (coreKey) {
+      const L = S[coreKey];
+      const xm = pipe(L, /^group \| matches \| xMin/);
+      const parts = pipe(L, /^group \| part \| real/);
+      const ch = pipe(L, /^figure \| matches \| predicted/);
+      const rk = pipe(L, /^group \| predicted \(xMin\)/);
+      const pl = pipe(L, /^position \| real rank/);
+      const size = (coreKey.match(/\((.+?)\)/) || [])[1] || '';
+      const PARTS = ['Goals', 'Assists', 'Bonus', 'Clean sheet', 'Saves', 'DefCon and other', 'Total'];
+      const ratio = (g, part) => { const r = parts.find((x) => x[0] === g && x[1] === part); return r ? f(num(r[4]), 2) : '–'; };
+      out.push(card('The core group',
+        p(`The ${sum100(size)} players who mattered most in ${season}: the top scorers by position (${size}). Three questions: is their xMin right, are the Chance 90min figures right once their real minutes are put in, and are they ranked in the right order?`),
+        el('h3', { textContent: 'xMin, per match' }),
+        table(['Group', 'Matches', 'xMin', 'Real minutes', 'Bias', 'Average miss', 'Within 10 min', 'Chance of 60+', 'Real 60+'],
+          xm.filter((r) => !r[0].includes('(')).map((r) => [POSN[r[0]] || r[0], r[1], r[2], r[3], r[4], r[5], r[6], r[7], r[8]]), { mark: (r) => r[0] === 'All' }),
+        p('Bias below 0: xMin a little too low. For the players who matter, xMin is about right on average; the miss in a single match is mostly a substitution or a rest.'),
+        el('h3', { textContent: 'Chance 90min at their real minutes: real points / predicted' }),
+        p('Each figure for a full 90, times the minutes he really played; penalty goals and misses left out. 1.00 = right, 1.20 = they really got 20% more.'),
+        table(['Part', 'GK', 'DEF', 'MID', 'FWD', 'All'], PARTS.map((pt) => [pt === 'DefCon and other' ? 'DefCon' : pt, ...['GK', 'DEF', 'MID', 'FWD', 'All'].map((g) => ratio(g, pt))]), { mark: (r) => r[0] === 'Total' }),
+        table(['Per match he played', 'Predicted', 'Happened', 'Sorting (0.5 coin flip, 1 perfect)'], ch.map((r) => [r[0], r[2], r[3], r[4]])),
+        p('Saves, clean sheets and DefCon come out close. Goals, assists and bonus come out short, partly because this group was picked after the season for scoring the most (their good luck is in it), and most for midfielders and defenders.'),
+        el('h3', { textContent: 'Is the order right?' }),
+        table(['Group', 'Predicted points', 'At real minutes', 'xMin total vs real minutes'], rk.map((r) => [POSN[r[0]] || r[0], r[1], r[2], r[3]]), { mark: (r) => r[0] === 'All' }),
+        p('Rank correlation inside the group: 1 = the same order as their real season points, 0 = no relation. The last column shows the minutes alone are ordered almost perfectly, so a wrong place comes from the per-90 figures.'),
+        pl.length ? el('details', {}, el('summary', { textContent: 'Each player of the core: real rank and the model\'s rank' }),
+          table(['Pos', 'Real rank', 'Model rank', 'Player', 'Team', 'Predicted', 'Real', 'At real minutes (no pens)', 'Real (no pens)', 'Minutes', 'xMin'], pl.map((r) => r.slice(0, 11)))) : null));
+    }
+
+    // 1d. finding the best players
+    const f4Key = Object.keys(S).find((k) => k.startsWith('Finding the best players, each 4'));
+    const fsKey = Object.keys(S).find((k) => k.startsWith('Finding the best players: top 100'));
+    if (f4Key || fsKey) {
+      const f4 = f4Key ? pipe(S[f4Key], /^position \| way \| share/) : [];
+      const fs = fsKey ? pipe(S[fsKey], /^position \| way \| in the real top/).filter((r) => r[1] === 'Model') : [];
+      out.push(card('Does it find the best players?',
+        fs.length ? p(b('Over the season'), ': the model\'s top 100 by its predictions added up over the season (GK 10, DEF 30, MID 40, FWD 20), against the real top 100.') : null,
+        fs.length ? table(['Position', 'In the real top', 'Order inside the real top', 'Real points of its picks', 'Real points of the real top'],
+          fs.map((r) => [POSN[r[0]] || r[0], `${r[2]} of ${r[3]}`, f(num(r[4]), 2), r[5], r[6]]), { mark: (r) => r[0] === 'All' }) : null,
+        f4.length ? p(b('Every 4 gameweeks'), ': each way names its top players before the 4 gameweeks start (GK 5, DEF 15, MID 20, FWD 10), against the real top of those 4 gameweeks. Over just 4 gameweeks luck decides most of it, so no way finds even half; what matters is which finds more.') : null,
+        f4.length ? table(['Position', 'Way of guessing', 'Real top found', 'Points of its picks / points of the real top'],
+          f4.map((r) => [POSN[r[0]] || r[0], NAMES[r[1]] || r[1], r[2], r[3]]), { mark: (r) => r[1] === 'This site' }) : null));
     }
 
     // 2. decisions
