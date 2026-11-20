@@ -2265,22 +2265,22 @@ def real_parts(pred: pd.DataFrame) -> pd.DataFrame:
     return out
 
 
-CORE = {"GK": 15, "DEF": 35, "MID": 35, "FWD": 15}  # the "core": the top scorers of the test season by position
+CORE_GROUP = {"GK": 15, "DEF": 35, "MID": 35, "FWD": 15}  # the "core": the top scorers of the test season by position
 
 
 def core_report(pred: pd.DataFrame, gw: pd.DataFrame) -> None:
-    """The core group (CORE by real season points): how right xMin is for them, how right the Chance 90min figures
+    """The core group (CORE_GROUP by real season points): how right xMin is for them, how right the Chance 90min figures
     are once their real minutes are put in, and whether the season ranking is right."""
     tot = gw.groupby(["pid", "position"], as_index=False).agg(real=("total_points", "sum"), pred=("xpts", "sum"), name=("name", "last"), team=("team", "last"),
                                                              mins=("minutes", "sum"), xmin=("xmin", "sum"), am=("xpts_real_min", "sum"), real_np=("real_no_pens", "sum"))
-    core = pd.concat([tot[tot["position"] == p].nlargest(n, "real") for p, n in CORE.items()])
+    core = pd.concat([tot[tot["position"] == p].nlargest(n, "real") for p, n in CORE_GROUP.items()])
     d = pred[pred["pid"].isin(core["pid"]) & pred["minutes"].notna()].copy()
-    print(f"\n=== Core group: the top {sum(CORE.values())} by real points ({', '.join(f'{n} {p}' for p, n in CORE.items())}) ===")
+    print(f"\n=== Core group: the top {sum(CORE_GROUP.values())} by real points ({', '.join(f'{n} {p}' for p, n in CORE_GROUP.items())}) ===")
     # 1. xMin, per match
     print("\nxMin, per match (all their league matches; 'known out' = listed injured or banned before the match)")
     print("group | matches | xMin | real | bias | average miss | within 10 min | chance of 60+ | real 60+")
     out = d.get("hist_out", pd.Series(False, index=d.index)).astype(bool)
-    for pos in list(CORE) + ["All"]:
+    for pos in list(CORE_GROUP) + ["All"]:
         x = d if pos == "All" else d[d["position"] == pos]
         for lab, y in (("", x), (" (not known out)", x[~out.loc[x.index]])):
             e = y["xmin"] - y["minutes"]
@@ -2288,7 +2288,7 @@ def core_report(pred: pd.DataFrame, gw: pd.DataFrame) -> None:
     # 2. Chance 90min at real minutes, season totals per part
     print("\nChance 90min at their real minutes, season totals by part (penalty goals and misses left out): real | at real minutes | real / predicted")
     print("group | part | real | at real minutes | ratio")
-    for pos in list(CORE) + ["All"]:
+    for pos in list(CORE_GROUP) + ["All"]:
         x = d if pos == "All" else d[d["position"] == pos]
         for c in POINT_PARTS:
             r, a = x[f"rp_{c}"].sum(), x[f"am_{c}"].sum()
@@ -2314,12 +2314,12 @@ def core_report(pred: pd.DataFrame, gw: pd.DataFrame) -> None:
     # 3. ranking
     print("\nRanking inside the core, season totals: rank correlation (1 = same order) of the prediction and of the prediction at real minutes")
     print("group | predicted (xMin) | at real minutes | xMin total vs real minutes")
-    for pos in list(CORE) + ["All"]:
+    for pos in list(CORE_GROUP) + ["All"]:
         x = core if pos == "All" else core[core["position"] == pos]
         print(f"{pos} | {x['real'].corr(x['pred'], method='spearman'):.2f} | {x['real_np'].corr(x['am'], method='spearman'):.2f} | {x['mins'].corr(x['xmin'], method='spearman'):.2f}")
     print("\nCore players: real rank, model rank (predicted total), predicted, real, at real minutes (no pens), real without pens, minutes, xMin")
     print("position | real rank | model rank | name | team | predicted | real | at real minutes | real no pens | minutes | xMin")
-    for pos, n in CORE.items():
+    for pos, n in CORE_GROUP.items():
         x = tot[tot["position"] == pos].copy()
         x["rr"] = x["real"].rank(ascending=False, method="min").astype(int)
         x["mr"] = x["pred"].rank(ascending=False, method="min").astype(int)
