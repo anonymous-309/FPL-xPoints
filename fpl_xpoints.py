@@ -2347,6 +2347,29 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
             picks = set(d.nlargest(n, c)["pid"]) if pos != "All" else set().union(*[set(st[st["position"] == p].nlargest(k, c)["pid"]) for p, k in TOP100.items()])
             rc = best["real"].corr(best[c], method="spearman")
             print(f"{pos} | {m} | {len(picks & real_top)} | {len(real_top)} | {rc:.2f} | {d[d['pid'].isin(picks)]['real'].sum():.0f} | {best['real'].sum():.0f}")
+    # The season totals above flatter "points in his last 4 GWs": added up over a season it is his real points a few
+    # weeks late. A fair test: each 4-gameweek stretch, each way's top players by what it predicted for those 4 GWs
+    # (made before them) against the real top over the same 4 GWs, averaged over the stretches.
+    print("\n=== Finding the best players, each 4 GWs: top by predicted points for the next 4 GWs (GK 5, DEF 15, MID 20, FWD 10) against the real top, average over the season ===")
+    TOP4 = {"GK": 5, "DEF": 15, "MID": 20, "FWD": 10}
+    gws = sorted(gw["GW"].unique())
+    acc = {}
+    for b in range(0, len(gws), 4):
+        blk = gw[gw["GW"].isin(gws[b:b + 4])].groupby(["pid", "position"], as_index=False).agg(real=("total_points", "sum"), **{c: (c, "sum") for c in models.values()})
+        for pos, n in TOP4.items():
+            d = blk[blk["position"] == pos]
+            real_top = set(d.nlargest(n, "real")["pid"])
+            for m, c in models.items():
+                picks = set(d.nlargest(n, c)["pid"])
+                a = acc.setdefault((pos, m), [0, 0, 0.0, 0.0])
+                a[0] += len(picks & real_top); a[1] += n; a[2] += d[d["pid"].isin(picks)]["real"].sum(); a[3] += d[d["pid"].isin(real_top)]["real"].sum()
+    print("position | way | share of the real top found | real points of its picks / real points of the real top")
+    for pos in list(TOP4) + ["All"]:
+        for m in models:
+            keys = [(p, m) for p in TOP4] if pos == "All" else [(pos, m)]
+            t = [sum(acc[k][i] for k in keys) for i in range(4)]
+            print(f"{pos} | {m} | {t[0] / t[1]:.0%} | {t[2] / t[3]:.0%}")
+
     print("\nModel's top by position (predicted season total, real total, real rank)")
     print("position | model rank | name | team | predicted | real | real rank")
     for pos, n in TOP100.items():
