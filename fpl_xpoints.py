@@ -1452,7 +1452,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
                  / g["n"].transform(lambda s: s.shift(1).rolling(4, min_periods=1).sum()).replace(0, np.nan))
     p["ppg_all"] = g["pts"].transform(lambda s: s.shift(1).expanding().sum()) / g["n"].transform(lambda s: s.shift(1).expanding().sum()).replace(0, np.nan)
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
-    for c in ["g", "xg", "xgot", "xgk"]:
+    for c in ["g", "xg", "xgot", "xgk", "a", "xa"]:
         p[f"F_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_FINISH)
     p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     p["w5_st"], p["w5_ms"], p["w5_mb"], p["ret_st"], p["ret_ms"], p["ret_mb"], p["w5_last"], p["ret_last"] = ai_starts(keys, p["mins"].to_numpy(float), p["st"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
@@ -3567,6 +3567,61 @@ def mid_tune(data_dir: Path, seasons: list[str], step: int) -> None:
     print(pd.DataFrame(rows).round(3).to_string(index=False))
 
 
+def assist_tune(data_dir: Path, seasons: list[str], step: int) -> None:
+    """FPL counts more assists than Opta's xA sees (won penalties, rebounds, deflections, fouls for free-kick goals), and
+    it shows most at the top. Tries a long-run assists/xA ratio per player in the assist model, and assists in the bonus
+    model, and reports assist calibration at the top, the core ranking and the decision figures."""
+    feat = build_features(load_history(data_dir, seasons))
+    for k in (2.0, 5.0):
+        feat[f"creat_long_k{int(k)}"] = np.log((feat["F_a"] + k) / (feat["F_xa"] + k))
+    base_a, base_b = GLMS["assists"], GLMS["bonus"]
+    variants = {
+        "base": {},
+        "assists: long-run assists/xA (k5)": {"assists": ("assists", base_a[1] + ["creat_long_k5"])},
+        "assists: long-run assists/xA (k2)": {"assists": ("assists", base_a[1] + ["creat_long_k2"])},
+        "bonus: + xA and assists/xA": {"bonus": ("bonus", base_b[1] + ["l_xa", "creat_long_k5"])},
+        "both (k5)": {"assists": ("assists", base_a[1] + ["creat_long_k5"]), "bonus": ("bonus", base_b[1] + ["l_xa", "creat_long_k5"])},
+    }
+    season = seasons[-1]
+    rows = []
+    for name, v in variants.items():
+        GLMS["assists"], GLMS["bonus"] = v.get("assists", base_a), v.get("bonus", base_b)
+        print(f"--- {name}")
+        pred = walk_forward(feat, season, step)
+        pl = pred[pred["minutes"] > 0]
+        lam = pl["a90"] * pl["minutes"] / 90
+        prob = 1 - np.exp(-lam)
+        hit = (pl["assists"] >= 1).astype(float)
+        top = prob >= prob.quantile(0.95)
+        gw = pred.groupby(["GW", "pid"], as_index=False).agg(total_points=("total_points", "sum"), xpts=("xpts", "sum"), position=("position", "last"), min_long=("min_long", "last"))
+        tot = gw.groupby(["pid", "position"], as_index=False).agg(real=("total_points", "sum"), pred=("xpts", "sum"))
+        core = pd.concat([tot[tot["position"] == p].nlargest(n, "real") for p, n in CORE_GROUP.items()])
+        cp = pl[pl["pid"].isin(core["pid"])]
+        row = {"variant": name, "assists pred": lam.sum(), "assists real": pl["assists"].sum(),
+               "top5% pred": prob[top].mean(), "top5% real": hit[top].mean(),
+               "core assists real/pred": cp["assists"].sum() / (cp["a90"] * cp["minutes"] / 90).sum(),
+               "assist AUC": _auc(prob.to_numpy(), hit.to_numpy()),
+               "core bonus real/pred": cp["bonus"].sum() / (cp["bonus90"] * cp["minutes"] / 90).sum()}
+        for p in CORE_GROUP:
+            x = core[core["position"] == p]
+            row[f"{p} order"] = x["real"].corr(x["pred"], method="spearman")
+        row["core order"] = core["real"].corr(core["pred"], method="spearman")
+        reg = gw[gw["min_long"] >= 45]
+        row["order regulars"] = reg["total_points"].corr(reg["xpts"], method="spearman")
+        row["captain"] = gw.loc[gw.groupby("GW")["xpts"].idxmax(), "total_points"].mean()
+        row["top10"] = gw.sort_values("xpts", ascending=False).groupby("GW").head(10)["total_points"].mean()
+        rows.append(row)
+        if name == "base":
+            # FPL assists against Opta xA by long-run xA band, test season, players who played
+            band = pd.qcut(pl["a90"], 5, duplicates="drop")
+            t = pl.assign(xa=pl["expected_assists"].fillna(0), lam=lam).groupby(band, observed=True).agg(n=("assists", "size"), assists=("assists", "sum"), xa=("xa", "sum"), pred=("lam", "sum"))
+            print("\nAssists by predicted assist rate (fifths): FPL assists, Opta xA, predicted")
+            print(t.round(1).to_string())
+    GLMS["assists"], GLMS["bonus"] = base_a, base_b
+    print("\n=== Assist variants ===")
+    print(pd.DataFrame(rows).round(3).to_string(index=False))
+
+
 def rare_tune(data_dir: Path, seasons: list[str]) -> None:
     """Compares memory (half-life, match cap) and shrinkage k for rare events, on the last season's matches.
 
@@ -3841,7 +3896,7 @@ def home_away(data_dir: Path, seasons: list[str]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune", "euro-check", "mid-tune"])
+    ap.add_argument("command", choices=["download", "backtest", "predict", "site", "tune", "home-away", "cs-tune", "goal-tune", "rare-tune", "euro-check", "mid-tune", "assist-tune"])
     ap.add_argument("--data-dir", type=Path, default=Path("fpl_data"))
     ap.add_argument("--seasons", nargs="+", default=HIST_SEASONS)
     ap.add_argument("--test-season", default=None, help="default: the last of --seasons")
@@ -3870,6 +3925,8 @@ def main() -> None:
         home_away(a.data_dir, a.seasons)
     elif a.command == "euro-check":
         euro_check(a.data_dir, a.seasons, a.offline)
+    elif a.command == "assist-tune":
+        assist_tune(a.data_dir, a.seasons, a.step)
     elif a.command == "mid-tune":
         mid_tune(a.data_dir, a.seasons, a.step)
     elif a.command == "rare-tune":
