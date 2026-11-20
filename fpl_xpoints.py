@@ -22,6 +22,7 @@ Requires: pandas, numpy, scipy, scikit-learn.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import re
 import shutil
@@ -508,9 +509,10 @@ def yellow_bans(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def skipped(df: pd.DataFrame) -> pd.Series:
-    """Matches left out of the minutes formula: yellow-card bans and injury absences."""
+    """Matches left out of the minutes formula: yellow-card bans and injury absences (this season's from the injury
+    log, past seasons' from archive/injuries)."""
     out = pd.Series(False, index=df.index)
-    for col in ("yellow_ban", "inj_skip"):
+    for col in ("yellow_ban", "inj_skip", "hist_skip"):
         if col in df:
             out |= df[col].fillna(False).astype(bool)
     return out
@@ -1862,7 +1864,115 @@ class XPointsModel:
 # ---------------------------------------------------------------- backtest
 def load_history(data_dir: Path, seasons: list[str]) -> pd.DataFrame:
     raw = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
-    return yellow_bans(clean(add_core(raw, data_dir, seasons), seasons))
+    return historic_absences(yellow_bans(clean(add_core(raw, data_dir, seasons), seasons)))
+
+
+INJURY_ARCHIVE = Path(__file__).resolve().parent / "archive" / "injuries"
+
+
+def _plain(s) -> str:
+    import unicodedata
+    s = unicodedata.normalize("NFKD", str(s or "")).encode("ascii", "ignore").decode().lower()
+    return " ".join(re.sub(r"[^a-z ]", "", re.sub(r"[-.']", " ", s)).split())
+
+
+def _club(s) -> str:
+    s = _plain(s).replace("afc ", "").replace(" fc", "")
+    alias = {"manchester city": "man city", "manchester united": "man utd", "tottenham hotspur": "spurs", "nottingham forest": "nottm forest",
+             "brighton hove albion": "brighton", "wolverhampton wanderers": "wolves"}
+    return alias.get(s, s).split()[0]
+
+
+def _one(name: str, pool: list) -> int | None:
+    """The row in pool [(index, full name)] that a FotMob name means, or None when unsure."""
+    n = _plain(name)
+    tests = (lambda r: _plain(r) == n,
+             lambda r: _plain(r).split()[-1:] == n.split()[-1:] and _plain(r).split()[:1] == n.split()[:1],
+             lambda r: set(n.split()) <= set(_plain(r).split()),
+             lambda r: n.split()[-1:] == _plain(r).split()[-1:])
+    for t in tests:
+        hit = [i for i, r in pool if t(r)]
+        if len(hit) == 1:
+            return hit[0]
+        if len(hit) > 1:
+            return None
+    return None
+
+
+def historic_absences(df: pd.DataFrame, folder: Path = INJURY_ARCHIVE) -> pd.DataFrame:
+    """Injuries and absences of past seasons, from archive/injuries (tools/history_injuries.py for FotMob's lists of
+    unavailable players per league match, tools/history_soccerway.py for Soccerway's injury spells), so past
+    seasons are read the way the site reads the current one:
+      hist_out   listed unavailable for the match (FotMob), or inside a Soccerway injury spell
+      hist_skip  matches the minutes formula leaves out: the zero-minute ones he was out for, and the match he got
+                 hurt in (a Soccerway spell starting that day or within 2 days, or the match before a FotMob injury
+                 listing, when he did not play all of it)
+      hist_back  his first match after an injury absence (the site counts half his usual minutes)
+    Seasons with no archive are left as they are."""
+    df["hist_out"] = False
+    df["hist_skip"] = False
+    df["hist_back"] = False
+    if not folder.exists() or "kickoff_time" not in df:
+        return df
+    inj = pd.Series(False, index=df.index)
+    for path in sorted(folder.glob("fotmob_*.json.gz")):
+        season = path.name[len("fotmob_"):-len(".json.gz")]
+        s = df[df["season"] == season]
+        if s.empty:
+            continue
+        sides = s.groupby(["fixture", "was_home"])["team"].first().unstack()
+        if 0 not in sides or 1 not in sides:
+            continue
+        fx = {(_club(h), _club(a)): f for f, h, a in zip(sides.index, sides[1], sides[0])}
+        for m in json.loads(gzip.decompress(path.read_bytes()))["matches"]:
+            f = fx.get((_club(m["home"]), _club(m["away"])))
+            if f is None:
+                continue
+            for side, home in (("homeUnavailable", 1), ("awayUnavailable", 0)):
+                rows = s[(s["fixture"] == f) & (s["was_home"] == home)]
+                pool = list(zip(rows.index, rows["name"]))
+                for u in m.get(side) or []:
+                    i = _one(u.get("name"), pool)
+                    if i is not None:
+                        df.at[i, "hist_out"] = True
+                        inj.at[i] = inj.at[i] or ((u.get("unavailability") or {}).get("type") == "injury")
+    sw_path = folder / "soccerway_players.json.gz"
+    hurt = pd.Series(False, index=df.index)
+    if sw_path.exists():
+        names = df.drop_duplicates("pid")[["pid", "name"]]
+        tok = {pid: frozenset(_plain(n).split()) for pid, n in zip(names["pid"], names["name"])}
+        spells = {}
+        for p in json.loads(gzip.decompress(sw_path.read_bytes()))["players"]:
+            t = frozenset(_plain(p["slug"].replace("-", " ")).split())
+            hit = [pid for pid, tk in tok.items() if tk == t] or [pid for pid, tk in tok.items() if t <= tk or tk <= t]
+            if len(hit) == 1 and p.get("injuries"):
+                spells.setdefault(hit[0], []).extend(
+                    (pd.Timestamp(pd.to_datetime(r["from"], format="%d.%m.%Y")),
+                     pd.Timestamp(pd.to_datetime(r["until"], format="%d.%m.%Y")) if r.get("until") else pd.Timestamp.max)
+                    for r in p["injuries"])
+        day = pd.to_datetime(df["kickoff_time"], utc=True).dt.tz_localize(None).dt.normalize()
+        lo, hi = (pd.Timestamp("2024-07-01"), pd.Timestamp("2026-07-01"))
+        for i, pid, k, m in zip(df.index, df["pid"], day, df["minutes"].fillna(0)):
+            if not (lo <= k < hi):
+                continue
+            for a, b in spells.get(pid, ()):
+                if a < k < b or (a == k and m == 0):
+                    df.at[i, "hist_out"] = True
+                    inj.at[i] = True
+                elif m > 0 and k <= a <= k + pd.Timedelta(days=2):
+                    hurt.at[i] = True
+    order = df.sort_values(["pid", "kickoff_time"]).index
+    mins = df.loc[order, "minutes"].fillna(0)
+    pid = df.loc[order, "pid"]
+    nxt_inj = inj.loc[order].groupby(pid.to_numpy()).shift(-1).fillna(False).astype(bool)
+    hurt.loc[order] |= (nxt_inj & (mins < 90) & (mins > 0) & ~df.loc[order, "hist_out"]).to_numpy()
+    out = df.loc[order, "hist_out"].astype(bool)
+    prev_inj = (out & inj.loc[order]).groupby(pid.to_numpy()).shift(1).fillna(False).astype(bool)
+    df.loc[order, "hist_back"] = (prev_inj & ~out).to_numpy()
+    df["hist_skip"] = (df["hist_out"] & (df["minutes"].fillna(0) == 0)) | (hurt & ~df["hist_out"])
+    print(f"Past-season absences from archive/injuries: {int(df['hist_out'].sum())} matches out, {int(hurt.sum())} matches he got hurt in, "
+          f"{int(df['hist_back'].sum())} first matches back")
+    return df
 
 
 PEN_ORDER_WINDOW = 38  # team matches looked back over for who has been taking the penalties
@@ -1918,7 +2028,11 @@ def walk_forward(feat: pd.DataFrame, season: str, step: int, min_train_seasons: 
         print(f"  training before {season} GW{block[0]}, predicting GW{block[0]}-{block[-1]}")
         model = XPointsModel().fit(feat[feat["t"] < cut])
         rows = test[test["GW"].isin(block)]
-        parts.append(pd.concat([rows, model.predict(rows)], axis=1))
+        # What was known before each match, as the site knows it now: out (0), first match back from injury (half).
+        avail = None
+        if "hist_out" in rows:
+            avail = pd.Series(np.where(rows["hist_out"].astype(bool), 0.0, np.where(rows["hist_back"].astype(bool), 0.5, 1.0)), index=rows.index)
+        parts.append(pd.concat([rows, model.predict(rows, avail)], axis=1))
     return pd.concat(parts)
 
 

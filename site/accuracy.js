@@ -110,8 +110,8 @@
         table(['Recent minutes', 'xMin', 'Real minutes', 'Chance of 60+', 'Real 60+', 'Matches'],
           mins.map((l) => { const m = l.trim().match(/^\(([-\d.]+), ([\d.]+)\]\s+(.*)$/); if (!m) return null; const r = m[3].trim().split(/\s+/);
             return [`${Math.max(0, num(m[1]))}–${m[2]}`, f(num(r[0]), 0), f(num(r[1]), 0), pct(num(r[2]) * 100), pct(num(r[3]) * 100), r[4]]; }).filter(Boolean)),
-        p(minErr ? `For regular starters xMin is off by about ${f(num(minErr), 0)} minutes a match on average. ` : '',
-          'Players on 85-90 minutes really average around 80: some go off injured, are rested or dropped without warning. The minutes rules (injuries, bans, rests) take care of what is known before the deadline.')));
+        p(minErr ? `For regular starters xMin is off by about ${f(num(minErr), 0)} minutes a match on average (21 before the test knew the injuries). ` : '',
+          'The test knows who was injured or banned before each match (FotMob and Soccerway), as the site knows from FPL\'s flags now: such a player gets 0, and half his usual minutes in his first match back. What is left is mostly players who go off injured, or are rested or dropped without warning.')));
     }
 
     // 4b. minutes of the players worth buying (xMin 60+), from tools/xmin_backtest.py
