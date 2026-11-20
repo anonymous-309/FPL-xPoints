@@ -1,35 +1,5 @@
 [
  {
-  "id": "c577016-2026-27-GW10",
-  "season": "2026-27",
-  "pid": "c577016",
-  "name": "Acheampong",
-  "team": "CHE",
-  "position": "DEF",
-  "startGw": 10,
-  "startFrom": "matches",
-  "firstSeen": "2026-11-11T03:52Z",
-  "status": "out",
-  "returnedGw": null,
-  "updates": [
-   {
-    "gw": 11,
-    "at": "2026-11-11T03:52Z",
-    "type": "Doubtful",
-    "news": "Unspecified injury - 75% chance of playing",
-    "chance": 75,
-    "expectedReturnGw": null,
-    "expectedReturnDate": null
-   }
-  ],
-  "type": "Doubtful",
-  "news": "Unspecified injury - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
- },
- {
   "id": "c535301-2026-27-GW10",
   "season": "2026-27",
   "pid": "c535301",
@@ -57,37 +27,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
- },
- {
-  "id": "c540324-2026-27-GW10",
-  "season": "2026-27",
-  "pid": "c540324",
-  "name": "Belloumi",
-  "team": "HUL",
-  "position": "MID",
-  "startGw": 10,
-  "startFrom": "matches",
-  "firstSeen": "2026-11-11T03:52Z",
-  "status": "out",
-  "returnedGw": null,
-  "updates": [
-   {
-    "gw": 11,
-    "at": "2026-11-11T03:52Z",
-    "type": "Doubtful",
-    "news": "Hamstring injury - 75% chance of playing",
-    "chance": 75,
-    "expectedReturnGw": null,
-    "expectedReturnDate": null
-   }
-  ],
-  "type": "Doubtful",
-  "news": "Hamstring injury - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c441264-2026-27-GW10",
@@ -126,37 +66,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
- },
- {
-  "id": "c486672-2026-27-GW10",
-  "season": "2026-27",
-  "pid": "c486672",
-  "name": "Caicedo",
-  "team": "CHE",
-  "position": "MID",
-  "startGw": 10,
-  "startFrom": "news",
-  "firstSeen": "2026-11-19T20:36Z",
-  "status": "out",
-  "returnedGw": null,
-  "updates": [
-   {
-    "gw": 11,
-    "at": "2026-11-19T20:36Z",
-    "type": "Doubtful",
-    "news": "Unspecified injury - 75% chance of playing",
-    "chance": 75,
-    "expectedReturnGw": null,
-    "expectedReturnDate": null
-   }
-  ],
-  "type": "Doubtful",
-  "news": "Unspecified injury - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c199796-2026-27-GW10",
@@ -179,14 +89,23 @@
     "chance": 75,
     "expectedReturnGw": null,
     "expectedReturnDate": null
+   },
+   {
+    "gw": 11,
+    "at": "2026-11-20T16:17Z",
+    "type": "Injury",
+    "news": "Concussion - Expected back 28 Nov",
+    "chance": 0,
+    "expectedReturnGw": 12,
+    "expectedReturnDate": "2026-11-28"
    }
   ],
-  "type": "Doubtful",
-  "news": "Concussion - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "type": "Injury",
+  "news": "Concussion - Expected back 28 Nov",
+  "chance": 0,
+  "expectedReturnGw": 12,
+  "expectedReturnDate": "2026-11-28",
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c432830-2026-27-GW10",
@@ -209,14 +128,23 @@
     "chance": 75,
     "expectedReturnGw": null,
     "expectedReturnDate": null
+   },
+   {
+    "gw": 11,
+    "at": "2026-11-20T16:17Z",
+    "type": "Injury",
+    "news": "Knee injury - Expected back 2 Dec",
+    "chance": 0,
+    "expectedReturnGw": 13,
+    "expectedReturnDate": "2026-12-02"
    }
   ],
-  "type": "Doubtful",
-  "news": "Knee injury - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "type": "Injury",
+  "news": "Knee injury - Expected back 2 Dec",
+  "chance": 0,
+  "expectedReturnGw": 13,
+  "expectedReturnDate": "2026-12-02",
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c596777-2026-27-GW10",
@@ -246,7 +174,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c209036-2026-27-GW10",
@@ -276,7 +204,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c512123-2026-27-GW10",
@@ -306,7 +234,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c472713-2026-27-GW10",
@@ -329,14 +257,23 @@
     "chance": 75,
     "expectedReturnGw": null,
     "expectedReturnDate": null
+   },
+   {
+    "gw": 11,
+    "at": "2026-11-20T16:17Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Expected back 2 Dec",
+    "chance": 0,
+    "expectedReturnGw": 13,
+    "expectedReturnDate": "2026-12-02"
    }
   ],
-  "type": "Doubtful",
-  "news": "Hamstring injury - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "type": "Injury",
+  "news": "Hamstring injury - Expected back 2 Dec",
+  "chance": 0,
+  "expectedReturnGw": 13,
+  "expectedReturnDate": "2026-12-02",
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c180974-2026-27-GW10",
@@ -366,7 +303,37 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
+ },
+ {
+  "id": "c578153-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c578153",
+  "name": "Khusanov",
+  "team": "MCI",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-20T16:17Z",
+  "status": "out",
+  "returnedGw": null,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-20T16:17Z",
+    "type": "Doubtful",
+    "news": "Unspecified injury - 50% chance of playing",
+    "chance": 50,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Unspecified injury - 50% chance of playing",
+  "chance": 50,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c95658-2026-27-GW10",
@@ -396,37 +363,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
- },
- {
-  "id": "c614071-2026-27-GW10",
-  "season": "2026-27",
-  "pid": "c614071",
-  "name": "Manzambi",
-  "team": "AVL",
-  "position": "MID",
-  "startGw": 10,
-  "startFrom": "news",
-  "firstSeen": "2026-11-12T16:25Z",
-  "status": "out",
-  "returnedGw": null,
-  "updates": [
-   {
-    "gw": 11,
-    "at": "2026-11-12T16:25Z",
-    "type": "Doubtful",
-    "news": "Calf injury - 75% chance of playing",
-    "chance": 75,
-    "expectedReturnGw": null,
-    "expectedReturnDate": null
-   }
-  ],
-  "type": "Doubtful",
-  "news": "Calf injury - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c231747-2026-27-GW10",
@@ -456,37 +393,37 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
-  "id": "c606930-2026-27-GW10",
+  "id": "c465351-2026-27-GW10",
   "season": "2026-27",
-  "pid": "c606930",
-  "name": "Mendy",
-  "team": "HUL",
+  "pid": "c465351",
+  "name": "Matheus N.",
+  "team": "MCI",
   "position": "DEF",
   "startGw": 10,
   "startFrom": "news",
-  "firstSeen": "2026-11-16T19:05Z",
+  "firstSeen": "2026-11-20T16:17Z",
   "status": "out",
   "returnedGw": null,
   "updates": [
    {
     "gw": 11,
-    "at": "2026-11-16T19:05Z",
+    "at": "2026-11-20T16:17Z",
     "type": "Doubtful",
-    "news": "Knee injury - 75% chance of playing",
-    "chance": 75,
+    "news": "Unspecified injury - 50% chance of playing",
+    "chance": 50,
     "expectedReturnGw": null,
     "expectedReturnDate": null
    }
   ],
   "type": "Doubtful",
-  "news": "Knee injury - 75% chance of playing",
-  "chance": 75,
+  "news": "Unspecified injury - 50% chance of playing",
+  "chance": 50,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c445028-2026-27-GW10",
@@ -516,7 +453,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c215136-2026-27-GW10",
@@ -546,7 +483,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c204561-2026-27-GW10",
@@ -576,7 +513,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c247412-2026-27-GW10",
@@ -606,7 +543,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c511499-2026-27-GW10",
@@ -629,14 +566,23 @@
     "chance": 75,
     "expectedReturnGw": null,
     "expectedReturnDate": null
+   },
+   {
+    "gw": 11,
+    "at": "2026-11-20T16:17Z",
+    "type": "Injury",
+    "news": "Ankle injury - Expected back 6 Dec",
+    "chance": 0,
+    "expectedReturnGw": 14,
+    "expectedReturnDate": "2026-12-06"
    }
   ],
-  "type": "Doubtful",
-  "news": "Ankle injury - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "type": "Injury",
+  "news": "Ankle injury - Expected back 6 Dec",
+  "chance": 0,
+  "expectedReturnGw": 14,
+  "expectedReturnDate": "2026-12-06",
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c502500-2026-27-GW10",
@@ -666,37 +612,7 @@
   "chance": 0,
   "expectedReturnGw": 14,
   "expectedReturnDate": "2026-12-05",
-  "lastSeen": "2026-11-20T14:39Z"
- },
- {
-  "id": "c97032-2026-27-GW10",
-  "season": "2026-27",
-  "pid": "c97032",
-  "name": "Virgil",
-  "team": "LIV",
-  "position": "DEF",
-  "startGw": 10,
-  "startFrom": "news",
-  "firstSeen": "2026-11-11T03:52Z",
-  "status": "out",
-  "returnedGw": null,
-  "updates": [
-   {
-    "gw": 11,
-    "at": "2026-11-11T03:52Z",
-    "type": "Doubtful",
-    "news": "Unspecified injury - 75% chance of playing",
-    "chance": 75,
-    "expectedReturnGw": null,
-    "expectedReturnDate": null
-   }
-  ],
-  "type": "Doubtful",
-  "news": "Unspecified injury - 75% chance of playing",
-  "chance": 75,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c84450-2026-27-GW10",
@@ -735,7 +651,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c661888-2026-27-GW10",
@@ -765,7 +681,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c481655-2026-27-GW10",
@@ -804,7 +720,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c547027-2026-27-GW9",
@@ -834,7 +750,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c616077-2026-27-GW9",
@@ -864,7 +780,7 @@
   "chance": 0,
   "expectedReturnGw": 12,
   "expectedReturnDate": "2026-11-29",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c441266-2026-27-GW9",
@@ -894,7 +810,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c551210-2026-27-GW9",
@@ -924,7 +840,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c209046-2026-27-GW9",
@@ -954,7 +870,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c437499-2026-27-GW9",
@@ -984,7 +900,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c241293-2026-27-GW9",
@@ -1014,7 +930,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c428580-2026-27-GW9",
@@ -1053,7 +969,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c461102-2026-27-GW9",
@@ -1092,7 +1008,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c250199-2026-27-GW8",
@@ -1122,7 +1038,7 @@
   "chance": 0,
   "expectedReturnGw": 18,
   "expectedReturnDate": "2026-12-30",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c216094-2026-27-GW8",
@@ -1145,14 +1061,23 @@
     "chance": 0,
     "expectedReturnGw": null,
     "expectedReturnDate": null
+   },
+   {
+    "gw": 11,
+    "at": "2026-11-20T16:17Z",
+    "type": "Doubtful",
+    "news": "Hamstring injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
    }
   ],
-  "type": "Injury",
-  "news": "Hamstring injury - Unknown return date",
-  "chance": 0,
+  "type": "Doubtful",
+  "news": "Hamstring injury - 75% chance of playing",
+  "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c475168-2026-27-GW8",
@@ -1182,7 +1107,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c223340-2026-27-GW8",
@@ -1221,7 +1146,7 @@
   "chance": 0,
   "expectedReturnGw": 16,
   "expectedReturnDate": "2026-12-20",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c437730-2026-27-GW8",
@@ -1251,67 +1176,37 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
-  "id": "c214590-2026-27-GW8",
+  "id": "c109646-2026-27-GW8",
   "season": "2026-27",
-  "pid": "c214590",
-  "name": "Wan-Bissaka",
-  "team": "AVL",
+  "pid": "c109646",
+  "name": "Tosin",
+  "team": "TOT",
   "position": "DEF",
   "startGw": 8,
   "startFrom": "matches",
-  "firstSeen": "2026-11-11T03:52Z",
+  "firstSeen": "2026-11-20T16:17Z",
   "status": "out",
   "returnedGw": null,
   "updates": [
    {
     "gw": 11,
-    "at": "2026-11-11T03:52Z",
-    "type": "Doubtful",
-    "news": "Hamstring injury - 50% chance of playing",
-    "chance": 50,
-    "expectedReturnGw": null,
-    "expectedReturnDate": null
-   }
-  ],
-  "type": "Doubtful",
-  "news": "Hamstring injury - 50% chance of playing",
-  "chance": 50,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
- },
- {
-  "id": "c570526-2026-27-GW7",
-  "season": "2026-27",
-  "pid": "c570526",
-  "name": "Bergvall",
-  "team": "TOT",
-  "position": "MID",
-  "startGw": 7,
-  "startFrom": "matches",
-  "firstSeen": "2026-11-11T03:52Z",
-  "status": "out",
-  "returnedGw": null,
-  "updates": [
-   {
-    "gw": 11,
-    "at": "2026-11-11T03:52Z",
+    "at": "2026-11-20T16:17Z",
     "type": "Injury",
-    "news": "Knee injury - Unknown return date",
+    "news": "Calf injury - Expected back 29 Nov",
     "chance": 0,
-    "expectedReturnGw": null,
-    "expectedReturnDate": null
+    "expectedReturnGw": 12,
+    "expectedReturnDate": "2026-11-29"
    }
   ],
   "type": "Injury",
-  "news": "Knee injury - Unknown return date",
+  "news": "Calf injury - Expected back 29 Nov",
   "chance": 0,
-  "expectedReturnGw": null,
-  "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "expectedReturnGw": 12,
+  "expectedReturnDate": "2026-11-29",
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c176297-2026-27-GW7",
@@ -1341,7 +1236,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c487992-2026-27-GW7",
@@ -1380,7 +1275,7 @@
   "chance": 0,
   "expectedReturnGw": 19,
   "expectedReturnDate": "2027-01-02",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c494928-2026-27-GW7",
@@ -1410,7 +1305,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c232185-2026-27-GW7",
@@ -1449,7 +1344,7 @@
   "chance": 0,
   "expectedReturnGw": 12,
   "expectedReturnDate": "2026-11-29",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c106760-2026-27-GW7",
@@ -1479,7 +1374,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c209289-2026-27-GW7",
@@ -1509,37 +1404,7 @@
   "chance": 0,
   "expectedReturnGw": 12,
   "expectedReturnDate": "2026-11-29",
-  "lastSeen": "2026-11-20T14:39Z"
- },
- {
-  "id": "c510281-2026-27-GW7",
-  "season": "2026-27",
-  "pid": "c510281",
-  "name": "Sávio",
-  "team": "TOT",
-  "position": "MID",
-  "startGw": 7,
-  "startFrom": "matches",
-  "firstSeen": "2026-11-11T03:52Z",
-  "status": "out",
-  "returnedGw": null,
-  "updates": [
-   {
-    "gw": 11,
-    "at": "2026-11-11T03:52Z",
-    "type": "Injury",
-    "news": "Muscular injury - Expected back 21 Nov",
-    "chance": 0,
-    "expectedReturnGw": 11,
-    "expectedReturnDate": "2026-11-21"
-   }
-  ],
-  "type": "Injury",
-  "news": "Muscular injury - Expected back 21 Nov",
-  "chance": 0,
-  "expectedReturnGw": 11,
-  "expectedReturnDate": "2026-11-21",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c223827-2026-27-GW6",
@@ -1569,7 +1434,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c244858-2026-27-GW6",
@@ -1592,14 +1457,23 @@
     "chance": 0,
     "expectedReturnGw": 11,
     "expectedReturnDate": "2026-11-23"
+   },
+   {
+    "gw": 11,
+    "at": "2026-11-20T16:17Z",
+    "type": "Doubtful",
+    "news": "Knock - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
    }
   ],
-  "type": "Injury",
-  "news": "Knock - Expected back 23 Nov",
-  "chance": 0,
-  "expectedReturnGw": 11,
-  "expectedReturnDate": "2026-11-23",
-  "lastSeen": "2026-11-20T14:39Z"
+  "type": "Doubtful",
+  "news": "Knock - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c223723-2026-27-GW6",
@@ -1638,7 +1512,7 @@
   "chance": 0,
   "expectedReturnGw": 12,
   "expectedReturnDate": "2026-11-29",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c614574-2026-27-GW6",
@@ -1668,7 +1542,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c539142-2026-27-GW5",
@@ -1698,7 +1572,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c225796-2026-27-GW5",
@@ -1728,7 +1602,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c485711-2026-27-GW5",
@@ -1758,7 +1632,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c465920-2026-27-GW4",
@@ -1788,7 +1662,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c626751-2026-27-GW3",
@@ -1818,7 +1692,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c194010-2026-27-GW3",
@@ -1848,7 +1722,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c461199-2026-27-GW3",
@@ -1878,7 +1752,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c515621-2026-27-GW2",
@@ -1908,7 +1782,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c169359-2026-27-GW2",
@@ -1938,7 +1812,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c700308-2026-27-GW2",
@@ -1977,7 +1851,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c492777-2026-27-GW1",
@@ -2007,7 +1881,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c183656-2026-27-GW1",
@@ -2030,14 +1904,23 @@
     "chance": 25,
     "expectedReturnGw": null,
     "expectedReturnDate": null
+   },
+   {
+    "gw": 11,
+    "at": "2026-11-20T16:17Z",
+    "type": "Injury",
+    "news": "Hamstring injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
    }
   ],
-  "type": "Doubtful",
-  "news": "Hamstring injury - 25% chance of playing",
-  "chance": 25,
+  "type": "Injury",
+  "news": "Hamstring injury - Unknown return date",
+  "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c439668-2026-27-GW1",
@@ -2067,7 +1950,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c510663-2026-27-GW1",
@@ -2097,7 +1980,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c487117-2026-27-GW1",
@@ -2127,7 +2010,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c593174-2026-27-GW1",
@@ -2157,7 +2040,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c463936-2026-27-GW1",
@@ -2187,7 +2070,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c470294-2026-27-GW1",
@@ -2217,7 +2100,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c501902-2026-27-GW1",
@@ -2247,7 +2130,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c436893-2026-27-GW1",
@@ -2277,7 +2160,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c554578-2026-27-GW1",
@@ -2307,7 +2190,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c432987-2026-27-GW1",
@@ -2337,7 +2220,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c86873-2026-27-GW1",
@@ -2367,7 +2250,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c647681-2026-27-GW1",
@@ -2397,7 +2280,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c465525-2026-27-GW1",
@@ -2427,7 +2310,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c565297-2026-27-GW1",
@@ -2457,7 +2340,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c543295-2026-27-GW1",
@@ -2487,7 +2370,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c620487-2026-27-GW1",
@@ -2517,7 +2400,7 @@
   "chance": 0,
   "expectedReturnGw": 11,
   "expectedReturnDate": "2026-10-31",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c451340-2026-27-GW1",
@@ -2556,7 +2439,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c550839-2026-27-GW1",
@@ -2586,7 +2469,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c449871-2026-27-GW1",
@@ -2616,7 +2499,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c500151-2026-27-GW1",
@@ -2646,7 +2529,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c608181-2026-27-GW1",
@@ -2676,7 +2559,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c232112-2026-27-GW1",
@@ -2706,7 +2589,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c220583-2026-27-GW1",
@@ -2736,7 +2619,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c176412-2026-27-GW1",
@@ -2775,7 +2658,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
  },
  {
   "id": "c493362-2026-27-GW1",
@@ -2805,7 +2688,38 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-20T14:39Z"
+  "lastSeen": "2026-11-20T16:17Z"
+ },
+ {
+  "id": "c577016-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c577016",
+  "name": "Acheampong",
+  "team": "CHE",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "back",
+  "returnedGw": 11,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Unspecified injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Unspecified injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
  },
  {
   "id": "c592984-2026-27-GW10",
@@ -2837,6 +2751,68 @@
   "expectedReturnDate": null,
   "lastSeen": "2026-11-20T10:45Z",
   "closedAt": "2026-11-20T12:45Z"
+ },
+ {
+  "id": "c540324-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c540324",
+  "name": "Belloumi",
+  "team": "HUL",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "back",
+  "returnedGw": 11,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Hamstring injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Hamstring injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
+ },
+ {
+  "id": "c486672-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c486672",
+  "name": "Caicedo",
+  "team": "CHE",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-19T20:36Z",
+  "status": "back",
+  "returnedGw": 10,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-19T20:36Z",
+    "type": "Doubtful",
+    "news": "Unspecified injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Unspecified injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
  },
  {
   "id": "c76357-2026-27-GW10",
@@ -2932,6 +2908,68 @@
   "closedAt": "2026-11-18T09:34Z"
  },
  {
+  "id": "c614071-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c614071",
+  "name": "Manzambi",
+  "team": "AVL",
+  "position": "MID",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-12T16:25Z",
+  "status": "back",
+  "returnedGw": 10,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-12T16:25Z",
+    "type": "Doubtful",
+    "news": "Calf injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Calf injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
+ },
+ {
+  "id": "c606930-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c606930",
+  "name": "Mendy",
+  "team": "HUL",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-16T19:05Z",
+  "status": "back",
+  "returnedGw": 10,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-16T19:05Z",
+    "type": "Doubtful",
+    "news": "Knee injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Knee injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
+ },
+ {
   "id": "c466525-2026-27-GW10",
   "season": "2026-27",
   "pid": "c466525",
@@ -2961,6 +2999,37 @@
   "expectedReturnDate": null,
   "lastSeen": "2026-11-19T13:37Z",
   "closedAt": "2026-11-19T16:24Z"
+ },
+ {
+  "id": "c97032-2026-27-GW10",
+  "season": "2026-27",
+  "pid": "c97032",
+  "name": "Virgil",
+  "team": "LIV",
+  "position": "DEF",
+  "startGw": 10,
+  "startFrom": "news",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "back",
+  "returnedGw": 10,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Unspecified injury - 75% chance of playing",
+    "chance": 75,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Unspecified injury - 75% chance of playing",
+  "chance": 75,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
  },
  {
   "id": "c622758-2026-27-history-GW9",
@@ -3334,6 +3403,37 @@
   "lastSeen": null
  },
  {
+  "id": "c214590-2026-27-GW8",
+  "season": "2026-27",
+  "pid": "c214590",
+  "name": "Wan-Bissaka",
+  "team": "AVL",
+  "position": "DEF",
+  "startGw": 8,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "back",
+  "returnedGw": 11,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Doubtful",
+    "news": "Hamstring injury - 50% chance of playing",
+    "chance": 50,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Doubtful",
+  "news": "Hamstring injury - 50% chance of playing",
+  "chance": 50,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
+ },
+ {
   "id": "c508395-2026-27-history-GW8",
   "season": "2026-27",
   "pid": "c508395",
@@ -3372,6 +3472,37 @@
   "expectedReturnGw": null,
   "expectedReturnDate": null,
   "lastSeen": null
+ },
+ {
+  "id": "c570526-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c570526",
+  "name": "Bergvall",
+  "team": "TOT",
+  "position": "MID",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "back",
+  "returnedGw": 11,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Knee injury - Unknown return date",
+    "chance": 0,
+    "expectedReturnGw": null,
+    "expectedReturnDate": null
+   }
+  ],
+  "type": "Injury",
+  "news": "Knee injury - Unknown return date",
+  "chance": 0,
+  "expectedReturnGw": null,
+  "expectedReturnDate": null,
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
  },
  {
   "id": "c172850-2026-27-history-GW7",
@@ -3683,6 +3814,37 @@
   "expectedReturnDate": "2026-11-08",
   "lastSeen": "2026-11-20T10:45Z",
   "closedAt": "2026-11-20T12:45Z"
+ },
+ {
+  "id": "c510281-2026-27-GW7",
+  "season": "2026-27",
+  "pid": "c510281",
+  "name": "Sávio",
+  "team": "TOT",
+  "position": "MID",
+  "startGw": 7,
+  "startFrom": "matches",
+  "firstSeen": "2026-11-11T03:52Z",
+  "status": "back",
+  "returnedGw": 11,
+  "updates": [
+   {
+    "gw": 11,
+    "at": "2026-11-11T03:52Z",
+    "type": "Injury",
+    "news": "Muscular injury - Expected back 21 Nov",
+    "chance": 0,
+    "expectedReturnGw": 11,
+    "expectedReturnDate": "2026-11-21"
+   }
+  ],
+  "type": "Injury",
+  "news": "Muscular injury - Expected back 21 Nov",
+  "chance": 0,
+  "expectedReturnGw": 11,
+  "expectedReturnDate": "2026-11-21",
+  "lastSeen": "2026-11-20T14:39Z",
+  "closedAt": "2026-11-20T16:17Z"
  },
  {
   "id": "c487053-2026-27-history-GW7",
