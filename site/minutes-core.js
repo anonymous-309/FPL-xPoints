@@ -4,8 +4,9 @@ window.XMin = (function () {
   'use strict';
   const STORE = 'xmin-overrides';
   const GOAL_PTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
-  const PEN_TAKE_ON_PITCH = 0.95;  // same as the model: the listed taker steps up when he is on the pitch
+  const PEN_TAKE_ON_PITCH = 1;  // same as the model: the listed taker takes them while he is on the pitch
   let takers = {};  // team -> players with an FPL penalty order, first taker first
+  let fkTakers = {};  // team -> players on FPL's free kick or corner list
   const PARTS = ['goal', 'assist', 'bonus', 'cs', 'conceded', 'saves', 'pensave', 'penmiss', 'own', 'defcon', 'cards'];
 
   function load() { try { return JSON.parse(localStorage.getItem(STORE)) || {}; } catch (e) { return {}; } }
@@ -43,25 +44,113 @@ window.XMin = (function () {
   }
 
   // Call once with all players so penalty shares can follow edited minutes of the takers above.
-  function setPlayers(players) {
+  let patterns = {};  // team -> [{ ids, pats: [[weight, started flags]] }]: who started together in recent matches
+  function setPlayers(players, pats) {
+    patterns = pats || {};
     takers = {};
+    fkTakers = {};
     players.filter((p) => p.penOrder != null).forEach((p) => { (takers[p.team] = takers[p.team] || []).push(p); });
+    players.filter((p) => p.fkOrder != null || p.cornerOrder != null).forEach((p) => { (fkTakers[p.team] = fkTakers[p.team] || []).push(p); });
     Object.values(takers).forEach((list) => list.sort((a, b) => a.penOrder - b.penOrder));
   }
 
-  // His share of the team's penalties while he is on the pitch in match j of gameweek g: the first taker takes
-  // them when on, each next taker gets the ones left while those above him are off (same rule as the model).
+  // Minutes of player t in the match of fixture fx (gameweek g), or null if not in it.
+  function matchMins(overrides, t, g, fx) {
+    const k = t.byGw[g] && t.byGw[g].fx ? t.byGw[g].fx.indexOf(fx) : -1;
+    return k < 0 ? null : Math.min(90, minutes(overrides, t, g).mins[k]);
+  }
+  // How he is on the pitch (same as the model): the chance he starts, his minutes when he starts (from the kick-off)
+  // and when he does not (at the end), and the chance he is there at all, his minutes over his usual ones.
+  function pitch(overrides, t, g, fx) {
+    const m = matchMins(overrides, t, g, fx);
+    if (m === null) return null;
+    const u = t.pitch || { start: m >= 60 ? 1 : 0, ms: m, mb: 0 };
+    const usual = t.minUsual || 0;
+    const there = usual > 0 ? Math.min(1, m / usual) : 0;
+    const q = usual > 0 && m > usual ? m / usual : 1;  // minutes set above his usual: longer on the pitch
+    return { id: t.id, start: u.start, ms: Math.min(90, u.ms * q), mb: Math.min(90, u.mb * q), there };
+  }
+  const GRID = Array.from({ length: 90 }, (_, i) => i + 0.5);
+  // Every case of who starts among the listed takers with its chance: each starts as often as his Start says; the
+  // club's recent start patterns decide who starts together (fitted to those chances, as the model does).
+  function startCases(starts, pats) {
+    const k = starts.length;
+    const cells = Array.from({ length: 1 << k }, (_, b) => starts.map((_, i) => (b >> i) & 1));
+    const indep = cells.map((c) => c.reduce((a, f, i) => a * (f ? starts[i] : 1 - starts[i]), 1));
+    if (!pats || !pats.length) return cells.map((c, n) => [indep[n], c]).filter(([w]) => w > 0);
+    const seen = cells.map(() => 0);
+    pats.forEach(([w, fl]) => { const n = fl.reduce((a, f, i) => a + (f ? 1 << i : 0), 0); seen[n] += w; });
+    const ss = seen.reduce((a, v) => a + v, 0) || 1;
+    let p = cells.map((_, n) => 0.9 * seen[n] / ss + 0.1 * indep[n] + 1e-9);
+    const norm = () => { const t = p.reduce((a, v) => a + v, 0); p = p.map((v) => v / t); };
+    norm();
+    for (let it = 0; it < 60; it++) {
+      starts.forEach((st, i) => {
+        const m = p.reduce((a, v, n) => a + (cells[n][i] ? v : 0), 0);
+        if (m > 0 && m < 1) p = p.map((v, n) => v * (cells[n][i] ? st / m : (1 - st) / (1 - m)));
+        norm();
+      });
+    }
+    return cells.map((c, n) => [p[n], c]).filter(([w]) => w > 1e-9);
+  }
+  // Share of the team's penalties each player takes while on the pitch, minute by minute (as the model does it):
+  // the first listed taker on the pitch takes them, and when none is on, the free kick and corner takers on it.
+  function shares(listed, fks, pats) {
+    const k = listed.length;
+    const onS = listed.map((x) => GRID.map((t) => (t < x.ms ? 1 : 0)));
+    const onB = listed.map((x) => GRID.map((t) => (t >= 90 - x.mb ? 1 : 0)));
+    const cases = startCases(listed.map((x) => x.start), pats);
+    const took = Array(k).fill(0), onT = Array(k).fill(0), free = Array(k).fill(0), unc = Array(90).fill(0);
+    cases.forEach(([w, fl]) => {
+      for (let there = 0; there < 1 << k; there++) {
+        const wt = w * listed.reduce((a, x, i) => a * ((there >> i) & 1 ? x.there : 1 - x.there), 1);
+        if (wt <= 0) continue;
+        const cov = Array(90).fill(0);
+        for (let i = 0; i < k; i++) {
+          const on = (there >> i) & 1 ? (fl[i] ? onS[i] : onB[i]) : null;
+          let fr = 0, tk = 0, o = 0;
+          for (let t = 0; t < 90; t++) { fr += 1 - cov[t]; if (on && on[t]) { o += 1; if (!cov[t]) { tk += 1; cov[t] = 1; } } }
+          free[i] += wt * fr / 90; took[i] += wt * tk / 90; onT[i] += wt * o / 90;
+        }
+        for (let t = 0; t < 90; t++) unc[t] += wt * (1 - cov[t]);
+      }
+    });
+    const out = {};
+    listed.forEach((x, i) => { out[x.id] = PEN_TAKE_ON_PITCH * (onT[i] > 1e-9 ? took[i] / onT[i] : free[i]); });
+    if (fks.length) {
+      // while no listed taker is on: the free kick and corner takers, split by their minutes (starting or not)
+      const left = unc.reduce((a, v) => a + v, 0) / 90;
+      const mins = fks.reduce((a, x) => a + x.m, 0);
+      fks.forEach((x) => { if (x.m > 0 && mins > 0) out[x.id] = Math.min(1, (out[x.id] || 0) + left / mins); });
+    }
+    return out;
+  }
+
+  // His share of the team's penalties while he is on the pitch in match j of gameweek g. Who starts with whom
+  // matters: two takers who start together leave the next one the minutes after both have gone off; two who take
+  // turns to start always leave one of them on.
   function penCond(overrides, p, g, j) {
     const d = p.byGw[g];
-    if (p.penOrder == null || !d || !d.fx) return 0;
-    let left = 1;
-    for (const t of takers[p.team] || []) {
-      if (t.penOrder >= p.penOrder || t.id === p.id) continue;
-      const k = t.byGw[g] && t.byGw[g].fx ? t.byGw[g].fx.indexOf(d.fx[j]) : -1;
-      if (k < 0) continue;
-      left *= 1 - Math.min(90, minutes(overrides, t, g).mins[k]) / 90;
-    }
-    return PEN_TAKE_ON_PITCH * left;
+    if (!d || !d.fx) return 0;
+    const fx = d.fx[j];
+    // listed takers: Start above 50% -> on from the kick-off for his minutes, else on at the end for them
+    const listed = (takers[p.team] || []).map((t) => {
+      const x = pitch(overrides, t, g, fx);
+      if (!x) return null;
+      const len = Math.min(90, (t.minUsual || 0) * (t.minUsual > 0 ? Math.max(1, matchMins(overrides, t, g, fx) / t.minUsual) : 1));
+      return { ...x, start: (t.pitch ? t.pitch.start : x.start) > 0.5 ? 1 : 0, ms: len, mb: len };
+    }).filter(Boolean);
+    const fks = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).map((t) => { const m = matchMins(overrides, t, g, fx); return m ? { id: t.id, m: m / 90 } : null; }).filter(Boolean);
+    if (!listed.some((x) => x.id === p.id) && !fks.some((x) => x.id === p.id)) return 0;
+    return shares(listed, fks, null)[p.id] || 0;
+  }
+
+  // The chance he starts in gameweek g (at least one start in a double): his Start times the share of his usual
+  // minutes he is expected to play.
+  function startChance(overrides, p, g) {
+    const d = p.byGw[g];
+    if (!d || !d.fx || !p.pitch) return null;
+    return 1 - d.fx.reduce((a, fx) => { const x = pitch(overrides, p, g, fx); return a * (1 - (x ? x.start * x.there : 0)); }, 1);
   }
 
   // Change in his full-90 goal, penalty miss and xG figures for match j when the penalty share moves.
@@ -115,5 +204,23 @@ window.XMin = (function () {
     return (p) => -(score.get(p.id) || 0);
   }
 
-  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, order };
+  // The same text as a gameweek cell on the xPoints page: expected points, minutes, Chance 90min and points by part.
+  const PART_LABEL = { app: 'Appearance', goal: 'Goals', assist: 'Assists', bonus: 'Bonus', cs: 'Clean sheet', conceded: 'Goals conceded', saves: 'Saves', pensave: 'Penalty saves', penmiss: 'Penalty misses', own: 'Own goals', defcon: 'DefCon', cards: 'Cards' };
+  const CHANCES = [
+    ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'], ['pScore', 'Score 1+', 'pct'], ['xGoals', 'xGoals', 2],
+    ['pAssist', 'Fantasy Assist 1+', 'pct'], ['xAssists', 'xAssists', 2], ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2],
+    ['pDefcon', 'DefCon', 'pct'], ['xSaves', 'Saves', 1], ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'],
+    ['pOwnGoal', 'Own goal', 'pct1'], ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['bonus', 'Bonus', 2],
+  ];
+  function detailText(overrides, p, g) {
+    const d = view(overrides, p, g), raw = p.byGw[g];
+    if (!d || !raw) return `${p.name}, GW${g}: no match`;
+    const m = minutes(overrides, p, g);
+    const chances = CHANCES.filter(([key]) => raw[key] != null && !(key === 'pDefcon' && p.position === 'GK') && !((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK'))
+      .map(([key, label, fmt]) => `${label}: ${fmt === 'pct' ? `${Math.round(raw[key] * 100)}%` : fmt === 'pct1' ? `${(raw[key] * 100).toFixed(1)}%` : raw[key].toFixed(fmt)}`).join('\n');
+    const parts = Object.entries(PART_LABEL).filter(([k]) => Math.abs(d.parts[k]) >= 0.005).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n');
+    return `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${d.xpts.toFixed(1)} points, ${join(m.mins)} minutes${d.edited ? ' (yours)' : ''}\n\nChance 90min\n${chances}\n\nPoints\n${parts}`;
+  }
+
+  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, order, detailText };
 })();

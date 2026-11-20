@@ -1,0 +1,99 @@
+{
+ "seasons": [
+  "2024-25",
+  "2025-26"
+ ],
+ "removed": {
+  "red": 66,
+  "ban": 80,
+  "injured_in_match": 498
+ },
+ "bands": [
+  {
+   "band": "80–90",
+   "n": 8212,
+   "pred": 87.8,
+   "real": 82.1,
+   "bias": 5.7,
+   "mae": 8.5,
+   "within10": 0.856,
+   "real60": 0.913,
+   "zero": 0.035,
+   "sub": 0.052,
+   "p60_89": 0.146,
+   "full": 0.767,
+   "not_started": 548,
+   "started_mae": 3.8,
+   "started_bias": 0.7
+  },
+  {
+   "band": "70–80",
+   "n": 2460,
+   "pred": 75.1,
+   "real": 71.2,
+   "bias": 3.9,
+   "mae": 20.6,
+   "within10": 0.197,
+   "real60": 0.783,
+   "zero": 0.054,
+   "sub": 0.163,
+   "p60_89": 0.283,
+   "full": 0.5,
+   "not_started": 411,
+   "started_mae": 12.8,
+   "started_bias": -7.3
+  },
+  {
+   "band": "60–70",
+   "n": 2107,
+   "pred": 64.7,
+   "real": 61.5,
+   "bias": 3.1,
+   "mae": 28.0,
+   "within10": 0.166,
+   "real60": 0.667,
+   "zero": 0.114,
+   "sub": 0.219,
+   "p60_89": 0.279,
+   "full": 0.388,
+   "not_started": 606,
+   "started_mae": 18.7,
+   "started_bias": -16.1
+  },
+  {
+   "band": "All 60+",
+   "n": 12779,
+   "pred": 81.5,
+   "real": 76.6,
+   "bias": 4.9,
+   "mae": 14.1,
+   "within10": 0.615,
+   "real60": 0.847,
+   "zero": 0.052,
+   "sub": 0.101,
+   "p60_89": 0.194,
+   "full": 0.653,
+   "not_started": 1565,
+   "started_mae": 7.4,
+   "started_bias": -3.0
+  }
+ ],
+ "top_by_pos": {
+  "GK": {
+   "n": 1201,
+   "not_started": 52
+  },
+  "DEF": {
+   "n": 3588,
+   "not_started": 253
+  },
+  "MID": {
+   "n": 2861,
+   "not_started": 210
+  },
+  "FWD": {
+   "n": 562,
+   "not_started": 33
+  }
+ }
+}

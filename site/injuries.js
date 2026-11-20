@@ -40,7 +40,7 @@
     document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     render();
   }));
-  fetch('injury_log.json', { cache: 'no-store' })
+  fetch('injury_log.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((log) => {
       state.log = log;

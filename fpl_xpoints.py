@@ -22,6 +22,7 @@ Requires: pandas, numpy, scipy, scikit-learn.
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import re
 import shutil
@@ -78,7 +79,7 @@ PEN_SAVE_SHARE = 0.12  # share of penalties saved, used until penalties are coun
 SET_PIECE_COLS = {"penalties_order": "pen_order", "direct_freekicks_order": "fk_order", "corners_and_indirect_freekicks_order": "corner_order"}
 HL_FINISH, K_XGOT, K_FINISH_XG = 12, 8.0, 15.0  # finishing: same half-life as the rest, shrunk by xG volume
 HISTORY_MATCHES = 38  # every decayed record uses only each player's or team's latest 38 matches
-PEN_XGOT = 0.76  # xGOT of a penalty taken (FotMob), taken out of a player's xGOT
+PEN_XGOT_SCORED, PEN_XGOT_MISSED = 0.95, 0.3   # rough xGOT of a scored and a missed penalty (FotMob rates each one by where it went)
 HL_ROLE, ROLE_MIN_90S = 6, 3.0  # playing role from recent matches, needs about 270 recent minutes
 K_VENUE = 6.0  # home or away record of a team, shrunk toward its overall record
 # goals, xG, xGOT weights, and how many average xG each player's record is padded with (smaller = closer to a plain average)
@@ -346,6 +347,51 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
     return out[:, 0], out[:, 1], out[:, 2], out[:, 3], out[:, 4], out[:, 5], recent
 
 
+def _start_detail(history: list[tuple[float, float]]) -> tuple[float, float, float]:
+    """Chance he starts (the last 5 matches weighted 5-4-3-2-1, newest first), and his average minutes in the starts
+    and in the other matches of the same 5, from (minutes, started) per match, oldest first."""
+    if not history:
+        return np.nan, np.nan, np.nan
+    win = history[::-1][:5]
+    w = MINUTE_WEIGHTS[:len(win)]
+    st = np.array([x[1] for x in win], float)
+    mins = np.array([x[0] for x in win], float)
+    rate = float(np.dot(st, w) / w.sum())
+    ms = float(np.dot(mins * st, w) / np.dot(st, w)) if np.dot(st, w) > 0 else np.nan
+    mb = float(np.dot(mins * (1 - st), w) / np.dot(1 - st, w)) if np.dot(1 - st, w) > 0 else np.nan
+    return rate, ms, mb
+
+
+def ai_starts(keys: np.ndarray, mins: np.ndarray, starts: np.ndarray, matches: np.ndarray, reds: np.ndarray, banned: np.ndarray) -> tuple[np.ndarray, ...]:
+    """The Start figure (the chance he starts, 5-4-3-2-1 over the last 5 matches) before each row of each key, with the
+    same matches left out as in ai_minutes, and his minutes when starting and when not; then the same three for a
+    player coming back from an absence (the zero-minute matches at the end left out)."""
+    out = np.full((len(mins), 8), np.nan)
+    hist: list[tuple[float, float]] = []
+    ban_left = 0
+    prev = object()
+    for i, (k, v, st, n, r, b) in enumerate(zip(keys, mins, starts, matches, reds, banned)):
+        if k != prev:
+            hist, ban_left, prev = [], 0, k
+        end = len(hist)
+        while end > 0 and hist[end - 1][0] == 0:
+            end -= 1
+        out[i] = (_start_detail(hist) + (_start_detail(hist[:end]) if end else (np.nan, np.nan, np.nan))
+                  + (hist[-1][1] if hist else np.nan, hist[end - 1][1] if end else np.nan))
+        if n > 0 and b >= n:
+            continue
+        if n > 0:
+            minutes = float(v) / n
+            if r > 0:
+                ban_left = MAX_BAN_MATCHES
+            elif ban_left > 0 and minutes == 0:
+                ban_left -= 1
+            else:
+                ban_left = 0
+                hist.append((minutes, min(1.0, float(st) / n)))
+    return tuple(out[:, j] for j in range(8))
+
+
 def team_pre(keys: np.ndarray, x: np.ndarray, periods: np.ndarray) -> np.ndarray:
     """A team's record before each row: decayed with a season reset factor, or a plain recent window."""
     out = np.zeros(len(x))
@@ -463,9 +509,10 @@ def yellow_bans(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def skipped(df: pd.DataFrame) -> pd.Series:
-    """Matches left out of the minutes formula: yellow-card bans and injury absences."""
+    """Matches left out of the minutes formula: yellow-card bans and injury absences (this season's from the injury
+    log, past seasons' from archive/injuries)."""
     out = pd.Series(False, index=df.index)
-    for col in ("yellow_ban", "inj_skip"):
+    for col in ("yellow_ban", "inj_skip", "hist_skip"):
         if col in df:
             out |= df[col].fillna(False).astype(bool)
     return out
@@ -586,7 +633,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
-RED_HALFLIFE_TF = 38  # gameweeks (about a season) for a red card's weight in the position average to halve
+RED_HALFLIFE_TF = 19  # gameweeks (about half a season) for a red card's weight in the position average to halve
 OOP_MIN_SHARE = 0.10  # at or below this share he counts as a plain defender
 OOP_KNOWN = 3  # with at least this many league starts known to FotMob, his places decide (not his stats)
 OOP_MID_ROLES = {"AM", "RM", "LM", "RW", "LW", "ST"}  # wing, wide or attacking midfield (not holding/central midfield, not wing-back)
@@ -724,7 +771,11 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
 # ---------------------------------------------------------------- every club's fixtures in all competitions
 # League matches come from FPL (its gameweek and kickoff); every other competition from FotMob's team pages.
 CLUB_COMPS = {"Champions League": "UCL", "Europa League": "UEL", "Conference League": "UECL", "EFL Cup": "EFL",
-              "FA Cup": "FAC"}
+              "FA Cup": "FAC",
+              # qualifying rounds count as the competition itself
+              "Champions League Qualification": "UCL", "Europa League Qualification": "UEL",
+              "Conference League Qualification": "UECL"}
+CUP_CODES = {"UCL", "UEL", "UECL", "EFL", "FAC"}
 
 
 _CLUB_FILLER = {"fc", "ac", "as", "sc", "cf", "fk", "sk", "afc", "real", "club", "athletic", "olympique", "rb", "us", "ss", "ssc", "vfb", "vfl", "bayer", "borussia", "fsv", "tsg", "sv", "ogc", "rc", "rcd", "cd", "ud", "sd", "kv", "krc", "rsc", "royal"}
@@ -741,6 +792,209 @@ def _club_short(name: str) -> str:
             return v
     rest = [w for w in words if w not in _CLUB_FILLER] or words
     return rest[0][:3].upper()
+
+
+CUP_MINUTES = Path("cup_minutes.json")  # FotMob minutes of Premier League players in cup and European matches, kept in the repo
+
+
+def fdr_table(res: pd.DataFrame, df: pd.DataFrame | None = None) -> dict:
+    """Fixture difficulty from our own model, per club and coming match: goals it is expected to score (the other
+    side's expected goals conceded) and to concede, and its clean sheet chance. For reference only."""
+    t = res.groupby(["GW", "fixture", "team"], as_index=False).agg(
+        short=("team_short", "first"), opp=("opp_short", "first"), home=("was_home", "first"), conc=("conc90", "first"), cs=("p_cs", "first"),
+        kick=("kickoff_time", "first") if "kickoff_time" in res else ("GW", "first"))
+    other = t[["fixture", "team", "conc"]].rename(columns={"team": "opp_team", "conc": "scored"})
+    t["opp_team"] = t.groupby("fixture")["team"].transform(lambda x: x.iloc[::-1].to_numpy() if len(x) == 2 else x.to_numpy())
+    t = t.merge(other, on=["fixture", "opp_team"], how="left")
+    out = {}
+    for _, r in t.sort_values(["GW", "kick"]).iterrows():
+        out.setdefault(str(r["short"]), {}).setdefault(str(int(r["GW"])), []).append({
+            "opp": str(r["opp"]).upper() if r["home"] else str(r["opp"]).lower(), "home": bool(r["home"]),
+            "xgf": round(float(r["scored"]), 3) if pd.notna(r["scored"]) else None, "xga": round(float(r["conc"]), 3), "cs": round(float(r["cs"]), 4)})
+    payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "teams": out, "names": dict(zip(res["team_short"].astype(str), res["team"].astype(str)))}
+    if df is not None:
+        try:
+            payload.update(fdr_strength(df, res))
+        except Exception as e:  # the page falls back to the model's coming matches
+            print(f"FDR strength not added ({e})")
+    return payload
+
+
+def fdr_strength(df: pd.DataFrame, res: pd.DataFrame) -> dict:
+    """Each club's season so far, per match: real goals and xG, for and against, and the league's home advantage
+    (real goals and xG mixed half and half). The FDR page ranks the clubs on this mix."""
+    hist = df[~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()]
+    fx = hist.groupby(["fixture", "team", "opp"], as_index=False).agg(xg=("expected_goals", "sum"), gf=("gf", "first"), home=("was_home", "first"))
+    fx["gf"] = fx["gf"].fillna(0.0)
+    fx = fx.merge(fx[["fixture", "team", "xg", "gf"]].rename(columns={"team": "opp", "xg": "xga", "gf": "ga"}), on=["fixture", "opp"], how="left")
+    short = dict(zip(res["team"].astype(str), res["team_short"].astype(str)))
+    teams = {}
+    for team, g in fx.groupby("team"):
+        if str(team) in short:
+            teams[short[str(team)]] = {"n": int(len(g)), "gf": round(float(g["gf"].mean()), 3), "ga": round(float(g["ga"].mean()), 3),
+                                        "xg": round(float(g["xg"].mean()), 3), "xga": round(float(g["xga"].mean()), 3)}
+    mix = 0.5 * fx["gf"] + 0.5 * fx["xg"]
+    home_adv = float(mix[fx["home"] == 1].mean() / mix[fx["home"] == 0].mean())
+    return {"strength": teams, "homeAdv": round(home_adv, 3), "mixGoals": 0.5}
+
+
+def cup_minutes(fx: dict, offline: bool) -> dict:
+    """{FotMob match id: {"teams": {team name: {player name: minutes}}}} for every finished cup or European match of a
+    Premier League club, read once from FotMob's player stats and kept in CUP_MINUTES. For reference on the Minutes
+    page only: the minutes formula does not use them."""
+    store = json.loads(CUP_MINUTES.read_text(encoding="utf-8")) if CUP_MINUTES.exists() else {}
+    want = {str(m["mid"]) for t in fx["teams"] for m in t["matches"] if m["comp"] in CUP_CODES and m.get("score") is not None and m.get("mid")}
+    fetched = 0
+    for mid in sorted(want - set(store)):
+        if offline:
+            break
+        try:
+            d = _fotmob_get("matchDetails", {"matchId": mid})
+        except Exception as e:
+            print(f"FotMob match {mid} not read ({e})")
+            continue
+        teams = {}
+        for ps in ((d.get("content") or {}).get("playerStats") or {}).values():
+            mins = None
+            for blk in ps.get("stats") or []:
+                v = ((blk.get("stats") or {}).get("Minutes played") or {}).get("stat", {}).get("value")
+                if v is not None:
+                    mins = int(v)
+                    break
+            if mins is not None and ps.get("name"):
+                teams.setdefault(ps.get("teamName") or "", {})[ps["name"]] = mins
+        store[mid] = {"teams": teams}
+        fetched += 1
+        time.sleep(0.4)
+    if fetched:
+        CUP_MINUTES.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
+    print(f"Cup minutes: {len(want)} finished cup matches, {fetched} read from FotMob now")
+    return store
+
+
+def gw_of_time(t, gws: list[dict]) -> int | None:
+    """The gameweek whose window (its deadline up to the next one) a kick-off falls in."""
+    if not t:
+        return None
+    k = pd.Timestamp(t)
+    k = k.tz_localize("UTC") if k.tzinfo is None else k
+    dl = [(g["gw"], pd.Timestamp(g["deadline"])) for g in sorted(gws, key=lambda g: g["gw"])]
+    for (g, d), nxt in zip(dl, dl[1:] + [(None, None)]):
+        if k >= d and (nxt[1] is None or k < nxt[1]):
+            return g
+    return None
+
+
+INTL_MINUTES = Path("intl_minutes.json")  # FotMob national-team matches of Premier League players, kept in the repo
+INTL_BATCH, INTL_AGE_H, INTL_FROM = 160, 20, "2026-07-01"
+
+
+def intl_minutes(cache: Path, offline: bool) -> dict:
+    """{FotMob player id: {name, club, fetched, matches: {match id: [kick-off, opponent, minutes, competition, nation]}}}:
+    national-team matches from each player's FotMob page (its recent matches), refreshed a batch at a time (the
+    players read longest ago first) and kept in INTL_MINUTES, since a page only lists the last few matches. For
+    reference on the Minutes page only."""
+    store = json.loads(INTL_MINUTES.read_text(encoding="utf-8")) if INTL_MINUTES.exists() else {}
+    mf = cache / "fotmob" / "members.json"
+    members = json.loads(mf.read_text()) if mf.exists() else {}
+    now = time.time()
+    todo = []
+    for club, ms in members.items():
+        for name, fid, nat, cname in ms:
+            rec = store.setdefault(str(fid), {"name": name, "club": club, "fetched": 0, "matches": {}})
+            rec.update(name=name, club=club, nat=nat)
+            if now - rec["fetched"] > INTL_AGE_H * 3600:
+                todo.append(str(fid))
+    todo.sort(key=lambda k: store[k]["fetched"])
+    fetched = 0
+    for fid in todo[:INTL_BATCH]:
+        if offline:
+            break
+        try:
+            d = _fotmob_get("playerData", {"id": fid})
+        except Exception as e:
+            print(f"FotMob player {fid} not read ({e})")
+            continue
+        rec = store[fid]
+        nat = rec.get("nat")
+        for m in d.get("recentMatches") or []:
+            t = (m.get("matchDate") or {}).get("utcTime") or ""
+            if t < INTL_FROM or not m.get("id"):
+                continue
+            if not ((nat and m.get("teamId") == nat) or (not nat and "national" in str(m.get("leagueName", "")).lower())):
+                continue
+            rec["matches"][str(m["id"])] = [t, m.get("opponentTeamName") or "", int(m.get("minutesPlayed") or 0), m.get("leagueName") or "", m.get("teamName") or ""]
+        rec["fetched"] = now
+        fetched += 1
+        time.sleep(0.35)
+    if fetched or todo:
+        INTL_MINUTES.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
+    print(f"International minutes: {len(store)} players, {fetched} read from FotMob now, {max(0, len(todo) - fetched)} left for later runs")
+    return store
+
+
+def _fm_find(p: dict, names: dict):
+    """The value for this FPL player in a {FotMob name: value} map of his club, or None."""
+    full = _name_key(p.get("fullName") or p["name"])
+    # exact full name first, then first and last name, then the web name inside the FotMob name; a loose match
+    # counts only when it fits one player alone (Conor Bradley is not Bradley Barcola)
+    for test in (lambda n: _name_key(n) == full,
+                 lambda n: _name_key(n).split()[-1:] == full.split()[-1:] and _name_key(n).split()[:1] == full.split()[:1],
+                 # every word of the FotMob name is in his full name, and his web name is in it: "Gabriel Magalhães"
+                 lambda n: set(_name_key(n).split()) <= set(full.split()) and set(_name_key(p["name"]).split()) <= set(_name_key(n).split())):
+        hits = [n for n in names if test(n)]
+        if len(hits) == 1:
+            return names[hits[0]]
+        if len(hits) > 1:
+            return None
+    return None
+
+
+def intl_tables(store: dict, players: dict) -> dict:
+    """Per player, his national-team matches this season: [[nation, opponent, minutes, kick-off, competition]]."""
+    by_club = {}
+    for rec in store.values():  # every squad member, so a name is matched against the whole squad
+        by_club.setdefault(rec.get("club"), {})[rec["name"]] = rec.get("matches") or {}
+    out = {}
+    for p in players.values():
+        ms = _fm_find(p, by_club.get(p["team"], {}))
+        if ms:
+            out[p["id"]] = sorted(([nat, _club_short(opp), mins, t, comp] for t, opp, mins, comp, nat in ms.values()), key=lambda x: x[3])
+    return out
+
+
+def cup_tables(fx: dict, store: dict, boot: dict, players: dict) -> tuple[dict, dict]:
+    """Per player, cup and European minutes in each past gameweek window ([competition, opponent, minutes, kick-off]); per
+    club, cup and European matches still to come in each gameweek window ([competition, opponent, kick-off])."""
+    by_name = {t["name"]: t for t in boot["teams"]}
+    squads = {}
+    for p in players.values():
+        squads.setdefault(p["team"], []).append(p)
+    past, nxt = {}, {}
+    for t in fx["teams"]:
+        squad = squads.get(t["short"], [])
+        for m in t["matches"]:
+            if m["comp"] not in CUP_CODES:  # league, friendlies, Community Shield, Super Cup
+                continue
+            gw = gw_of_time(m.get("t"), fx["gws"])
+            if gw is None and m.get("t") and fx["gws"] and pd.Timestamp(m["t"]) < pd.Timestamp(min(fx["gws"], key=lambda g: g["gw"])["deadline"]):
+                gw = 0  # before the first deadline: European qualifiers in the summer
+            if gw is None:
+                continue
+            opp = m["oppShort"].upper() if m["home"] else m["oppShort"].lower()
+            if m.get("score") is None:
+                nxt.setdefault(t["short"], {}).setdefault(str(gw), []).append([m["comp"], opp, m.get("t")])
+                continue
+            rec = store.get(str(m.get("mid"))) or {}
+            # this club's side in FotMob's names: the one whose players match the squad best
+            sides = rec.get("teams") or {}
+            def hits(names):
+                return sum(1 for p in squad for n in names if _name_key(n).split()[-1:] == _name_key(p.get("fullName") or p["name"]).split()[-1:])
+            side = max(sides.values(), key=hits, default={}) if sides else {}
+            for p in squad:
+                mins = _fm_find(p, side) or 0  # not in the match squad (or a name that fits two players): 0
+                past.setdefault(p["id"], {}).setdefault(str(gw), []).append([m["comp"], opp, int(mins), m.get("t")])
+    return past, nxt
 
 
 def club_fixtures(cache: Path, offline: bool) -> dict:
@@ -772,7 +1026,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
     except Exception as e:
         table, note = [], f"FotMob not read ({e}): only league matches are shown"
         print(note)
-    missed, lineups = [], {}
+    missed, lineups, members = [], {}, {}
     for fm_id, fm_name in table:
         t = by_name.get(FOTMOB_TEAMS.get(fm_name, fm_name)) or next((x for x in boot["teams"] if _name_key(x["name"]).split()[0] == _name_key(fm_name).split()[0]), None)
         if not t:
@@ -787,7 +1041,9 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
                 d = _fotmob_get("teams", {"id": fm_id, "ccode3": "GBR"})
                 fxs = ((d.get("fixtures") or {}).get("allFixtures") or {}).get("fixtures") or []
                 data = {"fixtures": fxs, "lineup": None,
-                        "roles": {m["name"]: m.get("positionIds") or "" for g in ((d.get("squad") or {}).get("squad") or []) for m in g.get("members") or [] if m.get("name")}}
+                        "roles": {m["name"]: m.get("positionIds") or "" for g in ((d.get("squad") or {}).get("squad") or []) for m in g.get("members") or [] if m.get("name")},
+                        "members": [[m["name"], m.get("id"), m.get("nationalTeamId"), m.get("cname")] for g in ((d.get("squad") or {}).get("squad") or [])
+                                    for m in g.get("members") or [] if m.get("name") and m.get("id") and (m.get("role") or {}).get("key") != "coach"]}
                 # the line-up of the club's last league match (a cup side is often rotated)
                 lm = [m for m in fxs if (m.get("tournament") or {}).get("name") == "Premier League" and (m.get("status") or {}).get("finished")]
                 if lm:
@@ -809,6 +1065,7 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
                 if data is None:
                     missed.append(fm_name)
         if isinstance(data, dict):
+            members[t["short_name"]] = data.get("members") or []
             if (data.get("lineup") or {}).get("starters"):
                 lineups[t["short_name"]] = dict(data["lineup"], roles=data.get("roles") or {})
             data = data.get("fixtures")
@@ -822,12 +1079,13 @@ def club_fixtures(cache: Path, offline: bool) -> dict:
             name = opp.get("name") or "TBC"
             short = key_short.get(_euro_key(name)) or _club_short(name)
             out[t["id"]].append({"t": st.get("utcTime"), "comp": CLUB_COMPS.get(tour, tour), "opp": name, "oppShort": short, "home": home,
-                                 "score": st.get("scoreStr") if st.get("finished") else None, "stage": (m.get("tournament") or {}).get("stage") or ""})
+                                 "score": st.get("scoreStr") if st.get("finished") else None, "stage": (m.get("tournament") or {}).get("stage") or "", "mid": m.get("id")})
     if missed:
         print(f"Club fixtures: no cup matches for {', '.join(missed)}")
     for ms in out.values():
         ms.sort(key=lambda m: m["t"] or "9999")
     (folder / "lineups.json").write_text(json.dumps(lineups, ensure_ascii=False))
+    (folder / "members.json").write_text(json.dumps(members, ensure_ascii=False))
     n = sum(len(v) for v in out.values())
     print(f"Club fixtures: {n} matches for {len(out)} teams, " + ", ".join(f"{c} {sum(m['comp'] == c for v in out.values() for m in v)}" for c in ["PL", *dict.fromkeys(CLUB_COMPS.values())]))
     return {"updatedAt": int(time.time() * 1000), "note": note,
@@ -1008,7 +1266,11 @@ def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
                 continue
             item = {"name": e["web_name"], "pos": pos[e["element_type"]], "status": e.get("status"), "news": e.get("news") or "",
                     "added": e.get("news_added"), "chance": e.get("chance_of_playing_next_round"), "xmin": round(xmin(players[f"c{e['code']}"])) if f"c{e['code']}" in players else None}
-            if e.get("status") in ("i", "n", "s", "d") or (e.get("news") and e.get("status") == "a"):
+            mine = players.get(f"c{e['code']}") or {}
+            if e.get("status") in ("i", "d") and mine.get("status") == "a" and str(mine.get("news", "")).startswith("Played"):
+                # played a full match since FPL's flag: taken as fit, listed under other news with the reason
+                item.update(status="a", chance=None, news=mine["news"])
+            if item["status"] in ("i", "n", "s", "d") or (item["news"] and item["status"] == "a"):
                 news.append(item)
             if limit and e.get("yellow_cards", 0) == limit[1] - 1 and e.get("status") != "s":
                 watch.append({"name": e["web_name"], "pos": pos[e["element_type"]], "yellows": e["yellow_cards"]})
@@ -1021,6 +1283,21 @@ def team_news(cache: Path, offline: bool, players: dict, first_gw: int) -> dict:
             "yellowLimit": {"gw": limit[0], "cards": limit[1]} if limit else None, "teams": out}
 
 
+def gw_span(a, b) -> str:
+    return f"GW{a}" if int(a) == int(b) else f"GW{a}-GW{b}"
+
+
+def absence_news(r: dict) -> str:
+    """FPL's news for an absence, for the reasons on the Minutes page; absences filled in from Sofascore's record have
+    no FPL news kept."""
+    news = str(r.get("news") or "").strip()
+    if not news:
+        return ""
+    if "from sofascore" in news.lower():
+        return " (from Sofascore's injury record)"
+    return f" (FPL: {news})"
+
+
 def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, hurt: set | None = None, covered: set | None = None) -> pd.DataFrame:
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
@@ -1030,6 +1307,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     df["inj_skip"] = False
     df["inj_hurt"] = False
     df["inj_rest"] = False
+    df["inj_note"] = ""  # what the absence was, for the reason shown on the Minutes page
     season = ~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()
     for r in merged_injuries(log, admin or {"manual": [], "startOverrides": {}}):
         if r.get("season") != CURRENT_SEASON:
@@ -1037,6 +1315,13 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         end = r["endGw"] if r.get("manual") and r.get("endGw") is not None else (r["returnedGw"] - 1) if r.get("returnedGw") else 99
         rows = season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end)
         df.loc[rows if r.get("manual") else rows & (df["minutes"] == 0), "inj_skip"] = True
+        span = gw_span(r["startGw"], end) if r.get("returnedGw") or (r.get("manual") and r.get("endGw") is not None) else f"GW{r['startGw']} on, not back yet"
+        if r.get("manual"):  # the admin's own type and note
+            admin_note = str(r.get("news") or "").strip()
+            note = f"{str(r.get('type') or 'Absence')} (set by the admin), {span}" + (f": {admin_note}" if admin_note else "")
+        else:
+            note = f"{str(r.get('type') or 'Absence')}, {span}" + absence_news(r)
+        df.loc[(rows if r.get("manual") else rows & (df["minutes"] == 0)) & (df["inj_note"].eq("") | bool(r.get("manual"))), "inj_note"] = note
         # The match he got hurt in: his last match before an injury absence, if he did not play all of it, is left out too.
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur"):
             before = df.index[season & (df["pid"] == r["pid"]) & (df["GW"] < r["startGw"])]
@@ -1046,6 +1331,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                 if int(df.at[last, "GW"]) not in (covered or set()) and 0 < float(df.at[last, "minutes"]) < 90:
                     df.at[last, "inj_skip"] = True
                     df.at[last, "inj_hurt"] = True
+                    df.at[last, "inj_note"] = (f"Played {int(df.at[last, 'minutes'])} minutes, his last match before the injury absence from GW{r['startGw']}"
+                                               + absence_news(r) + ": taken to be the match he got hurt in")
         # Cautionary rest: a 0 in his first match back from an injury is a rest, not a sign he lost his place
         # (one match only).
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
@@ -1054,6 +1341,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                 i = post.index[0]
                 df.at[i, "inj_skip"] = True
                 df.at[i, "inj_rest"] = True
+                df.at[i, "inj_note"] = (f"0 minutes in his first match back from the injury of {gw_span(r['startGw'], int(r['returnedGw']) - 1)}"
+                                        + absence_news(r) + ": a cautionary rest, not a lost place")
     # gameweeks whose matches FotMob's events cover (there, only a substitution for injury counts as getting hurt)
     df["fm_cov"] = season & df["GW"].isin(list(covered or []))
     # Taken off injured (FotMob): that match is left out, whatever came after.
@@ -1062,6 +1351,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         rows = season & keys.isin(hurt)
         df.loc[rows, "inj_skip"] = True
         df.loc[rows, "inj_hurt"] = True
+        df.loc[rows, "inj_note"] = "Taken off injured after " + df.loc[rows, "minutes"].fillna(0).astype(int).astype(str) + " minutes (FotMob's match events)"
     # A goalkeeper who came on for his injured team-mate: that part match says nothing of his role, left out too.
     df["gk_cover"] = False
     if "position" in df and df["inj_hurt"].any():
@@ -1070,6 +1360,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         cover = gk & ~df["inj_hurt"] & (df["minutes"] > 0) & (df["minutes"] < 90) & pd.Series(list(zip(df["fixture"], df["team"])), index=df.index).isin(hurt_fx)
         df.loc[cover, "inj_skip"] = True
         df.loc[cover, "gk_cover"] = True
+        df.loc[cover, "inj_note"] = "Came on for the injured starting goalkeeper and played " + df.loc[cover, "minutes"].fillna(0).astype(int).astype(str) + " minutes"
     print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, rests on return: {int(df['inj_rest'].sum())}")
     return df
 
@@ -1113,7 +1404,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     pen_goals = df["core_pen_scored"].fillna(0).where(known, expected_pens * PEN_CONVERSION)
     df["np_xg"] = (df["expected_goals"] - pens_taken * PEN_XG).clip(lower=0)
     df["np_goals"] = (df["goals_scored"] - pen_goals).clip(lower=0)
-    pen_xgot = (df["core_pen_scored"].fillna(0) + df["core_pen_missed"].fillna(0)) * PEN_XGOT
+    pen_xgot = df["core_pen_scored"].fillna(0) * PEN_XGOT_SCORED + df["core_pen_missed"].fillna(0) * PEN_XGOT_MISSED
     df["np_xgot"] = (df["core_xgot"] - pen_xgot).clip(lower=0).where(known, 0.0)
     df["np_xg_known"] = df["np_xg"].where(known, 0.0)
     dc = df["defensive_contribution"]
@@ -1163,6 +1454,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     for c in ["g", "xg", "xgot", "xgk"]:
         p[f"F_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_FINISH)
     p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
+    p["w5_st"], p["w5_ms"], p["w5_mb"], p["ret_st"], p["ret_ms"], p["ret_mb"], p["w5_last"], p["ret_last"] = ai_starts(keys, p["mins"].to_numpy(float), p["st"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     for c in ["n90", "xg", "xa", "box", "boxn90"]:
         p[f"R_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_ROLE)
     p = p.drop(columns=stat)
@@ -1319,8 +1611,12 @@ def usual_minutes(df: pd.DataFrame) -> dict[str, np.ndarray]:
     """Minutes and chances of 1+ and 60+ minutes when he is available, before any injury or ban is applied."""
     ret = df["from_return"].fillna(False).astype(bool).to_numpy() if "from_return" in df else np.zeros(len(df), bool)
     out = {}
-    for key, w5, r in (("min", "w5_min", "ret_min"), ("p1", "w5_p1", "ret_p1"), ("p60", "w5_p60", "ret_p60")):
-        normal = df[w5].fillna(0.0).to_numpy(float)
+    for key, w5, r in (("min", "w5_min", "ret_min"), ("p1", "w5_p1", "ret_p1"), ("p60", "w5_p60", "ret_p60"),
+                       ("st", "w5_st", "ret_st"), ("ms", "w5_ms", "ret_ms"), ("mb", "w5_mb", "ret_mb"), ("last", "w5_last", "ret_last")):
+        if w5 not in df:
+            out[key] = np.full(len(df), np.nan)
+            continue
+        normal = df[w5].fillna(np.nan if key in ("st", "ms", "mb", "last") else 0.0).to_numpy(float)
         back = df[r].to_numpy(float) if r in df else np.full(len(df), np.nan)
         out[key] = np.where(ret & ~np.isnan(back), back, normal)
     return out
@@ -1568,7 +1864,115 @@ class XPointsModel:
 # ---------------------------------------------------------------- backtest
 def load_history(data_dir: Path, seasons: list[str]) -> pd.DataFrame:
     raw = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
-    return yellow_bans(clean(add_core(raw, data_dir, seasons), seasons))
+    return historic_absences(yellow_bans(clean(add_core(raw, data_dir, seasons), seasons)))
+
+
+INJURY_ARCHIVE = Path(__file__).resolve().parent / "archive" / "injuries"
+
+
+def _plain(s) -> str:
+    import unicodedata
+    s = unicodedata.normalize("NFKD", str(s or "")).encode("ascii", "ignore").decode().lower()
+    return " ".join(re.sub(r"[^a-z ]", "", re.sub(r"[-.']", " ", s)).split())
+
+
+def _club(s) -> str:
+    s = _plain(s).replace("afc ", "").replace(" fc", "")
+    alias = {"manchester city": "man city", "manchester united": "man utd", "tottenham hotspur": "spurs", "nottingham forest": "nottm forest",
+             "brighton hove albion": "brighton", "wolverhampton wanderers": "wolves"}
+    return alias.get(s, s).split()[0]
+
+
+def _one(name: str, pool: list) -> int | None:
+    """The row in pool [(index, full name)] that a FotMob name means, or None when unsure."""
+    n = _plain(name)
+    tests = (lambda r: _plain(r) == n,
+             lambda r: _plain(r).split()[-1:] == n.split()[-1:] and _plain(r).split()[:1] == n.split()[:1],
+             lambda r: set(n.split()) <= set(_plain(r).split()),
+             lambda r: n.split()[-1:] == _plain(r).split()[-1:])
+    for t in tests:
+        hit = [i for i, r in pool if t(r)]
+        if len(hit) == 1:
+            return hit[0]
+        if len(hit) > 1:
+            return None
+    return None
+
+
+def historic_absences(df: pd.DataFrame, folder: Path = INJURY_ARCHIVE) -> pd.DataFrame:
+    """Injuries and absences of past seasons, from archive/injuries (tools/history_injuries.py for FotMob's lists of
+    unavailable players per league match, tools/history_soccerway.py for Soccerway's injury spells), so past
+    seasons are read the way the site reads the current one:
+      hist_out   listed unavailable for the match (FotMob), or inside a Soccerway injury spell
+      hist_skip  matches the minutes formula leaves out: the zero-minute ones he was out for, and the match he got
+                 hurt in (a Soccerway spell starting that day or within 2 days, or the match before a FotMob injury
+                 listing, when he did not play all of it)
+      hist_back  his first match after an injury absence (the site counts half his usual minutes)
+    Seasons with no archive are left as they are."""
+    df["hist_out"] = False
+    df["hist_skip"] = False
+    df["hist_back"] = False
+    if not folder.exists() or "kickoff_time" not in df:
+        return df
+    inj = pd.Series(False, index=df.index)
+    for path in sorted(folder.glob("fotmob_*.json.gz")):
+        season = path.name[len("fotmob_"):-len(".json.gz")]
+        s = df[df["season"] == season]
+        if s.empty:
+            continue
+        sides = s.groupby(["fixture", "was_home"])["team"].first().unstack()
+        if 0 not in sides or 1 not in sides:
+            continue
+        fx = {(_club(h), _club(a)): f for f, h, a in zip(sides.index, sides[1], sides[0])}
+        for m in json.loads(gzip.decompress(path.read_bytes()))["matches"]:
+            f = fx.get((_club(m["home"]), _club(m["away"])))
+            if f is None:
+                continue
+            for side, home in (("homeUnavailable", 1), ("awayUnavailable", 0)):
+                rows = s[(s["fixture"] == f) & (s["was_home"] == home)]
+                pool = list(zip(rows.index, rows["name"]))
+                for u in m.get(side) or []:
+                    i = _one(u.get("name"), pool)
+                    if i is not None:
+                        df.at[i, "hist_out"] = True
+                        inj.at[i] = inj.at[i] or ((u.get("unavailability") or {}).get("type") == "injury")
+    sw_path = folder / "soccerway_players.json.gz"
+    hurt = pd.Series(False, index=df.index)
+    if sw_path.exists():
+        names = df.drop_duplicates("pid")[["pid", "name"]]
+        tok = {pid: frozenset(_plain(n).split()) for pid, n in zip(names["pid"], names["name"])}
+        spells = {}
+        for p in json.loads(gzip.decompress(sw_path.read_bytes()))["players"]:
+            t = frozenset(_plain(p["slug"].replace("-", " ")).split())
+            hit = [pid for pid, tk in tok.items() if tk == t] or [pid for pid, tk in tok.items() if t <= tk or tk <= t]
+            if len(hit) == 1 and p.get("injuries"):
+                spells.setdefault(hit[0], []).extend(
+                    (pd.Timestamp(pd.to_datetime(r["from"], format="%d.%m.%Y")),
+                     pd.Timestamp(pd.to_datetime(r["until"], format="%d.%m.%Y")) if r.get("until") else pd.Timestamp.max)
+                    for r in p["injuries"])
+        day = pd.to_datetime(df["kickoff_time"], utc=True).dt.tz_localize(None).dt.normalize()
+        lo, hi = (pd.Timestamp("2024-07-01"), pd.Timestamp("2026-07-01"))
+        for i, pid, k, m in zip(df.index, df["pid"], day, df["minutes"].fillna(0)):
+            if not (lo <= k < hi):
+                continue
+            for a, b in spells.get(pid, ()):
+                if a < k < b or (a == k and m == 0):
+                    df.at[i, "hist_out"] = True
+                    inj.at[i] = True
+                elif m > 0 and k <= a <= k + pd.Timedelta(days=2):
+                    hurt.at[i] = True
+    order = df.sort_values(["pid", "kickoff_time"]).index
+    mins = df.loc[order, "minutes"].fillna(0)
+    pid = df.loc[order, "pid"]
+    nxt_inj = inj.loc[order].groupby(pid.to_numpy()).shift(-1).fillna(False).astype(bool)
+    hurt.loc[order] |= (nxt_inj & (mins < 90) & (mins > 0) & ~df.loc[order, "hist_out"]).to_numpy()
+    out = df.loc[order, "hist_out"].astype(bool)
+    prev_inj = (out & inj.loc[order]).groupby(pid.to_numpy()).shift(1).fillna(False).astype(bool)
+    df.loc[order, "hist_back"] = (prev_inj & ~out).to_numpy()
+    df["hist_skip"] = (df["hist_out"] & (df["minutes"].fillna(0) == 0)) | (hurt & ~df["hist_out"])
+    print(f"Past-season absences from archive/injuries: {int(df['hist_out'].sum())} matches out, {int(hurt.sum())} matches he got hurt in, "
+          f"{int(df['hist_back'].sum())} first matches back")
+    return df
 
 
 PEN_ORDER_WINDOW = 38  # team matches looked back over for who has been taking the penalties
@@ -1624,7 +2028,11 @@ def walk_forward(feat: pd.DataFrame, season: str, step: int, min_train_seasons: 
         print(f"  training before {season} GW{block[0]}, predicting GW{block[0]}-{block[-1]}")
         model = XPointsModel().fit(feat[feat["t"] < cut])
         rows = test[test["GW"].isin(block)]
-        parts.append(pd.concat([rows, model.predict(rows)], axis=1))
+        # What was known before each match, as the site knows it now: out (0), first match back from injury (half).
+        avail = None
+        if "hist_out" in rows:
+            avail = pd.Series(np.where(rows["hist_out"].astype(bool), 0.0, np.where(rows["hist_back"].astype(bool), 0.5, 1.0)), index=rows.index)
+        parts.append(pd.concat([rows, model.predict(rows, avail)], axis=1))
     return pd.concat(parts)
 
 
@@ -1957,6 +2365,28 @@ def return_date(news: str, news_added: str | None) -> pd.Timestamp | None:
     return None
 
 
+# Typical days out for an injury FPL gives no return date for, by the words in the news: the median days out of
+# 1,898 injuries of Premier League squad players in 2024-25 and 2025-26 on Soccerway (archive/injuries, checked by
+# tools/soccerway_days.py); the first match back counts half. The first match listed wins.
+INJURY_DAYS = [(("acl", "cruciate", "achilles"), 270, "a long-term injury"), (("surgery", "operation"), 70, "surgery"),
+               (("fracture", "broken"), 56, "a fracture"), (("hamstring",), 42, "a hamstring injury"), (("knee",), 24, "a knee injury"),
+               (("thigh", "muscle", "muscular"), 21, "a muscle injury"), (("calf",), 21, "a calf injury"), (("ankle",), 21, "an ankle injury"),
+               (("foot", "toe"), 33, "a foot injury"), (("groin", "adductor"), 16, "a groin injury"), (("hip",), 11, "a hip injury"),
+               (("shoulder",), 10, "a shoulder injury"), (("back",), 14, "a back injury"), (("concussion", "head"), 10, "a head injury"),
+               (("illness", " ill"), 7, "illness"), (("knock",), 7, "a knock")]
+INJURY_DAYS_DEFAULT = (7, "an injury")
+INJURY_WEEKS = INJURY_DAYS  # (the words are also used to tell an injury from other absences)
+
+
+def injury_days(news: str) -> tuple[int, str]:
+    """Typical days out for an injury, from the words in FPL's news."""
+    text = f" {(news or '').lower()}"
+    for words, days, label in INJURY_DAYS:
+        if any(w in text for w in words):
+            return days, label
+    return INJURY_DAYS_DEFAULT
+
+
 def minute_plan(status: str | None, news: str, news_added: str | None, chance: float | None,
                 fixtures: list[tuple[int, pd.Timestamp]], first: int, red_last: bool, news_gw: int | None = None) -> tuple[list[float], bool, str, int | None]:
     """How much of his usual minutes a player is expected to play in each upcoming fixture (gameweek, kickoff in UK time).
@@ -1965,8 +2395,9 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
     a short note, and the gameweek he is back.
     - A return date in the news (injury or ban): 0 before it, then his usual minutes from the 5-4-3-2-1 formula on
       the matches before the absence.
-    - Injured or not available with no return date: 0 in every gameweek. Only FPL's own return date is used, never
-      a guess at how long an injury lasts; he comes back into the numbers when FPL gives a date or clears him.
+    - Injured with no return date: out for the typical days for that injury (see INJURY_DAYS), counted from the date
+      of the news, at least the next gameweek; half his usual minutes in the first match on or after that date.
+    - Not available for another reason (left the club, on loan) with no return date: 0 in every gameweek.
     - Suspended with no date, or a red card in his last match before FPL has flagged it: out for one match.
     - Doubtful (25/50/75%): xMin times FPL's chance in the next gameweek, full after that.
     """
@@ -1981,8 +2412,28 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
         i = next((j for j, v in enumerate(out) if v > 0), n)
         note = f"Back GW{back(i)} ({when:%d %b})" if i < n else f"Out until {when:%d %b}, after these gameweeks"
         return out, True, note, back(i)
+    is_injury = status == "i" or (status == "n" and any(w in f" {(news or '').lower()}" for ws, _, _ in INJURY_WEEKS for w in ws))
+    if is_injury:
+        days, label = injury_days(news)
+        start = pd.Timestamp(news_added) if news_added else pd.Timestamp.now(tz="UTC")
+        start = start.tz_localize("UTC") if start.tzinfo is None else start
+        due = start + pd.Timedelta(days=days)
+        # out until the date (FPL has him at 0% for the next gameweek in any case), half his minutes the first match back
+        out, seen = [], False
+        for gw, k in fixtures:
+            kick = k.tz_localize("Europe/London") if k.tzinfo is None else k
+            if gw == first or kick < due:
+                out.append(0.0)
+            else:
+                out.append(1.0 if seen else 0.5)
+                seen = True
+        i = next((j for j, v in enumerate(out) if v > 0), n)
+        local = due.tz_convert("Europe/London")
+        back_txt = f"back around {local:%d %b}, GW{back(i)}" if i < n else f"back around {local:%d %b}, after these gameweeks"
+        # no return gameweek is passed on: the injury log and the site only show return dates FPL gave
+        return out, True, f"No return date: about {days} days out for {label} from the news on {start.tz_convert('Europe/London'):%d %b}, {back_txt} (estimate)", None
     if status in ("i", "n"):
-        return [0.0] * n, True, ("Injured" if status == "i" else "Unavailable") + ", no return date from FPL: 0", None
+        return [0.0] * n, False, "Unavailable, no return date: 0", None
     if status == "s" or red_last:
         out = [0.0 if j == 0 else 1.0 for j in range(n)]
         why = "Suspended, no date given" if status == "s" else "Red card in his last match"
@@ -1992,6 +2443,39 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
         out = [c if gw == first else 1.0 for gw, _ in fixtures]  # FPL's chance is for the next gameweek
         return out, False, f"Doubtful {round(c * 100)}% for GW{first}", None
     return [1.0] * n, False, "", None
+
+
+def outside_matches(cache: Path, offline: bool) -> dict:
+    """Matches outside the league this season, per club and FotMob player name: [(kick-off, minutes, what)], from
+    cup and European matches (CUP_MINUTES with FotMob's fixtures) and national-team matches (INTL_MINUTES)."""
+    out: dict = {}
+    try:
+        fx = club_fixtures(cache, offline)
+        mf = cache / "fotmob" / "members.json"
+        members = json.loads(mf.read_text()) if mf.exists() else {}
+        store = json.loads(CUP_MINUTES.read_text(encoding="utf-8")) if CUP_MINUTES.exists() else {}
+        for t in fx["teams"]:
+            squad = {_name_key(m[0]) for m in members.get(t["short"], [])}
+            for m in t["matches"]:
+                rec = store.get(str(m.get("mid"))) if m["comp"] in CUP_CODES and m.get("score") is not None else None
+                if not rec or not rec.get("teams"):
+                    continue
+                side = max(rec["teams"].values(), key=lambda names: sum(_name_key(n) in squad for n in names))
+                for n, mins in side.items():
+                    out.setdefault(t["short"], {}).setdefault(n, []).append((m.get("t") or "", int(mins), f"{m['comp']} v {m['opp']}"))
+    except Exception as e:
+        print(f"Cup minutes for flags not read ({e})")
+    try:
+        intl = json.loads(INTL_MINUTES.read_text(encoding="utf-8")) if INTL_MINUTES.exists() else {}
+        for rec in intl.values():
+            for t, opp, mins, comp, nat in (rec.get("matches") or {}).values():
+                out.setdefault(rec.get("club"), {}).setdefault(rec["name"], []).append((t, int(mins), f"{nat} v {opp}"))
+    except Exception as e:
+        print(f"International minutes for flags not read ({e})")
+    return out
+
+
+FIT_AFTER_FLAG_MIN = 90  # a full match outside the league after FPL's injury flag: taken as fit
 
 
 def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame, pd.DataFrame, int]:
@@ -2014,10 +2498,21 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
         past = [g for g, d in deadlines.items() if d and added and d <= added]
         return max(past) if past else first
 
+    outside = outside_matches(cache, offline)
+    cleared = []
     for p in boot["elements"]:
         if pos.get(p["element_type"]) is None:
             continue
         name = f'{p.get("first_name", "")} {p.get("second_name", "")}'.strip() or p["web_name"]
+        # Flagged injured or doubtful, but has played a full match for his country or in a cup since: fit.
+        if p.get("status") in ("i", "d") and p.get("news_added"):
+            seen = _fm_find({"name": p["web_name"], "fullName": name}, outside.get(short[p["team"]], {})) or []
+            full = sorted(x for x in seen if x[0] > p["news_added"] and x[1] >= FIT_AFTER_FLAG_MIN)
+            if full:
+                t90, _, what = full[-1]
+                p = dict(p, status="a", chance_of_playing_next_round=None,
+                         news=f"Played {FIT_AFTER_FLAG_MIN} minutes ({what}, {t90[:10]}) after FPL's flag: taken as fit. FPL: {p.get('news', '')}")
+                cleared.append(p["web_name"])
         base = {"name": name, "position": pos[p["element_type"]], "element": p["id"], "code": p["code"], "season": CURRENT_SEASON,
                 **{new: p.get(old) for old, new in SET_PIECE_COLS.items()}}
         played = []
@@ -2052,6 +2547,8 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
                                 "news_added": p.get("news_added"), "chance": p.get("chance_of_playing_next_round"), "news_gw": news_gw(p.get("news_added")),
                                 "team_short": short[team_id], "opp_short": short[f["team_a"] if home else f["team_h"]], "web_name": p["web_name"], "status": p.get("status"), "news": p.get("news", ""),
                                 "pen_text": p.get("penalties_text") or "", "fk_text": p.get("direct_freekicks_text") or "", "corner_text": p.get("corners_and_indirect_freekicks_text") or ""})
+    if cleared:
+        print(f"Flagged but played {FIT_AFTER_FLAG_MIN} minutes outside the league since, taken as fit: {', '.join(cleared)}")
     return pd.DataFrame(hist), pd.DataFrame(fut), first
 
 
@@ -2120,30 +2617,166 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
     return target
 
 
-def penalty_shares(target: pd.DataFrame) -> np.ndarray:
-    """Share of his team's penalties a player takes while on the pitch, per future match.
+PEN_GRID = np.arange(90) + 0.5  # minutes of a match, for who is on the pitch when a penalty is given
+PEN_PATTERN_MATCHES, PEN_PATTERN_MIN = 5, 3  # the club's last 5 matches with all its listed takers fit (at least 3)
 
-    The FPL number 1 takes them when on the pitch; each next taker gets the ones left while those above him are off;
-    any left while all the listed takers are off go to the free kick and corner takers, split by their expected minutes."""
+
+def pitch_profile(frame: pd.DataFrame) -> pd.DataFrame:
+    """Per row: the chance he starts (Start), his minutes when he starts and when he does not, and the chance he is
+    there at all (his expected minutes over his usual ones), so that they add up to his expected minutes."""
+    u = usual_minutes(frame)
+    usual = np.nan_to_num(u["min"])
+    xmin = np.clip(usual * frame["avail"].fillna(1).to_numpy(float), 0, 90)
+    st = np.where(np.isnan(u["st"]), np.nan_to_num(u["p60"]), u["st"])
+    ms = np.where(np.isnan(u["ms"]), np.clip(usual / np.maximum(st, 1e-6), 0, 90), u["ms"])
+    mb = np.where(np.isnan(u["mb"]), 0.0, u["mb"])
+    base = st * ms + (1 - st) * mb
+    k = np.where(base > 0, usual / np.maximum(base, 1e-9), 0.0)  # the 5-match averages to his usual minutes
+    there = np.where(usual > 0, np.clip(xmin / np.maximum(usual, 1e-9), 0, 1), 0.0)
+    last = np.where(np.isnan(u["last"]), np.round(st), u["last"])  # did he start his last match (counted as in Usual)
+    return pd.DataFrame({"start": st, "last": last, "ms": np.clip(ms * k, 0, 90), "mb": np.clip(mb * k, 0, 90), "there": there,
+                         "p_start": st * there}, index=frame.index)
+
+
+def start_patterns(hist: pd.DataFrame | None, team, pids: list) -> list[tuple[float, tuple]]:
+    """Which of these players started together in the club's last matches with all of them fit, newest weighted
+    5-4-3-2-1: [(weight, started flags)]. Empty when fewer than PEN_PATTERN_MIN such matches."""
+    if hist is None or len(pids) < 2:
+        return []
+    h = hist[(hist["team"] == team) & hist["pid"].isin(pids)]
+    out = []
+    for _, g in sorted(h.groupby(["season", "fixture"]), key=lambda kv: -pd.Timestamp(kv[1]["kickoff_time"].iloc[0]).value):
+        if g["pid"].nunique() < len(pids) or g["skip"].any():
+            continue
+        st = g.groupby("pid")["started"].max()
+        out.append(tuple(float(st.get(x, 0)) for x in pids))
+        if len(out) == PEN_PATTERN_MATCHES:
+            break
+    if len(out) < PEN_PATTERN_MIN:
+        return []
+    w = MINUTE_WEIGHTS[:len(out)]
+    return [(float(wi / w.sum()), f) for wi, f in zip(w, out)]
+
+
+def start_cases(starts: list[float], patterns: list) -> list[tuple[float, tuple]]:
+    """Every case of who starts among these players with its chance. Each player starts as often as his own Start
+    says; the club's recent start patterns only decide who starts together (fitted to those chances, iterative
+    proportional fitting, with a little of the independent cases mixed in so no case is ruled out)."""
+    k = len(starts)
+    cells = [tuple(float(b >> i & 1) for i in range(k)) for b in range(2 ** k)]
+    indep = np.array([float(np.prod([s if f else 1 - s for s, f in zip(starts, c)])) for c in cells])
+    if not patterns:
+        return [(w, c) for w, c in zip(indep, cells) if w > 0]
+    seen = np.zeros(len(cells))
+    for w, fl in patterns:
+        seen[cells.index(tuple(float(f) for f in fl))] += w
+    p = 0.9 * seen / max(seen.sum(), 1e-12) + 0.1 * indep + 1e-9
+    p /= p.sum()
+    for _ in range(60):
+        for i, s in enumerate(starts):
+            on = np.array([c[i] == 1 for c in cells])
+            m = p[on].sum()
+            if 0 < m < 1:
+                p[on] *= s / m
+                p[~on] *= (1 - s) / (1 - m)
+            p /= p.sum()
+    return [(float(w), c) for w, c in zip(p, cells) if w > 1e-9]
+
+
+def pen_time_shares(listed: list[dict], fks: list[dict], patterns: list) -> tuple[dict, dict]:
+    """Share of the team's penalties each player takes while on the pitch, minute by minute: in every case of who
+    starts (the club's recent start patterns, else each player's Start on its own) and who is there at all, the
+    first listed taker on the pitch takes them; when none is on, the free kick and corner takers on the pitch share
+    them. A starter is on from the start for his starting minutes, a substitute at the end for his. Returns
+    (share while on the pitch, share if he played the whole match) by id."""
+    k = len(listed)
+    on_s = [(PEN_GRID < x["ms"]).astype(float) for x in listed]
+    on_b = [(PEN_GRID >= 90 - x["mb"]).astype(float) for x in listed]
+    cases = start_cases([x["start"] for x in listed], patterns)
+    took, on_t, free = np.zeros(k), np.zeros(k), np.zeros(k)
+    uncovered = np.zeros(90)
+    for w, fl in cases:
+        for there in range(2 ** k):
+            wt = w * float(np.prod([x["there"] if there >> i & 1 else 1 - x["there"] for i, x in enumerate(listed)]))
+            if wt <= 0:
+                continue
+            covered = np.zeros(90)
+            for i in range(k):
+                on = (on_s[i] if fl[i] else on_b[i]) if there >> i & 1 else np.zeros(90)
+                free[i] += wt * float((1 - covered).mean())
+                take = on * (1 - covered)
+                took[i] += wt * float(take.mean())
+                on_t[i] += wt * float(on.mean())
+                covered = np.maximum(covered, on)
+            uncovered += wt * (1 - covered)
+    share, whole = {}, {}
+    for i, x in enumerate(listed):
+        whole[x["id"]] = PEN_TAKE_ON_PITCH * free[i]
+        share[x["id"]] = PEN_TAKE_ON_PITCH * (took[i] / on_t[i] if on_t[i] > 1e-9 else free[i])
+    if fks:
+        # penalties while no listed taker is on go to the free kick and corner takers, split by their expected
+        # minutes (the same extra share for each while he is on the pitch; starting or not does not matter here)
+        left = float(uncovered.mean())
+        mins = sum(x["m"] for x in fks)
+        for x in fks:
+            if x["m"] > 0 and mins > 0:
+                share[x["id"]] = min(1.0, share.get(x["id"], 0) + left / mins)
+    return share, whole
+
+
+def penalty_shares(target: pd.DataFrame, hist: pd.DataFrame | None = None, fixed_order: bool = False) -> np.ndarray:
+    """Share of his team's penalties a player takes while on the pitch, per future match, minute by minute (see
+    pen_time_shares): each listed taker with a Start above 50% is on from the kick-off for his usual minutes, one
+    below comes on for them at the end; the first listed taker on the pitch takes the penalty, and penalties while
+    none of them is on go to the free kick and corner takers, split by their expected minutes. So two takers who both
+    started leave the next one only the end of the match, after they have gone off.
+
+    hist: not used any more (start patterns), kept for the callers."""
     out = np.zeros(len(target))
-    on_pitch = pd.Series(usual_minutes(target)["min"] * target["avail"].fillna(1).to_numpy(), index=target.index).clip(0, 90) / 90
+    prof = pitch_profile(target)
     order = pd.to_numeric(target["pen_order"], errors="coerce")
-    frame = pd.DataFrame({"fixture": target["fixture"].to_numpy(), "team": target["team"].to_numpy(), "order": order.to_numpy(), "m": on_pitch.to_numpy()})
-    listed = lambda c: pd.to_numeric(target[c], errors="coerce").notna().to_numpy() if c in target else np.zeros(len(target), bool)
-    frame["fk"] = np.where(listed("fk_order") | listed("corner_order"), 1.0, np.nan)  # on the free kick or corner list
-    for _, g in frame.groupby(["fixture", "team"]):
-        left = 1.0
-        listed = g[g["order"].notna()]
-        for i in listed.sort_values("order").index:
-            out[i] = PEN_TAKE_ON_PITCH * left
-            left *= 1 - g.at[i, "m"]
-        # Penalties given while none of the listed takers is on the pitch go to the free kick and corner takers, split
-        # by their expected minutes (so the same extra share for each while he is on the pitch).
-        # (not the penalty takers themselves: these penalties come exactly when they are all off)
-        fks = g[g["fk"].notna() & g["order"].isna() & (g["m"] > 0)]
-        if len(fks) and left > 0:
-            out[fks.index] = np.minimum(1.0, out[fks.index] + left / fks["m"].sum())
+    if fixed_order:  # the site: one order per player, from his first coming match (the order it shows)
+        by_gw = target.sort_values(["GW", "fixture"])
+        order = pd.to_numeric(by_gw.groupby("pid")["pen_order"].transform(lambda x: x.iloc[0]), errors="coerce").reindex(target.index)
+    listed_col = lambda c: pd.to_numeric(target[c], errors="coerce").notna().to_numpy() if c in target else np.zeros(len(target), bool)
+    fk_any = listed_col("fk_order") | listed_col("corner_order")
+    frame = pd.DataFrame({"fixture": target["fixture"].to_numpy(), "team": target["team"].to_numpy(), "pid": target["pid"].to_numpy(),
+                          "order": order.to_numpy(), "fk": fk_any, "pos": np.arange(len(target))})
+    for c in ("start", "ms", "mb", "there"):
+        frame[c] = prof[c].to_numpy()
+    # Kept simple for penalties: a Start above 50% means he starts and is on from the kick-off for his usual minutes,
+    # otherwise he comes on for them at the end (either way his expected minutes add up)
+    frame["start"] = (prof["start"].to_numpy() > 0.5).astype(float)
+    usual_m = np.clip(np.nan_to_num(usual_minutes(target)["min"]), 0, 90)
+    frame["ms"] = usual_m
+    frame["mb"] = usual_m
+    frame["m"] = np.clip(np.nan_to_num(usual_minutes(target)["min"]) * target["avail"].fillna(1).to_numpy(float), 0, 90) / 90
+    memo: dict = {}
+    gone = (target["status"] == "u").to_numpy() if "status" in target else np.zeros(len(target), bool)
+    frame = frame[~gone]  # players no longer at the club (not on the site either)
+    for (fx, team), g in frame.groupby(["fixture", "team"]):
+        lst = g[g["order"].notna()].sort_values("order")
+        listed = [dict(id=r.pid, start=r.start, ms=r.ms, mb=r.mb, there=r.there) for r in lst.itertuples()]
+        fkr = g[g["fk"] & g["order"].isna() & (g["there"] > 0)]
+        fks = [dict(id=r.pid, m=r.m) for r in fkr.itertuples()]
+        share, _ = pen_time_shares(listed, fks, [])
+        for r in g.itertuples():
+            if r.pid in share:
+                out[r.pos] = share[r.pid]
+    PEN_PATTERNS.clear()
+    PEN_PATTERNS.update({k: v for k, v in memo.items() if v})
     return out
+
+
+PEN_PATTERNS: dict = {}  # (team, listed taker ids) -> start patterns, for the site
+
+
+def pattern_history(df: pd.DataFrame) -> pd.DataFrame:
+    """Played league matches with whether he started and whether the match is left out of his minutes formula."""
+    h = df[~df["future"] & df["minutes"].notna()]
+    started = h["starts"].fillna((h["minutes"] >= 60).astype(float)) if "starts" in h else (h["minutes"] >= 60).astype(float)
+    return pd.DataFrame({"pid": h["pid"], "team": h["team"], "season": h["season"], "fixture": h["fixture"], "kickoff_time": h["kickoff_time"],
+                         "started": (started > 0).astype(float), "skip": skipped(h).to_numpy() | (h["red_cards"].fillna(0) > 0).to_numpy()})
 
 
 # ---------------------------------------------------------------- European weeks
@@ -2370,6 +3003,12 @@ def admin_minutes(target: pd.DataFrame, path: Path = ADMIN_FILE) -> pd.DataFrame
         target.loc[rows, col] = (m > 0).astype(float)
     for col in ("w5_p60", "ret_p60"):
         target.loc[rows, col] = (m >= 60).astype(float)
+    for col in ("w5_st", "ret_st", "w5_last", "ret_last"):  # admin minutes: a starter from 45, his minutes when starting are those
+        target.loc[rows, col] = (m >= 45).astype(float)
+    for col in ("w5_ms", "ret_ms"):
+        target.loc[rows, col] = m.where(m >= 45)
+    for col in ("w5_mb", "ret_mb"):
+        target.loc[rows, col] = m.where(m < 45)
     target.loc[rows, "admin_min"] = m
     print(f"Admin minutes: {len(admin)} set, {target.loc[rows, 'pid'].nunique()} players found")
     return target
@@ -2398,7 +3037,7 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
         target = european_rotation(target, df, cache, offline)
     except Exception as e:  # a display flag only: never stop the site for it
         print(f"European weeks not flagged ({e})")
-    target["pen_cond"] = penalty_shares(target)
+    target["pen_cond"] = penalty_shares(target, pattern_history(df[df["season"].isin([CURRENT_SEASON, seasons[-1] if seasons else CURRENT_SEASON])]), fixed_order=True)
     res = pd.concat([target, model.predict(target, target["avail"].where(target["GW"] >= first))], axis=1)
     return (res, df) if with_history else res
 
@@ -2468,22 +3107,54 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         cov = played.get("fm_cov", pd.Series(False, index=played.index)).fillna(False).astype(bool)
         dmask = cutt.notna() & (((kick == cutt) & ~cov & played["minutes"].fillna(0).lt(90)) | ((kick > cutt) & played["minutes"].fillna(0).eq(0))) & why.eq("")
         why[dmask] = "d"
+    note = played.get("inj_note", pd.Series("", index=played.index)).fillna("").astype(str).copy()
     for _, g in played.groupby("pid"):
-        left = 0
-        for i, mins, red in zip(g.index, g["minutes"].fillna(0), g["red_cards"].fillna(0)):
+        left, red_gw, k = 0, None, 0
+        for i, mins, red, gw in zip(g.index, g["minutes"].fillna(0), g["red_cards"].fillna(0), g["GW"]):
             if red > 0:
-                left = MAX_BAN_MATCHES
+                left, red_gw, k = MAX_BAN_MATCHES, int(gw), 0
                 if why[i] == "":
                     why[i] = "c"  # sent off: the match itself is left out of the formula too (see ai_minutes)
+                    note[i] = f"Sent off in this match: a red card after playing {int(mins)} minutes"
             elif left > 0 and mins == 0:
+                k += 1
                 why[i], left = "b", left - 1
+                if not note[i]:
+                    note[i] = f"Banned after his red card in GW{red_gw}: match {k} of the ban"
             else:
                 left = 0
-    played = played.assign(why=why)
+    yb = played.get("yellow_ban", pd.Series(False, index=played.index)).fillna(False).astype(bool)
+    note[yb & why.eq("b") & note.eq("")] = "Banned for reaching the yellow card limit (5 by GW19, 10 by GW32)"
+    if len(cut):
+        news_now = res.drop_duplicates("pid").set_index("pid")["news"] if "news" in res else pd.Series(dtype=object)
+        dn = why.eq("d") & note.eq("")
+        note[dn] = played.loc[dn].apply(lambda r: (f"Flagged doubtful now ({news_now.get(r['pid'], '')}): "
+                                                  + (f"the match he got hurt in, played {int(r['minutes'] or 0)} minutes" if (r["minutes"] or 0) > 0
+                                                     else "a match missed since he got hurt")), axis=1)
+    note[why.eq("i") & note.eq("")] = "Injured or unavailable (FPL flag), 0 minutes"
+    # Any other match the Usual minutes do not use, among its latest 5, in red too: a player out now has his 0s since
+    # the absence began left out (the formula runs on the matches before it).
+    back = res.drop_duplicates("pid").set_index("pid")["from_return"].fillna(False).astype(bool) if "from_return" in res else pd.Series(dtype=bool)
+    admin_set = set(res.loc[res["admin_min"].notna(), "pid"]) if "admin_min" in res else set()
+    for pid, g in played[played["minutes"].notna()].groupby("pid"):
+        if pid in admin_set:
+            continue
+        idx = [i for i in g.index if why[i] == ""]
+        if back.get(pid, False):
+            while idx and float(played.at[idx[-1], "minutes"] or 0) == 0:
+                i = idx.pop()
+                why[i] = "x"
+                note[i] = "0 minutes while he is out now: the Usual minutes use the matches before this absence"
+    note[why.eq("")] = ""
+    played = played.assign(why=why, why_note=note)
     past_why = {pid: {str(int(gw)): list(gg["why"]) for gw, gg in g.groupby("GW") if gg["why"].ne("").any()}
                 for pid, g in played[played["GW"].isin(past_gws)].groupby("pid")}
+    past_note = {pid: {str(int(gw)): list(gg["why_note"]) for gw, gg in g.groupby("GW") if gg["why"].ne("").any()}
+                 for pid, g in played[played["GW"].isin(past_gws)].groupby("pid")}
     usual = usual_minutes(res)
     res = res.assign(min_usual=usual["min"])
+    prof = pitch_profile(res)
+    res = res.assign(pit_start=prof["start"].fillna(0), pit_last=prof["last"].fillna(0), pit_ms=prof["ms"].fillna(0), pit_mb=prof["mb"].fillna(0))
     players: dict[str, dict] = {}
     for r in res.sort_values(["GW", "fixture"]).to_dict("records"):
         p = players.setdefault(r["pid"], {
@@ -2496,12 +3167,14 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "minUsual": round(float(r["min_usual"]), 1),
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
             "adminMin": None if pd.isna(r.get("admin_min", np.nan)) else round(float(r["admin_min"])), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
-            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "pastWhy": past_why.get(r["pid"], {}), "byGw": {},
+            "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "pastWhy": past_why.get(r["pid"], {}), "pastNote": past_note.get(r["pid"], {}), "byGw": {},
             # penalty order and miss rate, so the site can move penalties to the next taker when minutes are edited
             "penOrder": None if pd.isna(pd.to_numeric(r.get("pen_order"), errors="coerce")) else int(pd.to_numeric(r["pen_order"], errors="coerce")),
             "fkOrder": None if pd.isna(pd.to_numeric(r.get("fk_order"), errors="coerce")) else int(pd.to_numeric(r["fk_order"], errors="coerce")),
             "cornerOrder": None if pd.isna(pd.to_numeric(r.get("corner_order"), errors="coerce")) else int(pd.to_numeric(r["corner_order"], errors="coerce")),
-            "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None})
+            "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None,
+            # Start (5-4-3-2-1 over his last 5 matches) and his minutes when starting and not, for penalty shares
+            "pitch": {"start": round(float(r["pit_start"]), 3), "last": int(r["pit_last"]), "ms": round(float(r["pit_ms"]), 1), "mb": round(float(r["pit_mb"]), 1)}})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
@@ -2556,6 +3229,12 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws, "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])
+    payload["setPiecesByGw"] = {str(g): set_piece_table(res, g) for g in payload["gws"]}  # every gameweek, for the GW picker
+    # who started together among each club's listed penalty takers (the site moves penalties with them when minutes change)
+    to_short = dict(zip(res["team"].astype(str), res["team_short"].astype(str)))
+    payload["penPatterns"] = {}
+    for (team, ids), pats in PEN_PATTERNS.items():
+        payload["penPatterns"].setdefault(to_short.get(str(team), str(team)), []).append({"ids": list(ids), "pats": [[round(w, 4), [int(f) for f in fl]] for w, fl in pats]})
     first_rows = res[res["GW"] == payload["gws"][0]]
     payload["roleMedians"] = {pos: {"box90": round(float(first_rows[f"med_role_box90_{pos}"].iloc[0]), 2), "xgi90": round(float(first_rows[f"med_role_xgi90_{pos}"].iloc[0]), 3)}
                               for pos in ("MID", "FWD") if len(first_rows) and pd.notna(first_rows[f"med_role_box90_{pos}"].iloc[0])}
@@ -2574,11 +3253,32 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     if INJURY_LOG.exists() or ADMIN_INJURIES.exists():
         log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else []
         (out_dir / "injury_log.json").write_text(json.dumps(merged_injuries(log, load_admin_injuries()), ensure_ascii=False), encoding="utf-8")
-    (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     try:
-        (out_dir / "fixtures.json").write_text(json.dumps(club_fixtures(data_dir / "api_cache", offline), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+        (out_dir / "fdr.json").write_text(json.dumps(fdr_table(res), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    except Exception as e:  # never stop the site for this page
+        print(f"FDR not written ({e})")
+    fx = None
+    try:
+        fx = club_fixtures(data_dir / "api_cache", offline)
+        (out_dir / "fixtures.json").write_text(json.dumps(fx, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as e:  # never stop the site for this page
         print(f"Club fixtures not written ({e})")
+    if fx:
+        try:  # cup and European minutes and matches, for reference on the Minutes page
+            past_cup, next_cup = cup_tables(fx, cup_minutes(fx, offline), _api("bootstrap-static/", data_dir / "api_cache", offline), players)
+            for pid, d in past_cup.items():
+                if pid in players:
+                    players[pid]["cupPast"] = {g: v for g, v in d.items() if int(g) in past_gws or int(g) == 0}
+            payload["cupNext"] = {t: {g: v for g, v in d.items() if int(g) in payload["gws"]} for t, d in next_cup.items()}
+        except Exception as e:
+            print(f"Cup minutes not added ({e})")
+        try:  # national-team matches, for reference on the Minutes page
+            for pid, l in intl_tables(intl_minutes(data_dir / "api_cache", offline), players).items():
+                if pid in players:
+                    players[pid]["intlPast"] = l
+        except Exception as e:
+            print(f"International minutes not added ({e})")
+    (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     try:
         (out_dir / "team_news.json").write_text(json.dumps(team_news(data_dir / "api_cache", offline, players, payload["gws"][0]), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as e:  # never stop the site for this page

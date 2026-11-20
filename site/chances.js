@@ -5,8 +5,8 @@
   const state = { data: null, pos: '', sort: 'order', dir: 1, hideOut: true, overrides: XMin.load() };
   // key, header, value at full colour, format ('pct', 'pct1' or number of decimals)
   const METRICS = [
-    ['pApp1', 'Appearance 1+', 1, 'pct'], ['pApp60', 'Appearance 60+', 1, 'pct'],
-    ['pScore', 'Score 1+', 0.6, 'pct'], ['npxGoals', 'NPxGoals', 0.8, 2], ['xPenGoals', 'Pen goals', 0.15, 2], ['pAssist', 'Assist 1+', 0.35, 'pct'], ['xAssists', 'xAssists', 0.45, 2],
+    ['pStart', 'Start', 1, 'pct'], ['pApp1', 'Appearance 1+', 1, 'pct'], ['pApp60', 'Appearance 60+', 1, 'pct'],
+    ['pScore', 'Score 1+', 0.6, 'pct'], ['npxGoals', 'NPxGoals', 0.8, 2], ['xPenGoals', 'Pen goals', 0.15, 2], ['pAssist', 'Fantasy Assist 1+', 0.35, 'pct'], ['xAssists', 'xAssists', 0.45, 2],
     ['pCs', 'Clean sheet', 0.6, 'pct'], ['xConceded', 'Conceded', 2.4, 2], ['pDefcon', 'DefCon', 0.7, 'pct'], ['xDefcon', 'DefCon actions', 14, 1], ['xSaves', 'Saves', 4.5, 1],
     ['pPenSave', 'Pen save', 0.03, 'pct1'], ['pPenMiss', 'Pen miss', 0.03, 'pct1'], ['pOwnGoal', 'Own goal', 0.03, 'pct1'],
     ['pRed', 'Red card', 0.02, 'pct1'], ['pYellow', 'Yellow card', 0.4, 'pct'], ['xBps', 'BPS', 32, 0], ['bonus', 'Bonus', 1.5, 2],
@@ -30,7 +30,7 @@
       missed += pens * miss;
     });
     const np = Math.max(0, d.xGoals - penModel);
-    const out = { ...d, npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)), pPenMiss: d.fx ? 1 - Math.exp(-missed) : d.pPenMiss };
+    const out = { ...d, pStart: XMin.startChance(state.overrides, p, g), npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)), pPenMiss: d.fx ? 1 - Math.exp(-missed) : d.pPenMiss };
     cache.set(key, out);
     return out;
   }
@@ -99,11 +99,11 @@
     render();
   }));
 
-  fetch('data.json', { cache: 'no-store' })
+  fetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((data) => {
       state.data = data;
-      XMin.setPlayers(data.players);
+      XMin.setPlayers(data.players, data.penPatterns);
       $('gw').replaceChildren(...data.gws.map((g) => el('option', { value: String(g), textContent: `GW${g}` })));
       $('team').append(...[...new Set(data.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
       const when = new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });

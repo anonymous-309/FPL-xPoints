@@ -212,7 +212,32 @@ def main():
         print(f"\nInjury spells (FotMob, first match missed to the match he was back for): {len(sp)}; days: median {np.median(sp):.0f}, "
               f"25% {np.percentile(sp, 25):.0f}, 75% {np.percentile(sp, 75):.0f}, 90% {np.percentile(sp, 90):.0f}")
     ev[["season", "GW", "name", "team", "position", "minutes", "starts", "red_cards", "yellow_ban", "susp", "fm_absent", "sw_out", "sw_inmatch", "next_inj", "next_mins", "usual", "absent", "absent_type", "back", "pred"]].to_csv("xmin_backtest_rows.csv", index=False)
+    summary(pd.read_csv("xmin_backtest_rows.csv"))
 
 
-if __name__ == "__main__":
+def summary(rows, out="site/xmin_accuracy.json"):
+    """The Accuracy page's xMin card: players on 60+ xMin, matches with a red card, a ban or an injury picked up in
+    the match left out. `rows` is xmin_backtest_rows.csv."""
+    e = rows[rows["pred"] >= 60]
+    bad = (e["red_cards"] > 0) | e["susp"] | e["sw_inmatch"] | (e["next_inj"] & (e["minutes"] < 90))
+    c = e[~bad]
+    res = {"seasons": sorted(rows["season"].unique().tolist()), "removed": {"red": int((e["red_cards"] > 0).sum()), "ban": int(e["susp"].sum()),
+           "injured_in_match": int((e["sw_inmatch"] | (e["next_inj"] & (e["minutes"] < 90))).sum())}, "bands": []}
+    for lo, hi, lab in ((80, 91, "80–90"), (70, 80, "70–80"), (60, 70, "60–70"), (60, 91, "All 60+")):
+        s = c[(c["pred"] >= lo) & (c["pred"] < hi)]
+        er, m, st = s["pred"] - s["minutes"], s["minutes"], s[s["starts"] == 1]
+        res["bands"].append({"band": lab, "n": len(s), "pred": round(s["pred"].mean(), 1), "real": round(m.mean(), 1), "bias": round(er.mean(), 1),
+                             "mae": round(er.abs().mean(), 1), "within10": round((er.abs() <= 10).mean(), 3), "real60": round((m >= 60).mean(), 3),
+                             "zero": round((m == 0).mean(), 3), "sub": round(((m > 0) & (m < 60)).mean(), 3), "p60_89": round(((m >= 60) & (m < 90)).mean(), 3),
+                             "full": round((m >= 90).mean(), 3), "not_started": int((s["starts"] == 0).sum()),
+                             "started_mae": round((st["pred"] - st["minutes"]).abs().mean(), 1), "started_bias": round((st["pred"] - st["minutes"]).mean(), 1)})
+    top = c[c["pred"] >= 80]
+    res["top_by_pos"] = {p: {"n": int((top["position"] == p).sum()), "not_started": int(((top["position"] == p) & (top["starts"] == 0)).sum())} for p in ("GK", "DEF", "MID", "FWD")}
+    Path(out).write_text(json.dumps(res, ensure_ascii=False, indent=1))
+    return res
+
+
+if __name__ == "__main__" and "--summary" in sys.argv:
+    summary(pd.read_csv(sys.argv[sys.argv.index("--summary") + 1]))
+elif __name__ == "__main__":
     main()

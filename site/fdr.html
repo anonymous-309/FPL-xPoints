@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture Difficulty Rating (FDR) FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Fixture Difficulty Rating (FDR)</h1>
+    <p id="status" role="status">Loading</p>
+  </div>
+  <nav class="sitenav" aria-label="Pages"></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <div class="seg" role="group" aria-label="Table">
+    <button type="button" data-kind="overall" aria-pressed="true">Overall</button>
+    <button type="button" data-kind="attack" aria-pressed="false">Attack</button>
+    <button type="button" data-kind="defence" aria-pressed="false">Defence</button>
+    <button type="button" data-kind="ranking" aria-pressed="false">Ranking</button>
+  </div>
+  <label>Gameweeks <select id="range"></select></label>
+</form>
+<main>
+  <div id="ranking" class="fdr-ranks" hidden></div>
+  <div class="wrap fdr-wrap" tabindex="0" aria-label="Fixture Difficulty Rating">
+    <table class="minutes fdr"><thead></thead><tbody></tbody></table>
+  </div>
+  <p class="fdr-key" aria-hidden="true">Easier <span class="r1">1</span><span class="r2">2</span><span class="r3">3</span><span class="r4">4</span><span class="r5">5</span> Harder</p>
+</main>
+<footer>
+  <p><b>Fixture Difficulty Rating (FDR)</b> for each club's coming matches, 1 (easiest) to 5 (hardest), in the same colours as the official FPL site. The ratings are our own, not FPL's, and are for reference only: the planner and the points do not use them. They come from the same model as the points. <b>Attack</b> rates the goals the club is expected to score in the match (the other side's expected goals conceded); more is easier. <b>Defence</b> rates the club's chance of a clean sheet; higher is easier. <b>Overall</b> rates expected goals scored minus conceded. As on the FPL site, the rating is the opponent's alone, home and away apart: every club, once at home and once away (40 sides), is ranked by its expected goals a match over all its coming matches, plus half the league's home edge at home and minus half of it away (the full edge made almost every top side an away trip), from our model, which mixes <b>real goals (70%) and xG (30%)</b>, recent matches weighing more: for Overall, goals for minus against; for Attack, how few it concedes; for Defence, how many it scores. The 2 strongest are 5, the next 10 are 4, the next 17 are 3 and the last 11 are 2, the same split as FPL's own ratings this season (no 1s). <b>Ranking</b> lists the 40 sides from hardest to easiest to face for each table: ARS (A) is a trip to Arsenal, ARS (H) Arsenal visiting you. hover or tap a cell for the numbers behind it. <b>Total</b> compares clubs with each other: the model's sum over the gameweeks chosen (expected goals scored minus conceded, expected goals scored, or clean sheet chances), and clubs are sorted easiest first by it: a blank gameweek adds nothing, a double adds both matches. (H) is at home, (A) away. Not affiliated with the Premier League.</p>
+</footer>
+<script src="fdr.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>

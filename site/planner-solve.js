@@ -89,7 +89,7 @@
           row([[1, `b${t}_${i}`], [1, `s${t}_${i}`]], -Infinity, 1);
           const paidWeek = !has('wildcard', t);
           // not discounted: putting a transfer off a week must not make it look cheaper
-          addObj(`b${t}_${i}`, -(paidWeek ? (input.buyCost && input.buyCost[t] != null ? input.buyCost[t] : set.minGain) : CHURN));
+          addObj(`b${t}_${i}`, -(paidWeek ? set.minGain : CHURN));
           if (paidWeek && urgent.has(i) && P[i].owned) addObj(`s${t}_${i}`, set.minGain);
         } else if (t) row([[1, x(i)], [-1, xPrev(i)]], 0, 0);
         else row([[1, x(i)]], P[i].owned ? 1 : 0, P[i].owned ? 1 : 0);
@@ -104,11 +104,18 @@
         for (let i = 0; i < n; i++) { terms.push([-sellValue(i), `s${t}_${i}`]); terms.push([P[i].price, `b${t}_${i}`]); }
         if (bankPrev) { terms.push([-1, bankPrev]); row(terms, 0, 0); } else row(terms, bank, bank);
         bankPrev = bk;
+        // bankBuffer: prices can move before a later week's transfers, so buying in week t leaves bankBuffer x t in the bank
+        if (input.bankBuffer && t > 0 && !has('freehit', t)) {
+          const a = v(`ab${t}`);
+          for (let i = 0; i < n; i++) row([[1, a], [-1, `b${t}_${i}`]], 0, Infinity);
+          row([[1, bk], [-input.bankBuffer * t, a]], 0, Infinity);
+        }
         // transfers the viewer has already made (or wants made) in the first gameweek
-        const forced = t === 0 && input.force ? input.force : null;
+        // forceWeeks (a manual plan): {t: {buys, sells}} for any transfer week
+        const forced = input.forceWeeks ? input.forceWeeks[t] || null : t === 0 && input.force ? input.force : null;
         if (forced) {
-          forced.buys.forEach((i) => { if (!P[i].owned) row([[1, `b0_${i}`]], 1, 1); });
-          forced.sells.forEach((i) => { if (P[i].owned) row([[1, `s0_${i}`]], 1, 1); });
+          forced.buys.forEach((i) => { if (t > 0 || !P[i].owned) row([[1, `b${t}_${i}`]], 1, 1); });
+          forced.sells.forEach((i) => { if (t > 0 || P[i].owned) row([[1, `s${t}_${i}`]], 1, 1); });
         }
         // saving the transfer: no transfers apart from the forced ones
         const forcedN = forced ? Math.max(forced.buys.length, forced.sells.length) : 0;
@@ -172,6 +179,14 @@
       row(cTerms, 1, 1);
       POS.forEach((pos) => row(P.map((p, i) => [p.position === pos ? 1 : 0, `y${t}_${i}`]), XI[pos][0], XI[pos][1]));
     }
+    // mustMove: [{buy, sell}]: that player is bought, and that one sold, in one of the transfer weeks (any of them)
+    (input.mustMove || []).forEach(({ buy, sell }) => {
+      const tw = [...Array(depth).keys()];
+      const bs = tw.filter((t) => vars.has(`b${t}_${buy}`)).map((t) => [1, `b${t}_${buy}`]);
+      const ss = tw.filter((t) => vars.has(`s${t}_${sell}`)).map((t) => [1, `s${t}_${sell}`]);
+      if (bs.length) row(bs, 1, Infinity);
+      if (ss.length) row(ss, 1, Infinity);
+    });
     // useCost: {x: [cost per week], steps: [m0, m1, ...]}: a free transfer used that leaves r free transfers in hand
     // costs x[t] * steps[r] (the last free transfer costs the most). Week t in all: x[t] * (V(f) - V(f - u)), V(k) the
     // sum of the steps below k. A plan has no reason to use a transfer early unless it gains more than that.
@@ -187,6 +202,16 @@
         row([[1, r], [-1, `f${t}`], [1, `u${t}`]], 0, 0);
         for (let k = 0; k < MAX_FT; k++) row([[1, R], [-(m[k] || 0), r]], -Infinity, V(k) - (m[k] || 0) * k);
         addObj(R, c);
+      }
+    }
+    // ftBonus: {x: [points per free transfer left after week t's transfers], cap}: every week, each free transfer still
+    // in hand after the week's transfers (up to cap) is worth x[t].
+    if (input.ftBonus) {
+      for (let t = 0; t < depth; t++) {
+        if (!vars.has(`f${t}`) || !input.ftBonus.x[t]) continue;
+        const B = v(`ftb${t}`, 'C', 0, input.ftBonus.cap);
+        row(vars.has(`u${t}`) ? [[1, B], [-1, `f${t}`], [1, `u${t}`]] : [[1, B], [-1, `f${t}`]], -Infinity, 0);
+        addObj(B, input.ftBonus.x[t]);
       }
     }
     // Free transfers carried past the transfer weeks, and money left in the bank, are worth something.

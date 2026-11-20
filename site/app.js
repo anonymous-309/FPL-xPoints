@@ -55,13 +55,15 @@
 
   function visibleGws() { return state.data.gws.slice(0, Number($('horizon').value)); }
   const total = (p, gws) => gws.reduce((s, g) => s + (p.byGw[g] ? view(p, g).xpts : 0), 0);
+  // each later gameweek counts 0.85 times the one before, as in the Planner
+  const decayTotal = (p, gws) => gws.reduce((s, g, k) => s + (p.byGw[g] ? Math.pow(0.85, k) * view(p, g).xpts : 0), 0);
 
   function filtered(gws) {
     const q = $('search').value.trim().toLowerCase();
     const team = $('team').value;
     const max = parseFloat($('price').value);
     const value = {
-      name: (p) => p.name.toLowerCase(), price: (p) => p.price, xmin: (p) => { const a = avgMins(p, gws).avg; return a === null ? -1 : a; }, total: (p) => total(p, gws),
+      name: (p) => p.name.toLowerCase(), price: (p) => p.price, xmin: (p) => { const a = avgMins(p, gws).avg; return a === null ? -1 : a; }, total: (p) => total(p, gws), decay: (p) => decayTotal(p, gws),
     }[state.sort] || ((p) => (p.byGw[state.sort] ? view(p, state.sort).xpts : -99));
     const sorted = [...state.data.players].sort((a, b) => { const x = value(a), y = value(b); return (x < y ? -1 : x > y ? 1 : 0) * state.dir; });
     // The Minutes page lists players in this same order.
@@ -72,7 +74,7 @@
   }
 
   function header(gws) {
-    const columns = [['name', 'Player'], ['price', 'Price'], ['xmin', 'Avg xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total']];
+    const columns = [['name', 'Player'], ['price', 'Price'], ['xmin', 'Avg xMin'], ...gws.map((g) => [String(g), `GW${g}`]), ['total', 'Total'], ['decay', 'Total decay']];
     $('table').tHead.replaceChildren(el('tr', {}, ...columns.map(([key, label]) => {
       const th = el('th', { scope: 'col' }, el('button', { type: 'button', textContent: label, onclick: () => {
         if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' ? 1 : -1; }
@@ -100,7 +102,7 @@
     const a = avgMins(p, gws);
     const xmin = a.avg !== null ? el('td', { className: a.edited ? 'xmin-ro edited' : 'xmin-ro', textContent: Math.round(a.avg), title: `Average minutes per match, GW${gws[0]}-${gws[gws.length - 1]}${a.edited ? ', with your minutes' : ''}. Edit on the Minutes page.` })
       : el('td', { className: 'none', textContent: '–' });
-    const tr = el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), xmin, ...cells, el('td', { className: 'total', textContent: f1(total(p, gws)) }));
+    const tr = el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), xmin, ...cells, el('td', { className: 'total', textContent: f1(total(p, gws)) }), el('td', { className: 'total', title: 'Each later gameweek counts 0.85 times the one before', textContent: f1(decayTotal(p, gws)) }));
     tr.dataset.pid = p.id;
     return tr;
   }
@@ -112,13 +114,13 @@
     header(gws);
     const list = filtered(gws);
     const body = list.length ? list.map((p) => row(p, gws))
-      : [el('tr', {}, el('td', { colSpan: gws.length + 4, className: 'none', textContent: 'No players match these filters. Widen the price, team or position.' }))];
+      : [el('tr', {}, el('td', { colSpan: gws.length + 5, className: 'none', textContent: 'No players match these filters. Widen the price, team or position.' }))];
     $('table').tBodies[0].replaceChildren(...body);
   }
 
   function show(data) {
     state.data = data;
-    XMin.setPlayers(data.players);
+    XMin.setPlayers(data.players, data.penPatterns);
     $('empty').hidden = true;
     $('wrap').hidden = false;
     const when = new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
@@ -153,7 +155,7 @@
   // Minutes edited on the Minutes page in another tab.
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') { state.overrides = XMin.load(); updateEdited(); render(); } });
 
-  fetch('data.json', { cache: 'no-store' })
+  fetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(show)
     .catch(() => {

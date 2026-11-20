@@ -27,22 +27,25 @@
   <label>Team <select id="team"><option value="">All</option></select></label>
   <label>Max price <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
   <label>Gameweeks
-    <select id="horizon"><option>3</option><option>5</option><option selected>8</option></select>
+    <select id="horizon"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option selected>8</option><option>9</option><option>10</option><option>11</option><option>12</option></select>
   </label>
   <button id="order" class="toggle" type="button" aria-pressed="true">Same order as xPoints</button>
   <button id="flagged" class="toggle" type="button" aria-pressed="false">Injured or banned only</button>
+  <button id="eplOnly" class="toggle" type="button" aria-pressed="false">Show only EPL</button>
+  <div class="fx-comps" role="group" aria-label="Cup chips"></div>
   <button id="reset" class="reset" type="button" hidden></button>
 </form>
 <main>
   <div id="empty" class="empty"><p>Minutes appear here once the GitHub update has run.</p></div>
   <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Minutes per gameweek">
-    <table id="table" class="minutes"><thead></thead><tbody></tbody></table>
+    <table id="table" class="minutes fx-grid mins-slots"><thead></thead><tbody></tbody></table>
+    <button id="more" class="toggle more-rows" type="button" hidden>Show more</button>
   </div>
 </main>
 <footer>
   <p><b>Adjust min</b> sets one figure for every upcoming gameweek; injuries and bans still apply on top of it (a gameweek he is out stays 0). Type in a gameweek box to set just that one, which also overrides an injury or ban. Clear a box to go back to the model. Your minutes are saved in this browser and used on the xPoints page. Double gameweeks show minutes per match, for example 0+84.</p>
   <p><b>Played gameweeks</b> show the minutes he actually played. <b>xMin</b> for upcoming gameweeks is his last 5 matches weighted 5, 4, 3, 2, 1 from newest to oldest.
-  Then: a player with a return date in the FPL news (injury, or a ban for a red card or yellow cards) gets 0 until that date and the same formula on the matches before the absence once back. A red card in his last match that FPL has not flagged yet counts as a 1-match ban. Matches missed through a red-card or yellow-card ban (5 yellows by GW19, 10 by GW32, 15) are left out of the formula. Injured with no return date: 0 in every gameweek. Flagged doubtful (25/50/75%): the match he got hurt in (the last before FPL flagged him) and any since are left out, so xMin uses the 5 matches before; then xMin times that chance in the next gameweek, full after that. Not affiliated with the Premier League.</p>
+  Then: a player with a return date in the FPL news (injury, or a ban for a red card or yellow cards) gets 0 until that date and the same formula on the matches before the absence once back. A red card in his last match that FPL has not flagged yet counts as a 1-match ban. Matches missed through a red-card or yellow-card ban (5 yellows by GW19, 10 by GW32, 15) are left out of the formula. Injured with no return date from FPL: out for the typical number of days for that injury, counted from the date of the news (see How it works), then half his usual minutes in the first match on or after that date; the Minutes page marks it as an estimate. Unavailable for another reason with no date: 0. Flagged doubtful (25/50/75%): the match he got hurt in and any he has missed since are left out, so xMin uses the matches before; then xMin times that chance in the next gameweek, full after that. The match he got hurt in is one FotMob shows him taken off injured in; for a gameweek FotMob does not cover, the last match before FPL flagged him, unless he played the full 90. Played gameweeks in <b style="color:var(--warn)">red</b> are left out of the formula (hover or tap for the exact reason): injury absences, bans, a match he was sent off in, a goalkeeper's part match coming on for his injured team-mate, the match a player was taken off injured in (from FotMob's match events), a cautionary rest on return from injury (a 0 in his first match back), and for a doubtful player the match he got hurt in. When a first-choice goalkeeper is due back, his stand-in's minutes drop to make room for him (only one goalkeeper plays). Columns are laid out as on the Fixtures page: one per <b>weekend</b> (Friday to Monday) and <b>midweek</b> (Tuesday to Thursday) by the date in England (hover over Weekend or Midweek for the dates), every one shown even with no league match, so international breaks and cup-only weeks show as the rounds they take; the gameweek under the dates is the league round played in it. Cup and European matches are shown for reference only and do not change xMin, as coloured chips in the weekend or midweek they are played (Champions League UCL, Europa League UEL, Conference League UECL with its qualifying rounds, EFL Cup EFL, FA Cup FAC; from FotMob): a played one shows the opponent and his minutes, a coming one his club's opponent (capitals at home, lower case away), with the date and kick-off on hover. The summer's European qualifiers before GW1 are included. <b>International</b> chips are his national-team matches (country, opponent, minutes; from FotMob), shown in the international breaks; use the buttons above the table to hide any competition. Not affiliated with the Premier League.</p>
 </footer>
 <script src="minutes-core.js"></script>
 <script src="minutes.js"></script>
