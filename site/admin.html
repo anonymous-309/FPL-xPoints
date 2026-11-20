@@ -28,6 +28,12 @@
   <button class="toggle" type="submit">Use token</button>
 </form>
 
+<div id="refreshBox" class="filters admin-box" hidden>
+  <p class="meta" id="lastUpdate">Site data: –</p>
+  <button id="refresh" class="toggle" type="button">Update the site now</button>
+  <p id="refreshStatus" class="meta admin-note" role="status"></p>
+</div>
+
 <div id="tabs" class="admin-tabs" role="tablist" aria-label="Admin sections" hidden>
   <button type="button" role="tab" id="tab-abs" aria-controls="injPanel" aria-selected="true">Absences</button>
   <button type="button" role="tab" id="tab-min" aria-controls="panel" aria-selected="false">Minutes</button>

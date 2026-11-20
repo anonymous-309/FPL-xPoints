@@ -13,6 +13,8 @@
   const MIN_API = `https://api.github.com/repos/${REPO}/contents/admin_minutes.json`;
   const INJ_API = `https://api.github.com/repos/${REPO}/contents/admin_injuries.json`;
   const EMPTY_INJ = { manual: [], startOverrides: {} };
+  // Writing this file is a push to main, which starts a site update (the same run as the schedule).
+  const REFRESH_API = `https://api.github.com/repos/${REPO}/contents/admin_refresh.json`;
   const state = { players: [], admin: {}, inj: { manual: [], startOverrides: {} }, auto: [], pos: { inj: '', min: '' }, tab: 'abs', busy: false };
 
   const store = {
@@ -193,6 +195,8 @@
       const teams = [...new Set(state.players.map((p) => p.team))].sort();
       ['injTeam', 'minTeam'].forEach((id) => $(id).replaceChildren(el('option', { value: '', textContent: 'All' }), ...teams.map((t) => el('option', { value: t, textContent: t }))));
       $('tabs').hidden = false;
+      $('refreshBox').hidden = false;
+      $('lastUpdate').textContent = `Site data from ${new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}. It updates by itself at 10:17 and 22:17, every 2 hours from Friday to Sunday, and after every save here.`;
       showTab(store.get('admin-tab') || 'abs');
       pickList('inj');
       pickList('min');
@@ -224,7 +228,12 @@
     if (await sha256($('pass').value) === PASS) { store.set('admin-open', '1', sessionStorage); openPanel(); } else { fail('Wrong password.'); $('pass').value = ''; }
   });
   $('tokenForm').addEventListener('submit', (e) => { e.preventDefault(); store.set(TOKEN_KEY, $('token').value.trim()); $('token').value = ''; openPanel(); });
-  $('forget').addEventListener('click', () => { store.del(TOKEN_KEY); ['panel', 'injPanel', 'tabs'].forEach((id) => { $(id).hidden = true; }); $('tokenForm').hidden = false; });
+  $('forget').addEventListener('click', () => { store.del(TOKEN_KEY); ['panel', 'injPanel', 'tabs', 'refreshBox'].forEach((id) => { $(id).hidden = true; }); $('tokenForm').hidden = false; });
+  // Fresh FPL data (team news, prices, minutes, fixtures) now, without waiting for the schedule.
+  $('refresh').addEventListener('click', async () => {
+    const ok = await commit(REFRESH_API, {}, () => ({ requestedAt: new Date().toISOString() }), 'Admin: update the site now', 'refreshStatus');
+    if (ok) $('refreshStatus').textContent = `Update started at ${when()}. New data is on the site in about 10 minutes; reload then.`;
+  });
 
   if (store.get('admin-open', sessionStorage)) openPanel();
 })();
