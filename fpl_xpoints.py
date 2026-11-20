@@ -2251,15 +2251,16 @@ def return_date(news: str, news_added: str | None) -> pd.Timestamp | None:
     return None
 
 
-# Typical days out for an injury FPL gives no return date for, by the words in the news (rough figures for Premier
-# League players; the first match back counts half). The first match listed wins.
+# Typical days out for an injury FPL gives no return date for, by the words in the news: the median days out of
+# 1,898 injuries of Premier League squad players in 2024-25 and 2025-26 on Soccerway (archive/injuries, checked by
+# tools/soccerway_days.py); the first match back counts half. The first match listed wins.
 INJURY_DAYS = [(("acl", "cruciate", "achilles"), 270, "a long-term injury"), (("surgery", "operation"), 70, "surgery"),
-               (("fracture", "broken"), 56, "a fracture"), (("knee",), 35, "a knee injury"), (("hamstring",), 28, "a hamstring injury"),
+               (("fracture", "broken"), 56, "a fracture"), (("hamstring",), 42, "a hamstring injury"), (("knee",), 24, "a knee injury"),
                (("thigh", "muscle", "muscular"), 21, "a muscle injury"), (("calf",), 21, "a calf injury"), (("ankle",), 21, "an ankle injury"),
-               (("foot", "toe"), 21, "a foot injury"), (("groin", "adductor"), 21, "a groin injury"), (("hip",), 21, "a hip injury"),
-               (("shoulder",), 21, "a shoulder injury"), (("back",), 14, "a back injury"), (("concussion", "head"), 10, "a head injury"),
+               (("foot", "toe"), 33, "a foot injury"), (("groin", "adductor"), 16, "a groin injury"), (("hip",), 11, "a hip injury"),
+               (("shoulder",), 10, "a shoulder injury"), (("back",), 14, "a back injury"), (("concussion", "head"), 10, "a head injury"),
                (("illness", " ill"), 7, "illness"), (("knock",), 7, "a knock")]
-INJURY_DAYS_DEFAULT = (14, "an injury")
+INJURY_DAYS_DEFAULT = (7, "an injury")
 INJURY_WEEKS = INJURY_DAYS  # (the words are also used to tell an injury from other absences)
 
 
