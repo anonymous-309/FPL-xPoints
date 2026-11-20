@@ -132,6 +132,14 @@
           xm.bands.map((r) => [r.band, pc(r.zero), pc(r.sub), pc(r.p60_89), pc(r.full), `${r.not_started} (${pc(r.not_started / r.n)})`, f(r.started_mae), sg(r.started_bias)])),
         p(b('80–90'), `: regular starters. They started ${pc(1 - top.not_started / top.n)} of these matches, and when they started xMin was off by only ${f(top.started_mae)} minutes. Almost all the bias comes from the ${pc(top.not_started / top.n)} of matches (about 1 in ${Math.round(top.n / top.not_started)}) where he was left out of the starting XI without an injury or ban on record: `,
           ['GK', 'DEF', 'MID', 'FWD'].filter((k) => tp[k]).map((k) => `${k} ${pc(tp[k].not_started / tp[k].n)}`).join(', '), '. Some of these were surely unrecorded knocks, so the true share of surprise benchings is a little lower.'),
+        xm.bench_by_gw ? el('h3', { textContent: `Left out of the starting XI by gameweek, ${xm.bench_by_gw.season} (xMin 80+)` }) : null,
+        xm.bench_by_gw ? p('Players on 80+ xMin who did not start, with no injury or ban on record (red cards, bans and injuries picked up in the match left out). Midweek rounds and a few special weeks stand out; a normal weekend is about 1 in 20.') : null,
+        xm.bench_by_gw ? (() => { const R = xm.bench_by_gw.rows; const all = R.reduce((a, r) => [a[0] + r.not_started, a[1] + r.n], [0, 0]);
+          const norm = R.filter((r) => !r.midweek && !r.note).reduce((a, r) => [a[0] + r.not_started, a[1] + r.n], [0, 0]);
+          return el('details', {}, el('summary', { textContent: `By gameweek: ${all[0]} of ${all[1]} (${pc(all[0] / all[1])}); normal weekends ${pc(norm[0] / norm[1])}` }),
+            table(['GW', 'Date', 'Round', 'Not started', 'Of them 0 min', 'Players on 80+', 'Share'],
+              R.map((r) => [`GW${r.gw}`, r.date, [r.midweek ? 'Midweek' : 'Weekend', r.note].filter(Boolean).join(', '), String(r.not_started), String(r.zero), String(r.n), `${(r.not_started / r.n * 100).toFixed(1)}%`]),
+              { mark: (r) => parseFloat(r[6]) >= 9 })); })() : null,
         p(b('70–80'), ' and ', b('60–70'), ': rotation risks. They miss the starting XI in about 1 match in 6 and 1 in 3. When they do start they play more than their xMin, so the figure is right as an average (for expected points) but any one match is a gamble.')));
     }
 

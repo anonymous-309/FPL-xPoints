@@ -95,5 +95,352 @@
    "n": 562,
    "not_started": 33
   }
+ },
+ "bench_by_gw": {
+  "season": "2025-26",
+  "rows": [
+   {
+    "gw": 1,
+    "date": "16 Aug",
+    "midweek": false,
+    "n": 90,
+    "not_started": 13,
+    "zero": 11,
+    "note": "first week"
+   },
+   {
+    "gw": 2,
+    "date": "23 Aug",
+    "midweek": false,
+    "n": 96,
+    "not_started": 9,
+    "zero": 5,
+    "note": ""
+   },
+   {
+    "gw": 3,
+    "date": "30 Aug",
+    "midweek": false,
+    "n": 94,
+    "not_started": 5,
+    "zero": 2,
+    "note": ""
+   },
+   {
+    "gw": 4,
+    "date": "13 Sep",
+    "midweek": false,
+    "n": 102,
+    "not_started": 7,
+    "zero": 3,
+    "note": ""
+   },
+   {
+    "gw": 5,
+    "date": "20 Sep",
+    "midweek": false,
+    "n": 112,
+    "not_started": 6,
+    "zero": 4,
+    "note": ""
+   },
+   {
+    "gw": 6,
+    "date": "27 Sep",
+    "midweek": false,
+    "n": 110,
+    "not_started": 6,
+    "zero": 2,
+    "note": ""
+   },
+   {
+    "gw": 7,
+    "date": "05 Oct",
+    "midweek": false,
+    "n": 106,
+    "not_started": 7,
+    "zero": 4,
+    "note": ""
+   },
+   {
+    "gw": 8,
+    "date": "18 Oct",
+    "midweek": false,
+    "n": 103,
+    "not_started": 7,
+    "zero": 2,
+    "note": ""
+   },
+   {
+    "gw": 9,
+    "date": "26 Oct",
+    "midweek": false,
+    "n": 106,
+    "not_started": 6,
+    "zero": 4,
+    "note": ""
+   },
+   {
+    "gw": 10,
+    "date": "01 Nov",
+    "midweek": false,
+    "n": 109,
+    "not_started": 0,
+    "zero": 0,
+    "note": ""
+   },
+   {
+    "gw": 11,
+    "date": "09 Nov",
+    "midweek": false,
+    "n": 119,
+    "not_started": 5,
+    "zero": 1,
+    "note": ""
+   },
+   {
+    "gw": 12,
+    "date": "22 Nov",
+    "midweek": false,
+    "n": 116,
+    "not_started": 6,
+    "zero": 4,
+    "note": ""
+   },
+   {
+    "gw": 13,
+    "date": "30 Nov",
+    "midweek": false,
+    "n": 120,
+    "not_started": 6,
+    "zero": 3,
+    "note": ""
+   },
+   {
+    "gw": 14,
+    "date": "03 Dec",
+    "midweek": true,
+    "n": 115,
+    "not_started": 14,
+    "zero": 4,
+    "note": ""
+   },
+   {
+    "gw": 15,
+    "date": "06 Dec",
+    "midweek": false,
+    "n": 106,
+    "not_started": 5,
+    "zero": 1,
+    "note": ""
+   },
+   {
+    "gw": 16,
+    "date": "14 Dec",
+    "midweek": false,
+    "n": 109,
+    "not_started": 0,
+    "zero": 0,
+    "note": ""
+   },
+   {
+    "gw": 17,
+    "date": "20 Dec",
+    "midweek": false,
+    "n": 106,
+    "not_started": 11,
+    "zero": 9,
+    "note": "AFCON"
+   },
+   {
+    "gw": 18,
+    "date": "27 Dec",
+    "midweek": false,
+    "n": 101,
+    "not_started": 2,
+    "zero": 1,
+    "note": ""
+   },
+   {
+    "gw": 19,
+    "date": "30 Dec",
+    "midweek": true,
+    "n": 116,
+    "not_started": 13,
+    "zero": 7,
+    "note": "AFCON"
+   },
+   {
+    "gw": 20,
+    "date": "04 Jan",
+    "midweek": false,
+    "n": 111,
+    "not_started": 6,
+    "zero": 3,
+    "note": ""
+   },
+   {
+    "gw": 21,
+    "date": "07 Jan",
+    "midweek": true,
+    "n": 110,
+    "not_started": 7,
+    "zero": 4,
+    "note": ""
+   },
+   {
+    "gw": 22,
+    "date": "17 Jan",
+    "midweek": false,
+    "n": 111,
+    "not_started": 12,
+    "zero": 7,
+    "note": "January transfers"
+   },
+   {
+    "gw": 23,
+    "date": "25 Jan",
+    "midweek": false,
+    "n": 106,
+    "not_started": 4,
+    "zero": 0,
+    "note": ""
+   },
+   {
+    "gw": 24,
+    "date": "01 Feb",
+    "midweek": false,
+    "n": 105,
+    "not_started": 4,
+    "zero": 1,
+    "note": ""
+   },
+   {
+    "gw": 25,
+    "date": "07 Feb",
+    "midweek": false,
+    "n": 111,
+    "not_started": 3,
+    "zero": 1,
+    "note": ""
+   },
+   {
+    "gw": 26,
+    "date": "11 Feb",
+    "midweek": true,
+    "n": 128,
+    "not_started": 10,
+    "zero": 6,
+    "note": ""
+   },
+   {
+    "gw": 27,
+    "date": "22 Feb",
+    "midweek": false,
+    "n": 114,
+    "not_started": 5,
+    "zero": 0,
+    "note": ""
+   },
+   {
+    "gw": 28,
+    "date": "28 Feb",
+    "midweek": false,
+    "n": 110,
+    "not_started": 2,
+    "zero": 1,
+    "note": ""
+   },
+   {
+    "gw": 29,
+    "date": "04 Mar",
+    "midweek": true,
+    "n": 125,
+    "not_started": 10,
+    "zero": 4,
+    "note": ""
+   },
+   {
+    "gw": 30,
+    "date": "15 Mar",
+    "midweek": false,
+    "n": 116,
+    "not_started": 10,
+    "zero": 3,
+    "note": ""
+   },
+   {
+    "gw": 31,
+    "date": "21 Mar",
+    "midweek": false,
+    "n": 88,
+    "not_started": 3,
+    "zero": 1,
+    "note": ""
+   },
+   {
+    "gw": 32,
+    "date": "12 Apr",
+    "midweek": false,
+    "n": 110,
+    "not_started": 11,
+    "zero": 5,
+    "note": ""
+   },
+   {
+    "gw": 33,
+    "date": "19 Apr",
+    "midweek": false,
+    "n": 137,
+    "not_started": 5,
+    "zero": 5,
+    "note": ""
+   },
+   {
+    "gw": 34,
+    "date": "25 Apr",
+    "midweek": false,
+    "n": 70,
+    "not_started": 2,
+    "zero": 2,
+    "note": ""
+   },
+   {
+    "gw": 35,
+    "date": "03 May",
+    "midweek": false,
+    "n": 110,
+    "not_started": 10,
+    "zero": 4,
+    "note": ""
+   },
+   {
+    "gw": 36,
+    "date": "10 May",
+    "midweek": false,
+    "n": 130,
+    "not_started": 16,
+    "zero": 12,
+    "note": "end of season"
+   },
+   {
+    "gw": 37,
+    "date": "17 May",
+    "midweek": false,
+    "n": 105,
+    "not_started": 4,
+    "zero": 2,
+    "note": "end of season"
+   },
+   {
+    "gw": 38,
+    "date": "24 May",
+    "midweek": false,
+    "n": 115,
+    "not_started": 26,
+    "zero": 19,
+    "note": "last day"
+   }
+  ]
  }
 }
