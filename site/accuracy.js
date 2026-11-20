@@ -171,7 +171,7 @@
         return e <= 0.05 ? 'Excellent' : e <= 0.1 ? 'Good' : e <= 0.2 ? 'Average' : 'Off'; };
       const pc = (x) => parseFloat(x) / 100;
       out.push(card('Chance 90min figures',
-        p('Each chance on the Chance 90min page, judged two ways.'),
+        p('Each chance on the Chance 90min page, judged two ways. Goals (Score 1+ and xGoals) leave penalties out, both predicted and real: past seasons have no penalty order to share penalties by.'),
         p(b('On average'), ': the average predicted chance next to how often it really happened. Excellent when they are within 5% of each other (26.1% against 25.5% is 2% apart), Good within 10%, Average within 20%, Off beyond that.'),
         p(b('Sorting'), ': how often a match where it happened was rated above one where it did not (0.5 is a coin flip, 1 is perfect). How high it can go depends on the event, not only on the model: a clean sheet is close to a coin flip even for the best team, so even exactly right chances would only reach about 0.65, while whether a player starts can be called much better. ',
           b('Best possible'), ' is the score the chances would get if each one were exactly right, and the grade compares the two: Excellent at 95% or more of the way from a coin flip to the best possible, Good from 85%, Average from 70%, Weak below. Above the best possible means the chances were too cautious: the players rated high did even better than said.'),
@@ -182,13 +182,14 @@
     }
 
     // 6. goals / assists by band
-    const ga = S['Chance to score / assist: predicted vs actual (players who played)'] || [];
-    const gl = block(ga, 'Goals'), as = block(ga, 'Assists');
+    const gaKey = Object.keys(S).find((k) => k.startsWith('Chance to score / assist'));
+    const ga = gaKey ? S[gaKey] : [];
+    const gl = block(ga, 'Goals (no pens)').length ? block(ga, 'Goals (no pens)') : block(ga, 'Goals'), as = block(ga, 'Assists');
     if (gl.length) {
       const fix = (rows) => rows.map((r) => [r[0].replace(/[(\]]/g, '').replace('-0.001', '0').split(', ').map((x) => pct(num(x) * 100)).join('–'), pct(num(r[1]) * 100), pct(num(r[2]) * 100), r[3]]);
       out.push(card('Chance to score and to assist',
-        p('Players who played, grouped by their predicted chance; the real share who scored (or assisted) in each group.'),
-        el('h3', { textContent: 'Goals' }), table(['Predicted band', 'Predicted', 'Scored', 'Matches'], fix(gl)),
+        p('Players who played, grouped by their predicted chance; the real share who scored (or assisted) in each group. Goals leave penalties out, both predicted and real: past seasons have no penalty order to share penalties by, so the test judges open-play goals only.'),
+        el('h3', { textContent: 'Goals (no penalties)' }), table(['Predicted band', 'Predicted', 'Scored', 'Matches'], fix(gl)),
         as.length ? el('h3', { textContent: 'Assists' }) : null, as.length ? table(['Predicted band', 'Predicted', 'Assisted', 'Matches'], fix(as)) : null));
     }
 

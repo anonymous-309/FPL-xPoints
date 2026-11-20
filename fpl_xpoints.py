@@ -2077,6 +2077,8 @@ def chance_report(pred: pd.DataFrame) -> None:
     season), so skill above 0 means the player-level figure adds something."""
     d = pred[pred["minutes"].notna()].copy()
     d["n90"] = d["minutes"] / 90
+    # Goals are judged without penalties: past seasons have no penalty order, so penalty shares there are rough.
+    d["np_g90"] = (d["g90"] - (d["pen90"].fillna(0) - d["pm90"].fillna(0))).clip(lower=0)
     played = d[d["minutes"] > 0]
     rows = []
 
@@ -2100,7 +2102,7 @@ def chance_report(pred: pd.DataFrame) -> None:
     calib = {}
     p, h = binary("Appearance 1+", d["p_play"], d["minutes"] > 0, d["position"]); calib["Appearance 1+"] = (p, h)
     p, h = binary("Appearance 60+", d["p_60"], d["minutes"] >= 60, d["position"]); calib["Appearance 60+"] = (p, h)
-    p, h = per90("Score 1+", "g90", "goals_scored", played); calib["Score 1+"] = (p, h)
+    p, h = per90("Score 1+ (no pens)", "np_g90", "np_goals", played); calib["Score 1+ (no pens)"] = (p, h)
     p, h = per90("Assist 1+", "a90", "assists", played); calib["Assist 1+"] = (p, h)
     teams = d.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
     p, h = binary("Clean sheet (team)", teams["p_cs"], teams["ga"] == 0, np.zeros(len(teams))); calib["Clean sheet (team)"] = (p, h)
@@ -2128,7 +2130,7 @@ def chance_report(pred: pd.DataFrame) -> None:
         mae, mae0 = np.mean(np.abs(pr - ac)), np.mean(np.abs(base - ac))
         corr = float(np.corrcoef(pr, ac)[0, 1]) if np.std(pr) > 0 and np.std(ac) > 0 else float("nan")
         counts.append({"figure": title, "n": len(ac), "predicted": pr.mean(), "actual": ac.mean(), "MAE": mae, "MAE skill": 1 - mae / mae0, "correlation": corr})
-    count("xGoals", "g90", "goals_scored", played)
+    count("xGoals (no pens)", "np_g90", "np_goals", played)
     count("xAssists", "a90", "assists", played)
     count("Saves (GK)", "saves90", "saves", gks)
     count("Bonus", "bonus90", "bonus", played)
@@ -2208,9 +2210,10 @@ def chance_report(pred: pd.DataFrame) -> None:
               f"open-play goals: predicted {(kn['g_pred'] - kn['pen_pred']).sum():.0f}, actual {(kn['goals_scored'].fillna(0) - kn['core_pen_scored'].fillna(0)).sum():.0f}; "
               f"all goals: predicted {kn['g_pred'].sum():.0f}, actual {kn['goals_scored'].fillna(0).sum():.0f}; assists: predicted {kn['a_pred'].sum():.0f}, actual {kn['assists'].fillna(0).sum():.0f}")
     band = pd.cut(pg["minutes"], [0, 30, 60, 89, 90], labels=["1-30", "31-60", "61-89", "90"])
-    tab = pg.groupby(band, observed=True).agg(n=("minutes", "size"), g_pred=("g_pred", "sum"), g_act=("goals_scored", "sum"), a_pred=("a_pred", "sum"), a_act=("assists", "sum"))
+    pg = pg.assign(g_np=(pg["np_g90"] * pg["n90"]) if "np_g90" in pg else pg["g_pred"])
+    tab = pg.groupby(band, observed=True).agg(n=("minutes", "size"), g_pred=("g_np", "sum"), g_act=("np_goals", "sum"), a_pred=("a_pred", "sum"), a_act=("assists", "sum"))
     tab["goals actual/pred"], tab["assists actual/pred"] = tab["g_act"] / tab["g_pred"], tab["a_act"] / tab["a_pred"]
-    print("\n=== Goals and assists by minutes played (actual / predicted, 1.00 = right) ===")
+    print("\n=== Goals (no pens) and assists by minutes played (actual / predicted, 1.00 = right) ===")
     print(tab.round(2).to_string())
 
     print("\n=== Chance 90min: calibration, predicted vs actual by predicted band ===")
@@ -2421,9 +2424,10 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     bins = pd.qcut(regular["xpts"], 10, duplicates="drop")
     cal = regular.groupby(bins, observed=True).agg(predicted=("xpts", "mean"), actual=("total_points", "mean"), n=("xpts", "size"))
     print(cal.round(2).to_string(index=False))
-    print("\n=== Chance to score / assist: predicted vs actual (players who played) ===")
+    print("\n=== Chance to score / assist: predicted vs actual (players who played; goals without penalties) ===")
     played = pred[pred["minutes"] > 0]
-    for title, rate, actual in [("Goals", "g90", "goals_scored"), ("Assists", "a90", "assists")]:
+    played = played.assign(np_g90=(played["g90"] - (played["pen90"].fillna(0) - played["pm90"].fillna(0))).clip(lower=0))
+    for title, rate, actual in [("Goals (no pens)", "np_g90", "np_goals"), ("Assists", "a90", "assists")]:
         prob = 1 - np.exp(-played[rate] * played["minutes"] / 90)
         hit = (played[actual] >= 1).astype(float)
         groups = pd.cut(prob, [0, .03, .06, .1, .15, .2, .3, .4, .5, 1], include_lowest=True)
