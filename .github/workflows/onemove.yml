@@ -1,15 +1,35 @@
 on:
   push:
     branches: [analysis-41]
+permissions:
+  contents: write
+  actions: read
 jobs:
   run:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
-      - run: pip install requests >/dev/null
-      - run: python tools/history_injuries.py 2024/2025 2025/2026
-      - uses: actions/upload-artifact@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt >/dev/null
+      - uses: actions/cache@v4
+        with:
+          path: fpl_data/20*
+          key: fpl-history-v1
+      - uses: actions/download-artifact@v4
         with:
           name: injuries
-          path: archive/injuries/
+          path: archive/injuries
+          run-id: 44676489048
+          github-token: ${{ github.token }}
+      - run: python fpl_xpoints.py download
+      - run: python tools/xmin_backtest.py
+      - name: Keep the files on the branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f archive/injuries/*.json.gz xmin_backtest_rows.csv
+          git commit -m "injury archive + backtest rows [skip ci]" && git push origin HEAD:analysis-41
