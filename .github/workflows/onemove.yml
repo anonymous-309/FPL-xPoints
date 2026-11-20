@@ -4,16 +4,12 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - run: |
-          python3 - <<'PY'
-          import json, urllib.request
-          t=json.loads(urllib.request.urlopen("https://anonymous-309.github.io/FPL-xPoints/team_news.json").read())
-          d=json.loads(urllib.request.urlopen("https://anonymous-309.github.io/FPL-xPoints/data.json").read())
-          names={"Martinez","Gvardiol","Gudmundsson"}
-          for c in (t["clubs"] if isinstance(t,dict) and "clubs" in t else t if isinstance(t,list) else t.get("teams",[])):
-              for n in c["news"]:
-                  if n["name"] in names: print("T", c["short"], n["name"], n["status"], n["chance"], n["news"][:90])
-          for p in d["players"]:
-              if p["name"] in names: print("D", p["team"], p["name"], p["status"], p["byGw"][str(d["gws"][0])]["mins"])
-          PY
+      - uses: actions/checkout@v4
+      - run: pip install requests >/dev/null
+      - run: python tools/history_injuries.py 2024/2025 2025/2026
+      - uses: actions/upload-artifact@v4
+        with:
+          name: injuries
+          path: archive/injuries/
