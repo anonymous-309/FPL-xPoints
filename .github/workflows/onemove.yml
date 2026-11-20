@@ -18,4 +18,4 @@ jobs:
           key: fpl-history-v1
       - run: python fpl_xpoints.py download
       - run: PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > new.txt 2>&1 || tail -40 new.txt
-      - run: sed -n '/=== Finding the best players, each 4/,/Model.s top by position/p' new.txt
+      - run: sed -n '/=== Core group/,/=== Decisions/p' new.txt
