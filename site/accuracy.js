@@ -49,56 +49,12 @@
       const better = m && t4 ? (1 - num(m[3]) / num(t4[3])) * 100 : NaN;
       out.push(card('How close are the points?',
         p(`Tested on every player in every gameweek of ${season}. `, b('Average miss'), ' is how far, on average, the prediction was from the points he really scored. ', b('Order'),
-          ' (0 to 1) is how well the predictions put players in the right order from best to worst: 1 would be perfect.'),
+          ' is a rank correlation: every player in every gameweek is ranked twice, once by the prediction and once by the points he really scored, and the two rankings are compared. 1 = exactly the same order, 0 = no relation (a random guess). "All players" includes the many who do not play, who are easy to rank at the bottom; "regular starters" (45+ minutes a match on average before) is the hard part: telling which starter will have the big week.'),
         table(['Way of guessing', 'Average miss (points)', 'Order (all players)', 'Order (regular starters)'],
           all.filter((r) => !/^FPL xP/.test(r[0])).map((r) => { const rr = reg.find((x) => x[0] === r[0]); return [NAMES[r[0]] || r[0], f(num(r[3]), 2), f(num(r[5]), 2), rr ? f(num(rr[5]), 2) : '–']; }),
           { mark: (r) => r[0] === 'This site' }),
         Number.isFinite(better) ? p('This site misses by about ', b(`${f(better, 0)}% less`), ' than going by recent points, and puts players in a better order than either simple way. Any one gameweek is still very random: a regular starter is typically off by 2 to 3 points either way, from goals, assists and bonus nobody can call.') : null,
 ));
-    }
-
-    // 1b. top scorers
-    const topKey = Object.keys(S).find((k) => k.startsWith('Top FPL scorers'));
-    if (topKey) {
-      const lines = S[topKey];
-      const head = lines.findIndex((l) => /\bgroup\b/.test(l) && /\bMAE\b/.test(l));
-      const rows = [];
-      for (let j = head + 1; head >= 0 && j < lines.length && lines[j].trim(); j++) rows.push(lines[j].split('|').map((x) => x.trim()));
-      for (let j = rows.length - 1; j >= 0; j--) if (/^FPL xP/.test(rows[j][1])) rows.splice(j, 1);
-      const POS = { GK: 'Goalkeepers (top 10)', DEF: 'Defenders (top 20)', MID: 'Midfielders (top 20)', FWD: 'Forwards (top 10)', All: 'All 60' };
-      const groups = [...new Set(rows.map((r) => r[0]))];
-      const tIdx = lines.findIndex((l) => /^Top scorers, season totals/.test(l.trim()));
-      const tot = [];
-      for (let j = tIdx + 2; tIdx >= 0 && j < lines.length && lines[j].trim(); j++) tot.push(lines[j].split('|').map((x) => x.trim()));
-      out.push(card('The players who matter most',
-        p(`The top scorers of ${season}: 10 goalkeepers, 20 defenders, 20 midfielders and 10 forwards by FPL points. Every gameweek of theirs, `, b('Average miss'), ' (points), ', b('Bias'),
-          ' (above 0: predicted too high on average) and ', b('Order'), ' (how well the predictions follow their good and bad weeks, 0 to 1).'),
-        table(['Group', 'Way of guessing', 'Average miss', 'Bias', 'Order'],
-          groups.flatMap((g) => rows.filter((r) => r[0] === g).map((r) => [POS[g] || g, NAMES[r[1]] || r[1], f(num(r[3]), 2), `${num(r[4]) >= 0 ? '+' : ''}${f(num(r[4]), 2)}`, f(num(r[5]), 2)])),
-          { mark: (r) => r[1] === 'This site' }),
-        (() => { const all = rows.find((r) => r[0] === 'All' && r[1] === 'Model'); if (!all) return null; const bias = num(all[4]);
-          return p(bias < 0 ? `Over all 60, the predictions were ${f(-bias, 2)} points a gameweek below what they scored. Some of that is expected: these players were picked out after the season, partly for the good luck they had, which no forecast made beforehand can see.`
-            : `Over all 60, the predictions were ${f(bias, 2)} points a gameweek above what they scored.`); })(),
-        tot.length ? el('details', {}, el('summary', { textContent: 'Each of the 60: season points against the sum of the predictions' }),
-          table(['Pos', 'Player', 'Team', 'Real', 'Predicted', 'Difference', 'Real, no pens', 'At real minutes, no pens', 'Difference', 'Minutes', 'xMin'],
-            tot.map((r) => [r[0], r[1], r[2], r[3], r[4], r[5], r[7] || '–', r[8] || '–', r[9] || '–', r[10] || '–', r[11] || '–']))) : null));
-      // the same 60 by part: what really happened, the per-90 figures at his real minutes, and the prediction with xMin
-      const pIdx = lines.findIndex((l) => /^Top scorers, points by part/.test(l.trim()));
-      const parts = [];
-      for (let j = pIdx + 2; pIdx >= 0 && j < lines.length && lines[j].trim(); j++) parts.push(lines[j].split('|').map((x) => x.trim()));
-      const am = rows.find((r) => r[0] === 'All' && r[1] === 'Model, real minutes'), md = rows.find((r) => r[0] === 'All' && r[1] === 'Model');
-      if (parts.length) {
-        const total = parts.find((r) => r[0] === 'Total');
-        const gap = (a, b) => `${num(a) - num(b) >= 0 ? '+' : ''}${f(num(a) - num(b), 0)}`;
-        out.push(card('The top 60 with the minutes taken out',
-          p('The Chance 90min figures are for a full 90 minutes. Multiplied by the minutes each player ', b('really'), ' played (clean sheet and goals conceded only with 60+, appearance points as earned), they show how good the per-90 figures are on their own, with no minutes guess in the way. Penalty goals and misses are left out on both sides: past seasons have no penalty order to share them by. ',
-            b('At real minutes'), ' next to what the 60 really scored, part by part, and next to the prediction made with xMin.'),
-          table(['Part', 'Real', 'At real minutes', 'Difference', 'Predicted (xMin)', 'Difference'],
-            parts.map((r) => [r[0], f(num(r[1]), 0), f(num(r[2]), 0), gap(r[2], r[1]), f(num(r[3]), 0), gap(r[3], r[1])]), { mark: (r) => r[0] === 'Total' }),
-          total ? p(`Without penalties, the 60 scored ${f(num(total[1]), 0)} points over the season. With their real minutes the figures give ${f(num(total[2]), 0)} (${gap(total[2], total[1])}), with xMin ${f(num(total[3]), 0)} (${gap(total[3], total[1])}). `,
-            'So the part of the gap that the minutes explain is the difference between those two; the rest is in the per-90 figures, and partly in the luck these 60 had, since they were picked out after the season for scoring the most.') : null,
-          am && md ? p(`Per gameweek (without penalties): with real minutes the average miss is ${f(num(am[3]), 2)} points and the order ${f(num(am[5]), 2)}, against ${f(num(md[3]), 2)} and ${f(num(md[5]), 2)} with xMin.`) : null));
-      }
     }
 
     // pipe tables: the rows after a header line that matches, up to the first line that is not a row
