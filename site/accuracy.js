@@ -79,8 +79,8 @@
           return p(bias < 0 ? `Over all 60, the predictions were ${f(-bias, 2)} points a gameweek below what they scored. Some of that is expected: these players were picked out after the season, partly for the good luck they had, which no forecast made beforehand can see.`
             : `Over all 60, the predictions were ${f(bias, 2)} points a gameweek above what they scored.`); })(),
         tot.length ? el('details', {}, el('summary', { textContent: 'Each of the 60: season points against the sum of the predictions' }),
-          table(['Pos', 'Player', 'Team', 'Real', 'Predicted', 'Difference', 'At real minutes', 'Difference', 'Minutes', 'xMin'],
-            tot.map((r) => [r[0], r[1], r[2], r[3], r[4], r[5], r[7] || '–', r[8] || '–', r[9] || '–', r[10] || '–']))) : null));
+          table(['Pos', 'Player', 'Team', 'Real', 'Predicted', 'Difference', 'Real, no pens', 'At real minutes, no pens', 'Difference', 'Minutes', 'xMin'],
+            tot.map((r) => [r[0], r[1], r[2], r[3], r[4], r[5], r[7] || '–', r[8] || '–', r[9] || '–', r[10] || '–', r[11] || '–']))) : null));
       // the same 60 by part: what really happened, the per-90 figures at his real minutes, and the prediction with xMin
       const pIdx = lines.findIndex((l) => /^Top scorers, points by part/.test(l.trim()));
       const parts = [];
@@ -90,13 +90,13 @@
         const total = parts.find((r) => r[0] === 'Total');
         const gap = (a, b) => `${num(a) - num(b) >= 0 ? '+' : ''}${f(num(a) - num(b), 0)}`;
         out.push(card('The top 60 with the minutes taken out',
-          p('The Chance 90min figures are for a full 90 minutes. Multiplied by the minutes each player ', b('really'), ' played (clean sheet and goals conceded only with 60+, appearance points as earned), they show how good the per-90 figures are on their own, with no minutes guess in the way. ',
+          p('The Chance 90min figures are for a full 90 minutes. Multiplied by the minutes each player ', b('really'), ' played (clean sheet and goals conceded only with 60+, appearance points as earned), they show how good the per-90 figures are on their own, with no minutes guess in the way. Penalty goals and misses are left out on both sides: past seasons have no penalty order to share them by. ',
             b('At real minutes'), ' next to what the 60 really scored, part by part, and next to the prediction made with xMin.'),
           table(['Part', 'Real', 'At real minutes', 'Difference', 'Predicted (xMin)', 'Difference'],
             parts.map((r) => [r[0], f(num(r[1]), 0), f(num(r[2]), 0), gap(r[2], r[1]), f(num(r[3]), 0), gap(r[3], r[1])]), { mark: (r) => r[0] === 'Total' }),
-          total ? p(`Over the season the 60 scored ${f(num(total[1]), 0)} points. With their real minutes the figures give ${f(num(total[2]), 0)} (${gap(total[2], total[1])}), with xMin ${f(num(total[3]), 0)} (${gap(total[3], total[1])}). `,
+          total ? p(`Without penalties, the 60 scored ${f(num(total[1]), 0)} points over the season. With their real minutes the figures give ${f(num(total[2]), 0)} (${gap(total[2], total[1])}), with xMin ${f(num(total[3]), 0)} (${gap(total[3], total[1])}). `,
             'So the part of the gap that the minutes explain is the difference between those two; the rest is in the per-90 figures, and partly in the luck these 60 had, since they were picked out after the season for scoring the most.') : null,
-          am && md ? p(`Per gameweek: with real minutes the average miss is ${f(num(am[3]), 2)} points and the order ${f(num(am[5]), 2)}, against ${f(num(md[3]), 2)} and ${f(num(md[5]), 2)} with xMin.`) : null));
+          am && md ? p(`Per gameweek (without penalties): with real minutes the average miss is ${f(num(am[3]), 2)} points and the order ${f(num(am[5]), 2)}, against ${f(num(md[3]), 2)} and ${f(num(md[5]), 2)} with xMin.`) : null));
       }
     }
 
