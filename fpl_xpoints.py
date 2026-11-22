@@ -2560,7 +2560,7 @@ def injury_days(news: str) -> tuple[int, str]:
     return INJURY_DAYS_DEFAULT
 
 
-NPXG_PEN = 0.76  # Opta's xG of a penalty, for non-penalty xG
+NPXG_PEN = PEN_XG  # Opta's xG of a penalty (0.79), for non-penalty xG
 # Back from an injury, by how long he was out (days from the first match missed, or from the news, to his return):
 # his share of usual minutes in the first match back, and in the matches up to 14 and 28 days after that one.
 # From 484 returns of regular starters in 2024-25 and 2025-26 (real minutes against his usual before the injury,
@@ -3427,7 +3427,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         t = g.sum(numeric_only=True)
         n90 = t["mins"] / 90
         per = lambda v: round(float(v / n90), 2) if n90 > 0 else None
-        npxg = max(0.0, float(t["xg"] - NPXG_PEN * t["pens"]))  # penalties taken at Opta's 0.76 xG each
+        npxg = max(0.0, float(t["xg"] - NPXG_PEN * t["pens"]))  # penalties taken at Opta's 0.79 xG each
         core = bool(g["has_core"].any())
         season_stats[pid] = {"apps": int(t["apps"]), "starts": int(t["starts"]), "mins": int(t["mins"]), "goals": int(t["goals"]), "assists": int(t["assists"]),
                              "gi": int(t["goals"] + t["assists"]), "pts": int(t["pts"]), "ppm": round(float(t["pts"] / t["apps"]), 2) if t["apps"] else None,

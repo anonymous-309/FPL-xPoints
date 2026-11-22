@@ -5,14 +5,14 @@
   // one row per league match this season, in this order (fpl_xpoints.py export_site)
   const K = ['gw', 'opp', 'mins', 'starts', 'pts', 'g', 'a', 'xg', 'xa', 'xgot', 'pens', 'dc', 'bonus', 'bps', 'cs', 'saves', 'pensave', 'yc', 'rc'];
   const I = Object.fromEntries(K.map((k, i) => [k, i]));
-  const NPXG_PEN = 0.76;
+  const NPXG_PEN = 0.79;
   const state = { data: null, pos: '', sort: 'pts', dir: -1, from: 1, to: 1, open: null };
   // [key, label, digits, tooltip]: digits null = whole number
   const COLS = [['name', 'Player'], ['apps', 'Matches', null, 'League matches he played in (1+ minutes)'], ['pts', 'Total pts', null, 'FPL points'],
     ['ppm', 'Pts/match', 2, 'Points per match played'], ['gwPts', 'GW pts', null, 'Points in the last gameweek of the range'], ['price', 'Price', 1],
     ['mins', 'Minutes', null], ['starts', 'Starts', null], ['g', 'G', null, 'Goals'], ['a', 'A', null, 'Assists as FPL counts them'],
     ['gi', 'GI', null, 'Goal involvements: goals + FPL assists'], ['cs', 'CS', null, 'Clean sheets'],
-    ['xg', 'xG', 2], ['xa', 'xA', 2], ['xgi', 'xGI', 2, 'xG + xA'], ['npxg', 'npxG', 2, 'Non-penalty xG: xG less 0.76 for each penalty taken'],
+    ['xg', 'xG', 2], ['xa', 'xA', 2], ['xgi', 'xGI', 2, 'xG + xA'], ['npxg', 'npxG', 2, 'Non-penalty xG: xG less 0.79 for each penalty taken'],
     ['npxgxa', 'npxG+xA', 2], ['xgot', 'xGoT', 2, 'Expected goals on target: the shot\'s placement counted too'],
     ['xgi90', 'xGI/90', 2], ['npxgxa90', 'npxG+xA/90', 2], ['dc', 'DefCon', null, 'Defensive contributions (FPL)'], ['dc90', 'DefCon/90', 1],
     ['saves', 'Saves', null], ['pensave', 'Pen saves', null], ['bonus', 'Bonus', null], ['bps', 'BPS', null, 'Bonus Points System score'],
