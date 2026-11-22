@@ -1336,7 +1336,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                                                + absence_news(r) + ": taken to be the match he got hurt in")
         # Recovery: his matches back inside the return rule's window (RETURN_RULES: the first match, or up to 14 or 28
         # days after it, by how long he was out) count in the formula only when he played at least his usual minutes
-        # from before the injury; a lower figure is the recovery, not his place, and is left out.
+        # from before the injury; a lower figure is the recovery, not his place, and is left out. Once he has played
+        # his usual minutes again the recovery is over.
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
             mine = (df["pid"] == r["pid"]) & ~df["future"] & df["minutes"].notna()
             post = df.loc[season & mine & (df["GW"] >= r["returnedGw"])].sort_values(["GW", "kickoff_time"])
@@ -1353,6 +1354,8 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                     since = (pd.to_datetime(row["kickoff_time"], utc=True) - k0).days
                     if i != post.index[0] and since > window:
                         break
+                    if float(row["minutes"]) >= usual_pre:
+                        break  # back to his usual minutes: the recovery is over, later matches count as normal
                     if float(row["minutes"]) < usual_pre:
                         df.at[i, "inj_skip"] = True
                         df.at[i, "inj_rest"] = True
@@ -2791,7 +2794,10 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
                 gap = (t0 - pd.Timestamp(seq[j - zeros]["kickoff_time"]).tz_convert("Europe/London").tz_localize(None)).days
                 before = [float(r.get("minutes") or 0) for r in seq[max(0, j - zeros - 5):j - zeros]]
                 window = return_window(gap)
-                if window and before and np.mean(before) >= 45 and (mine[0][1] - t0).days <= window:  # a regular, still recovering
+                w = MINUTE_WEIGHTS[:len(before)]
+                usual_before = float(np.dot(before[::-1], w) / w.sum()) if before else 0.0
+                done = any(float(r.get("minutes") or 0) >= usual_before for r in seq[j:])  # back to his usual minutes already
+                if window and before and not done and np.mean(before) >= 45 and (mine[0][1] - t0).days <= window:  # a regular, still recovering
                     share = [v * return_share(gap, (k - t0).days, False) for v, (_, k) in zip(share, mine)]
                     from_return = True
                     note = f"Back from {gap} days out ({t0:%d %b}): {rule_text(gap)}" + (f"; {note}" if note else "")
