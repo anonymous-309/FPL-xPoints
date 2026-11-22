@@ -2544,6 +2544,25 @@ def injury_days(news: str) -> tuple[int, str]:
     return INJURY_DAYS_DEFAULT
 
 
+LONG_TERM_DAYS = 42           # an absence this long (6 weeks or more) counts as a long-term injury
+LONG_TERM_RAMP = [0.25, 0.5, 0.75]  # back from one: these shares of his usual minutes in his first 3 matches
+
+
+def ramp_after(out: list[float], days: float | None) -> list[float]:
+    """The shares after an absence: from the first match he is back, the long-term ramp (25%, 50%, 75%, then full)
+    after an absence of LONG_TERM_DAYS or more; otherwise unchanged."""
+    if days is None or days < LONG_TERM_DAYS:
+        return out
+    res, k = [], 0
+    for v in out:
+        if v > 0 and k < len(LONG_TERM_RAMP):
+            res.append(LONG_TERM_RAMP[k] * min(v, 1.0))
+            k += 1
+        else:
+            res.append(v)
+    return res
+
+
 def minute_plan(status: str | None, news: str, news_added: str | None, chance: float | None,
                 fixtures: list[tuple[int, pd.Timestamp]], first: int, red_last: bool, news_gw: int | None = None) -> tuple[list[float], bool, str, int | None]:
     """How much of his usual minutes a player is expected to play in each upcoming fixture (gameweek, kickoff in UK time).
@@ -2557,6 +2576,8 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
     - Not available for another reason (left the club, on loan) with no return date: 0 in every gameweek.
     - Suspended with no date, or a red card in his last match before FPL has flagged it: out for one match.
     - Doubtful (25/50/75%): xMin times FPL's chance in the next gameweek, full after that.
+    - Back from a long-term injury (LONG_TERM_DAYS or more out): 25%, 50% and 75% of his usual minutes in his first
+      3 matches back, full after that (instead of half in the first).
     """
     status = status or "a"
     n = len(fixtures)
@@ -2566,8 +2587,17 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
     when = return_date(news, news_added) if status != "a" else None
     if when is not None:
         out = [0.0 if k.normalize() < when else 1.0 for _, k in fixtures]
+        span = None
+        if news_added:
+            t0 = pd.Timestamp(news_added)
+            span = (when - (t0.tz_convert(None) if t0.tzinfo else t0).normalize()).days
+        long_term = status != "s" and span is not None and span >= LONG_TERM_DAYS
+        if long_term:
+            out = ramp_after(out, span)
         i = next((j for j, v in enumerate(out) if v > 0), n)
         note = f"Back GW{back(i)} ({when:%d %b})" if i < n else f"Out until {when:%d %b}, after these gameweeks"
+        if long_term and i < n:
+            note += ": long-term injury, 25%, 50%, 75% of his minutes in his first 3 matches back"
         return out, True, note, back(i)
     is_injury = status == "i" or (status == "n" and any(w in f" {(news or '').lower()}" for ws, _, _ in INJURY_WEEKS for w in ws))
     if is_injury:
@@ -2584,9 +2614,13 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
             else:
                 out.append(1.0 if seen else 0.5)
                 seen = True
+        if days >= LONG_TERM_DAYS:  # long-term: 25%, 50%, 75% in his first 3 matches back instead of half in the first
+            out = ramp_after([1.0 if v > 0 else 0.0 for v in out], days)
         i = next((j for j, v in enumerate(out) if v > 0), n)
         local = due.tz_convert("Europe/London")
         back_txt = f"back around {local:%d %b}, GW{back(i)}" if i < n else f"back around {local:%d %b}, after these gameweeks"
+        if days >= LONG_TERM_DAYS and i < n:
+            back_txt += ", then 25%, 50%, 75% of his minutes in his first 3 matches"
         # no return gameweek is passed on: the injury log and the site only show return dates FPL gave
         return out, True, f"No return date: about {days} days out for {label} from the news on {start.tz_convert('Europe/London'):%d %b}, {back_txt} (estimate)", None
     if status in ("i", "n"):
@@ -2695,6 +2729,26 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             mine.append((f, kick))
         share, from_return, note, back_gw = minute_plan(p.get("status"), p.get("news", ""), p.get("news_added"), p.get("chance_of_playing_next_round"),
                                                        [(f["event"], k) for f, k in mine], first, red_last, news_gw(p.get("news_added")))
+        # Already back (no flag now) from a long absence: the rest of the 25%, 50%, 75% ramp. The absence is the run of
+        # league matches he missed (0 minutes) right before his matches since, LONG_TERM_DAYS or more of them.
+        if (p.get("status") or "a") == "a" and played:
+            seq = sorted(played, key=lambda r: r.get("kickoff_time") or "")
+            since = 0
+            while since < len(seq) and float(seq[-1 - since].get("minutes") or 0) > 0:
+                since += 1
+            j = len(seq) - since
+            zeros = 0
+            while j - 1 - zeros >= 0 and float(seq[j - 1 - zeros].get("minutes") or 0) == 0:
+                zeros += 1
+            if 0 < since < len(LONG_TERM_RAMP) and zeros:
+                gap = (pd.Timestamp(seq[j]["kickoff_time"]) - pd.Timestamp(seq[j - zeros]["kickoff_time"])).days
+                before = [float(r.get("minutes") or 0) for r in seq[max(0, j - zeros - 5):j - zeros]]
+                if gap >= LONG_TERM_DAYS and before and np.mean(before) >= 45:  # a regular before he went out
+                    rest = LONG_TERM_RAMP[since:]
+                    share = [v * (rest[i] if i < len(rest) else 1.0) for i, v in enumerate(share)]
+                    from_return = True
+                    note = (f"Back from {gap} days out: {', '.join(f'{round(x * 100)}%' for x in rest)} of his minutes in the next "
+                            f"{len(rest)} match{'es' if len(rest) > 1 else ''}" + (f"; {note}" if note else ""))
         for (f, _), avail in zip(mine, share):
             home = f["team_h"] == p["team"]
             team_id = p["team"]
@@ -3312,6 +3366,21 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     res = res.assign(min_usual=usual["min"])
     prof = pitch_profile(res)
     res = res.assign(pit_start=prof["start"].fillna(0), pit_last=prof["last"].fillna(0), pit_ms=prof["ms"].fillna(0), pit_mb=prof["mb"].fillna(0))
+    # This season so far, for the Statistics page and the player popup
+    num = lambda c: pd.to_numeric(played[c], errors="coerce").fillna(0) if c in played else pd.Series(0.0, index=played.index)
+    cur = pd.DataFrame({"pid": played["pid"], "mins": num("minutes"), "starts": num("starts"), "xg": num("expected_goals"), "xa": num("expected_assists"),
+                        "dc": num("defensive_contribution"), "goals": num("goals_scored"), "assists": num("assists"), "pts": num("total_points"),
+                        "bonus": num("bonus"), "cs": num("clean_sheets") if "clean_sheets" in played else (num("minutes").ge(60) & num("ga").eq(0)).astype(float)})
+    cur["apps"] = (cur["mins"] > 0).astype(float)
+    season_stats = {}
+    for pid, g in cur.groupby("pid"):
+        t = g.sum(numeric_only=True)
+        n90 = t["mins"] / 90
+        per = lambda v: round(float(v / n90), 2) if n90 > 0 else None
+        season_stats[pid] = {"apps": int(t["apps"]), "starts": int(t["starts"]), "mins": int(t["mins"]), "goals": int(t["goals"]), "assists": int(t["assists"]),
+                             "pts": int(t["pts"]), "bonus": int(t["bonus"]), "cs": int(t["cs"]), "xg": round(float(t["xg"]), 2), "xa": round(float(t["xa"]), 2),
+                             "xgi": round(float(t["xg"] + t["xa"]), 2), "dc": int(t["dc"]), "xg90": per(t["xg"]), "xa90": per(t["xa"]),
+                             "xgi90": per(t["xg"] + t["xa"]), "dc90": per(t["dc"]), "matches": int(len(g))}
     players: dict[str, dict] = {}
     for r in res.sort_values(["GW", "fixture"]).to_dict("records"):
         p = players.setdefault(r["pid"], {
@@ -3331,7 +3400,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "cornerOrder": None if pd.isna(pd.to_numeric(r.get("corner_order"), errors="coerce")) else int(pd.to_numeric(r["corner_order"], errors="coerce")),
             "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None,
             # Start (5-4-3-2-1 over his last 5 matches) and his minutes when starting and not, for penalty shares
-            "pitch": {"start": round(float(r["pit_start"]), 3), "last": int(r["pit_last"]), "ms": round(float(r["pit_ms"]), 1), "mb": round(float(r["pit_mb"]), 1)}})
+            "pitch": {"start": round(float(r["pit_start"]), 3), "last": int(r["pit_last"]), "ms": round(float(r["pit_ms"]), 1), "mb": round(float(r["pit_mb"]), 1)},
+            "season": season_stats.get(r["pid"])})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)

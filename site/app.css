@@ -681,3 +681,8 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 .gain-pill.up { background: #01fc7a; color: #10301c; } .gain-pill.down { background: #ff1751; color: #fff; } .gain-pill.flat { background: #e7e7e7; color: #333; }
 .chooser .set-note { color: #d9c7df; }
 .choose-table td.who, .choose-table td.who span, .choose-out span:not(.num) { text-align: left; }
+
+/* Statistics page */
+table.stats td, table.stats th { text-align: center; }
+table.stats td.player { text-align: left; }
+table.stats td.sorted { font-weight: 700; background: color-mix(in srgb, var(--accent, #0e5a41) 8%, transparent); }

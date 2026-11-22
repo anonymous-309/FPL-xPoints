@@ -41,10 +41,20 @@
     $('detail-text').textContent = text;
     $('detail').hidden = false;
   }
+  // This season so far: starts, minutes, xG, xA, xGI and DefCon, totals and per 90.
+  function seasonText(p) {
+    const s = p.season;
+    if (!s || !s.matches) return 'This season\nNo league matches yet';
+    const per = (v) => (v === null || v === undefined ? '–' : v.toFixed(2));
+    return ['This season', `Starts: ${s.starts} of ${s.matches} matches (${s.apps} played)`, `Minutes: ${s.mins}`,
+      `Goals: ${s.goals}, assists: ${s.assists}`,
+      `xG: ${s.xg.toFixed(2)} (${per(s.xg90)} per 90)`, `xA: ${s.xa.toFixed(2)} (${per(s.xa90)} per 90)`,
+      `xGI: ${s.xgi.toFixed(2)} (${per(s.xgi90)} per 90)`, `DefCon: ${s.dc} (${per(s.dc90)} per 90)`].join('\n');
+  }
   function openGw(p, g) {
     const d = view(p, g);
     const mins = `${minutesText(p, g)} minutes${d.edited ? ' (yours)' : ''}`;
-    openText(`${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${f1(d.xpts)} points, ${mins}\n\nChance 90min\n${chanceText(p, g)}\n\nPoints\n${breakdownText(d)}`);
+    openText(`${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${f1(d.xpts)} points, ${mins}\n\nChance 90min\n${chanceText(p, g)}\n\n${seasonText(p)}`);
   }
 
   function heat(cell, x) {
