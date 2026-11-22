@@ -223,7 +223,7 @@
         m: 'In an absence set by the admin: left out of the formula',
     x: 'Not used by the Usual minutes',
         x: 'Not used by the Usual minutes',
-        r: 'Cautionary rest: 0 in his first match back from injury, left out of the formula',
+        r: 'Reduced minutes after injury: under his usual minutes from before it, left out of the formula',
         d: 'Flagged doubtful: the match he got hurt in, or missed since, left out of the formula',
       };
       const nums = el('span', {});
@@ -272,7 +272,7 @@
     h: 'Taken off injured in this match: left out of the formula',
     m: 'In an absence set by the admin: left out of the formula',
     x: 'Not used by the Usual minutes',
-    r: 'Cautionary rest: 0 in his first match back from injury, left out of the formula',
+    r: 'Reduced minutes after injury: under his usual minutes from before it, left out of the formula',
     d: 'Flagged doubtful: the match he got hurt in, or missed since, left out of the formula',
   };
   const CUP_NAME = { UCL: 'Champions League', UEL: 'Europa League', UECL: 'Conference League', EFL: 'EFL Cup', FAC: 'FA Cup', INT: 'International' };

@@ -686,3 +686,7 @@ td.past .why-note { display: block; max-width: 180px; margin-top: 4px; padding: 
 table.stats td, table.stats th { text-align: center; }
 table.stats td.player { text-align: left; }
 table.stats td.sorted { font-weight: 700; background: color-mix(in srgb, var(--accent, #0e5a41) 8%, transparent); }
+table.stats tr.stat-row { cursor: pointer; }
+table.stats tr.stat-detail > td { padding: 0 0 .6rem; background: color-mix(in srgb, #0e5a41 4%, transparent); }
+table.stats.inner { font-size: .85em; margin: 0; width: auto; }
+table.stats tr.stat-detail .wrap { min-height: 0; max-height: none; position: sticky; left: 0; max-width: min(100vw - 40px, 900px); }

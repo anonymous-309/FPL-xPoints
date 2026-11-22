@@ -1302,8 +1302,8 @@ def absence_news(r: dict) -> str:
 def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, hurt: set | None = None, covered: set | None = None) -> pd.DataFrame:
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
-    logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it), and a
-    cautionary rest on his return ("inj_rest": 0 in his first match back, after an injury shorter than LONG_TERM_DAYS)"""
+    logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it), and his
+    recovery matches ("inj_rest": inside the return rule's window, under his usual minutes from before the injury)"""
     df = df.copy()
     df["inj_skip"] = False
     df["inj_hurt"] = False
@@ -1334,20 +1334,32 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                     df.at[last, "inj_hurt"] = True
                     df.at[last, "inj_note"] = (f"Played {int(df.at[last, 'minutes'])} minutes, his last match before the injury absence from GW{r['startGw']}"
                                                + absence_news(r) + ": taken to be the match he got hurt in")
-        # Cautionary rest: a 0 in his first match back from an injury is a rest, not a sign he lost his place
-        # (one match only). Not after a long-term injury (LONG_TERM_DAYS or more): there the 25%, 50%, 75% ramp of
-        # his first 3 matches back already allows for it, so the 0 counts.
+        # Recovery: his matches back inside the return rule's window (RETURN_RULES: the first match, or up to 14 or 28
+        # days after it, by how long he was out) count in the formula only when he played at least his usual minutes
+        # from before the injury; a lower figure is the recovery, not his place, and is left out.
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
-            post = df.loc[season & (df["pid"] == r["pid"]) & (df["GW"] >= r["returnedGw"])].sort_values(["GW", "kickoff_time"])
-            missed = df.loc[season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], int(r["returnedGw"]) - 1), "kickoff_time"]
-            out_days = ((pd.to_datetime(post["kickoff_time"].iloc[0], utc=True) - pd.to_datetime(missed, utc=True).min()).days
-                        if len(post) and len(missed) else 0)
-            if len(post) and float(post["minutes"].iloc[0]) == 0 and out_days < LONG_TERM_DAYS:
-                i = post.index[0]
-                df.at[i, "inj_skip"] = True
-                df.at[i, "inj_rest"] = True
-                df.at[i, "inj_note"] = (f"0 minutes in his first match back from the injury of {gw_span(r['startGw'], int(r['returnedGw']) - 1)}"
-                                        + absence_news(r) + ": a cautionary rest, not a lost place")
+            mine = (df["pid"] == r["pid"]) & ~df["future"] & df["minutes"].notna()
+            post = df.loc[season & mine & (df["GW"] >= r["returnedGw"])].sort_values(["GW", "kickoff_time"])
+            missed = df.loc[season & mine & df["GW"].between(r["startGw"], int(r["returnedGw"]) - 1), "kickoff_time"]
+            if len(post):
+                k0 = pd.to_datetime(post["kickoff_time"].iloc[0], utc=True)
+                out_days = (k0 - pd.to_datetime(missed, utc=True).min()).days if len(missed) else 7
+                pre = df.loc[mine & (pd.to_datetime(df["kickoff_time"], utc=True) < (pd.to_datetime(missed, utc=True).min() if len(missed) else k0))
+                             & ~df["inj_skip"] & ~df["yellow_ban"].fillna(False).astype(bool)].sort_values("kickoff_time")["minutes"].tail(5).to_numpy(float)[::-1]
+                w = np.array(MINUTE_WEIGHTS[:len(pre)], float)
+                usual_pre = float(np.dot(pre, w) / w.sum()) if len(pre) else 0.0
+                window = return_window(out_days)
+                for i, row in post.iterrows():
+                    since = (pd.to_datetime(row["kickoff_time"], utc=True) - k0).days
+                    if i != post.index[0] and since > window:
+                        break
+                    if float(row["minutes"]) < usual_pre:
+                        df.at[i, "inj_skip"] = True
+                        df.at[i, "inj_rest"] = True
+                        df.at[i, "inj_note"] = (f"Reduced minutes after injury: {int(row['minutes'])} minutes "
+                                                f"{'in his first match back' if i == post.index[0] else f'{since} days after his first match back'} "
+                                                f"from {out_days} days out ({gw_span(r['startGw'], int(r['returnedGw']) - 1)}), under his usual {round(usual_pre)} before it"
+                                                + absence_news(r))
     # gameweeks whose matches FotMob's events cover (there, only a substitution for injury counts as getting hurt)
     df["fm_cov"] = season & df["GW"].isin(list(covered or []))
     # Taken off injured (FotMob): that match is left out, whatever came after.
@@ -1366,7 +1378,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         df.loc[cover, "inj_skip"] = True
         df.loc[cover, "gk_cover"] = True
         df.loc[cover, "inj_note"] = "Came on for the injured starting goalkeeper and played " + df.loc[cover, "minutes"].fillna(0).astype(int).astype(str) + " minutes"
-    print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, rests on return: {int(df['inj_rest'].sum())}")
+    print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, recovery matches under his usual: {int(df['inj_rest'].sum())}")
     return df
 
 
@@ -2548,23 +2560,58 @@ def injury_days(news: str) -> tuple[int, str]:
     return INJURY_DAYS_DEFAULT
 
 
-LONG_TERM_DAYS = 42           # an absence this long (6 weeks or more) counts as a long-term injury
-LONG_TERM_RAMP = [0.25, 0.5, 0.75]  # back from one: these shares of his usual minutes in his first 3 matches
+NPXG_PEN = 0.76  # Opta's xG of a penalty, for non-penalty xG
+# Back from an injury, by how long he was out (days from the first match missed, or from the news, to his return):
+# his share of usual minutes in the first match back, and in the matches up to 14 and 28 days after that one.
+# From 484 returns of regular starters in 2024-25 and 2025-26 (real minutes against his usual before the injury,
+# against the 88-90% a fit regular plays): counted in days, not matches, so an international break in between
+# counts as recovery time and a busy Christmas puts more matches inside it.
+RETURN_RULES = [(14, 0.80, 1.0, 1.0),    # out under 2 weeks: 80% in the first match back, then full
+                (28, 0.55, 0.90, 1.0),   # 2-4 weeks: 55%, 90% for 14 days, then full
+                (None, 0.40, 0.70, 0.85)]  # 4 weeks or more: 40%, 70% for 14 days, 85% to day 28, then full
+LONG_TERM_DAYS = 28  # from this long out, the slow ramp
 
 
-def ramp_after(out: list[float], days: float | None) -> list[float]:
-    """The shares after an absence: from the first match he is back, the long-term ramp (25%, 50%, 75%, then full)
-    after an absence of LONG_TERM_DAYS or more; otherwise unchanged."""
-    if days is None or days < LONG_TERM_DAYS:
+def return_rule(days_out: float | None) -> tuple[float, float, float]:
+    """(first match, to day 14, to day 28) shares of usual minutes after an injury absence of days_out days."""
+    d = 0 if days_out is None else days_out
+    for upto, first, d14, d28 in RETURN_RULES:
+        if upto is None or d < upto:
+            return first, d14, d28
+    return 1.0, 1.0, 1.0
+
+
+def return_window(days_out: float | None) -> int:
+    """Days after the first match back that still count as recovery (0: the first match only)."""
+    first, d14, d28 = return_rule(days_out)
+    return 28 if d28 < 1 else 14 if d14 < 1 else 0
+
+
+def return_share(days_out: float | None, since: float, first_match: bool) -> float:
+    """His share of usual minutes in a match `since` days after his first match back (first_match: it is that one)."""
+    first, d14, d28 = return_rule(days_out)
+    if first_match:
+        return first
+    return d14 if since <= 14 else d28 if since <= 28 else 1.0
+
+
+def ramp_after(out: list[float], days_out: float | None, kicks: list[pd.Timestamp]) -> list[float]:
+    """The shares once he is back: from the first fixture with a share above 0, the return rule by days."""
+    i = next((j for j, v in enumerate(out) if v > 0), None)
+    if i is None:
         return out
-    res, k = [], 0
-    for v in out:
-        if v > 0 and k < len(LONG_TERM_RAMP):
-            res.append(LONG_TERM_RAMP[k] * min(v, 1.0))
-            k += 1
-        else:
-            res.append(v)
-    return res
+    t0 = kicks[i]
+    return [v if j < i else min(v, 1.0) * return_share(days_out, (kicks[j] - t0).days, j == i) for j, v in enumerate(out)]
+
+
+def rule_text(days_out: float | None) -> str:
+    first, d14, d28 = return_rule(days_out)
+    parts = [f"{round(first * 100)}% of his minutes in the first match back"]
+    if d14 < 1:
+        parts.append(f"{round(d14 * 100)}% for 14 days")
+    if d28 < 1:
+        parts.append(f"{round(d28 * 100)}% to day 28")
+    return ", ".join(parts) + ", then full"
 
 
 def minute_plan(status: str | None, news: str, news_added: str | None, chance: float | None,
@@ -2576,12 +2623,12 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
     - A return date in the news (injury or ban): 0 before it, then his usual minutes from the 5-4-3-2-1 formula on
       the matches before the absence.
     - Injured with no return date: out for the typical days for that injury (see INJURY_DAYS), counted from the date
-      of the news, at least the next gameweek; half his usual minutes in the first match on or after that date.
+      of the news, at least the next gameweek.
     - Not available for another reason (left the club, on loan) with no return date: 0 in every gameweek.
     - Suspended with no date, or a red card in his last match before FPL has flagged it: out for one match.
     - Doubtful (25/50/75%): xMin times FPL's chance in the next gameweek, full after that.
-    - Back from a long-term injury (LONG_TERM_DAYS or more out): 25%, 50% and 75% of his usual minutes in his first
-      3 matches back, full after that (instead of half in the first).
+    - Back from an injury (with or without a date): the return rule by days out (RETURN_RULES): 80%, 55% or 40% in
+      the first match back, then 90% / 70% and 85% for up to 28 days, by how long he was out.
     """
     status = status or "a"
     n = len(fixtures)
@@ -2595,13 +2642,13 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
         if news_added:
             t0 = pd.Timestamp(news_added)
             span = (when - (t0.tz_convert(None) if t0.tzinfo else t0).normalize()).days
-        long_term = status != "s" and span is not None and span >= LONG_TERM_DAYS
-        if long_term:
-            out = ramp_after(out, span)
+        injured = status != "s"  # a ban needs no ramp
+        if injured:
+            out = ramp_after(out, span, [k for _, k in fixtures])
         i = next((j for j, v in enumerate(out) if v > 0), n)
         note = f"Back GW{back(i)} ({when:%d %b})" if i < n else f"Out until {when:%d %b}, after these gameweeks"
-        if long_term and i < n:
-            note += ": long-term injury, 25%, 50%, 75% of his minutes in his first 3 matches back"
+        if injured and i < n:
+            note += f": {span if span is not None else '?'} days out, {rule_text(span)}"
         return out, True, note, back(i)
     is_injury = status == "i" or (status == "n" and any(w in f" {(news or '').lower()}" for ws, _, _ in INJURY_WEEKS for w in ws))
     if is_injury:
@@ -2610,21 +2657,16 @@ def minute_plan(status: str | None, news: str, news_added: str | None, chance: f
         start = start.tz_localize("UTC") if start.tzinfo is None else start
         due = start + pd.Timedelta(days=days)
         # out until the date (FPL has him at 0% for the next gameweek in any case), half his minutes the first match back
-        out, seen = [], False
+        out = []
         for gw, k in fixtures:
             kick = k.tz_localize("Europe/London") if k.tzinfo is None else k
-            if gw == first or kick < due:
-                out.append(0.0)
-            else:
-                out.append(1.0 if seen else 0.5)
-                seen = True
-        if days >= LONG_TERM_DAYS:  # long-term: 25%, 50%, 75% in his first 3 matches back instead of half in the first
-            out = ramp_after([1.0 if v > 0 else 0.0 for v in out], days)
+            out.append(0.0 if gw == first or kick < due else 1.0)
+        out = ramp_after(out, days, [k for _, k in fixtures])
         i = next((j for j, v in enumerate(out) if v > 0), n)
         local = due.tz_convert("Europe/London")
         back_txt = f"back around {local:%d %b}, GW{back(i)}" if i < n else f"back around {local:%d %b}, after these gameweeks"
-        if days >= LONG_TERM_DAYS and i < n:
-            back_txt += ", then 25%, 50%, 75% of his minutes in his first 3 matches"
+        if i < n:
+            back_txt += f", then {rule_text(days)}"
         # no return gameweek is passed on: the injury log and the site only show return dates FPL gave
         return out, True, f"No return date: about {days} days out for {label} from the news on {start.tz_convert('Europe/London'):%d %b}, {back_txt} (estimate)", None
     if status in ("i", "n"):
@@ -2733,9 +2775,9 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             mine.append((f, kick))
         share, from_return, note, back_gw = minute_plan(p.get("status"), p.get("news", ""), p.get("news_added"), p.get("chance_of_playing_next_round"),
                                                        [(f["event"], k) for f, k in mine], first, red_last, news_gw(p.get("news_added")))
-        # Already back (no flag now) from a long absence: the rest of the 25%, 50%, 75% ramp. The absence is the run of
-        # league matches he missed (0 minutes) right before his matches since, LONG_TERM_DAYS or more of them.
-        if (p.get("status") or "a") == "a" and played:
+        # Already back (no flag now) from an injury absence: the rest of the return rule, by days since his first match
+        # back. The absence is the run of league matches he missed (0 minutes) right before his matches since.
+        if (p.get("status") or "a") == "a" and played and mine:
             seq = sorted(played, key=lambda r: r.get("kickoff_time") or "")
             since = 0
             while since < len(seq) and float(seq[-1 - since].get("minutes") or 0) > 0:
@@ -2744,15 +2786,15 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             zeros = 0
             while j - 1 - zeros >= 0 and float(seq[j - 1 - zeros].get("minutes") or 0) == 0:
                 zeros += 1
-            if 0 < since < len(LONG_TERM_RAMP) and zeros:
-                gap = (pd.Timestamp(seq[j]["kickoff_time"]) - pd.Timestamp(seq[j - zeros]["kickoff_time"])).days
+            if since and zeros and j < len(seq):
+                t0 = pd.Timestamp(seq[j]["kickoff_time"]).tz_convert("Europe/London").tz_localize(None)
+                gap = (t0 - pd.Timestamp(seq[j - zeros]["kickoff_time"]).tz_convert("Europe/London").tz_localize(None)).days
                 before = [float(r.get("minutes") or 0) for r in seq[max(0, j - zeros - 5):j - zeros]]
-                if gap >= LONG_TERM_DAYS and before and np.mean(before) >= 45:  # a regular before he went out
-                    rest = LONG_TERM_RAMP[since:]
-                    share = [v * (rest[i] if i < len(rest) else 1.0) for i, v in enumerate(share)]
+                window = return_window(gap)
+                if window and before and np.mean(before) >= 45 and (mine[0][1] - t0).days <= window:  # a regular, still recovering
+                    share = [v * return_share(gap, (k - t0).days, False) for v, (_, k) in zip(share, mine)]
                     from_return = True
-                    note = (f"Back from {gap} days out: {', '.join(f'{round(x * 100)}%' for x in rest)} of his minutes in the next "
-                            f"{len(rest)} match{'es' if len(rest) > 1 else ''}" + (f"; {note}" if note else ""))
+                    note = f"Back from {gap} days out ({t0:%d %b}): {rule_text(gap)}" + (f"; {note}" if note else "")
         for (f, _), avail in zip(mine, share):
             home = f["team_h"] == p["team"]
             team_id = p["team"]
@@ -3372,19 +3414,39 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     res = res.assign(pit_start=prof["start"].fillna(0), pit_last=prof["last"].fillna(0), pit_ms=prof["ms"].fillna(0), pit_mb=prof["mb"].fillna(0))
     # This season so far, for the Statistics page and the player popup
     num = lambda c: pd.to_numeric(played[c], errors="coerce").fillna(0) if c in played else pd.Series(0.0, index=played.index)
-    cur = pd.DataFrame({"pid": played["pid"], "mins": num("minutes"), "starts": num("starts"), "xg": num("expected_goals"), "xa": num("expected_assists"),
+    cur = pd.DataFrame({"pid": played["pid"], "GW": played["GW"], "mins": num("minutes"), "starts": num("starts"), "xg": num("expected_goals"), "xa": num("expected_assists"),
                         "dc": num("defensive_contribution"), "goals": num("goals_scored"), "assists": num("assists"), "pts": num("total_points"),
-                        "bonus": num("bonus"), "cs": num("clean_sheets") if "clean_sheets" in played else (num("minutes").ge(60) & num("ga").eq(0)).astype(float)})
+                        "bonus": num("bonus"), "bps": num("bps"), "saves": num("saves"), "pensave": num("penalties_saved"),
+                        "xgot": num("core_xgot"), "pens": num("core_pen_scored") + num("core_pen_missed"), "has_core": played.get("has_core", pd.Series(False, index=played.index)).fillna(False).astype(bool),
+                        "yc": num("yellow_cards"), "rc": num("red_cards"),
+                        "cs": num("clean_sheets") if "clean_sheets" in played else (num("minutes").ge(60) & num("ga").eq(0)).astype(float)})
     cur["apps"] = (cur["mins"] > 0).astype(float)
+    last_gw = int(cur["GW"].max()) if len(cur) else 0
     season_stats = {}
     for pid, g in cur.groupby("pid"):
         t = g.sum(numeric_only=True)
         n90 = t["mins"] / 90
         per = lambda v: round(float(v / n90), 2) if n90 > 0 else None
+        npxg = max(0.0, float(t["xg"] - NPXG_PEN * t["pens"]))  # penalties taken at Opta's 0.76 xG each
+        core = bool(g["has_core"].any())
         season_stats[pid] = {"apps": int(t["apps"]), "starts": int(t["starts"]), "mins": int(t["mins"]), "goals": int(t["goals"]), "assists": int(t["assists"]),
-                             "pts": int(t["pts"]), "bonus": int(t["bonus"]), "cs": int(t["cs"]), "xg": round(float(t["xg"]), 2), "xa": round(float(t["xa"]), 2),
-                             "xgi": round(float(t["xg"] + t["xa"]), 2), "dc": int(t["dc"]), "xg90": per(t["xg"]), "xa90": per(t["xa"]),
-                             "xgi90": per(t["xg"] + t["xa"]), "dc90": per(t["dc"]), "matches": int(len(g))}
+                             "gi": int(t["goals"] + t["assists"]), "pts": int(t["pts"]), "ppm": round(float(t["pts"] / t["apps"]), 2) if t["apps"] else None,
+                             "gwPts": int(g.loc[g["GW"] == last_gw, "pts"].sum()), "bonus": int(t["bonus"]), "bps": int(t["bps"]), "cs": int(t["cs"]),
+                             "saves": int(t["saves"]), "pensave": int(t["pensave"]),
+                             "xg": round(float(t["xg"]), 2), "xa": round(float(t["xa"]), 2), "xgi": round(float(t["xg"] + t["xa"]), 2),
+                             "npxg": round(npxg, 2) if core else None, "npxgxa": round(npxg + float(t["xa"]), 2) if core else None,
+                             "xgot": round(float(t["xgot"]), 2) if core else None,
+                             "dc": int(t["dc"]), "xg90": per(t["xg"]), "xa90": per(t["xa"]), "xgi90": per(t["xg"] + t["xa"]),
+                             "npxgxa90": per(npxg + t["xa"]) if core else None, "dc90": per(t["dc"]), "matches": int(len(g)), "lastGw": last_gw,
+                             "yc": int(t["yc"]), "rc": int(t["rc"])}
+    # each match of this season, for the Statistics page (gameweek range, the player's matches): SEASON_KEYS order
+    opp_lab = pd.Series([lab(o, h) for o, h in zip(played["opp"], played["was_home"])], index=played.index) if "opp" in played else pd.Series("", index=played.index)
+    cur["opp"] = opp_lab
+    season_rows = {}
+    for pid, g in cur.groupby("pid"):
+        season_rows[pid] = [[int(r.GW), r.opp, int(r.mins), int(r.starts), int(r.pts), int(r.goals), int(r.assists), round(float(r.xg), 2), round(float(r.xa), 2),
+                             round(float(r.xgot), 2) if r.has_core else None, int(r.pens) if r.has_core else None, int(r.dc), int(r.bonus), int(r.bps), int(r.cs),
+                             int(r.saves), int(r.pensave), int(r.yc), int(r.rc)] for r in g.itertuples()]
     players: dict[str, dict] = {}
     for r in res.sort_values(["GW", "fixture"]).to_dict("records"):
         p = players.setdefault(r["pid"], {
@@ -3405,7 +3467,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None,
             # Start (5-4-3-2-1 over his last 5 matches) and his minutes when starting and not, for penalty shares
             "pitch": {"start": round(float(r["pit_start"]), 3), "last": int(r["pit_last"]), "ms": round(float(r["pit_ms"]), 1), "mb": round(float(r["pit_mb"]), 1)},
-            "season": season_stats.get(r["pid"])})
+            "season": season_stats.get(r["pid"]), "seasonGw": season_rows.get(r["pid"], [])})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
