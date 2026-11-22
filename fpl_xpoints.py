@@ -1303,7 +1303,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     """Flags matches inside each absence ("inj_skip"), so the formula leaves them out: the zero-minute ones for a
     logged absence, every match for one the admin added by hand (he may have gone off injured early), and for a
     logged injury the match just before it if he did not play all of it ("inj_hurt": he got hurt in it), and a
-    cautionary rest on his return ("inj_rest": 0 in his first match back)"""
+    cautionary rest on his return ("inj_rest": 0 in his first match back, after an injury shorter than LONG_TERM_DAYS)"""
     df = df.copy()
     df["inj_skip"] = False
     df["inj_hurt"] = False
@@ -1335,10 +1335,14 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
                     df.at[last, "inj_note"] = (f"Played {int(df.at[last, 'minutes'])} minutes, his last match before the injury absence from GW{r['startGw']}"
                                                + absence_news(r) + ": taken to be the match he got hurt in")
         # Cautionary rest: a 0 in his first match back from an injury is a rest, not a sign he lost his place
-        # (one match only).
+        # (one match only). Not after a long-term injury (LONG_TERM_DAYS or more): there the 25%, 50%, 75% ramp of
+        # his first 3 matches back already allows for it, so the 0 counts.
         if not r.get("manual") and str(r.get("type") or "Injury").lower().startswith("injur") and r.get("returnedGw"):
             post = df.loc[season & (df["pid"] == r["pid"]) & (df["GW"] >= r["returnedGw"])].sort_values(["GW", "kickoff_time"])
-            if len(post) and float(post["minutes"].iloc[0]) == 0:
+            missed = df.loc[season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], int(r["returnedGw"]) - 1), "kickoff_time"]
+            out_days = ((pd.to_datetime(post["kickoff_time"].iloc[0], utc=True) - pd.to_datetime(missed, utc=True).min()).days
+                        if len(post) and len(missed) else 0)
+            if len(post) and float(post["minutes"].iloc[0]) == 0 and out_days < LONG_TERM_DAYS:
                 i = post.index[0]
                 df.at[i, "inj_skip"] = True
                 df.at[i, "inj_rest"] = True
