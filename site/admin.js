@@ -170,9 +170,10 @@
 
   // ---- tabs, sign-in, loading ----
   function showTab(name) {
-    state.tab = name === 'min' ? 'min' : 'abs';
+    state.tab = ['min', 'bak'].includes(name) ? name : 'abs';
     store.set('admin-tab', state.tab);
-    [['tab-abs', 'abs', 'injPanel'], ['tab-min', 'min', 'panel']].forEach(([tab, key, panel]) => {
+    if (state.tab === 'bak') loadBackups();
+    [['tab-abs', 'abs', 'injPanel'], ['tab-min', 'min', 'panel'], ['tab-bak', 'bak', 'bakPanel']].forEach(([tab, key, panel]) => {
       $(tab).setAttribute('aria-selected', String(state.tab === key));
       $(tab).tabIndex = state.tab === key ? 0 : -1;
       $(panel).hidden = state.tab !== key;
@@ -217,7 +218,21 @@
     $(`${kind}Team`).addEventListener('change', () => pickList(kind));
     form.addEventListener('submit', (e) => e.preventDefault());
   });
-  [['tab-abs', 'abs'], ['tab-min', 'min']].forEach(([id, name]) => $(id).addEventListener('click', () => showTab(name)));
+  [['tab-abs', 'abs'], ['tab-min', 'min'], ['tab-bak', 'bak']].forEach(([id, name]) => $(id).addEventListener('click', () => showTab(name)));
+  // the saved copies before each deadline (archive/index.json, written when the site is built)
+  function loadBackups() {
+    fetch('archive/index.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : [])).catch(() => []).then((list) => {
+      const rows = (list || []).slice().sort((a, b) => (b.season + String(b.gw).padStart(2, '0')).localeCompare(a.season + String(a.gw).padStart(2, '0')))
+        .map((x) => {
+          const q = `?archive=${x.season}/gw${x.gw}`;
+          const links = el('td', {}, ...[['index.html', 'xPoints'], ['minutes.html', 'Minutes'], ['teamnews.html', 'Team news']]
+            .flatMap(([href, label], i) => [i ? ' · ' : '', el('a', { href: href + q, textContent: label })]));
+          return el('tr', {}, el('td', { textContent: `GW${x.gw} (${x.season})` }),
+            el('td', { textContent: x.saved ? new Date(x.saved).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '–' }), links);
+        });
+      $('bakRows').replaceChildren(...(rows.length ? rows : [el('tr', {}, el('td', { colSpan: 3, textContent: 'No backups yet.' }))]));
+    });
+  }
   $('tabs').addEventListener('keydown', (e) => {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     showTab(state.tab === 'abs' ? 'min' : 'abs');
@@ -228,7 +243,7 @@
     if (await sha256($('pass').value) === PASS) { store.set('admin-open', '1', sessionStorage); openPanel(); } else { fail('Wrong password.'); $('pass').value = ''; }
   });
   $('tokenForm').addEventListener('submit', (e) => { e.preventDefault(); store.set(TOKEN_KEY, $('token').value.trim()); $('token').value = ''; openPanel(); });
-  $('forget').addEventListener('click', () => { store.del(TOKEN_KEY); ['panel', 'injPanel', 'tabs', 'refreshBox'].forEach((id) => { $(id).hidden = true; }); $('tokenForm').hidden = false; });
+  $('forget').addEventListener('click', () => { store.del(TOKEN_KEY); ['panel', 'injPanel', 'bakPanel', 'tabs', 'refreshBox'].forEach((id) => { $(id).hidden = true; }); $('tokenForm').hidden = false; });
   // Fresh FPL data (team news, prices, minutes, fixtures) now, without waiting for the schedule.
   $('refresh').addEventListener('click', async () => {
     const ok = await commit(REFRESH_API, {}, () => ({ requestedAt: new Date().toISOString() }), 'Admin: update the site now', 'refreshStatus');

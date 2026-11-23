@@ -180,7 +180,7 @@
   // Minutes edited on the Minutes page in another tab.
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') { state.overrides = XMin.load(); updateEdited(); render(); } });
 
-  fetch('data.json', { cache: 'no-cache' })
+  window.siteFetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then(show)
     .catch(() => {

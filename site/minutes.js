@@ -416,8 +416,8 @@
   window.addEventListener('storage', (e) => { if (e.key === null || e.key === 'xmin-overrides') { state.overrides = XMin.load(); updateReset(); render(); } });
 
   // the calendar (fixtures.json) only adds the weekend and midweek columns; without it, one column per gameweek
-  const fx = fetch('fixtures.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  fetch('data.json', { cache: 'no-cache' })
+  const fx = window.siteFetch('fixtures.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  window.siteFetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((d) => fx.then((f) => { calendar(f); show(d); }))
     .catch(() => {

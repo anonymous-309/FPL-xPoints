@@ -37,6 +37,7 @@
 <div id="tabs" class="admin-tabs" role="tablist" aria-label="Admin sections" hidden>
   <button type="button" role="tab" id="tab-abs" aria-controls="injPanel" aria-selected="true">Absences</button>
   <button type="button" role="tab" id="tab-min" aria-controls="panel" aria-selected="false">Minutes</button>
+  <button type="button" role="tab" id="tab-bak" aria-controls="bakPanel" aria-selected="false">Backups</button>
 </div>
 
 <section id="injPanel" class="inj-admin" role="tabpanel" aria-labelledby="tab-abs" hidden>
@@ -93,6 +94,11 @@
   <h3>Set by admin</h3>
   <div class="wrap"><table class="minutes admin" id="minSet"><thead><tr><th scope="col">Player</th><th scope="col">Formula<small>last 5</small></th><th scope="col">Admin min<small>all GWs</small></th><th scope="col"></th></tr></thead><tbody></tbody></table></div>
   <p><button id="forget" class="reset" type="button">Forget token</button></p>
+</section>
+
+<section id="bakPanel" class="inj-admin" role="tabpanel" aria-labelledby="tab-bak" hidden>
+  <p class="meta admin-note">About 30 minutes before each deadline the site reloads all its data, then saves a copy of it. Open a gameweek's copy to see the xPoints, Minutes and Team news pages as they were then.</p>
+  <table class="admin-table"><thead><tr><th>Gameweek</th><th>Saved</th><th>Pages</th></tr></thead><tbody id="bakRows"><tr><td colspan="3">Loading…</td></tr></tbody></table>
 </section>
 <footer>
   <p>Everything saved here applies for everyone, on any browser. After you save, the site rebuilds with the changes in about 10 minutes.</p>

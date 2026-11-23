@@ -706,3 +706,7 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 .stat-pop-body table th, .stat-pop-body table td { padding: .35rem .55rem; }
 .stat-pop-body table tr.grp-row th { position: static; }
 
+
+/* Viewing a pre-deadline backup */
+.backup-bar { background: #fff4c2; color: #4a3b00; border-bottom: 1px solid #e6d27a; padding: .55rem 1rem; font-size: .95rem; }
+.backup-bar a { color: inherit; font-weight: 600; }

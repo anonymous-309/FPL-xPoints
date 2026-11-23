@@ -91,7 +91,7 @@
     store.set('tn-view', JSON.stringify({ team: state.team, sort: state.sort }));
   }
 
-  fetch('team_news.json', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(`team_news.json: HTTP ${r.status}`); return r.json(); }).then((raw) => {
+  window.siteFetch('team_news.json', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(`team_news.json: HTTP ${r.status}`); return r.json(); }).then((raw) => {
     data = raw;
     try { Object.assign(state, JSON.parse(store.get('tn-view') || '{}')); } catch (e) { /* ignore */ }
     if (!data.teams.some((t) => t.short === state.team)) state.team = '';

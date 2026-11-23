@@ -1,11 +1,16 @@
 name: Archive before deadline
 
-# Every 10 minutes: if the next FPL deadline is 20-45 minutes away and that gameweek is not archived yet, run the full
-# update (fresh numbers on the site) and save its numbers in archive/<season>/gw<N>/.
+# Every 10 minutes (GitHub often runs it only about once an hour): if the next FPL deadline is under 2 hours away and
+# that gameweek is not archived yet, wait until 40 minutes before it, then run the full update (fresh numbers on the
+# site, about 10 minutes) and save its numbers in archive/<season>/gw<N>/, so the copy is from about 30 minutes before.
 on:
   schedule:
     - cron: "*/10 * * * *"
   workflow_dispatch:
+
+concurrency:
+  group: archive-before-deadline
+  cancel-in-progress: false
 
 permissions:
   actions: write
@@ -31,7 +36,8 @@ jobs:
               left = (dt.datetime.fromisoformat(nxt["deadline_time"].replace("Z", "+00:00")) - now).total_seconds() / 60
               done = os.path.exists(f"archive/{season}/gw{nxt['id']}/saved_at.txt")
               print(f"gw={nxt['id']}")
-              print(f"due={'yes' if 20 <= left <= 45 and not done else 'no'}")
+              print(f"due={'yes' if 15 <= left <= 120 and not done else 'no'}")
+              print(f"wait={max(0, int((left - 40) * 60))}")
           PY
           cat "$GITHUB_OUTPUT"
       - name: Is a run for it already going?
@@ -42,6 +48,9 @@ jobs:
         run: |
           n=$(gh run list --workflow update.yml --event workflow_dispatch --json status,createdAt -q '[.[] | select(.status != "completed")] | length')
           echo "running=$n" >> "$GITHUB_OUTPUT"
+      - name: Wait until 40 minutes before the deadline
+        if: steps.due.outputs.due == 'yes' && steps.busy.outputs.running == '0'
+        run: sleep ${{ steps.due.outputs.wait }}
       - name: Run the update and archive
         if: steps.due.outputs.due == 'yes' && steps.busy.outputs.running == '0'
         env:
