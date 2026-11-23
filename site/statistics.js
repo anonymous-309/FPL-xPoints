@@ -93,10 +93,17 @@
       const v = k in map ? map[k] : p.st[k];
       return el('td', { className: grp ? `grp-${grp}` : '', textContent: typeof v === 'string' ? v : fmt(v, d) });
     }));
+    // per 90 minutes: every count over his minutes in the range
+    const n90 = p.st.mins / 90;
+    const per90 = el('tr', { className: 'total per90' }, ...GWCOLS.map(([k, , , grp]) => {
+      const raw = { npxg: p.st.npxg, gmxg: p.st.gmxg }[k] ?? p.st[k];
+      const v = k === 'gw' ? 'Per 90' : ['opp', 'mins', 'starts'].includes(k) || !n90 || raw === null || raw === undefined ? '' : (raw / n90).toFixed(2);
+      return el('td', { className: grp ? `grp-${grp}` : '', textContent: v });
+    }));
     $('pop-title').textContent = `${p.name}, ${p.team} ${p.position} £${p.price.toFixed(1)} · GW${state.from}–GW${state.to}`;
     $('pop-body').replaceChildren(el('table', { className: 'stats inner' },
       el('thead', {}, groupRow(cols), el('tr', {}, ...GWCOLS.map(([, l, , grp]) => el('th', { textContent: l, className: grp ? `grp-${grp}` : '' })))),
-      el('tbody', {}, ...body, tot)));
+      el('tbody', {}, ...body, tot, per90)));
     $('pop').hidden = false;
   }
 
