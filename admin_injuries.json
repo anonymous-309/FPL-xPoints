@@ -11,6 +11,18 @@
    "endGw": 8,
    "note": "",
    "at": "2026-11-11T11:08:14.086Z"
+  },
+  {
+   "id": "c446008-admin-GW11-mwsm4jpu",
+   "pid": "c446008",
+   "name": "Mbeumo",
+   "team": "MUN",
+   "position": "MID",
+   "type": "Other",
+   "startGw": 11,
+   "endGw": 11,
+   "note": "Tactical sub because of red card",
+   "at": "2026-11-23T01:54:21.522Z"
   }
  ],
  "startOverrides": {}
