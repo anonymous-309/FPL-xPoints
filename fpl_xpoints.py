@@ -2562,19 +2562,22 @@ RETURN_DATE = re.compile(r"(?:expected back|suspended until|until|back)\s+(\d{1,
 def return_date(news: str, news_added: str | None) -> pd.Timestamp | None:
     """The date FPL news gives for a player's return ("Expected back 22 Nov", "Suspended until 29 Nov"), or None.
 
-    FPL leaves out the year: it is the first such date on or after the day the news was written (less a week of slack)."""
+    FPL leaves out the year: it is the year that puts the date nearest the day the news was written (a date a few weeks
+    before it is stale news, one in January written in December is next year)."""
     m = RETURN_DATE.search(news or "")
     if not m or m.group(2).lower() not in MONTHS:
         return None
-    added = pd.Timestamp(news_added).tz_localize(None).normalize() if news_added else pd.Timestamp.now().normalize()
-    for year in (added.year, added.year + 1):
+    t = pd.Timestamp(news_added) if news_added else pd.Timestamp.now()
+    added = (t.tz_localize(None) if t.tzinfo is None else t.tz_convert(None)).normalize()
+    best = None
+    for year in (added.year - 1, added.year, added.year + 1):
         try:
             d = pd.Timestamp(year=year, month=MONTHS[m.group(2).lower()], day=int(m.group(1)))
         except ValueError:
             return None
-        if d >= added - pd.Timedelta(days=7):
-            return d
-    return None
+        if best is None or abs((d - added).days) < abs((best - added).days):
+            best = d
+    return best
 
 
 # Typical days out for an injury FPL gives no return date for, by the words in the news: the median days out of
@@ -3361,7 +3364,10 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     FM_PLACES.update({k: v["last"] for k, v in fm_oop.items() if v["share"] > 0})
     FM_SHARE.clear()
     FM_SHARE.update({k: v["share"] for k, v in fm_oop.items() if v["share"] > 0})
-    admin = [] if REPLAY_GW else load_admin_injuries()
+    admin = load_admin_injuries()
+    if REPLAY_GW:  # what the admin recorded about matches before that deadline
+        admin = {"manual": [dict(a, endGw=min(int(a.get("endGw") or a.get("startGw") or 0), first - 1)) for a in admin["manual"] if int(a.get("startGw") or 99) < first],
+                 "startOverrides": admin["startOverrides"]}
     df = mark_injuries(df, log, admin, hurt, covered)
     feat = build_features(df, fm_oop)
     model = XPointsModel().fit(feat)
