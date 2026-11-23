@@ -687,6 +687,21 @@ table.stats td, table.stats th { text-align: center; }
 table.stats td.player { text-align: left; }
 table.stats td.sorted { font-weight: 700; background: color-mix(in srgb, var(--accent, #0e5a41) 8%, transparent); }
 table.stats tr.stat-row { cursor: pointer; }
-table.stats tr.stat-detail > td { padding: 0 0 .6rem; background: color-mix(in srgb, #0e5a41 4%, transparent); }
+table.stats th.grp-att, table.stats td.grp-att { background: #fff4e5; }
+table.stats th.grp-def, table.stats td.grp-def { background: #e8f1fb; }
+table.stats th.grp-oth, table.stats td.grp-oth { background: #f1ecf8; }
+table.stats tr.grp-row th { font-size: .75em; text-transform: uppercase; letter-spacing: .04em; color: #4a5a52; padding: .25rem .4rem; }
+table.stats td.sorted { font-weight: 700; box-shadow: inset 0 0 0 999px rgba(14, 90, 65, .08); }
+table.stats tr.total td { font-weight: 700; border-top: 2px solid #17261f; }
 table.stats.inner { font-size: .85em; margin: 0; width: auto; }
-table.stats tr.stat-detail .wrap { min-height: 0; max-height: none; position: sticky; left: 0; max-width: min(100vw - 40px, 900px); }
+.stat-pop { position: fixed; inset: 0; background: rgba(10, 20, 15, .45); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 12px; }
+.stat-pop[hidden] { display: none; }
+.stat-pop-box { background: #fff; color: #17261f; border-radius: 10px; max-width: min(1100px, 100%); max-height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 40px rgba(0, 0, 0, .3); }
+.stat-pop-head { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .7rem 1rem; border-bottom: 1px solid #dde5df; }
+.stat-pop-head h2 { font-size: 1rem; margin: 0; }
+.stat-pop-head button { font-size: 1.5rem; line-height: 1; background: none; border: 0; cursor: pointer; color: inherit; }
+.stat-pop-body { overflow: auto; padding: 0 0 .5rem; }
+.stat-pop-body table th { position: sticky; top: 0; z-index: 1; white-space: nowrap; }
+.stat-pop-body table th, .stat-pop-body table td { padding: .35rem .55rem; }
+.stat-pop-body table tr.grp-row th { position: static; }
+
