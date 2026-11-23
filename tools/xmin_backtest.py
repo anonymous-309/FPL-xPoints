@@ -6,7 +6,7 @@ the minutes he played:
   - Usual minutes: his last 5 counted matches weighted 5-4-3-2-1 (newest first); matches he missed through an
     absence FotMob listed, a yellow-card ban or the match he was sent off in are not counted.
   - Listed unavailable for the match: 0.
-  - First match back after an injury absence: half his usual minutes (the site's rule), also tried at 0 and full.
+  - Back from an injury absence: the site's return rule (RETURN_RULES in fpl_xpoints.py) on his usual minutes.
 Run after `python fpl_xpoints.py download`: python tools/xmin_backtest.py"""
 import gzip
 import json
@@ -130,6 +130,7 @@ def main():
     atype = df["absent_type"].to_numpy()
     mins = df["minutes"].to_numpy(float)
     kick = df["kickoff_time"].to_numpy()
+    rec = (df["hist_skip"].astype(bool) & (df["hist_ret"] < 1)).to_numpy() if "hist_ret" in df else np.zeros(len(df), bool)  # recovery matches under his usual
     prev, hist, was_out, red_ban, last_t = None, [], False, 0, None
     for i, k in enumerate(df["pid"].to_numpy()):
         if k != prev:
@@ -148,6 +149,8 @@ def main():
             was_out = False
             continue
         was_out = False
+        if rec[i]:
+            continue  # back from injury, under his usual minutes: recovery, left out (the site's rule)
         hist.append(mins[i])
     df["usual"], df["back"] = usual, back
     # Suspended: a yellow-card ban, or a match he missed after a red card (up to 3)
@@ -166,7 +169,8 @@ def main():
     ev = df[df["season"].isin(SEASONS) & df["usual"].notna()].copy()
     # Leave out players outside the picture (usual 0 and not playing): they would flatter every rule
     ev = ev[(ev["usual"] > 0) | (ev["minutes"] > 0)]
-    ev["pred"] = np.where(ev["absent"], 0.0, np.where(ev["back"], ev["usual"] / 2, ev["usual"]))
+    ret = ev["hist_ret"].fillna(1.0) if "hist_ret" in ev else np.where(ev["back"], 0.5, 1.0)
+    ev["pred"] = np.where(ev["absent"], 0.0, ev["usual"] * ret)  # back from injury: the site's return rule
     ev["pred_noinj"] = ev["usual"]  # no injury log: absent players predicted as usual
 
     def report(name, sub, col="pred"):
@@ -233,6 +237,11 @@ def summary(rows, out="site/xmin_accuracy.json"):
                              "started_mae": round((st["pred"] - st["minutes"]).abs().mean(), 1), "started_bias": round((st["pred"] - st["minutes"]).mean(), 1)})
     top = c[c["pred"] >= 80]
     res["top_by_pos"] = {p: {"n": int((top["position"] == p).sum()), "not_started": int(((top["position"] == p) & (top["starts"] == 0)).sum())} for p in ("GK", "DEF", "MID", "FWD")}
+    try:  # keep what other runs added (the by-gameweek bench table)
+        old = json.loads(Path(out).read_text())
+        res.update({k: v for k, v in old.items() if k not in res})
+    except (OSError, ValueError):
+        pass
     Path(out).write_text(json.dumps(res, ensure_ascii=False, indent=1))
     return res
 

@@ -1927,7 +1927,8 @@ def historic_absences(df: pd.DataFrame, folder: Path = INJURY_ARCHIVE) -> pd.Dat
       hist_skip  matches the minutes formula leaves out: the zero-minute ones he was out for, and the match he got
                  hurt in (a Soccerway spell starting that day or within 2 days, or the match before a FotMob injury
                  listing, when he did not play all of it)
-      hist_back  his first match after an injury absence (the site counts half his usual minutes)
+      hist_back  his first match after an injury absence
+      hist_ret   his share of usual minutes back from injury (the site's return rule, RETURN_RULES)
     Seasons with no archive are left as they are."""
     df["hist_out"] = False
     df["hist_skip"] = False
@@ -1990,8 +1991,41 @@ def historic_absences(df: pd.DataFrame, folder: Path = INJURY_ARCHIVE) -> pd.Dat
     prev_inj = (out & inj.loc[order]).groupby(pid.to_numpy()).shift(1).fillna(False).astype(bool)
     df.loc[order, "hist_back"] = (prev_inj & ~out).to_numpy()
     df["hist_skip"] = (df["hist_out"] & (df["minutes"].fillna(0) == 0)) | (hurt & ~df["hist_out"])
+    # Back from an injury absence, the site's return rule: his share of usual minutes by days out and days since his
+    # first match back (hist_ret, what was known before each match), and his recovery matches under his usual minutes
+    # from before the injury left out of the formula, until he plays his usual minutes again (as the site does).
+    df["hist_ret"] = 1.0
+    o = df.loc[order]
+    kick = pd.to_datetime(o["kickoff_time"], utc=True).to_numpy()
+    outv, injv, backv = o["hist_out"].astype(bool).to_numpy(), inj.loc[order].to_numpy(), o["hist_back"].to_numpy()
+    mv, pv, skipv = o["minutes"].fillna(0).to_numpy(float), o["pid"].to_numpy(), o["hist_skip"].to_numpy().copy()
+    ret = np.ones(len(o))
+    recovered = 0
+    for i in np.where(backv)[0]:
+        f = i - 1
+        while f >= 0 and pv[f] == pv[i] and outv[f]:
+            f -= 1
+        first_out = f + 1
+        days_out = (kick[i] - kick[first_out]) / np.timedelta64(1, "D")
+        prev = [mv[k] for k in range(first_out - 1, -1, -1) if pv[k] == pv[i] and not outv[k] and not skipv[k]][:5]
+        w = MINUTE_WEIGHTS[:len(prev)]
+        usual = float(np.dot(prev, w) / w.sum()) if prev else 0.0
+        window = return_window(days_out)
+        k = i
+        while k < len(o) and pv[k] == pv[i] and not outv[k]:
+            since = (kick[k] - kick[i]) / np.timedelta64(1, "D")
+            if k > i and since > window:
+                break
+            ret[k] = return_share(days_out, since, k == i)
+            if mv[k] >= usual:
+                break  # back to his usual minutes: the recovery is over
+            skipv[k] = True
+            recovered += 1
+            k += 1
+    df.loc[order, "hist_ret"] = ret
+    df.loc[order, "hist_skip"] = skipv
     print(f"Past-season absences from archive/injuries: {int(df['hist_out'].sum())} matches out, {int(hurt.sum())} matches he got hurt in, "
-          f"{int(df['hist_back'].sum())} first matches back")
+          f"{int(df['hist_back'].sum())} first matches back, {recovered} recovery matches under his usual left out")
     return df
 
 
@@ -2048,10 +2082,11 @@ def walk_forward(feat: pd.DataFrame, season: str, step: int, min_train_seasons: 
         print(f"  training before {season} GW{block[0]}, predicting GW{block[0]}-{block[-1]}")
         model = XPointsModel().fit(feat[feat["t"] < cut])
         rows = test[test["GW"].isin(block)]
-        # What was known before each match, as the site knows it now: out (0), first match back from injury (half).
+        # What was known before each match, as the site knows it now: out (0), back from injury (the return rule).
         avail = None
         if "hist_out" in rows:
-            avail = pd.Series(np.where(rows["hist_out"].astype(bool), 0.0, np.where(rows["hist_back"].astype(bool), 0.5, 1.0)), index=rows.index)
+            ret = rows["hist_ret"] if "hist_ret" in rows else pd.Series(1.0, index=rows.index)
+            avail = pd.Series(np.where(rows["hist_out"].astype(bool), 0.0, ret.fillna(1.0)), index=rows.index)
         parts.append(pd.concat([rows, model.predict(rows, avail)], axis=1))
     return pd.concat(parts)
 
