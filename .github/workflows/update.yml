@@ -89,7 +89,7 @@ jobs:
         continue-on-error: true
         run: |
           mkdir -p _site/archive
-          for d in archive/20*/gw*/; do
+          for d in archive/20*/gw*/ archive/20*/replay/gw*/; do
             [ -f "$d/saved_at.txt" ] || continue
             mkdir -p "_site/$d" && cp "$d"/*.gz "$d/saved_at.txt" "_site/$d" 2>/dev/null || true
           done
@@ -98,7 +98,10 @@ jobs:
           rows = []
           for d in sorted(glob.glob("archive/20*/gw*/saved_at.txt")):
               season, gw = d.split("/")[1], int(d.split("/")[2][2:])
-              rows.append({"season": season, "gw": gw, "saved": open(d).read().strip()})
+              rows.append({"season": season, "gw": gw, "saved": open(d).read().strip(), "path": f"{season}/gw{gw}"})
+          for d in sorted(glob.glob("archive/20*/replay/gw*/saved_at.txt")):
+              season, gw = d.split("/")[1], int(d.split("/")[3][2:])
+              rows.append({"season": season, "gw": gw, "saved": open(d).read().strip(), "path": f"{season}/replay/gw{gw}", "replay": True})
           json.dump(rows, open("_site/archive/index.json", "w"))
           print(len(rows), "backups")
           PY

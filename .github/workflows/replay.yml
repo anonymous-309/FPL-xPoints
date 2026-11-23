@@ -1,0 +1,68 @@
+name: Replay past gameweeks
+
+# Rebuilds the site as it would have been before each chosen gameweek's deadline, with today's formulas: only matches
+# played before that deadline, FPL's flags as the injury log saw them then. Saved in archive/<season>/replay/gw<N>/ and
+# shown in Admin > Backups next to the real pre-deadline copies.
+on:
+  workflow_dispatch:
+    inputs:
+      gws:
+        description: "Gameweeks, e.g. 1-11 or 3,5,7"
+        required: true
+        default: "1-11"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: replay
+  cancel-in-progress: false
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - uses: actions/cache@v4
+        with:
+          path: fpl_data/20*
+          key: fpl-history-v1
+      - uses: actions/cache/restore@v4
+        with:
+          path: fpl_data/api_cache/fotmob
+          key: fotmob-${{ github.run_id }}
+          restore-keys: fotmob-
+      - run: python fpl_xpoints.py download
+      - name: Replay each gameweek
+        run: |
+          season=$(grep -m1 '^CURRENT_SEASON' fpl_xpoints.py | cut -d'"' -f2)
+          gws=$(python3 -c "import sys; s='${{ github.event.inputs.gws }}'; out=[]
+          for part in s.split(','):
+              a, _, b = part.strip().partition('-'); out += list(range(int(a), int(b or a) + 1))
+          print(' '.join(map(str, out)))")
+          offline=""
+          for gw in $gws; do
+            echo "::group::GW$gw"
+            rm -rf _replay && PYTHONWARNINGS=ignore python fpl_xpoints.py site --out _replay --as-of $gw $offline > replay.log 2>&1 || { tail -40 replay.log; exit 1; }
+            grep -E "^From|Matches left out|recovery" replay.log | head -5 || true
+            dir="archive/$season/replay/gw$gw"
+            mkdir -p "$dir"
+            for f in data.json fixtures.json fdr.json; do [ -f "_replay/$f" ] && gzip -9 -c "_replay/$f" > "$dir/$f.gz"; done
+            date -u +"%Y-%m-%dT%H:%MZ" > "$dir/saved_at.txt"
+            offline="--offline"  # FPL's pages are in the cache after the first one
+            echo "::endgroup::"
+          done
+      - name: Keep the replays
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add archive
+          git commit -m "Replay: past gameweeks rebuilt with today's formulas" || exit 0
+          git pull --rebase origin main
+          git push origin HEAD:main

@@ -222,12 +222,12 @@
   // the saved copies before each deadline (archive/index.json, written when the site is built)
   function loadBackups() {
     fetch('archive/index.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : [])).catch(() => []).then((list) => {
-      const rows = (list || []).slice().sort((a, b) => (b.season + String(b.gw).padStart(2, '0')).localeCompare(a.season + String(a.gw).padStart(2, '0')))
+      const rows = (list || []).slice().sort((a, b) => (b.season + String(b.gw).padStart(2, '0') + (b.replay ? 0 : 1)).localeCompare(a.season + String(a.gw).padStart(2, '0') + (a.replay ? 0 : 1)))
         .map((x) => {
-          const q = `?archive=${x.season}/gw${x.gw}`;
-          const links = el('td', {}, ...[['index.html', 'xPoints'], ['minutes.html', 'Minutes'], ['teamnews.html', 'Team news']]
-            .flatMap(([href, label], i) => [i ? ' · ' : '', el('a', { href: href + q, textContent: label })]));
-          return el('tr', {}, el('td', { textContent: `GW${x.gw} (${x.season})` }),
+          const q = `?archive=${x.path || `${x.season}/gw${x.gw}`}`;
+          const pages = [['index.html', 'xPoints'], ['minutes.html', 'Minutes']].concat(x.replay ? [] : [['teamnews.html', 'Team news']]);
+          const links = el('td', {}, ...pages.flatMap(([href, label], i) => [i ? ' · ' : '', el('a', { href: href + q, textContent: label })]));
+          return el('tr', {}, el('td', { textContent: `GW${x.gw} (${x.season})${x.replay ? ' · replay, today\'s formulas' : ' · saved before the deadline'}` }),
             el('td', { textContent: x.saved ? new Date(x.saved).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }) : '–' }), links);
         });
       $('bakRows').replaceChildren(...(rows.length ? rows : [el('tr', {}, el('td', { colSpan: 3, textContent: 'No backups yet.' }))]));

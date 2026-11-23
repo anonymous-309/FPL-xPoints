@@ -519,6 +519,7 @@ def skipped(df: pd.DataFrame) -> pd.Series:
     return out
 
 
+REPLAY_GW: int | None = None  # set by `site --as-of N`: rebuild the site as it would have been before GW N's deadline
 INJURY_LOG = Path("injury_log.json")  # kept in the repo; the update workflow commits it after each build
 OUT_STATUS = {"i": "Injury", "s": "Suspended", "d": "Doubtful", "n": "Unavailable"}
 
@@ -2753,6 +2754,31 @@ def outside_matches(cache: Path, offline: bool) -> dict:
 FIT_AFTER_FLAG_MIN = 90  # a full match outside the league after FPL's injury flag: taken as fit
 
 
+def replay_status(gw: int, deadline: str | None) -> dict:
+    """Each player's FPL flag just before GW gw's deadline, from the injury log (every FPL news change it saw, with
+    its time). An absence the log rebuilt from missed matches, with no news seen by then, counts as injured with no
+    date. Players with no open entry are fit."""
+    if not INJURY_LOG.exists():
+        return {}
+    code = {"Injury": "i", "Illness": "i", "Doubtful": "d", "Suspended": "s", "Unavailable": "u"}
+    out = {}
+    for e in json.loads(INJURY_LOG.read_text(encoding="utf-8")):
+        if e.get("season") != CURRENT_SEASON or e.get("manual"):
+            continue
+        seen = [u for u in e.get("updates") or [] if deadline and u.get("at") and u["at"] <= deadline[:16] + "Z"]
+        returned = e.get("returnedGw")
+        open_then = (e.get("startGw") or 99) <= gw and (returned is None or returned > gw)
+        if seen:
+            u = seen[-1]
+            if e.get("closedAt") and e["closedAt"] <= (deadline or "")[:16] + "Z":
+                continue
+            out[e["pid"]] = {"status": code.get(u.get("type"), "i"), "news": u.get("news") or "", "news_added": u["at"].replace("Z", ":00Z"),
+                             "chance_of_playing_next_round": u.get("chance")}
+        elif open_then and (e.get("startGw") or 99) < gw:
+            out[e["pid"]] = {"status": code.get(e.get("type"), "i"), "news": "", "news_added": None, "chance_of_playing_next_round": 0}
+    return out
+
+
 def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame, pd.DataFrame, int]:
     boot = _api("bootstrap-static/", cache, offline)
     fixtures = _api("fixtures/", cache, offline)
@@ -2762,9 +2788,12 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
     fix = {f["id"]: f for f in fixtures}
     deadlines = {e["id"]: e.get("deadline_time") for e in boot["events"]}  # stands in for a kickoff not yet scheduled
     upcoming = [e["id"] for e in boot["events"] if e.get("is_next")] or [e["id"] for e in boot["events"] if not e.get("finished")]
+    if REPLAY_GW:
+        upcoming = [REPLAY_GW]
     if not upcoming:
         raise SystemExit("No upcoming gameweek.")
     first = upcoming[0]
+    replay_flags = replay_status(first, deadlines.get(first)) if REPLAY_GW else {}
     gws = set(range(first, first + horizon))
     hist, fut = [], []
 
@@ -2779,8 +2808,10 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
         if pos.get(p["element_type"]) is None:
             continue
         name = f'{p.get("first_name", "")} {p.get("second_name", "")}'.strip() or p["web_name"]
+        if REPLAY_GW:  # FPL's flag as it stood before that deadline, from the injury log's record of FPL's news
+            p = dict(p, **replay_flags.get(f'c{p["code"]}', {"status": "a", "news": "", "news_added": None, "chance_of_playing_next_round": None}))
         # Flagged injured or doubtful, but has played a full match for his country or in a cup since: fit.
-        if p.get("status") in ("i", "d") and p.get("news_added"):
+        if p.get("status") in ("i", "d") and p.get("news_added") and not REPLAY_GW:
             seen = _fm_find({"name": p["web_name"], "fullName": name}, outside.get(short[p["team"]], {})) or []
             full = sorted(x for x in seen if x[0] > p["news_added"] and x[1] >= FIT_AFTER_FLAG_MIN)
             if full:
@@ -2796,6 +2827,8 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             # Use every match that has been played: FPL marks a whole gameweek finished only some time later.
             if f is None or not (f.get("finished") or f.get("finished_provisional")):
                 continue
+            if REPLAY_GW and (f.get("event") or 99) >= REPLAY_GW:
+                continue  # not played yet at that deadline
             played.append(row)
             hist.append(row | base | {"GW": row["round"], "team": teams[f["team_h"] if row["was_home"] else f["team_a"]], "opponent_team": row["opponent_team"], "future": False})
         last = max(played, key=lambda r: r.get("kickoff_time") or "", default=None)
@@ -2807,7 +2840,7 @@ def live_frames(cache: Path, offline: bool, horizon: int) -> tuple[pd.DataFrame,
             before = [r["kickoff_time"] for r in played if r.get("kickoff_time") and r["kickoff_time"] <= p["news_added"]]
             flag_cut = max(before) if before else None
         mine = []
-        for f in sorted((f for f in fixtures if f.get("event") in gws and not f.get("finished") and p["team"] in (f["team_h"], f["team_a"])),
+        for f in sorted((f for f in fixtures if f.get("event") in gws and (REPLAY_GW or not f.get("finished")) and p["team"] in (f["team_h"], f["team_a"])),
                         key=lambda f: (f["event"], f.get("kickoff_time") or "")):
             kick = pd.Timestamp(f.get("kickoff_time") or deadlines[f["event"]]).tz_convert("Europe/London").tz_localize(None)
             mine.append((f, kick))
@@ -3317,19 +3350,26 @@ def predict_frame(data_dir: Path, seasons: list[str], horizon: int, offline: boo
     hist, fut, first = live_frames(cache, offline, horizon)
     old = pd.concat([load_season(data_dir, s) for s in seasons], ignore_index=True)
     df = yellow_bans(clean(add_core(pd.concat([old, hist, fut], ignore_index=True), data_dir, seasons + [CURRENT_SEASON]), seasons + [CURRENT_SEASON]))
-    log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
+    if REPLAY_GW:  # as known before that deadline: absences that had begun, returns that had happened
+        log = [dict(e, returnedGw=e["returnedGw"] if (e.get("returnedGw") or 99) < first else None)
+               for e in (json.loads(INJURY_LOG.read_text(encoding="utf-8")) if INJURY_LOG.exists() else [])
+               if e.get("season") != CURRENT_SEASON or (e.get("startGw") or 99) < first]
+    else:
+        log = json.loads(INJURY_LOG.read_text(encoding="utf-8")) if offline and INJURY_LOG.exists() else ([] if offline else update_injury_log(df, first))
     hurt, covered, fm_oop = injury_subs(cache, offline, _api("bootstrap-static/", cache, offline))
     FM_PLACES.clear()
     FM_PLACES.update({k: v["last"] for k, v in fm_oop.items() if v["share"] > 0})
     FM_SHARE.clear()
     FM_SHARE.update({k: v["share"] for k, v in fm_oop.items() if v["share"] > 0})
-    df = mark_injuries(df, log, load_admin_injuries(), hurt, covered)
+    admin = [] if REPLAY_GW else load_admin_injuries()
+    df = mark_injuries(df, log, admin, hurt, covered)
     feat = build_features(df, fm_oop)
     model = XPointsModel().fit(feat)
     target = feat[feat["future"]].copy()
     target = doubtful_minutes(target, df)
-    target = admin_minutes(target)
-    target = manual_absences(target, load_admin_injuries())
+    if not REPLAY_GW:
+        target = admin_minutes(target)
+        target = manual_absences(target, load_admin_injuries())
     target = goalkeeper_cover(target)
     try:
         target = european_rotation(target, df, cache, offline)
@@ -3614,6 +3654,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             print(f"International minutes not added ({e})")
     (out_dir / "data.json").write_text(json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":")), encoding="utf-8")
     try:
+        if REPLAY_GW:
+            raise RuntimeError("replay: team news is only live")
         (out_dir / "team_news.json").write_text(json.dumps(team_news(data_dir / "api_cache", offline, players, payload["gws"][0]), ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     except Exception as e:  # never stop the site for this page
         print(f"Team news not written ({e})")
@@ -3971,6 +4013,7 @@ def main() -> None:
     ap.add_argument("--horizon", type=int, default=5)
     ap.add_argument("--modes", nargs="+", default=None, help="clean sheet inputs to compare in cs-tune")
     ap.add_argument("--out", type=Path, default=Path("_site"), help="output folder for the site command")
+    ap.add_argument("--as-of", type=int, default=None, help="site: rebuild as it would have been before this gameweek's deadline (replay)")
     ap.add_argument("--offline", action="store_true", help="use cached API responses only")
     a = ap.parse_args()
     if a.command == "download":
@@ -3997,6 +4040,8 @@ def main() -> None:
     elif a.command == "tune":
         tune(a.data_dir, a.seasons, a.step, a.offline)
     elif a.command == "site":
+        global REPLAY_GW
+        REPLAY_GW = a.as_of
         export_site(a.data_dir, a.seasons, 12, a.out, a.offline)
     else:
         predict(a.data_dir, a.seasons, a.horizon, a.data_dir / f"xpts_next_{a.horizon}.csv", a.offline)

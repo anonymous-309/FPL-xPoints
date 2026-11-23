@@ -2,7 +2,7 @@
 // (archive/<season>/gw<N>/<file>.gz) instead of the live file, and says so at the top.
 (function () {
   'use strict';
-  const m = /[?&]archive=([0-9-]+\/gw\d+)/.exec(location.search);
+  const m = /[?&]archive=([0-9-]+\/(?:replay\/)?gw\d+)/.exec(location.search);
   const path = m ? m[1] : null;
   window.SITE_ARCHIVE = path;
   window.siteFetch = function (name, opts) {
@@ -19,10 +19,13 @@
   };
   if (!path) return;
   const show = () => {
-    const [season, gw] = path.split('/');
+    const parts = path.split('/');
+    const season = parts[0], gw = parts[parts.length - 1], replay = parts.includes('replay');
     const bar = document.createElement('div');
     bar.className = 'backup-bar';
-    bar.innerHTML = `Backup of <b>${gw.toUpperCase()}</b> (${season}), saved before the deadline <span class="backup-when"></span> · <a href="${location.pathname}">Back to live</a>`;
+    bar.innerHTML = replay
+      ? `Replay of <b>${gw.toUpperCase()}</b> (${season}): the site as it would have been before that deadline with today's formulas, rebuilt <span class="backup-when"></span> · <a href="${location.pathname}">Back to live</a>`
+      : `Backup of <b>${gw.toUpperCase()}</b> (${season}), saved before the deadline <span class="backup-when"></span> · <a href="${location.pathname}">Back to live</a>`;
     fetch(`archive/${path}/saved_at.txt`).then((r) => (r.ok ? r.text() : '')).then((t) => {
       if (t.trim()) bar.querySelector('.backup-when').textContent = `at ${new Date(t.trim()).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}`;
     }).catch(() => {});
