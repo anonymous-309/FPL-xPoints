@@ -4,96 +4,96 @@
   "2025-26"
  ],
  "removed": {
-  "red": 66,
+  "red": 68,
   "ban": 80,
-  "injured_in_match": 498
+  "injured_in_match": 530
  },
  "bands": [
   {
    "band": "80–90",
-   "n": 8212,
+   "n": 8449,
    "pred": 87.8,
-   "real": 82.1,
-   "bias": 5.7,
-   "mae": 8.5,
-   "within10": 0.856,
-   "real60": 0.913,
-   "zero": 0.035,
-   "sub": 0.052,
-   "p60_89": 0.146,
-   "full": 0.767,
-   "not_started": 548,
+   "real": 81.6,
+   "bias": 6.1,
+   "mae": 8.9,
+   "within10": 0.85,
+   "real60": 0.907,
+   "zero": 0.038,
+   "sub": 0.055,
+   "p60_89": 0.147,
+   "full": 0.76,
+   "not_started": 608,
    "started_mae": 3.8,
-   "started_bias": 0.7
+   "started_bias": 0.8
   },
   {
    "band": "70–80",
-   "n": 2460,
-   "pred": 75.1,
-   "real": 71.2,
-   "bias": 3.9,
-   "mae": 20.6,
-   "within10": 0.197,
-   "real60": 0.783,
-   "zero": 0.054,
-   "sub": 0.163,
+   "n": 2606,
+   "pred": 75.0,
+   "real": 70.2,
+   "bias": 4.9,
+   "mae": 21.3,
+   "within10": 0.196,
+   "real60": 0.77,
+   "zero": 0.059,
+   "sub": 0.171,
    "p60_89": 0.283,
-   "full": 0.5,
-   "not_started": 411,
-   "started_mae": 12.8,
+   "full": 0.487,
+   "not_started": 478,
+   "started_mae": 12.9,
    "started_bias": -7.3
   },
   {
    "band": "60–70",
-   "n": 2107,
+   "n": 2259,
    "pred": 64.7,
-   "real": 61.5,
-   "bias": 3.1,
-   "mae": 28.0,
-   "within10": 0.166,
-   "real60": 0.667,
-   "zero": 0.114,
-   "sub": 0.219,
+   "real": 59.8,
+   "bias": 4.9,
+   "mae": 28.6,
+   "within10": 0.163,
+   "real60": 0.646,
+   "zero": 0.12,
+   "sub": 0.234,
    "p60_89": 0.279,
-   "full": 0.388,
-   "not_started": 606,
-   "started_mae": 18.7,
-   "started_bias": -16.1
+   "full": 0.367,
+   "not_started": 703,
+   "started_mae": 18.5,
+   "started_bias": -15.9
   },
   {
    "band": "All 60+",
-   "n": 12779,
-   "pred": 81.5,
-   "real": 76.6,
-   "bias": 4.9,
-   "mae": 14.1,
-   "within10": 0.615,
-   "real60": 0.847,
-   "zero": 0.052,
-   "sub": 0.101,
-   "p60_89": 0.194,
-   "full": 0.653,
-   "not_started": 1565,
-   "started_mae": 7.4,
+   "n": 13314,
+   "pred": 81.4,
+   "real": 75.7,
+   "bias": 5.7,
+   "mae": 14.7,
+   "within10": 0.605,
+   "real60": 0.836,
+   "zero": 0.056,
+   "sub": 0.108,
+   "p60_89": 0.196,
+   "full": 0.64,
+   "not_started": 1789,
+   "started_mae": 7.5,
    "started_bias": -3.0
   }
  ],
  "top_by_pos": {
   "GK": {
-   "n": 1201,
-   "not_started": 52
+   "n": 1210,
+   "not_started": 56
   },
   "DEF": {
-   "n": 3588,
-   "not_started": 253
+   "n": 3709,
+   "not_started": 285
   },
   "MID": {
-   "n": 2861,
-   "not_started": 210
+   "n": 2951,
+   "not_started": 230
   },
   "FWD": {
-   "n": 562,
-   "not_started": 33
+   "n": 579,
+   "not_started": 37
   }
  },
  "bench_by_gw": {
