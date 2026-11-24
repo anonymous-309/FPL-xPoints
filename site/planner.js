@@ -232,7 +232,7 @@
     if (state.data && st.forceGw !== state.data.gws[0]) { st.forceIn = []; st.forceOut = []; st.forceGw = state.data.gws[0]; }
     return st;
   }
-  function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(state.settings)); } catch (e) { /* fine */ } }
+  function saveSettings() { try { localStorage.setItem(SET_KEY, JSON.stringify(state.settings)); } catch (e) { /* fine */ } settingsCount(); }
 
   function countsForm() {
     const box = $('planCounts');
@@ -266,7 +266,18 @@
     }));
   }
 
+  // "Settings (2 settings)": how many are set away from the defaults, shown on the closed Settings box
+  function settingsCount() {
+    const st = state.settings;
+    if (!st) return;
+    let n = ['keep', 'avoid', 'forceIn', 'forceOut'].reduce((a, k) => a + (st[k] || []).length, 0);
+    n += [1, 2, 3, 4, 5].filter((ft) => countsFor(ft).join() !== (DEFAULT_COUNTS[ft] || []).join()).length;
+    const sum = document.querySelector('.plan-settings > summary');
+    if (sum) sum.textContent = n ? `Settings (${n} setting${n > 1 ? 's' : ''})` : 'Settings';
+  }
+
   function settingsForm() {
+    settingsCount();
     countsForm();
     const st = state.settings;
     const T = Number($('horizon').value);
