@@ -56,7 +56,6 @@
   function render() {
     $('tableBox').hidden = state.view !== 'table';
     $('list').hidden = state.view === 'table';
-    $('matchSort').hidden = state.view === 'table';
     if (state.view === 'table') { renderTable(); return; }
     const gw = $('gw').value;
     const list = (state.matches[gw] || []).slice();
@@ -78,11 +77,6 @@
     $('list').replaceChildren(...rows);
   }
 
-  document.querySelectorAll('[data-sort]').forEach((b) => b.addEventListener('click', () => {
-    state.sort = b.dataset.sort;
-    document.querySelectorAll('[data-sort]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
-    render();
-  }));
   $('gw').addEventListener('change', render);
   document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => {
     state.view = b.dataset.view;
