@@ -48,7 +48,7 @@
     })));
     $('oddsTable').tBodies[0].replaceChildren(...rows.map((r) => el('tr', {},
       el('td', { className: 'odds-tname' }, el('b', { textContent: name(r.team) }), ` (${r.home ? 'H' : 'A'})`),
-      el('td', { textContent: r.opp, title: name(r.opp) }),
+      el('td', { textContent: r.home ? r.opp.toUpperCase() : r.opp.toLowerCase(), title: name(r.opp) }),  // as on FPL: capitals at home, lower case away
       el('td', { className: 'num odds-cell', style: `background:${shade(r.goals, 0.6, 2.4)}`, textContent: r.goals.toFixed(2) }),
       el('td', { className: 'num odds-cell', style: `background:${shade(r.cs, 0.1, 0.55)}`, textContent: pct(r.cs) }))));
   }
