@@ -244,7 +244,7 @@
       const sum = el('b', { className: 'pc-total', textContent: String(total(arr)) });
       const row = el('div', { className: 'pc-row' }, el('span', { className: 'pc-ft', textContent: `${ft} FT` }));
       arr.forEach((n, k) => {
-        const name = k === 0 ? 'Save' : k <= ft ? `${k} FT` : `${ft} FT + ${k - ft} hit`;
+        const name = k === 0 ? 'Save' : k <= ft ? `${k} FT` : `${ft} FT + ${k - ft} hit${k - ft > 1 ? 's' : ''}`;
         const input = el('input', { type: 'number', min: k === 0 ? '1' : '0', max: '5', step: '1', value: String(n), 'aria-label': `${ft} free transfers: plans for ${name}` });
         input.addEventListener('change', () => {
           const cur = countsFor(ft);
@@ -406,7 +406,7 @@
 
   // How many plans to look at, by free transfers in hand: plans for saving now (each with different moves the next
   // gameweek), for using 1, 2, ... free transfers now, and for one more with a hit. Set in Settings, 10 at most.
-  const DEFAULT_COUNTS = { 1: [3, 3, 2], 2: [2, 2, 2, 2], 3: [2, 2, 2, 2, 1], 4: [1, 2, 2, 2, 1], 5: [1, 2, 2, 2, 1, 1] };
+  const DEFAULT_COUNTS = { 1: [3, 3, 2, 1], 2: [2, 2, 2, 1, 1], 3: [2, 2, 2, 2, 1], 4: [1, 2, 2, 2, 1], 5: [1, 2, 2, 2, 1, 1] };
   const MAX_PLANS = 10;
   const countsFor = (ft) => {
     const own = state.settings.planCounts && state.settings.planCounts[ft];
@@ -841,7 +841,7 @@
     const depth = state.plan.depth;
     const bestRaw = Math.max(...options.map((o) => o.totalRaw ?? -Infinity)), bestT = Math.max(...options.map((o) => o.total)), bestWin = Math.max(...options.map((o) => o.win));
     const label = (o) => (o.manual ? 'My transfers' : o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
-      : o.roll ? (o.count ? 'Forced only' : 'Save') : o.count > state.team.ft ? `${state.team.ft} FT + ${o.count - state.team.ft} hit` : `${o.count} FT`);
+      : o.roll ? (o.count ? 'Forced only' : 'Save') : o.count > state.team.ft ? `${state.team.ft} FT + ${o.count - state.team.ft} hit${o.count - state.team.ft > 1 ? 's' : ''}` : `${o.count} FT`);
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[b].price - P[a].price;
     const holdW = state.plan.holdW || [];
