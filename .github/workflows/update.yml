@@ -144,5 +144,20 @@ jobs:
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
+      # GitHub sometimes cannot see the just-uploaded artifact yet ("No artifacts named github-pages"): wait, try
+      # again up to twice more.
+      - run: sleep 20
+      - id: deploy1
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - if: steps.deploy1.outcome == 'failure'
+        run: sleep 60
+      - id: deploy2
+        if: steps.deploy1.outcome == 'failure'
+        continue-on-error: true
+        uses: actions/deploy-pages@v4
+      - if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
+        run: sleep 120
       - id: deployment
+        if: steps.deploy1.outcome == 'failure' && steps.deploy2.outcome == 'failure'
         uses: actions/deploy-pages@v4
