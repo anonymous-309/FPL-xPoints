@@ -163,6 +163,32 @@
         p('Playing at all and playing 60+ minutes are predicted very well. Goals, assists and clean sheets are right on average and sort about as well as such chancy events allow. Penalty saves and red cards are too rare to call at all, so everyone gets about the average.')));
     }
 
+    // 5b. team goals and clean sheets (the Team odds page)
+    const tmKey = Object.keys(S).find((k) => k.startsWith('Team goals and clean sheets'));
+    if (tmKey) {
+      const L = S[tmKey];
+      const after = (title) => { const i = L.findIndex((l) => l.trim() === title); return i < 0 ? [] : L.slice(i + 1); };
+      const rowsOf = (title) => { const ls = after(title); const n = ls.length ? ls[0].split('|').length : 0; const out = [];
+        for (let j = 1; j < ls.length && ls[j].trim() && ls[j].split('|').length === n; j++) out.push(ls[j].split('|').map((x) => x.trim())); return out; };
+      const kv = (title) => Object.fromEntries(rowsOf(title).map((r) => [r[0], r[1]]));
+      const g = kv('Goals per match'), c = kv('Clean sheets');
+      const gb = rowsOf('Goals by expected band'), cb = rowsOf('Clean sheets by predicted band'), clubs = rowsOf('Season totals by club');
+      const corr = (L.find((l) => l.startsWith('correlation of season totals')) || '').split('|')[1] || '';
+      out.push(card('Team goals and clean sheets',
+        p(`Every club's expected goals and clean sheet chance in each of the ${g.matches || ''} team-matches of the test season (the figures on the Team odds page), against what happened.`),
+        el('h3', { textContent: 'Goals' }),
+        p('On average: expected ', b(g['expected goals, average'] || '–'), ' goals a match, real ', b(g['real goals, average'] || '–'),
+          '. A single match is hard to call (average miss ', b(g['average miss'] || '–'), ' goals, against ', b(g['average miss, everyone at the league home/away average'] || '–'),
+          ' if every team got the league average), but grouped by the expected figure the real goals match it closely:'),
+        table(['Expected goals', 'Matches', 'Expected', 'Real'], gb),
+        el('h3', { textContent: 'Clean sheets' }),
+        p('Predicted ', b(c['predicted share'] || '–'), ' of matches, real ', b(c['real share'] || '–'), '. Grouped by the predicted chance:'),
+        table(['Predicted chance', 'Matches', 'Predicted', 'Real'], cb),
+        el('h3', { textContent: 'Season totals by club' }),
+        p(`How close the season adds up for each club (correlation: ${corr.trim()}).`),
+        table(['Club', 'Matches', 'Expected goals', 'Real goals', 'Expected CS', 'Real CS'], clubs)));
+    }
+
     // 6. goals / assists by band
     const gaKey = Object.keys(S).find((k) => k.startsWith('Chance to score / assist'));
     const ga = gaKey ? S[gaKey] : [];

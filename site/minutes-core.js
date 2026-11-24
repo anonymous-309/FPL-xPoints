@@ -205,21 +205,48 @@ window.XMin = (function () {
   }
 
   // The same text as a gameweek cell on the xPoints page: expected points, minutes, Chance 90min and points by part.
-  const PART_LABEL = { app: 'Appearance', goal: 'Goals', assist: 'Assists', bonus: 'Bonus', cs: 'Clean sheet', conceded: 'Goals conceded', saves: 'Saves', pensave: 'Penalty saves', penmiss: 'Penalty misses', own: 'Own goals', defcon: 'DefCon', cards: 'Cards' };
+  // The same figures as the xPoints page's player pop-up: Chance 90min as on the Chance page (goals split into open
+  // play and penalties, with the Minutes page edits), then this season so far.
   const CHANCES = [
-    ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'], ['pScore', 'Score 1+', 'pct'], ['xGoals', 'xGoals', 2],
-    ['pAssist', 'Fantasy Assist 1+', 'pct'], ['xAssists', 'xAssists', 2], ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2],
-    ['pDefcon', 'DefCon', 'pct'], ['xSaves', 'Saves', 1], ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'],
-    ['pOwnGoal', 'Own goal', 'pct1'], ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['bonus', 'Bonus', 2],
+    ['pStart', 'Start', 'pct'], ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'],
+    ['pScore', 'Score 1+', 'pct'], ['npxGoals', 'NPxGoals', 2], ['xPenGoals', 'Pen goals', 2], ['pAssist', 'Fantasy Assist 1+', 'pct'], ['xAssists', 'xAssists', 2],
+    ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2], ['pDefcon', 'DefCon', 'pct'], ['xDefcon', 'DefCon actions', 1], ['xSaves', 'Saves', 1],
+    ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'], ['pOwnGoal', 'Own goal', 'pct1'],
+    ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['xBps', 'BPS', 0], ['bonus', 'Bonus', 2],
   ];
+  function chanceFigures(overrides, p, g) {
+    const d = p.byGw[g];
+    const miss = p.penMiss == null ? 0.22 : p.penMiss;
+    let penModel = 0, pen = 0, missed = 0;
+    (d.fx || []).forEach((_, j) => {
+      const tp = d.tp ? d.tp[j] : 0;
+      penModel += (d.pc ? d.pc[j] : 0) * tp * (1 - miss);
+      const pens = penCond(overrides, p, g, j) * tp;
+      pen += pens * (1 - miss);
+      missed += pens * miss;
+    });
+    const np = Math.max(0, d.xGoals - penModel);
+    return { ...d, pStart: startChance(overrides, p, g), npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)), pPenMiss: d.fx ? 1 - Math.exp(-missed) : d.pPenMiss };
+  }
+  function seasonText(p) {
+    const s = p.season;
+    if (!s || !s.matches) return 'This season\nNo league matches yet';
+    const per = (v) => (v === null || v === undefined ? '–' : v.toFixed(2));
+    return ['This season', `Starts: ${s.starts} of ${s.matches} matches (${s.apps} played)`, `Minutes: ${s.mins}`,
+      `Goals: ${s.goals}, assists: ${s.assists}`,
+      ...(s.npxg === null || s.npxg === undefined ? [`xG: ${s.xg.toFixed(2)} (${per(s.xg90)} per 90)`]
+        : [`npxG: ${s.npxg.toFixed(2)} (${per(s.mins ? s.npxg / (s.mins / 90) : null)} per 90)`, `Pen xG: ${(s.xg - s.npxg).toFixed(2)} (${per(s.mins ? (s.xg - s.npxg) / (s.mins / 90) : null)} per 90)`]),
+      `xA: ${s.xa.toFixed(2)} (${per(s.xa90)} per 90)`,
+      `xGI: ${s.xgi.toFixed(2)} (${per(s.xgi90)} per 90)`, `DefCon: ${s.dc} (${per(s.dc90)} per 90)`].join('\n');
+  }
   function detailText(overrides, p, g) {
     const d = view(overrides, p, g), raw = p.byGw[g];
-    if (!d || !raw) return `${p.name}, GW${g}: no match`;
+    if (!d || !raw) return `${p.name}, GW${g}: no match\n\n${seasonText(p)}`;
     const m = minutes(overrides, p, g);
-    const chances = CHANCES.filter(([key]) => raw[key] != null && !(key === 'pDefcon' && p.position === 'GK') && !((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK'))
-      .map(([key, label, fmt]) => `${label}: ${fmt === 'pct' ? `${Math.round(raw[key] * 100)}%` : fmt === 'pct1' ? `${(raw[key] * 100).toFixed(1)}%` : raw[key].toFixed(fmt)}`).join('\n');
-    const parts = Object.entries(PART_LABEL).filter(([k]) => Math.abs(d.parts[k]) >= 0.005).map(([k, label]) => `${label}: ${d.parts[k] >= 0 ? '+' : ''}${d.parts[k].toFixed(2)}`).join('\n');
-    return `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${d.xpts.toFixed(1)} points, ${join(m.mins)} minutes${d.edited ? ' (yours)' : ''}\n\nChance 90min\n${chances}\n\nPoints\n${parts}`;
+    const f = chanceFigures(overrides, p, g);
+    const chances = CHANCES.filter(([key]) => f[key] != null && !((key === 'pDefcon' || key === 'xDefcon') && p.position === 'GK') && !((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK'))
+      .map(([key, label, fmt]) => `${label}: ${fmt === 'pct' ? `${Math.round(f[key] * 100)}%` : fmt === 'pct1' ? `${(f[key] * 100).toFixed(1)}%` : f[key].toFixed(fmt)}`).join('\n');
+    return `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${d.xpts.toFixed(1)} points, ${join(m.mins)} minutes${d.edited ? ' (yours)' : ''}\n\nChance 90min\n${chances}\n\n${seasonText(p)}`;
   }
 
   return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, order, detailText };
