@@ -2351,6 +2351,55 @@ def real_parts(pred: pd.DataFrame) -> pd.DataFrame:
 CORE_GROUP = {"GK": 15, "DEF": 35, "MID": 35, "FWD": 15}  # the "core": the top scorers of the test season by position
 
 
+def team_report(pred: pd.DataFrame) -> None:
+    """Team odds tested: each club's expected goals (the other side's expected goals conceded) and clean sheet chance
+    in every match of the test season, against what happened."""
+    t = pred.dropna(subset=["ga", "gf"]).groupby(["season", "fixture", "team"], as_index=False).agg(
+        conc=("conc90", "first"), cs=("p_cs", "first"), gf=("gf", "first"), ga=("ga", "first"), home=("was_home", "first"))
+    t["opp_team"] = t.groupby(["season", "fixture"])["team"].transform(lambda x: x.iloc[::-1].to_numpy() if len(x) == 2 else x.to_numpy())
+    t = t.merge(t[["season", "fixture", "team", "conc"]].rename(columns={"team": "opp_team", "conc": "xg"}), on=["season", "fixture", "opp_team"], how="left").dropna(subset=["xg"])
+    if t.empty:
+        return
+    t["clean"] = (t["ga"] == 0).astype(float)
+    print("\n=== Team goals and clean sheets: each club's expected goals and clean sheet chance per match against what happened ===")
+    base_g = t.groupby("home")["gf"].transform("mean")  # the league's home / away average
+    print("\nGoals per match")
+    print("figure | value")
+    print(f"matches | {len(t)}")
+    print(f"expected goals, average | {t['xg'].mean():.2f}")
+    print(f"real goals, average | {t['gf'].mean():.2f}")
+    print(f"average miss | {(t['xg'] - t['gf']).abs().mean():.2f}")
+    print(f"average miss, everyone at the league home/away average | {(base_g - t['gf']).abs().mean():.2f}")
+    print(f"correlation with real goals | {np.corrcoef(t['xg'], t['gf'])[0, 1]:.2f}")
+    print("\nGoals by expected band")
+    print("expected | matches | expected average | real average")
+    for lo, hi in ((0, 0.8), (0.8, 1.1), (1.1, 1.4), (1.4, 1.7), (1.7, 2.1), (2.1, 9)):
+        x = t[(t["xg"] >= lo) & (t["xg"] < hi)]
+        if len(x):
+            print(f"{lo:.1f}-{hi:.1f} | {len(x)} | {x['xg'].mean():.2f} | {x['gf'].mean():.2f}".replace("-9.0", "+"))
+    brier = ((t["cs"] - t["clean"]) ** 2).mean()
+    base_cs = t.groupby("home")["clean"].transform("mean")
+    brier0 = ((base_cs - t["clean"]) ** 2).mean()
+    print("\nClean sheets")
+    print("figure | value")
+    print(f"predicted share | {t['cs'].mean():.1%}")
+    print(f"real share | {t['clean'].mean():.1%}")
+    print(f"Brier skill against the league home/away average | {1 - brier / brier0:.3f}")
+    print(f"AUC | {_auc(t['cs'].to_numpy(float), t['clean'].to_numpy(float)):.3f}")
+    print("\nClean sheets by predicted band")
+    print("predicted | matches | predicted average | real share")
+    for lo, hi in ((0, 0.15), (0.15, 0.25), (0.25, 0.35), (0.35, 0.45), (0.45, 1.01)):
+        x = t[(t["cs"] >= lo) & (t["cs"] < hi)]
+        if len(x):
+            print(f"{lo:.0%}-{min(hi, 1):.0%} | {len(x)} | {x['cs'].mean():.1%} | {x['clean'].mean():.1%}")
+    print("\nSeason totals by club")
+    print("club | matches | expected goals | real goals | expected clean sheets | real clean sheets")
+    s = t.groupby("team").agg(n=("xg", "size"), xg=("xg", "sum"), gf=("gf", "sum"), cs=("cs", "sum"), clean=("clean", "sum")).sort_values("gf", ascending=False)
+    for team, r in s.iterrows():
+        print(f"{team} | {int(r['n'])} | {r['xg']:.1f} | {int(r['gf'])} | {r['cs']:.1f} | {int(r['clean'])}")
+    print(f"correlation of season totals | goals {np.corrcoef(s['xg'], s['gf'])[0, 1]:.2f}, clean sheets {np.corrcoef(s['cs'], s['clean'])[0, 1]:.2f}")
+
+
 def core_report(pred: pd.DataFrame, gw: pd.DataFrame) -> None:
     """The core group (CORE_GROUP by real season points): how right xMin is for them, how right the Chance 90min figures
     are once their real minutes are put in, and whether the season ranking is right."""
@@ -2502,6 +2551,10 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
             print(f"{pos} | {m} | {t[0] / t[1]:.0%} | {t[2] / t[3]:.0%}")
 
     core_report(pred, gw)
+    try:
+        team_report(pred)
+    except Exception as e:  # the rest of the test still runs
+        print(f"Team goals and clean sheets not tested ({e})")
 
     print("\n=== Decisions: mean actual points per GW ===")
     rows = {}
