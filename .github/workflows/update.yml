@@ -2,7 +2,12 @@ name: Cap nhat xPoints
 
 on:
   schedule:
-    - cron: "0 1,10 * * *"     # 08:00 and 17:00 Vietnam time, every day
+    # 02:00 UK time (about 30 minutes after FPL's daily price changes) and 10:00 UK time. UK clocks move, so both
+    # UTC times are scheduled and the gate keeps the one that matches UK time today.
+    - cron: "0 1 * * *"        # 02:00 UK in summer (BST)
+    - cron: "0 2 * * *"        # 02:00 UK in winter (GMT)
+    - cron: "0 9 * * *"        # 10:00 UK in summer
+    - cron: "0 10 * * *"       # 10:00 UK in winter
     - cron: "30 */2 * * *"     # every 2 hours; runs only when the next deadline is under 24 hours away (see gate)
   workflow_dispatch:
     inputs:
@@ -34,7 +39,13 @@ jobs:
         run: |
           python3 - <<'PY2' >> "$GITHUB_OUTPUT"
           import json, os, urllib.request, datetime as dt
-          if os.environ.get("CRON") != "30 */2 * * *":
+          from zoneinfo import ZoneInfo
+          cron = os.environ.get("CRON", "")
+          summer = dt.datetime.now(ZoneInfo("Europe/London")).utcoffset() != dt.timedelta(0)
+          uk = {"0 1 * * *": summer, "0 9 * * *": summer, "0 2 * * *": not summer, "0 10 * * *": not summer}
+          if cron in uk:
+              print(f"go={'true' if uk[cron] else 'false'}"); raise SystemExit
+          if cron != "30 */2 * * *":
               print("go=true"); raise SystemExit
           try:
               req = urllib.request.Request("https://fantasy.premierleague.com/api/bootstrap-static/", headers={"User-Agent": "Mozilla/5.0"})
