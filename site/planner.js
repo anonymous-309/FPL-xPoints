@@ -892,10 +892,6 @@
     const say = (o) => `${label(o)}${o.rank > 1 ? ` #${o.rank}` : ''}`;
     return el('section', { className: 'options' },
       el('div', { className: 'opt-head' }, el('h3', {}, `Plans from GW${gws[0]}: tap one to see it week by week`)),
-      el('p', { className: 'opt-verdict rec' }, 'Best plan: ', el('b', { textContent: say(rec) }), (decayOn ? ` (score ${f2(rec.total)}: ${f1(rec.dpts)} xPts decay + ${f2(rec.kept)} FT bonus).`
-          : ` (score ${f2(rec.totalRaw)}: ${f1(rec.pts)} xPts + ${f2(rec.keptRaw)} FT bonus).`),
-        ` Optimised for ${state.plan.mode === 'normal' ? 'Normal points (every gameweek the same)' : 'Decay (each later gameweek × 0.85)'}, and the figures are shown that way.`,
-        mostWins === rec ? ' It is also the top scorer most often.' : el('span', {}, ' Top scorer most often: ', el('b', { textContent: say(mostWins) }), ` (${pctFine(mostWins.win)}).`)),
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' },
         el('thead', {}, el('tr', {}, thI('Uses now', 'col-uses'),
           ...gws.slice(0, depth).map((g, k) => thI(`GW${g}`, k ? '' : 'col-gw')),

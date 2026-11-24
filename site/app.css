@@ -725,3 +725,7 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 
 .moves-table .moves-total td small { display: block; }
 .week-pts .week-dec { margin-left: 4px; } .week-pts .week-dec b { font-size: 20px; color: var(--ink, #1b1b1b); }
+
+/* the plans table: its heading row scrolls with it (not stuck over the rows) */
+.opt-table thead th { position: static; }
+.options .wrap { max-height: none; min-height: 0; }
