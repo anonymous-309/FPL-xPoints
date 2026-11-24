@@ -710,3 +710,14 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 /* Viewing a pre-deadline backup */
 .backup-bar { background: #fff4c2; color: #4a3b00; border-bottom: 1px solid #e6d27a; padding: .55rem 1rem; font-size: .95rem; }
 .backup-bar a { color: inherit; font-weight: 600; }
+
+/* (i) buttons and their pop-up */
+.info-btn { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin-left: 6px; padding: 0;
+  border: 1.5px solid currentColor; border-radius: 50%; background: none; color: #1f6b4a; font: italic bold 12px/1 Georgia, serif; cursor: pointer; vertical-align: middle; }
+.set-head { margin: 12px 0 4px; font-weight: 600; display: flex; align-items: center; }
+.info-pop { position: fixed; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 1000; width: min(92vw, 440px); max-height: 80vh; overflow: auto;
+  background: #fff; border-radius: 12px; box-shadow: 0 10px 40px #0005; padding: 16px 18px 6px; font-size: 15px; line-height: 1.45; }
+.info-pop p { margin: 0 0 10px; }
+.info-close { position: absolute; top: 6px; right: 8px; border: 0; background: none; font-size: 22px; cursor: pointer; }
+.lbl-i { display: inline-flex; align-items: center; }
+.lbl-i .info-btn { width: 17px; height: 17px; font-size: 11px; }
