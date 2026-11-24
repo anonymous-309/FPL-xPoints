@@ -738,6 +738,7 @@
     saveManual();
     $('detail').hidden = true;
     if (remove) { await makePlan(state.manual); return; }
+    $('out').replaceChildren();
     $('manual').hidden = false;
     $('manualOpen').setAttribute('aria-expanded', 'true');
     state.mt = t;
@@ -802,7 +803,7 @@
   function optionsView(P, options, gws) {
     const depth = state.plan.depth;
     const bestRaw = Math.max(...options.map((o) => o.totalRaw ?? -Infinity)), bestT = Math.max(...options.map((o) => o.total)), bestWin = Math.max(...options.map((o) => o.win));
-    const label = (o) => (o.manual ? 'My moves' : o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
+    const label = (o) => (o.manual ? 'My transfers' : o.count === null ? (state.plan.chips.wildcard || []).includes(0) ? 'Wildcard' : 'Free Hit'
       : o.roll ? (o.count ? 'Forced only' : 'Save') : o.count > state.team.ft ? `${state.team.ft} FT + ${o.count - state.team.ft} hit` : `${o.count} FT`);
     const order = { GK: 0, DEF: 1, MID: 2, FWD: 3 };
     const byPos = (a, b) => order[P[a].position] - order[P[b].position] || P[b].price - P[a].price;
@@ -1064,6 +1065,8 @@
   async function go() {
     const entry = $('entry').value.trim();
     if (!/^\d+$/.test(entry) || !state.data) return;
+    $('manual').hidden = true;  // Suggest transfers: the own-transfers pitch is put away
+    $('manualOpen').setAttribute('aria-expanded', 'false');
     try {
       await loadTeam(entry);  // read the team again each time, so the plan starts from FPL's latest data
       // a name typed in a Keep, Avoid or Force box counts even if Add was not pressed
@@ -1321,6 +1324,7 @@
     $('manual').hidden = !open;
     $('manualOpen').setAttribute('aria-expanded', String(open));
     if (open) {
+      $('out').replaceChildren();  // Plan my own transfers: the suggested plans are put away
       const entry = $('entry').value.trim();
       if (/^\d+$/.test(entry) && (!state.team || state.entry !== entry)) { try { await loadTeam(entry); } catch (e) { showError(e.message); } }
       manualWeeks();
@@ -1366,7 +1370,7 @@
       settingsForm();
       // read the team so its chips show, but only plan when asked: a plan takes a while
       const entry = $('entry').value.trim();
-      $('out').replaceChildren(el('p', { className: 'working', textContent: entry ? 'Choose the gameweeks, chips and settings, then press Suggest moves or Plan my own moves.' : 'Enter your FPL team ID to start. Not sure what it is? Open "Where do I find my ID?" above.' }));
+      $('out').replaceChildren(el('p', { className: 'working', textContent: entry ? 'Choose the gameweeks, chips and settings, then press Suggest transfers or Plan my own transfers.' : 'Enter your FPL team ID to start. Not sure what it is? Open "Where do I find my ID?" above.' }));
       if (!entry) { const h = document.querySelector('.id-help'); if (h) h.open = true; }
       if (/^\d+$/.test(entry)) loadTeam(entry).catch((e) => { showError(e.message); $('status').textContent = 'Enter an FPL team ID'; });
     })
