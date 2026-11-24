@@ -673,9 +673,12 @@
   }
 
   // ---- display ----
+  // Weekly figures on the pitch, shown as set in Show & optimise: Decay (week t × 0.85^t) or Normal
+  const weekF = (t, mode) => (mode === 'normal' ? 1 : Math.pow(PLAN.decay, t));
+  const ptsLabel = (mode) => (mode === 'normal' ? ' xPts' : ' xPts Decay');
   function card(P, i, t, w, isNew) {
     const p = P[i];
-    const pts = p.xp[t] * (i === w.cap ? w.mult : 1);
+    const pts = p.xp[t] * (i === w.cap ? w.mult : 1) * weekF(t, state.plan.mode);
     const badges = [];
     if (i === w.cap) badges.push(el('span', { className: 'pp-badge cap', textContent: w.mult === 3 ? 'TC' : 'C', title: w.mult === 3 ? 'Triple captain' : 'Captain' }));
     else if (i === w.vice) badges.push(el('span', { className: 'pp-badge vice', textContent: 'V', title: 'Vice-captain' }));
@@ -787,7 +790,7 @@
     return el('section', { className: 'week-view' },
       el('div', { className: 'week-head' },
         el('h2', {}, `GW${gws[t]}`, w.chip ? el('span', { className: 'chip-tag', textContent: CHIP_LABEL[w.chip] }) : ''),
-        el('div', { className: 'week-pts' }, el('b', { textContent: f1(w.xpts) }), el('span', { textContent: ' xPts' }))),
+        el('div', { className: 'week-pts' }, el('b', { textContent: f1(w.xpts * weekF(t, state.plan.mode)) }), el('span', { textContent: ptsLabel(state.plan.mode) }))),
       el('p', { className: 'meta', textContent: facts.join(', ') + (facts.length ? '. ' : '') + (w.subs > 0.05 ? `Auto-subs add about ${f1(w.subs)}.` : '') }),
       moves,
       el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows),
@@ -899,7 +902,7 @@
     const gain = total - hold;
     const tabs = el('div', { className: 'seg week-tabs', role: 'tablist' }, ...weeks.map((w, k) => {
       const b = el('button', { type: 'button', role: 'tab', onclick: () => { state.week = k; render(); } },
-        el('span', { textContent: `GW${gws[k]}` }), el('small', { textContent: f1(w.xpts) + (w.chip ? ` · ${w.chip === '3xc' ? 'TC' : w.chip === 'bboost' ? 'BB' : w.chip === 'freehit' ? 'FH' : 'WC'}` : '') }));
+        el('span', { textContent: `GW${gws[k]}` }), el('small', { textContent: f1(w.xpts * weekF(k, state.plan.mode)) + (w.chip ? ` · ${w.chip === '3xc' ? 'TC' : w.chip === 'bboost' ? 'BB' : w.chip === 'freehit' ? 'FH' : 'WC'}` : '') }));
       b.setAttribute('aria-selected', String(k === state.week));
       b.setAttribute('aria-pressed', String(k === state.week));
       return b;
@@ -1183,7 +1186,7 @@
       const cardEl = el('div', { className: `pp-card${state.replacing === p.id ? ' on' : ''}`, tabIndex: 0, role: 'button', title: `${p.name}: tap to replace him or see his figures` },
         el('div', { className: 'pp-badges' }, ...badges), shirt(p.team, p.position === 'GK'),
         el('span', { className: 'pp-name', textContent: p.name }),
-        el('span', { className: 'pp-pts', textContent: f1((v ? v.xpts : 0) * (isCap ? 2 : 1)) }),
+        el('span', { className: 'pp-pts', textContent: f1((v ? v.xpts : 0) * (isCap ? 2 : 1) * weekF(t, state.optMode)) }),
         el('span', { className: 'pp-opp', textContent: v ? fixture(v.opp) : 'Blank' }));
       const open = () => manualDetail(p.id);
       cardEl.addEventListener('click', open);
@@ -1214,7 +1217,7 @@
     }
     const facts = `${ft} free transfer${ft === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''} (−${hits * S.HIT})` : 'no hit'}, bank £${c.bankAfter(t).toFixed(1)} after.`;
     const view = el('section', { className: 'week-view' },
-      el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), el('div', { className: 'week-pts' }, el('b', { textContent: f1(total) }), el('span', { textContent: ' xPts' }))),
+      el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), el('div', { className: 'week-pts' }, el('b', { textContent: f1(total * weekF(t, state.optMode)) }), el('span', { textContent: ptsLabel(state.optMode) }))),
       el('p', { className: 'meta', textContent: facts }), movesEl,
       el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows), bench);
     const parts = [tabs, view];
@@ -1355,7 +1358,7 @@
 
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
   $('optMode').value = state.optMode;
-  $('optMode').addEventListener('change', () => { state.optMode = $('optMode').value; try { localStorage.setItem('planner-opt', state.optMode); } catch (e) { /* private mode */ } });
+  $('optMode').addEventListener('change', () => { state.optMode = $('optMode').value; try { localStorage.setItem('planner-opt', state.optMode); } catch (e) { /* private mode */ } if (!$('manual').hidden) manualWeeks(); });
   $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); if (!$('manual').hidden) manualWeeks(); });
   ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
