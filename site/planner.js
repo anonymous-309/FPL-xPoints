@@ -675,7 +675,9 @@
   // ---- display ----
   // Weekly figures on the pitch, shown as set in Show & optimise: Decay (week t × 0.85^t) or Normal
   const weekF = (t, mode) => (mode === 'normal' ? 1 : Math.pow(PLAN.decay, t));
-  const ptsLabel = (mode) => (mode === 'normal' ? ' xPts' : ' xPts Decay');
+  // A gameweek's total: normal points and decay points (week t × 0.85^t) side by side
+  const weekPts = (x, t) => el('div', { className: 'week-pts' }, el('b', { textContent: f1(x) }), el('span', { textContent: ' xPts' }),
+    el('span', { className: 'week-dec' }, ' · ', el('b', { textContent: f1(x * weekF(t, 'decay')) }), ' Decay'));
   function card(P, i, t, w, isNew) {
     const p = P[i];
     const pts = p.xp[t] * (i === w.cap ? w.mult : 1) * weekF(t, state.plan.mode);
@@ -806,7 +808,7 @@
     return el('section', { className: 'week-view' },
       el('div', { className: 'week-head' },
         el('h2', {}, `GW${gws[t]}`, w.chip ? el('span', { className: 'chip-tag', textContent: CHIP_LABEL[w.chip] }) : ''),
-        el('div', { className: 'week-pts' }, el('b', { textContent: f1(w.xpts * weekF(t, state.plan.mode)) }), el('span', { textContent: ptsLabel(state.plan.mode) }))),
+        weekPts(w.xpts, t)),
       el('p', { className: 'meta', textContent: facts.join(', ') + (facts.length ? '. ' : '') + (w.subs > 0.05 ? `Auto-subs add about ${f1(w.subs)}.` : '') }),
       moves,
       el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows),
@@ -1236,7 +1238,7 @@
     }
     const facts = `${ft} free transfer${ft === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''} (−${hits * S.HIT})` : 'no hit'}, bank £${c.bankAfter(t).toFixed(1)} after.`;
     const view = el('section', { className: 'week-view' },
-      el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), el('div', { className: 'week-pts' }, el('b', { textContent: f1(total * weekF(t, state.optMode)) }), el('span', { textContent: ptsLabel(state.optMode) }))),
+      el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), weekPts(total, t)),
       el('p', { className: 'meta', textContent: facts }), movesEl,
       el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows), bench);
     const parts = [tabs, view];

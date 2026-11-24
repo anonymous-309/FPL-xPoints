@@ -724,3 +724,4 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 .lbl-i .info-btn { width: 17px; height: 17px; font-size: 11px; }
 
 .moves-table .moves-total td small { display: block; }
+.week-pts .week-dec { margin-left: 4px; } .week-pts .week-dec b { font-size: 20px; color: var(--ink, #1b1b1b); }
