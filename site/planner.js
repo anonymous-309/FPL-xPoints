@@ -371,7 +371,7 @@
     : [...Array(Math.max(1, T - t)).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
   // What the plans are optimised for, chosen before Auto plan: Decay (each later gameweek 0.85 times the one before)
   // or Normal (every gameweek the same). The switch over the results still shows either kind of figure.
-  state.optMode = (() => { try { return localStorage.getItem('planner-opt') === 'normal' ? 'normal' : 'decay'; } catch (e) { return 'decay'; } })();
+  state.optMode = (() => { try { return localStorage.getItem('planner-opt-v2') === 'decay' ? 'decay' : 'normal'; } catch (e) { return 'normal'; } })();  // Normal unless chosen
   const optDecay = () => (state.optMode === 'normal' ? 1 : PLAN.decay);
   const ftLeft = (w) => (w.chip === 'wildcard' || w.chip === 'freehit' ? w.freeTransfers : Math.max(w.freeTransfers - Math.min(w.ins.length, w.freeTransfers), 0));
 
@@ -853,7 +853,7 @@
     const facts = (w, g) => {
       const out = [];
       if (w.chip !== 'wildcard' && w.chip !== 'freehit') out.push(el('small', { className: 'itb ft-saved', textContent: `FT saved: ${ftLeft(w)}` }));
-      if (w.bank !== null && w.bank !== undefined) out.push(el('small', { className: w.t > 0 && w.bank < BANK_BUFFER * (w.t + 1) - 1e-6 ? 'itb tight' : 'itb', textContent: `Budget saved £${f1(w.bank)}m` }));
+      if (w.bank !== null && w.bank !== undefined) out.push(el('small', { className: w.t > 0 && w.ins.length && w.chip !== 'freehit' && w.bank < BANK_BUFFER * (w.t + 1) - 1e-6 ? 'itb tight' : 'itb', textContent: `Budget saved £${f1(w.bank)}m` }));
       if (g) {
         out.push(el('small', { className: 'itb gw-gain', textContent: `${sign(g.now)} GW${gws[w.t]}` }));
         out.push(el('small', { className: 'itb gw-gain', textContent: decayOn ? `${sign(g.dec)} decay to GW${gws[T - 1]}` : `${sign(g.raw)} to GW${gws[T - 1]}` }));
@@ -1395,7 +1395,7 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('infoPop').hidden = true; });
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
   $('optMode').value = state.optMode;
-  $('optMode').addEventListener('change', () => { state.optMode = $('optMode').value; try { localStorage.setItem('planner-opt', state.optMode); } catch (e) { /* private mode */ } if (!$('manual').hidden) manualWeeks(); });
+  $('optMode').addEventListener('change', () => { state.optMode = $('optMode').value; try { localStorage.setItem('planner-opt-v2', state.optMode); } catch (e) { /* private mode */ } if (!$('manual').hidden) manualWeeks(); });
   $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); if (!$('manual').hidden) manualWeeks(); });
   ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
