@@ -20,27 +20,30 @@
   const pct = (v) => `${Math.round(v * 100)}%`;
   // The same figures as the Chance page: everything except appearances assumes a full 90 minutes.
   const CHANCES = [
-    ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'], ['pScore', 'Score 1+', 'pct'], ['npxGoals', 'NPxGoals', 2], ['xPenGoals', 'Pen goals', 2],
-    ['pAssist', 'Assist 1+', 'pct'], ['xAssists', 'xAssists', 2], ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2],
-    ['pDefcon', 'DefCon', 'pct'], ['xSaves', 'Saves', 1], ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'],
-    ['pOwnGoal', 'Own goal', 'pct1'], ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['bonus', 'Bonus', 2],
+    ['pStart', 'Start', 'pct'], ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'],
+    ['pScore', 'Score 1+', 'pct'], ['npxGoals', 'NPxGoals', 2], ['xPenGoals', 'Pen goals', 2], ['pAssist', 'Fantasy Assist 1+', 'pct'], ['xAssists', 'xAssists', 2],
+    ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2], ['pDefcon', 'DefCon', 'pct'], ['xDefcon', 'DefCon actions', 1], ['xSaves', 'Saves', 1],
+    ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'], ['pOwnGoal', 'Own goal', 'pct1'],
+    ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['xBps', 'BPS', 0], ['bonus', 'Bonus', 2],
   ];
   // Goals split into open play and penalties, as on the Chance 90min page (penalty share with the Minutes page edits).
   function goalsSplit(p, g) {
     const d = p.byGw[g];
     const miss = p.penMiss == null ? 0.22 : p.penMiss;
-    let penModel = 0, pen = 0;
+    let penModel = 0, pen = 0, missed = 0;
     (d.fx || []).forEach((_, j) => {
       const tp = d.tp ? d.tp[j] : 0;
       penModel += (d.pc ? d.pc[j] : 0) * tp * (1 - miss);
-      pen += XMin.penCond(state.overrides, p, g, j) * tp * (1 - miss);
+      const pens = XMin.penCond(state.overrides, p, g, j) * tp;
+      pen += pens * (1 - miss);
+      missed += pens * miss;
     });
     const np = Math.max(0, d.xGoals - penModel);
-    return { ...d, npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)) };
+    return { ...d, pStart: XMin.startChance(state.overrides, p, g), npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)), pPenMiss: d.fx ? 1 - Math.exp(-missed) : d.pPenMiss };
   }
   function chanceText(p, g) {
     const d = goalsSplit(p, g);
-    return CHANCES.filter(([key]) => !(key === 'pDefcon' && p.position === 'GK') && !((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK'))
+    return CHANCES.filter(([key]) => !((key === 'pDefcon' || key === 'xDefcon') && p.position === 'GK') && !((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK') && d[key] != null)
       .map(([key, label, fmt]) => `${label}: ${fmt === 'pct' ? `${Math.round(d[key] * 100)}%` : fmt === 'pct1' ? `${(d[key] * 100).toFixed(1)}%` : d[key].toFixed(fmt)}`)
       .join('\n');
   }
