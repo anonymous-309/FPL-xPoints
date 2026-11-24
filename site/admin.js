@@ -197,7 +197,7 @@
       ['injTeam', 'minTeam'].forEach((id) => $(id).replaceChildren(el('option', { value: '', textContent: 'All' }), ...teams.map((t) => el('option', { value: t, textContent: t }))));
       $('tabs').hidden = false;
       $('refreshBox').hidden = false;
-      $('lastUpdate').textContent = `Site data from ${new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}. It updates by itself at 10:17 and 22:17, every 2 hours from Friday to Sunday, and after every save here.`;
+      $('lastUpdate').textContent = `Site data from ${new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })}. It updates by itself at 08:00 and 17:00 (Vietnam time), every 2 hours in the 24 hours before a deadline, and after every save here.`;
       showTab(store.get('admin-tab') || 'abs');
       pickList('inj');
       pickList('min');
