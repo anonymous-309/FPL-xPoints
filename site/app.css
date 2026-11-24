@@ -740,3 +740,16 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 .odds-team { font-size: 17px; }
 .odds-num { text-align: center; padding: 5px 0; border-radius: 4px; font-variant-numeric: tabular-nums; font-weight: 600; }
 .odds-grid small { color: var(--muted); }
+.odds-wrap { max-height: none; min-height: 0; }
+.odds-table { width: 100%; border-collapse: collapse; }
+.odds-table thead th { position: static; text-align: left; padding: 6px 10px; }
+.odds-table thead th.num { text-align: right; }
+.odds-table th button { background: none; border: 0; font: inherit; font-weight: 650; cursor: pointer; padding: 0; color: inherit; }
+.odds-table td { padding: 7px 8px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
+.odds-table td.num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+#tableBox[hidden], #list[hidden], #matchSort[hidden] { display: none; }
+.odds-table th, .odds-table td { min-width: 0; width: auto; }
+.odds-table thead th { white-space: normal; }
+.odds-table td.num { padding: 7px 8px; }
+.odds-table th button { white-space: normal; text-align: inherit; line-height: 1.2; }
+.odds-table td.odds-tname { white-space: normal; }

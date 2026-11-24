@@ -4,7 +4,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props || {}); n.append(...kids.filter((k) => k !== null && k !== undefined && k !== '')); return n; };
-  const state = { matches: {}, gws: [], sort: 'time', names: {} };
+  const state = { matches: {}, gws: [], sort: 'time', names: {}, view: 'table', tsort: 'goals', tdir: -1 };
 
   function build(fdr, fx) {
     const kick = new Map(); // "HOME-AWAY-gw" -> kick-off
@@ -26,7 +26,38 @@
   const shade = (x, lo, hi) => { const a = Math.max(0, Math.min(1, (x - lo) / (hi - lo))); return `rgba(16, 122, 70, ${(0.08 + 0.55 * a).toFixed(2)})`; };
   const when = (t) => (t ? new Date(t).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : 'Time to be set');
 
+  // Table: one row per team and match, sortable by any column
+  function renderTable() {
+    const gw = $('gw').value;
+    const rows = [];
+    (state.matches[gw] || []).forEach((m) => {
+      rows.push({ team: m.home, home: true, opp: m.away, goals: m.hxg, cs: m.hcs });
+      rows.push({ team: m.away, home: false, opp: m.home, goals: m.axg, cs: m.acs });
+    });
+    const name = (t) => state.names[t] || t;
+    const cols = [['team', 'Team'], ['opp', 'Opponent'], ['goals', 'Goals'], ['cs', 'Clean sheet']];
+    const val = { team: (r) => name(r.team), opp: (r) => r.opp, goals: (r) => r.goals, cs: (r) => r.cs };
+    const k = state.tsort;
+    rows.sort((a, b) => { const x = val[k](a), y = val[k](b); return (typeof x === 'string' ? x.localeCompare(y) : x - y) * state.tdir || b.goals - a.goals; });
+    $('oddsTable').tHead.replaceChildren(el('tr', {}, ...cols.map(([key, label]) => {
+      const th = el('th', { scope: 'col', className: key === 'goals' || key === 'cs' ? 'num' : '' }, el('button', { type: 'button', textContent: label + (key === k ? (state.tdir < 0 ? ' ▼' : ' ▲') : ''), onclick: () => {
+        if (state.tsort === key) state.tdir *= -1; else { state.tsort = key; state.tdir = key === 'team' || key === 'opp' ? 1 : -1; }
+        renderTable();
+      } }));
+      return th;
+    })));
+    $('oddsTable').tBodies[0].replaceChildren(...rows.map((r) => el('tr', {},
+      el('td', { className: 'odds-tname' }, el('b', { textContent: name(r.team) }), ` (${r.home ? 'H' : 'A'})`),
+      el('td', { textContent: r.opp, title: name(r.opp) }),
+      el('td', { className: 'num odds-cell', style: `background:${shade(r.goals, 0.6, 2.4)}`, textContent: r.goals.toFixed(2) }),
+      el('td', { className: 'num odds-cell', style: `background:${shade(r.cs, 0.1, 0.55)}`, textContent: pct(r.cs) }))));
+  }
+
   function render() {
+    $('tableBox').hidden = state.view !== 'table';
+    $('list').hidden = state.view === 'table';
+    $('matchSort').hidden = state.view === 'table';
+    if (state.view === 'table') { renderTable(); return; }
     const gw = $('gw').value;
     const list = (state.matches[gw] || []).slice();
     const key = { time: (m) => (m.t ? Date.parse(m.t) : 9e15), goals: (m) => -(m.hxg + m.axg), cs: (m) => -Math.max(m.hcs, m.acs) }[state.sort];
@@ -53,6 +84,11 @@
     render();
   }));
   $('gw').addEventListener('change', render);
+  document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => {
+    state.view = b.dataset.view;
+    document.querySelectorAll('[data-view]').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    render();
+  }));
 
   Promise.all(['fdr.json', 'fixtures.json'].map((f) => fetch(f, { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(`${f}: HTTP ${r.status}`); return r.json(); })))
     .then(([fdr, fx]) => {

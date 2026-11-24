@@ -17,17 +17,22 @@
 <div id="error" class="error" role="alert" hidden></div>
 <form id="filters" class="filters" autocomplete="off">
   <label>Gameweek <select id="gw"></select></label>
-  <div class="seg" role="group" aria-label="Order">
+  <div class="seg" role="group" aria-label="View">
+    <button type="button" data-view="table" aria-pressed="true">Table</button>
+    <button type="button" data-view="matches" aria-pressed="false">Matches</button>
+  </div>
+  <div id="matchSort" class="seg" role="group" aria-label="Order" hidden>
     <button type="button" data-sort="time" aria-pressed="true">Kick-off</button>
     <button type="button" data-sort="goals" aria-pressed="false">Most goals</button>
     <button type="button" data-sort="cs" aria-pressed="false">Best clean sheet</button>
   </div>
 </form>
 <main class="odds">
-  <div id="list"></div>
+  <div id="tableBox" class="wrap odds-wrap"><table id="oddsTable" class="odds-table"><thead></thead><tbody></tbody></table></div>
+  <div id="list" hidden></div>
 </main>
 <footer>
-  <p><b>Goals</b>: each team's expected goals in the match (home team first), from the same team model as the xPoints page: attack and defence ratings from recent matches, home advantage and the opponent. <b>CS</b>: the chance the team keeps a clean sheet, that is the chance the opponent scores no goal. Kick-off times are in your device's time zone. Not affiliated with the Premier League.</p>
+  <p><b>Table</b>: one row per team and match; tap a heading to sort. <b>Goals</b>: each team's expected goals in the match (home team first), from the same team model as the xPoints page: attack and defence ratings from recent matches, home advantage and the opponent. <b>CS</b>: the chance the team keeps a clean sheet, that is the chance the opponent scores no goal. Kick-off times are in your device's time zone. Not affiliated with the Premier League.</p>
 </footer>
 <script src="teamodds.js"></script>
 <script src="nav.js"></script>
