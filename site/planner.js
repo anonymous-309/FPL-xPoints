@@ -879,15 +879,22 @@
         ` Optimised for ${state.plan.mode === 'normal' ? 'Normal points (every gameweek the same)' : 'Decay (each later gameweek × 0.85)'}, and the figures are shown that way.`,
         mostWins === rec ? ' It is also the top scorer most often.' : el('span', {}, ' Top scorer most often: ', el('b', { textContent: say(mostWins) }), ` (${pctFine(mostWins.win)}).`)),
       el('div', { className: 'wrap' }, el('table', { className: 'opt-table route-table' },
-        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Uses now' }),
-          ...gws.slice(0, depth).map((g) => el('th', { scope: 'col', textContent: `GW${g}` })),
-          el('th', { scope: 'col', className: 'num', textContent: decayOn ? 'xPts Decay' : 'xPts' }), el('th', { scope: 'col', className: 'num', textContent: decayOn ? 'Gain Decay' : 'Gain' }),
-          el('th', { scope: 'col', className: 'num', textContent: 'FT bonus' }),
-          el('th', { scope: 'col', className: 'num', textContent: 'Score' }), el('th', { scope: 'col', className: 'num', textContent: 'Best' }))),
+        el('thead', {}, el('tr', {}, thI('Uses now', 'col-uses'),
+          ...gws.slice(0, depth).map((g, k) => thI(`GW${g}`, k ? '' : 'col-gw')),
+          thI(decayOn ? 'xPts Decay' : 'xPts', 'col-xpts', 'num'), thI(decayOn ? 'Gain Decay' : 'Gain', 'col-gain', 'num'),
+          thI('FT bonus', 'col-ftb', 'num'),
+          thI('Score', 'col-score', 'num'), thI('Best', 'col-best', 'num'))),
         el('tbody', {}, ...rows))),
       el('details', { className: 'plan-settings plan-explain' }, el('summary', { textContent: 'Explanation' }), ...(() => { const x = $('info-auto').cloneNode(true); x.removeAttribute('id'); return [...x.childNodes]; })(), el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. Figures follow your choice before planning (Show & optimise): Decay counts each later gameweek ${PLAN.decay} times the one before, Normal counts every gameweek the same; the plans are worked out and the Best one picked the same way. xPts (Decay): expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Gain (Decay): the plan's expected points against keeping your squad as it is; it is the sum of the figures under each gameweek's moves. Under each gameweek's moves: FT saved, the free transfers left after that gameweek's transfers; ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan against the squad before them (weighed 0.85 a week from the first gameweek when Decay is on). FT bonus: in every transfer gameweek each free transfer saved is worth ${FTB_X} (${FTB_CAP} at most, so ${FTB_X * FTB_CAP} points), and those saved after GW${gws[depth - 1]} earn it again in every gameweek to GW${gws[gws.length - 1]} (not the free transfers gained in those weeks, which are the same for every plan). Score: xPts + FT bonus; the plan with the most is marked Best. Rule for every gameweek without a hit: its moves must gain at least ${FTB_X} for each free transfer they use, in that same gameweek, except the 5th free transfer with 5 in hand, which cannot be saved anyway (a week with a hit is exempt, since a hit pays back over the weeks after); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out and the next best takes its place. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` })));
   }
 
+  // a column heading with an (i) for its explanation (a hidden block in planner.html)
+  function thI(text, info, cls) {
+    const th = el('th', { scope: 'col', className: cls || '' }, el('span', { className: 'lbl-i' }, text,
+      info ? el('button', { type: 'button', className: 'info-btn', 'aria-label': `About ${text}` }, 'i') : ''));
+    if (info) th.querySelector('.info-btn').dataset.info = `info-${info}`;
+    return th;
+  }
   const pctFine = (x) => (x < 0.1 ? `${(Math.round(x * 1000) / 10).toFixed(1)}%` : pct(x));
 
   function render() {
