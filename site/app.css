@@ -729,3 +729,14 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 /* the plans table: its heading row scrolls with it (not stuck over the rows) */
 .opt-table thead th { position: static; }
 .options .wrap { max-height: none; min-height: 0; }
+
+/* Team odds */
+.odds { padding: 0 clamp(16px, 3vw, 36px) 24px; display: grid; gap: 12px; }
+#list { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+.odds-card { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px 12px; }
+.odds-when { margin: 0 0 8px; color: var(--muted); font-size: 13px; }
+.odds-grid { display: grid; grid-template-columns: 1fr 72px 72px 18px; gap: 6px 8px; align-items: center; }
+.odds-h { font-size: 12px; color: var(--muted); text-align: center; }
+.odds-team { font-size: 17px; }
+.odds-num { text-align: center; padding: 5px 0; border-radius: 4px; font-variant-numeric: tabular-nums; font-weight: 600; }
+.odds-grid small { color: var(--muted); }
