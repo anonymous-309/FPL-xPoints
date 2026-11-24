@@ -780,7 +780,23 @@
           return el('tr', {},
             el('td', { className: 'outp' }, el('b', { textContent: P[o].name }), el('small', { textContent: ` ${P[o].team} ${P[o].position} £${(P[o].owned ? P[o].sell : P[o].price).toFixed(1)} · ${f1(P[o].xp[t])} xPts` })),
             el('td', { className: 'inp' }, n !== undefined ? el('b', { textContent: P[n].name }) : '', n !== undefined ? el('small', { textContent: ` ${P[n].team} ${P[n].position} £${P[n].price.toFixed(1)} · ${f1(P[n].xp[t])} xPts` }) : ''));
-        })));
+        })),
+        // Total under the players in: what this gameweek's moves gain, free transfers left and money left (as in the plans table)
+        (() => {
+          const o = state.plan.options[Math.min(state.plan.pick, state.plan.options.length - 1)];
+          const g = o && o.gains ? o.gains[t] : null;
+          const T = gws.length, decayOn = state.plan.mode !== 'normal';
+          const sign = (x) => `${x >= 0 ? '+' : '−'}${f1(Math.abs(x))}`;
+          const lines = [];
+          if (g) {
+            lines.push(`${sign(g.now)} GW${gws[t]}`);
+            lines.push(decayOn ? `${sign(g.dec)} decay to GW${gws[T - 1]}` : `${sign(g.raw)} to GW${gws[T - 1]}`);
+          }
+          if (w.chip !== 'wildcard' && w.chip !== 'freehit') lines.push(`FT saved: ${ftLeft(w)}`);
+          if (w.bank !== null && w.bank !== undefined) lines.push(`ITB: ${f1(w.bank)}m`);
+          return el('tfoot', {}, el('tr', { className: 'moves-total' }, el('td', {}),
+            el('td', { className: 'inp' }, el('b', { textContent: 'Total' }), ...lines.map((x) => el('small', { textContent: x })))));
+        })());
     }
     const facts = [];
     if (w.transfersAllowed && !w.chip) facts.push(`${w.freeTransfers} free transfer${w.freeTransfers === 1 ? '' : 's'}`, w.hits ? `${w.hits} hit${w.hits > 1 ? 's' : ''} (−${w.hits * S.HIT})` : 'no hit');

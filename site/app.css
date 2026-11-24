@@ -722,3 +722,5 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 .info-close { position: absolute; top: 6px; right: 8px; border: 0; background: none; font-size: 22px; cursor: pointer; }
 .lbl-i { display: inline-flex; align-items: center; }
 .lbl-i .info-btn { width: 17px; height: 17px; font-size: 11px; }
+
+.moves-table .moves-total td small { display: block; }
