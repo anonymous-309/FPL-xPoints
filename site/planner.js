@@ -442,7 +442,7 @@
     const index = new Map(P.map((p, i) => [p.id, i]));
     // After the transfer weeks the squad stays, so those gameweeks are searched as one (their points summed, each
     // weighed as usual) to keep the search small; their starting 11, captain and bench are picked afterwards.
-    const depth = Math.min(PLAN.depth, T);
+    const depth = manual ? T : Math.min(PLAN.depth, T); // your own transfers: any of the gameweeks planned
     const merge = T > depth + 1 && !Object.values(chips).some((arr) => (arr || []).some((t) => t >= depth));
     const Tm = merge ? depth + 1 : T;
     const OD = optDecay();
@@ -621,7 +621,7 @@
       const rec = options.reduce((b, o) => (score(o) > score(b) ? o : b), options[0]);
       const holdW = holdWeeks(P, T);
       options.forEach((o) => { o.gainDecay = o.dpts - holdW.reduce((a, x, t) => a + wt(t) * x, 0); });
-      state.plan = { gws, P, options, chips, skipped, dropped, force: base.force, status: worst, hold: holdW.reduce((a, b) => a + b, 0), holdW, pick: options.indexOf(rec), rec, depth, mode: state.optMode };
+      state.plan = { gws, P, options, chips, skipped, dropped, force: base.force, status: worst, hold: holdW.reduce((a, b) => a + b, 0), holdW, pick: options.indexOf(rec), rec, depth, mode: state.optMode, manual: !!manual };
       state.week = 0;
       render();
     } catch (e) {
@@ -753,12 +753,12 @@
     }
     saveManual();
     $('detail').hidden = true;
-    if (remove) { await makePlan(state.manual); return; }
     $('out').replaceChildren();
     $('manual').hidden = false;
     $('manualOpen').setAttribute('aria-expanded', 'true');
     state.mt = t;
-    state.replacing = outId;
+    ownSig = '';
+    state.replacing = remove ? null : outId;
     manualWeeks();
     const ch = document.querySelector('.chooser');
     if (ch) ch.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -939,6 +939,7 @@
       state.plan.dropped ? el('p', { className: 'meta', textContent: `${state.plan.dropped} plan${state.plan.dropped > 1 ? 's were' : ' was'} left out: ${state.plan.dropped > 1 ? 'their' : 'its'} GW${gws[0]} moves gain less that gameweek than the free transfers they use cost.` }) : '',
       state.plan.skipped ? el('p', { className: 'meta', textContent: `${state.plan.skipped} of the plans could not be worked out (the solver ran out of memory on this device) and are left out.` }) : '',
       /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
+    if (state.plan.manual) { $('out').replaceChildren(optionsView(P, options, gws), fhView(P, pick, gws)); return; }
     $('out').replaceChildren(optionsView(P, options, gws), fhView(P, pick, gws), ...(summary.children.length ? [summary] : []), tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
   }
 
@@ -1129,13 +1130,13 @@
   }
   // Manual plan on the pitch, as on FPL's transfers page: one tab per transfer gameweek showing the squad that week;
   // tap a player for his figures, then Replace (pick who comes in: same position, affordable, best first) or, for one
-  // bought that week, Remove (take the move back). Then "Work out manual plan" scores it like the automatic ones.
+  // bought that week, Remove (take the move back). Your moves are scored as a plan below as soon as they change.
   const ORDER = (p) => 'GKDEFMIDFWD'.indexOf(p.position);
   state.mt = 0;          // the gameweek tab on show in Manual plan
   state.replacing = null; // the player being replaced (id), while the list of players to bring in is open
   function manualCtx() {
     const gws = horizonGws();
-    const depth = Math.min(PLAN.depth, gws.length);
+    const depth = gws.length; // My own transfers: every gameweek planned
     const byId = new Map(state.data.players.map((p) => [p.id, p]));
     const sellNow = new Map(state.team.squad.map((x) => [x.id, x.sell !== undefined ? x.sell : x.price]));
     const sellOf = (id) => (sellNow.has(id) ? sellNow.get(id) : (byId.get(id) || {}).price || 0);
@@ -1222,8 +1223,15 @@
     let movesEl;
     if (!moves.length) movesEl = el('p', { className: 'meta', textContent: 'No transfer: save it. Tap a player to replace him.' });
     else {
+      // the same figures as the plan row below once it is worked out (until then, worked out here)
+      const solved = state.plan && state.plan.manual && state.plan.sig === ownSig && ownSig === ownKey() && state.plan.options[0].gains ? state.plan.options[0].gains[t] : null;
+      const wg = solved ? { week: solved.now, total: d === 1 ? solved.raw : solved.dec } : weekGain(c, t, d);
+      const last = c.gws[c.gws.length - 1];
+      const lines = [`${signed(wg.week)} GW${g}`, d === 1 ? `${signed(wg.total)} to GW${last}` : `${signed(wg.total)} decay to GW${last}`];
+      if (hits) lines.push(`${hits} hit${hits > 1 ? 's' : ''}`);
+      lines.push(`FT saved: ${Math.max(0, ft - moves.length)}`, `Budget saved: £${f1(c.bankAfter(t))}m`);
       movesEl = el('table', { className: 'moves-table' },
-        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Out' }), el('th', { scope: 'col', textContent: 'In' }), el('th', { scope: 'col', className: 'num', textContent: `Real gain to GW${c.gws[c.gws.length - 1]} (this GW)`, title: 'Team points with the move minus without it: best 11 and captain each week, hits taken off' }), el('th', { textContent: '' }))),
+        el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Out' }), el('th', { scope: 'col', textContent: 'In' }), el('th', { textContent: '' }))),
         el('tbody', {}, ...moves.map((m, k) => {
           const o = c.byId.get(m.out), n = c.byId.get(m.in);
           const undo = el('button', { type: 'button', className: 'linkbtn', textContent: '×', title: 'Take this move back' });
@@ -1231,13 +1239,12 @@
           return el('tr', {},
             el('td', { className: 'outp' }, el('b', { textContent: o.name }), el('small', { textContent: ` ${o.team} ${o.position} £${c.sellOf(o.id).toFixed(1)} · ${f1(xpOf(o, g))} xPts` })),
             el('td', { className: 'inp' }, el('b', { textContent: n.name }), el('small', { textContent: ` ${n.team} ${n.position} £${n.price.toFixed(1)} · ${f1(xpOf(n, g))} xPts` })),
-            (() => { const r = realGain(c, t, m, d); return el('td', { className: 'num', title: `Player for player: ${signed(swapGain(c, t, o, n, d))} to the last gameweek` },
-              el('span', { className: `gain-pill ${r.total >= 0.05 ? 'up' : r.total <= -0.05 ? 'down' : 'flat'}`, textContent: signed(r.total) }),
-              el('small', { textContent: ` (GW${g} ${signed(r.week)}${r.hit ? `, −${r.hit} hit` : ''})` })); })(),
             el('td', {}, undo));
-        })));
+        })),
+        el('tfoot', {}, el('tr', { className: 'moves-total' }, el('td', {}),
+          el('td', { className: 'inp' }, el('b', { textContent: 'Total' }), ...lines.map((x) => el('small', { textContent: x }))), el('td', {}))));
     }
-    const facts = `Beginning: ${ft} free transfer${ft === 1 ? '' : 's'}, budget £${c.bankAt(t).toFixed(1)}m. Budget saved £${c.bankAfter(t).toFixed(1)}m${hits ? `, ${hits} hit${hits > 1 ? 's' : ''}` : ''}.`;
+    const facts = `Beginning: ${ft} free transfer${ft === 1 ? '' : 's'}, budget £${c.bankAt(t).toFixed(1)}m.`;
     const view = el('section', { className: 'week-view' },
       el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), weekPts(total, t)),
       el('p', { className: 'meta', textContent: facts }), movesEl,
@@ -1245,6 +1252,41 @@
     const parts = [tabs, view];
     if (state.replacing) parts.splice(1, 0, chooser(c, t, state.replacing));
     box.replaceChildren(...parts);
+    scheduleOwnPlan();
+  }
+  // My own transfers are scored as a plan (shown below, with the Free Hit week) whenever they change.
+  let ownSig = '', ownBusy = false, ownAgain = false, ownTimer = null;
+  const ownKey = () => JSON.stringify([state.manual, $('horizon').value, state.optMode, state.entry]);
+  function scheduleOwnPlan(force) {
+    if ($('manual').hidden || !state.team) return;
+    const sig = ownKey();
+    if (!force && sig === ownSig) return;
+    clearTimeout(ownTimer);
+    ownTimer = setTimeout(async () => {
+      if (ownBusy) { ownAgain = true; return; }
+      ownBusy = true; ownSig = sig;
+      try { await makePlan(state.manual); if (state.plan && state.plan.manual) state.plan.sig = sig; } finally { ownBusy = false; }
+      if (ownAgain) { ownAgain = false; scheduleOwnPlan(); } else if (!$('manual').hidden && state.plan && state.plan.manual) manualWeeks();  // Total from the plan's figures
+    }, 500);
+  }
+  // What a gameweek's moves gain together: the team's points with them minus without them (best starting 11 and
+  // captain each week), that gameweek and from it to the last one planned, hits taken off.
+  function weekGain(c, t, d) {
+    const team = (ids, g) => { const L = lineUp([...ids].map((id) => c.byId.get(id)).filter(Boolean), g); return L.xi.reduce((a, p) => a + L.xp.get(p.id), 0) + (L.cap ? L.xp.get(L.cap.id) : 0); };
+    const ms = state.manual[t] || [];
+    let total = 0, week = 0;
+    for (let k = t; k < c.gws.length; k++) {
+      const withIt = squadAfter(k);
+      const without = new Set(withIt);
+      ms.forEach((m) => { if (without.has(m.in) && !without.has(m.out)) { without.delete(m.in); without.add(m.out); } });
+      const diff = team(withIt, c.gws[k]) - team(without, c.gws[k]);
+      total += Math.pow(d, k) * diff;
+      if (k === t) week = diff;
+    }
+    let ft = state.team.ft;
+    for (let k = 0; k < t; k++) ft = Math.min(S.MAX_FT, Math.max(0, ft - (state.manual[k] || []).length) + 1);
+    const hit = Math.max(0, ms.length - ft) * S.HIT;
+    return { total: total - Math.pow(d, t) * hit, week: week - hit };
   }
   // The real gain of a move in week t: the team's points with it minus without it (best starting 11 and captain each
   // week, so a player who only sits on the bench adds little), from week t to the last gameweek planned, counted as
@@ -1361,22 +1403,13 @@
     $('manualOpen').setAttribute('aria-expanded', String(open));
     if (open) {
       $('out').replaceChildren();  // Plan my own transfers: the suggested plans are put away
+      ownSig = '';
       const entry = $('entry').value.trim();
       if (/^\d+$/.test(entry) && (!state.team || state.entry !== entry)) { try { await loadTeam(entry); } catch (e) { showError(e.message); } }
       manualWeeks();
     }
   });
   $('manualClear').addEventListener('click', () => { state.manual = {}; saveManual(); manualWeeks(); });
-  $('manualGo').addEventListener('click', async () => {
-    const entry = $('entry').value.trim();
-    if (!/^\d+$/.test(entry) || !state.data) { showError('Enter your FPL team ID first.'); return; }
-    try {
-      await loadTeam(entry);
-      manualWeeks();
-      if (!$('error').hidden) return;
-      await makePlan(state.manual);
-    } catch (e) { showError(e.message); }
-  });
 
   // (i) buttons: the explanation in a pop-up (a fresh copy, so live figures such as the gameweek are current)
   document.addEventListener('click', (e) => {
