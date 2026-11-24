@@ -794,7 +794,7 @@
             lines.push(`${sign(g.now)} GW${gws[t]}`);
             lines.push(decayOn ? `${sign(g.dec)} decay to GW${gws[T - 1]}` : `${sign(g.raw)} to GW${gws[T - 1]}`);
           }
-          if (w.hits) lines.push(`−${w.hits * S.HIT} (${w.hits} hit${w.hits > 1 ? 's' : ''})`);
+          if (w.hits) lines.push(`${w.hits} hit${w.hits > 1 ? 's' : ''}`);
           if (w.chip !== 'wildcard' && w.chip !== 'freehit') lines.push(`FT saved: ${ftLeft(w)}`);
           if (w.bank !== null && w.bank !== undefined) lines.push(`Budget saved: £${f1(w.bank)}m`);
           return el('tfoot', {}, el('tr', { className: 'moves-total' }, el('td', {}),
@@ -865,7 +865,7 @@
       if (!w.ins.length) return [el('span', { className: 'muted', textContent: 'Save' })].concat(facts(w, null));
       const outs = w.outs.slice().sort(byPos), ins = w.ins.slice().sort(byPos);
       return outs.map((x, k) => el('span', { textContent: `${P[x].name} → ${ins[k] !== undefined ? P[ins[k]].name : ''}` }))
-        .concat(w.hits ? [el('small', { className: 'hit', textContent: `−${w.hits * S.HIT}` })] : [])
+        .concat(w.hits ? [el('small', { className: 'hit', textContent: `${w.hits} hit${w.hits > 1 ? 's' : ''}` })] : [])
         .concat(facts(w, g));
     };
     const rows = options.map((o, k) => {
@@ -1237,7 +1237,7 @@
             el('td', {}, undo));
         })));
     }
-    const facts = `Beginning: ${ft} free transfer${ft === 1 ? '' : 's'}, budget £${c.bankAt(t).toFixed(1)}m. Budget saved £${c.bankAfter(t).toFixed(1)}m${hits ? `, −${hits * S.HIT} (${hits} hit${hits > 1 ? 's' : ''})` : ''}.`;
+    const facts = `Beginning: ${ft} free transfer${ft === 1 ? '' : 's'}, budget £${c.bankAt(t).toFixed(1)}m. Budget saved £${c.bankAfter(t).toFixed(1)}m${hits ? `, ${hits} hit${hits > 1 ? 's' : ''}` : ''}.`;
     const view = el('section', { className: 'week-view' },
       el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), weekPts(total, t)),
       el('p', { className: 'meta', textContent: facts }), movesEl,
