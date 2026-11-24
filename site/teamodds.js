@@ -4,7 +4,7 @@
   'use strict';
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props || {}); n.append(...kids.filter((k) => k !== null && k !== undefined && k !== '')); return n; };
-  const state = { matches: {}, gws: [], sort: 'time', names: {}, view: 'table', tsort: 'goals', tdir: -1 };
+  const state = { matches: {}, gws: [], sort: 'time', names: {}, view: 'matches', tsort: 'goals', tdir: -1 };
 
   function build(fdr, fx) {
     const kick = new Map(); // "HOME-AWAY-gw" -> kick-off

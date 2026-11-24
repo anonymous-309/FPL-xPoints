@@ -18,13 +18,13 @@
 <form id="filters" class="filters" autocomplete="off">
   <label>Gameweek <select id="gw"></select></label>
   <div class="seg" role="group" aria-label="View">
-    <button type="button" data-view="table" aria-pressed="true">Table</button>
-    <button type="button" data-view="matches" aria-pressed="false">Matches</button>
+    <button type="button" data-view="matches" aria-pressed="true">Matches</button>
+    <button type="button" data-view="table" aria-pressed="false">Table</button>
   </div>
 </form>
 <main class="odds">
-  <div id="tableBox" class="wrap odds-wrap"><table id="oddsTable" class="odds-table"><thead></thead><tbody></tbody></table></div>
-  <div id="list" hidden></div>
+  <div id="tableBox" class="wrap odds-wrap" hidden><table id="oddsTable" class="odds-table"><thead></thead><tbody></tbody></table></div>
+  <div id="list"></div>
 </main>
 <footer>
   <p><b>Table</b>: one row per team and match; tap a heading to sort. <b>Goals</b>: each team's expected goals in the match (home team first), from the same team model as the xPoints page: attack and defence ratings from recent matches, home advantage and the opponent. <b>CS</b>: the chance the team keeps a clean sheet, that is the chance the opponent scores no goal. Kick-off times are in your device's time zone. Not affiliated with the Premier League.</p>
