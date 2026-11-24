@@ -13676,5 +13676,127 @@
 ]
 ]
 }
+},
+"5795517": {
+"round": 11,
+"home": "Brentford",
+"away": "Everton",
+"injured": [],
+"starters": {
+"home": [
+[
+"Caoimhín Kelleher",
+11,
+0.5
+],
+[
+"Michael Kayode",
+32,
+0.125
+],
+[
+"Kristoffer Ajer",
+34,
+0.375
+],
+[
+"Sepp van den Berg",
+36,
+0.625
+],
+[
+"Keane Lewis-Potter",
+38,
+0.875
+],
+[
+"Yehor Yarmoliuk",
+64,
+0.3
+],
+[
+"Vitaly Janelt",
+66,
+0.7
+],
+[
+"Dango Ouattara",
+83,
+0.162
+],
+[
+"Mikkel Damsgaard",
+85,
+0.5
+],
+[
+"Jaidon Anthony",
+87,
+0.837
+],
+[
+"Callum Wilson",
+115,
+0.5
+]
+],
+"away": [
+[
+"Jordan Pickford",
+11,
+0.5
+],
+[
+"Jake O'Brien",
+32,
+0.125
+],
+[
+"James Tarkowski",
+34,
+0.375
+],
+[
+"Jarrad Branthwaite",
+36,
+0.625
+],
+[
+"Vitaliy Mykolenko",
+38,
+0.875
+],
+[
+"Harrison Armstrong",
+64,
+0.3
+],
+[
+"James Garner",
+66,
+0.7
+],
+[
+"Merlin Röhl",
+83,
+0.162
+],
+[
+"Kiernan Dewsbury-Hall",
+85,
+0.5
+],
+[
+"Tyrique George",
+87,
+0.837
+],
+[
+"Thierno Barry",
+115,
+0.5
+]
+]
+}
 }
 }
