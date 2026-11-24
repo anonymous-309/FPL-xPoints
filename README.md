@@ -1,6 +1,6 @@
 # xPoints cho FPL
 
-Dự đoán điểm Fantasy Premier League của từng cầu thủ trong các vòng tới. GitHub Actions tự chạy lúc 2:00 giờ UK (30 phút sau khi FPL đổi giá) và 10:00 giờ UK mỗi ngày, thêm mỗi 2 giờ trong 24 giờ trước deadline, rồi cập nhật trang web của repo.
+Dự đoán điểm Fantasy Premier League của từng cầu thủ trong các vòng tới. GitHub Actions tự chạy lúc 0:30 giờ UK (30 phút sau khi FPL đổi giá) và 10:00 giờ UK mỗi ngày, thêm mỗi 2 giờ trong 24 giờ trước deadline, rồi cập nhật trang web của repo.
 
 Muốn chạy ngay: vào tab **Actions**, chọn **Cap nhat xPoints**, bấm **Run workflow**.
 
