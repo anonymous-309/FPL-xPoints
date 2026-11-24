@@ -804,7 +804,11 @@
     if (w.transfersAllowed && !w.chip) facts.push(`${w.freeTransfers} free transfer${w.freeTransfers === 1 ? '' : 's'}`, w.hits ? `${w.hits} hit${w.hits > 1 ? 's' : ''} (−${w.hits * S.HIT})` : 'no hit');
     if (w.chip === 'wildcard') facts.push('unlimited free transfers');
     if (w.chip === 'freehit') facts.push('unlimited transfers for this gameweek only; your squad comes back next week');
-    if (w.bank !== null && w.transfersAllowed && w.chip !== 'freehit') facts.push(`bank £${w.bank.toFixed(1)} after`);
+    // the bank at the start of the gameweek, before its transfers (what is left after them is in Total)
+    let k = t - 1;
+    while (k >= 0 && state.plan.weeks[k].chip === 'freehit') k--;  // a Free Hit week's squad and bank do not carry on
+    const prevBank = k >= 0 ? state.plan.weeks[k].bank : state.team.bank;
+    if (prevBank !== null && prevBank !== undefined && w.transfersAllowed && w.chip !== 'freehit') facts.push(`bank £${prevBank.toFixed(1)}`);
     return el('section', { className: 'week-view' },
       el('div', { className: 'week-head' },
         el('h2', {}, `GW${gws[t]}`, w.chip ? el('span', { className: 'chip-tag', textContent: CHIP_LABEL[w.chip] }) : ''),
@@ -1232,7 +1236,7 @@
             el('td', {}, undo));
         })));
     }
-    const facts = `${ft} free transfer${ft === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''} (−${hits * S.HIT})` : 'no hit'}, bank £${c.bankAfter(t).toFixed(1)} after.`;
+    const facts = `${ft} free transfer${ft === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''} (−${hits * S.HIT})` : 'no hit'}, bank £${c.bankAt(t).toFixed(1)} at the start, £${c.bankAfter(t).toFixed(1)} after.`;
     const view = el('section', { className: 'week-view' },
       el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), weekPts(total, t)),
       el('p', { className: 'meta', textContent: facts }), movesEl,
