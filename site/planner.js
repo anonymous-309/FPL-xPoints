@@ -1234,7 +1234,7 @@
         el('thead', {}, el('tr', {}, el('th', { scope: 'col', textContent: 'Out' }), el('th', { scope: 'col', textContent: 'In' }), el('th', { textContent: '' }))),
         el('tbody', {}, ...moves.map((m, k) => {
           const o = c.byId.get(m.out), n = c.byId.get(m.in);
-          const undo = el('button', { type: 'button', className: 'linkbtn', textContent: '×', title: 'Take this move back' });
+          const undo = el('button', { type: 'button', className: 'linkbtn', textContent: 'Remove', title: 'Take this move back' });
           undo.addEventListener('click', () => { state.manual[t].splice(k, 1); c.tidy(t + 1); saveManual(); manualWeeks(); });
           return el('tr', {},
             el('td', { className: 'outp' }, el('b', { textContent: o.name }), el('small', { textContent: ` ${o.team} ${o.position} £${c.sellOf(o.id).toFixed(1)} · ${f1(xpOf(o, g))} xPts` })),
