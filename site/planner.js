@@ -794,26 +794,27 @@
             lines.push(`${sign(g.now)} GW${gws[t]}`);
             lines.push(decayOn ? `${sign(g.dec)} decay to GW${gws[T - 1]}` : `${sign(g.raw)} to GW${gws[T - 1]}`);
           }
+          if (w.hits) lines.push(`−${w.hits * S.HIT} (${w.hits} hit${w.hits > 1 ? 's' : ''})`);
           if (w.chip !== 'wildcard' && w.chip !== 'freehit') lines.push(`FT saved: ${ftLeft(w)}`);
-          if (w.bank !== null && w.bank !== undefined) lines.push(`ITB: ${f1(w.bank)}m`);
+          if (w.bank !== null && w.bank !== undefined) lines.push(`Budget saved: £${f1(w.bank)}m`);
           return el('tfoot', {}, el('tr', { className: 'moves-total' }, el('td', {}),
             el('td', { className: 'inp' }, el('b', { textContent: 'Total' }), ...lines.map((x) => el('small', { textContent: x })))));
         })());
     }
     const facts = [];
-    if (w.transfersAllowed && !w.chip) facts.push(`${w.freeTransfers} free transfer${w.freeTransfers === 1 ? '' : 's'}`, w.hits ? `${w.hits} hit${w.hits > 1 ? 's' : ''} (−${w.hits * S.HIT})` : 'no hit');
+    if (w.transfersAllowed && !w.chip) facts.push(`${w.freeTransfers} free transfer${w.freeTransfers === 1 ? '' : 's'}`);
     if (w.chip === 'wildcard') facts.push('unlimited free transfers');
     if (w.chip === 'freehit') facts.push('unlimited transfers for this gameweek only; your squad comes back next week');
     // the bank at the start of the gameweek, before its transfers (what is left after them is in Total)
     let k = t - 1;
     while (k >= 0 && state.plan.weeks[k].chip === 'freehit') k--;  // a Free Hit week's squad and bank do not carry on
     const prevBank = k >= 0 ? state.plan.weeks[k].bank : state.team.bank;
-    if (prevBank !== null && prevBank !== undefined && w.transfersAllowed && w.chip !== 'freehit') facts.push(`bank £${prevBank.toFixed(1)}`);
+    if (prevBank !== null && prevBank !== undefined && w.transfersAllowed && w.chip !== 'freehit') facts.push(`budget £${prevBank.toFixed(1)}m`);
     return el('section', { className: 'week-view' },
       el('div', { className: 'week-head' },
         el('h2', {}, `GW${gws[t]}`, w.chip ? el('span', { className: 'chip-tag', textContent: CHIP_LABEL[w.chip] }) : ''),
         weekPts(w.xpts, t)),
-      el('p', { className: 'meta', textContent: facts.join(', ') + (facts.length ? '. ' : '') + (w.subs > 0.05 ? `Auto-subs add about ${f1(w.subs)}.` : '') }),
+      el('p', { className: 'meta', textContent: (facts.length ? `Beginning: ${facts.join(', ')}. ` : '') + (w.subs > 0.05 ? `Auto-subs add about ${f1(w.subs)}.` : '') }),
       moves,
       el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows),
       bench);
@@ -852,7 +853,7 @@
     const facts = (w, g) => {
       const out = [];
       if (w.chip !== 'wildcard' && w.chip !== 'freehit') out.push(el('small', { className: 'itb ft-saved', textContent: `FT saved: ${ftLeft(w)}` }));
-      if (w.bank !== null && w.bank !== undefined) out.push(el('small', { className: w.t > 0 && w.bank < BANK_BUFFER * (w.t + 1) - 1e-6 ? 'itb tight' : 'itb', textContent: `ITB ${f1(w.bank)}m` }));
+      if (w.bank !== null && w.bank !== undefined) out.push(el('small', { className: w.t > 0 && w.bank < BANK_BUFFER * (w.t + 1) - 1e-6 ? 'itb tight' : 'itb', textContent: `Budget saved £${f1(w.bank)}m` }));
       if (g) {
         out.push(el('small', { className: 'itb gw-gain', textContent: `${sign(g.now)} GW${gws[w.t]}` }));
         out.push(el('small', { className: 'itb gw-gain', textContent: decayOn ? `${sign(g.dec)} decay to GW${gws[T - 1]}` : `${sign(g.raw)} to GW${gws[T - 1]}` }));
@@ -1236,7 +1237,7 @@
             el('td', {}, undo));
         })));
     }
-    const facts = `${ft} free transfer${ft === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''} (−${hits * S.HIT})` : 'no hit'}, bank £${c.bankAt(t).toFixed(1)} at the start, £${c.bankAfter(t).toFixed(1)} after.`;
+    const facts = `Beginning: ${ft} free transfer${ft === 1 ? '' : 's'}, budget £${c.bankAt(t).toFixed(1)}m. Budget saved £${c.bankAfter(t).toFixed(1)}m${hits ? `, −${hits * S.HIT} (${hits} hit${hits > 1 ? 's' : ''})` : ''}.`;
     const view = el('section', { className: 'week-view' },
       el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), weekPts(total, t)),
       el('p', { className: 'meta', textContent: facts }), movesEl,
