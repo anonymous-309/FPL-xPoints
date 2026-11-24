@@ -884,8 +884,7 @@
           thI(decayOn ? 'xPts Decay' : 'xPts', 'col-xpts', 'num'), thI(decayOn ? 'Gain Decay' : 'Gain', 'col-gain', 'num'),
           thI('FT bonus', 'col-ftb', 'num'),
           thI('Score', 'col-score', 'num'), thI('Best', 'col-best', 'num'))),
-        el('tbody', {}, ...rows))),
-      el('details', { className: 'plan-settings plan-explain' }, el('summary', { textContent: 'Explanation' }), ...(() => { const x = $('info-auto').cloneNode(true); x.removeAttribute('id'); return [...x.childNodes]; })(), el('p', { className: 'meta', textContent: `Each plan uses that many free transfers in GW${gws[0]}, then makes its own best moves for the next ${Math.max(0, depth - 1)} gameweek${depth - 1 === 1 ? '' : 's'}; after that the squad stays. Figures follow your choice before planning (Show & optimise): Decay counts each later gameweek ${PLAN.decay} times the one before, Normal counts every gameweek the same; the plans are worked out and the Best one picked the same way. xPts (Decay): expected points over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs and hits included. Gain (Decay): the plan's expected points against keeping your squad as it is; it is the sum of the figures under each gameweek's moves. Under each gameweek's moves: FT saved, the free transfers left after that gameweek's transfers; ITB, the money left after them; what those moves gain that gameweek (hits taken off); and what they gain from that gameweek to the end of the plan against the squad before them (weighed 0.85 a week from the first gameweek when Decay is on). FT bonus: in every transfer gameweek each free transfer saved is worth ${FTB_X} (${FTB_CAP} at most, so ${FTB_X * FTB_CAP} points), and those saved after GW${gws[depth - 1]} earn it again in every gameweek to GW${gws[gws.length - 1]} (not the free transfers gained in those weeks, which are the same for every plan). Score: xPts + FT bonus; the plan with the most is marked Best. Rule for every gameweek without a hit: its moves must gain at least ${FTB_X} for each free transfer they use, in that same gameweek, except the 5th free transfer with 5 in hand, which cannot be saved anyway (a week with a hit is exempt, since a hit pays back over the weeks after); a later gameweek that does not is planned with no transfers, and a plan whose GW${gws[0]} moves do not is left out and the next best takes its place. Save #2, #3: saving now as well, with different moves in the next gameweek. How many plans of each kind: Settings. A buy n gameweeks ahead must leave 0.1m × n in the bank, in case prices move; its ITB shows in orange when it leaves no more than that. Best (last column): share of 5,000 simulated runs in which the plan has the highest score.` })));
+        el('tbody', {}, ...rows))));
   }
 
   // a column heading with an (i) for its explanation (a hidden block in planner.html)
@@ -915,16 +914,13 @@
       return b;
     }));
     const summary = el('section', { className: 'summary' },
-      el('p', {}, 'This plan: ', el('b', { textContent: `${f1(total)} xPts` }), ` over GW${gws[0]}-${gws[gws.length - 1]}, auto-subs included: `,
-        el('b', { textContent: `${gain >= 0 ? '+' : ''}${f1(gain)}` }), ` on keeping your squad without chips (${f1(hold)}). ${moves} transfer${moves === 1 ? '' : 's'}, ${hits ? `${hits} hit${hits > 1 ? 's' : ''}` : 'no hits'}.`),
-      el('p', { className: 'meta', textContent: 'The last column is the share of 5,000 simulated runs of every match in which that plan has the highest score of all the plans in the table (they add up to 100%). A plan can have the best expected score and still come top less often, when its points come from rarer big hauls.' }),
       tightNote(P, weeks, gws),
       state.team.madeAlready && state.team.madeAlready.length ? el('p', { className: 'meta', textContent: `Already made for GW${state.team.lastGw + 1}: ${state.team.madeAlready.join(', ')} (counted in your squad and free transfers).` }) : '',
       Object.keys(state.overrides).length ? el('p', { className: 'meta', textContent: `Uses your minutes edits from the Minutes page (${Object.keys(state.overrides).length} players).` }) : '',
       state.plan.dropped ? el('p', { className: 'meta', textContent: `${state.plan.dropped} plan${state.plan.dropped > 1 ? 's were' : ' was'} left out: ${state.plan.dropped > 1 ? 'their' : 'its'} GW${gws[0]} moves gain less that gameweek than the free transfers they use cost.` }) : '',
       state.plan.skipped ? el('p', { className: 'meta', textContent: `${state.plan.skipped} of the plans could not be worked out (the solver ran out of memory on this device) and are left out.` }) : '',
       /optimal/i.test(state.plan.status) ? '' : el('p', { className: 'meta', textContent: `Some searches stopped at their time limit (${state.plan.status}); the plans are good but may not be the very best.` }));
-    $('out').replaceChildren(optionsView(P, options, gws), fhView(P, pick, gws), summary, tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
+    $('out').replaceChildren(optionsView(P, options, gws), fhView(P, pick, gws), ...(summary.children.length ? [summary] : []), tabs, weekView(weeks[Math.min(state.week, weeks.length - 1)]));
   }
 
   // Later-week transfers that leave little money: they fail if prices move by more than what is left.
