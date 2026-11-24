@@ -1311,12 +1311,15 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     df["inj_rest"] = False
     df["inj_note"] = ""  # what the absence was, for the reason shown on the Minutes page
     season = ~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()
+    manual_rows = set()  # matches inside an absence the admin set by hand: always left out
     for r in merged_injuries(log, admin or {"manual": [], "startOverrides": {}}):
         if r.get("season") != CURRENT_SEASON:
             continue
         end = r["endGw"] if r.get("manual") and r.get("endGw") is not None else (r["returnedGw"] - 1) if r.get("returnedGw") else 99
         rows = season & (df["pid"] == r["pid"]) & df["GW"].between(r["startGw"], end)
         df.loc[rows if r.get("manual") else rows & (df["minutes"] == 0), "inj_skip"] = True
+        if r.get("manual"):
+            manual_rows.update(df.index[rows])
         span = gw_span(r["startGw"], end) if r.get("returnedGw") or (r.get("manual") and r.get("endGw") is not None) else f"GW{r['startGw']} on, not back yet"
         if r.get("manual"):  # the admin's own type and note
             admin_note = str(r.get("news") or "").strip()
@@ -1382,6 +1385,28 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         df.loc[cover, "inj_skip"] = True
         df.loc[cover, "gk_cover"] = True
         df.loc[cover, "inj_note"] = "Came on for the injured starting goalkeeper and played " + df.loc[cover, "minutes"].fillna(0).astype(int).astype(str) + " minutes"
+    # A match he got hurt in or a recovery match is left out only if it would pull his usual minutes down. Where he
+    # played at least the usual minutes the formula gives without it (5-4-3-2-1 of his 5 counted matches before it),
+    # keeping it can only raise them, so it counts as normal and is not flagged.
+    cand = df.index[season & (df["inj_hurt"] | df["inj_rest"]) & ~df["gk_cover"] & (df["minutes"] > 0) & ~df.index.isin(list(manual_rows))]
+    kept = 0
+    for pid in df.loc[cand, "pid"].unique():
+        g = df.loc[(df["pid"] == pid) & ~df["future"] & df["minutes"].notna()].sort_values("kickoff_time")
+        for i in g.index:
+            if i not in cand:
+                continue
+            prev = g.loc[:i].iloc[:-1]
+            prev = prev.loc[~skipped(df.loc[prev.index]), "minutes"].tail(5).to_numpy(float)[::-1]
+            if not len(prev):
+                continue
+            w = MINUTE_WEIGHTS[:len(prev)]
+            usual = float(np.dot(prev, w) / w.sum())
+            if float(df.at[i, "minutes"]) >= usual:
+                df.loc[i, ["inj_skip", "inj_hurt", "inj_rest"]] = False
+                df.at[i, "inj_note"] = ""
+                kept += 1
+    if kept:
+        print(f"Hurt or recovery matches kept in the formula, at or above his usual minutes without them: {kept}")
     print(f"Matches left out as injury absences: {int(df['inj_skip'].sum())}, of them matches he got hurt in: {int(df['inj_hurt'].sum())}, recovery matches under his usual: {int(df['inj_rest'].sum())}")
     return df
 
