@@ -758,3 +758,16 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 table.stats thead tr.grp-row th { top: 0; height: 28px; box-sizing: border-box; z-index: 4; }
 table.stats thead tr:nth-child(2) th { top: 28px; z-index: 3; }
 table.stats thead tr:nth-child(2) th:first-child { z-index: 5; }
+
+/* FH & WC */
+.fhwc { padding: 0 clamp(16px, 3vw, 36px) 24px; display: grid; gap: 14px; }
+.fhwc .card { background: var(--paper); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; }
+.fh-wrap { max-height: none; min-height: 0; }
+.fh-table { width: 100%; border-collapse: collapse; }
+.fh-table thead th { position: static; text-align: left; padding: 6px 8px; }
+.fh-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
+.fh-table td.num, .fh-table th:nth-child(n+3) { text-align: right; }
+.fh-table tr.bench td { background: #eef6f0; }
+.fh-table tr.total td { font-weight: 700; border-top: 2px solid var(--ink); }
+.fh-table td small { color: var(--muted); }
+.fh-pick { display: inline-flex; gap: 8px; align-items: center; margin: 10px 0 6px; }
