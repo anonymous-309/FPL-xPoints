@@ -804,7 +804,7 @@
       el('div', { className: 'week-head' },
         el('h2', {}, `GW${gws[t]}`, w.chip ? el('span', { className: 'chip-tag', textContent: CHIP_LABEL[w.chip] }) : ''),
         weekPts(w.xpts, t)),
-      el('p', { className: 'meta', textContent: (facts.length ? `Beginning: ${facts.join(', ')}. ` : '') + (w.subs > 0.05 ? `Bench adds about ${f1(w.subs)}.` : '') }),
+      el('p', { className: 'meta', textContent: (facts.length ? `Beginning: ${facts.join(', ')}. ` : '') + (w.subs > 0.05 ? benchText(w.subs, t) : '') }),
       moves,
       el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows),
       bench);
@@ -1158,12 +1158,15 @@
     return { xi, bench, cap: caps[0], vice: caps[1], xp };
   }
   // a line-up's expected points as the plans count them (starters 97% / 95.5%, bench 28-12-5% and 3%, captain)
-  function lineScore(L) {
+  function lineScore(L, part) {
     const all = L.xi.concat(L.bench);
     const ps = all.map((p) => ({ position: p.position, xp: L.xp.get(p.id) }));
     const ix = (p) => (p ? all.indexOf(p) : null);
-    return S.expectedWithSubs(ps, L.xi.map(ix), L.bench.map(ix), ix(L.cap), ix(L.vice), 2, false).xpts;
+    const r = S.expectedWithSubs(ps, L.xi.map(ix), L.bench.map(ix), ix(L.cap), ix(L.vice), 2, false);
+    return part === 'subs' ? r.subs : r.xpts;
   }
+  // "Bench adds about 1.8 (1.5 decay)": the bench's share of a gameweek, and the same with that week's decay
+  const benchText = (x, t) => `Bench adds about ${f1(x)}${t ? ` (${f1(x * Math.pow(PLAN.decay, t))} decay)` : ''}.`;
 
   function manualWeeks() {
     const box = $('manualWeeks');
@@ -1245,7 +1248,7 @@
       : `Beginning: ${ft} free transfer${ft === 1 ? '' : 's'}, budget £${c.bankAt(t).toFixed(1)}m.`;
     const view = el('section', { className: 'week-view' },
       el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), weekPts(total, t)),
-      el('p', { className: 'meta', textContent: facts }), movesEl,
+      el('p', { className: 'meta', textContent: facts + (lineScore(L, 'subs') > 0.05 ? ` ${benchText(lineScore(L, 'subs'), t)}` : '') }), movesEl,
       el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows), bench);
     const parts = [tabs, view];
     if (state.replacing) parts.splice(1, 0, chooser(c, t, state.replacing));
