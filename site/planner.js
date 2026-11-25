@@ -122,21 +122,8 @@
     return best;
   }
 
-  // How much of a bench player's points the search counts each week: the chance he is needed, from how many of the
-  // squad's likely starters may not play (an outfield bench player covers a third of the expected absences).
-  function benchWeights(P, T) {
-    const squad = P.map((p, i) => i).filter((i) => P[i].owned);
-    const out = [], gk = [];
-    for (let t = 0; t < T; t++) {
-      const best = bestXI(P, squad, t);
-      if (!best) { out.push(0.1); gk.push(0.1); continue; }
-      const missing = best.xi.filter((i) => P[i].position !== 'GK').reduce((a, i) => a + (1 - Math.min(1, P[i].p1[t])), 0);
-      const keeper = best.xi.find((i) => P[i].position === 'GK');
-      out.push(Math.max(0.05, Math.min(0.8, missing / 3)));
-      gk.push(Math.max(0.02, Math.min(0.9, 1 - Math.min(1, P[keeper].p1[t]))));
-    }
-    return { out, gk };
-  }
+  // Bench weights are fixed (planner-solve.js BENCH_SLOTS, from real bench use of top managers)
+  function benchWeights() { return { out: [], gk: [] }; }
 
   // The gameweeks after the transfer weeks, for a squad that stays: best 11, captain, vice and bench each week.
   function heldWeeks(P, merged, from, T) {
@@ -814,7 +801,7 @@
       el('div', { className: 'week-head' },
         el('h2', {}, `GW${gws[t]}`, w.chip ? el('span', { className: 'chip-tag', textContent: CHIP_LABEL[w.chip] }) : ''),
         weekPts(w.xpts, t)),
-      el('p', { className: 'meta', textContent: (facts.length ? `Beginning: ${facts.join(', ')}. ` : '') + (w.subs > 0.05 ? `Auto-subs add about ${f1(w.subs)}.` : '') }),
+      el('p', { className: 'meta', textContent: (facts.length ? `Beginning: ${facts.join(', ')}. ` : '') + (w.subs > 0.05 ? `Bench adds about ${f1(w.subs)}.` : '') }),
       moves,
       el('div', { className: 'pp-pitch' }, el('div', { className: 'pp-lines', 'aria-hidden': 'true' }), ...rows),
       bench);
@@ -1167,6 +1154,13 @@
     const caps = xi.slice().sort(by);
     return { xi, bench, cap: caps[0], vice: caps[1], xp };
   }
+  // a line-up's expected points as the plans count them (starters 97% / 95.5%, bench 28-12-5% and 3%, captain)
+  function lineScore(L) {
+    const all = L.xi.concat(L.bench);
+    const ps = all.map((p) => ({ position: p.position, xp: L.xp.get(p.id) }));
+    const ix = (p) => (p ? all.indexOf(p) : null);
+    return S.expectedWithSubs(ps, L.xi.map(ix), L.bench.map(ix), ix(L.cap), ix(L.vice), 2, false).xpts;
+  }
 
   function manualWeeks() {
     const box = $('manualWeeks');
@@ -1198,7 +1192,7 @@
     const bought = new Set(moves.map((m) => m.in));
     const squad = [...squadAfter(t)].map((id) => c.byId.get(id)).filter(Boolean);
     const L = lineUp(squad, g);
-    const total = L.xi.reduce((a, p) => a + L.xp.get(p.id), 0) + (L.cap ? L.xp.get(L.cap.id) : 0) - hits * S.HIT;
+    const total = lineScore(L) - hits * S.HIT;
     const mcard = (p) => {
       const v = c.view(p, g);
       const isCap = L.cap && p.id === L.cap.id;
@@ -1272,7 +1266,7 @@
   // What a gameweek's moves gain together: the team's points with them minus without them (best starting 11 and
   // captain each week), that gameweek and from it to the last one planned, hits taken off.
   function weekGain(c, t, d) {
-    const team = (ids, g) => { const L = lineUp([...ids].map((id) => c.byId.get(id)).filter(Boolean), g); return L.xi.reduce((a, p) => a + L.xp.get(p.id), 0) + (L.cap ? L.xp.get(L.cap.id) : 0); };
+    const team = (ids, g) => lineScore(lineUp([...ids].map((id) => c.byId.get(id)).filter(Boolean), g));
     const ms = state.manual[t] || [];
     let total = 0, week = 0;
     for (let k = t; k < c.gws.length; k++) {
@@ -1292,7 +1286,7 @@
   // week, so a player who only sits on the bench adds little), from week t to the last gameweek planned, counted as
   // the plans count (Normal or Decay), while the player bought is still in the squad; a hit it causes is taken off.
   function realGain(c, t, m, d) {
-    const team = (ids, g) => { const L = lineUp([...ids].map((id) => c.byId.get(id)).filter(Boolean), g); return L.xi.reduce((a, p) => a + L.xp.get(p.id), 0) + (L.cap ? L.xp.get(L.cap.id) : 0); };
+    const team = (ids, g) => lineScore(lineUp([...ids].map((id) => c.byId.get(id)).filter(Boolean), g));
     let total = 0, week = 0;
     for (let k = t; k < c.gws.length; k++) {
       const withIt = k < c.depth ? squadAfter(k) : squadAfter(c.depth - 1);
