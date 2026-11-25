@@ -392,6 +392,20 @@
     return best.bench;
   }
 
+  // The starting 11 with the most expected points: the keeper with the most, then at least 3 DEF, 2 MID, 1 FWD, then
+  // the best of the rest up to 10 outfield players (at most 5 DEF, 5 MID, 3 FWD).
+  function bestEleven(P, squad, t) {
+    const by = (a, b) => P[b].xp[t] - P[a].xp[t];
+    const of = (pos) => squad.filter((i) => P[i].position === pos).sort(by);
+    const xi = of('GK').slice(0, 1);
+    const min = { DEF: 3, MID: 2, FWD: 1 }, max = { DEF: 5, MID: 5, FWD: 3 }, n = { DEF: 0, MID: 0, FWD: 0 };
+    Object.keys(min).forEach((pos) => of(pos).slice(0, min[pos]).forEach((i) => { xi.push(i); n[pos]++; }));
+    squad.filter((i) => P[i].position !== 'GK' && !xi.includes(i)).sort(by).forEach((i) => {
+      if (xi.length < 11 && n[P[i].position] < max[P[i].position]) { xi.push(i); n[P[i].position]++; }
+    });
+    return xi;
+  }
+
   // Read the solver's values back into a plan. values: {name: value}.
   function decode(input, model, values) {
     const P = input.players, T = input.T, n = P.length;
@@ -404,8 +418,9 @@
     for (let t = 0; t < T; t++) {
       const fh = has('freehit', t), wc = has('wildcard', t), bb = has('bboost', t), tc = has('3xc', t);
       const squad = [...Array(n).keys()].filter((i) => val(fh ? `z${t}_${i}` : `x${t}_${i}`) === 1);
-      const xi = squad.filter((i) => val(`y${t}_${i}`) === 1).sort((a, b) => order[P[a].position] - order[P[b].position] || P[b].xp[t] - P[a].xp[t]);
-      const cap = xi.find((i) => val(`c${t}_${i}`) === 1);
+      // the best legal 11 from the squad (the solver may stop a hair short of it), captain the highest
+      const xi = bestEleven(P, squad, t).sort((a, b) => order[P[a].position] - order[P[b].position] || P[b].xp[t] - P[a].xp[t]);
+      const cap = xi.slice().sort((a, b) => P[b].xp[t] - P[a].xp[t])[0];
       const vice = xi.filter((i) => i !== cap).sort((a, b) => P[b].xp[t] - P[a].xp[t])[0];
       const rest = squad.filter((i) => !xi.includes(i));
       const gkBench = rest.find((i) => P[i].position === 'GK');
