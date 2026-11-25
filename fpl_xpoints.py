@@ -757,41 +757,57 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     if fetched:
         INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
     covered = {r for r, ok in done.items() if ok}
-    # Team red card, tactical sub: a team-mate sent off before the 70th minute (any position), and within 20 minutes a
-    # defender or a central midfielder comes on for him. That match says nothing of his role.
+    # Team red card, tactical sub: a defensive player (defender or central midfielder) sent off before the 70th minute,
+    # and the club's first change after it (within 20 minutes) takes an attacking player (winger, attacking midfielder
+    # or striker) off for a defensive one. That match says nothing of the attacking player's role.
     TACTICAL.clear()
-    roles_of = {}  # each player's FotMob places in his league starts (by name), to tell a central midfielder
+    roles_of = {}  # each player's FotMob places in his league starts (by name)
     for got in store.values():
         for k in ("home", "away"):
             for name, pid, _ in (got.get("starters") or {}).get(k) or []:
                 if name:
                     roles_of.setdefault(_name_key(name), []).append(role_base(ROLE_OF(pid)))
-    BACK = ("CB", "RB", "LB", "RWB", "LWB")
-    def holding(name, q):
-        r = roles_of.get(_name_key(name), [])
-        most = lambda roles: r and sum(x in roles for x in r) * 2 > len(r)
+    BACK, HOLD, ATTACK = ("CB", "RB", "LB", "RWB", "LWB"), ("DM", "CM"), ("RW", "LW", "RM", "LM", "AM", "ST")
+    def kind(name, q, roles_now):
+        """'defensive' or 'attacking': his place in this match if he started it, else his FPL position (a midfielder
+        by where he usually starts)."""
+        r = roles_now.get(_name_key(name))
+        if r:
+            return "defensive" if r in BACK + HOLD else "attacking" if r in ATTACK else None
+        q = q or find_any(name)
+        usual = roles_of.get(_name_key(name), [])
+        most = lambda roles: usual and sum(x in roles for x in usual) * 2 > len(usual)
         if (q and q["element_type"] == 2) or (not q and most(BACK)):
-            return "defender"
-        if (not q or q["element_type"] == 3) and most(("DM", "CM")):
-            return "central midfielder"
+            return "defensive"
+        if q and q["element_type"] == 4:
+            return "attacking"
+        if (not q or q["element_type"] == 3) and most(HOLD):
+            return "defensive"
+        if (not q or q["element_type"] == 3) and most(ATTACK):
+            return "attacking"
         return None
     for got in store.values():
         for k, team in (("home", got.get("home")), ("away", got.get("away"))):
             home = k == "home"
+            roles_now = {_name_key(n): role_base(ROLE_OF(pid)) for n, pid, _ in (got.get("starters") or {}).get(k) or [] if n}
             for rc in got.get("reds") or []:
                 t = rc.get("time")
-                if rc.get("home") != home or t is None or t >= RED_TACTICAL_BEFORE:
+                if rc.get("home") != home or t is None or t >= RED_TACTICAL_BEFORE or not rc.get("name"):
                     continue
-                for sb in got.get("subs") or []:
-                    st = sb.get("time")
-                    if sb.get("home") != home or not sb.get("out") or not sb.get("in") or st is None or not (t <= st <= t + RED_TACTICAL_WINDOW):
+                if kind(rc["name"], find(rc["name"], team), roles_now) != "defensive":
+                    continue
+                after = [sb for sb in got.get("subs") or [] if sb.get("home") == home and sb.get("time") is not None and t <= sb["time"] <= t + RED_TACTICAL_WINDOW]
+                if not after:
+                    continue
+                first = min(sb["time"] for sb in after)  # the first change after the red card (a double change counts as one)
+                for sb in (x for x in after if x["time"] == first):
+                    if not sb.get("out") or not sb.get("in"):
                         continue
-                    p_in, p_out = find(sb["in"], team), find(sb["out"], team)
-                    kind = holding(sb["in"], p_in or find_any(sb["in"]))  # else his FotMob places
-                    if not p_out or not kind:
+                    p_out = find(sb["out"], team)
+                    if not p_out or kind(sb["out"], p_out, roles_now) != "attacking" or kind(sb["in"], find(sb["in"], team), {}) != "defensive":
                         continue
-                    TACTICAL[(f"c{p_out['code']}", got.get("round") or 0)] = (f"Tactical sub (team red card): taken off at {st}' for {sb['in']} ({kind}) "
-                                                                         f"after {rc.get('name')} was sent off at {t}'")
+                    TACTICAL[(f"c{p_out['code']}", got.get("round") or 0)] = (f"Tactical sub (team red card): taken off at {first}' for {sb['in']} "
+                                                                         f"after {rc['name']} was sent off at {t}'")
     if TACTICAL:
         print("Tactical subs (team red card): " + "; ".join(f"{k[0]} GW{k[1]}: {v}" for k, v in sorted(TACTICAL.items(), key=lambda kv: kv[0][1])))
     # Where each player started his last league matches (FotMob places): a defender in FPL who started in midfield or
