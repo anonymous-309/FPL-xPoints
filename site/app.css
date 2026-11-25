@@ -772,3 +772,9 @@ table.stats thead tr:nth-child(2) th:first-child { z-index: 5; }
 .fh-table td small { color: var(--muted); }
 .fh-pick { display: inline-flex; gap: 8px; align-items: center; margin: 10px 0 6px; }
 .fh-tabs { margin-top: 4px; } .fh-table td.small { font-size: 12.5px; color: var(--muted); }
+
+/* tap-to-read notes (tips.js): no hover tooltips */
+[data-tip] { cursor: help; }
+.tip-pop { position: absolute; z-index: 2000; background: #17261f; color: #fff; border-radius: 8px; padding: 10px 30px 10px 12px;
+  font-size: 14px; line-height: 1.4; white-space: pre-line; box-shadow: 0 8px 30px #0004; }
+.tip-close { position: absolute; top: 2px; right: 6px; border: 0; background: none; color: #fff; font-size: 20px; cursor: pointer; }
