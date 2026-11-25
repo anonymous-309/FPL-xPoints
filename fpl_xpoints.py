@@ -340,6 +340,9 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
             raw.append(minutes)
             if r > 0:
                 ban_left = MAX_BAN_MATCHES
+                # sent off: left out, unless he had already played his usual minutes (then it can only raise them)
+                if hist and minutes >= ai_minute_detail(hist)[0]:
+                    hist.append(minutes)
             elif ban_left > 0 and minutes == 0:
                 ban_left -= 1
             else:
@@ -385,6 +388,8 @@ def ai_starts(keys: np.ndarray, mins: np.ndarray, starts: np.ndarray, matches: n
             minutes = float(v) / n
             if r > 0:
                 ban_left = MAX_BAN_MATCHES
+                if hist and minutes >= ai_minute_detail([m for m, _ in hist])[0]:
+                    hist.append((minutes, min(1.0, float(st) / n)))  # as in ai_minutes
             elif ban_left > 0 and minutes == 0:
                 ban_left -= 1
             else:
@@ -634,6 +639,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # FotMob's match events mark a substitution made because the player going off was hurt ("injuredPlayerOut"). Each
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
+TACTICAL: dict = {}  # (pid, gameweek) -> note, for a winger or striker taken off after a team-mate's early red card
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
 RED_HALFLIFE_TF = 19  # gameweeks (about half a season) for a red card's weight in the position average to halve
 OOP_MIN_SHARE = 0.10  # at or below this share he counts as a plain defender
@@ -703,7 +709,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         if not (m.get("status") or {}).get("finished"):
             continue
         rnd = int(m.get("round") or 0)
-        if str(m["id"]) in store and ("starters" in store[str(m["id"])] or offline):
+        if str(m["id"]) in store and ("offs" in store[str(m["id"])] or offline):
             got = store[str(m["id"])]
         elif offline:
             done[rnd] = False
@@ -718,7 +724,12 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
                        "injured": [{"name": e["swap"][1]["name"] if len(e.get("swap") or []) > 1 else None, "home": e.get("isHome"), "time": e.get("time")}
                                    for e in ev if e.get("type") == "Substitution" and e.get("injuredPlayerOut")],
                        # each starter's place (FotMob position id and side), for the roles players actually play
-                       "starters": {"home": side("homeTeam"), "away": side("awayTeam")}}
+                       "starters": {"home": side("homeTeam"), "away": side("awayTeam")},
+                       # red cards (straight or second yellow) and every player taken off, with the minute
+                       "reds": [{"name": (e.get("player") or {}).get("name") or e.get("nameStr"), "home": e.get("isHome"), "time": e.get("time")}
+                                for e in ev if e.get("type") == "Card" and str(e.get("card") or "") in ("Red", "YellowRed")],
+                       "offs": [{"name": e["swap"][1]["name"] if len(e.get("swap") or []) > 1 else None, "home": e.get("isHome"), "time": e.get("time")}
+                                for e in ev if e.get("type") == "Substitution"]}
                 store[str(m["id"])] = got
                 fetched += 1
                 time.sleep(0.4)
@@ -737,6 +748,33 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     if fetched:
         INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
     covered = {r for r, ok in done.items() if ok}
+    # A winger or striker taken off after a team-mate (keeper, defender or central midfielder) was sent off before the
+    # 60th minute: a tactical sub, which says nothing of his role.
+    TACTICAL.clear()
+    for got in store.values():
+        for k, team in (("home", got.get("home")), ("away", got.get("away"))):
+            home = k == "home"
+            roles = {_name_key(n): ROLE_OF(pid) for n, pid, _ in (got.get("starters") or {}).get(k) or [] if n}
+            for rc in got.get("reds") or []:
+                t = rc.get("time")
+                if rc.get("home") != home or not rc.get("name") or t is None or t >= 60:
+                    continue
+                q = find(rc["name"], team)
+                role = role_base(roles.get(_name_key(rc["name"]), ""))
+                back = role in ("GK", "CB", "RB", "LB", "RWB", "LWB", "DM", "CM") or (not role and q and q["element_type"] in (1, 2))
+                if not back:
+                    continue
+                for off in got.get("offs") or []:
+                    if off.get("home") != home or not off.get("name") or (off.get("time") or 0) < t:
+                        continue
+                    r2 = role_base(roles.get(_name_key(off["name"]), ""))
+                    p2 = find(off["name"], team)
+                    if not p2 or not (r2 in ("RW", "LW", "RM", "LM", "AM", "ST") or (not r2 and p2["element_type"] == 4)):
+                        continue
+                    TACTICAL[(f"c{p2['code']}", got.get("round") or 0)] = (f"Tactical sub after a team-mate's red card: taken off at {off.get('time')}' "
+                                                                       f"after {rc['name']} was sent off at {t}'")
+    if TACTICAL:
+        print("Tactical subs after a team-mate's red card: " + "; ".join(f"{k[0]} GW{k[1]}: {v}" for k, v in sorted(TACTICAL.items(), key=lambda kv: kv[0][1])))
     # Where each player started his last league matches (FotMob places): a defender in FPL who started in midfield or
     # on a wing in most of his last OOP_LAST starts plays out of position.
     starts = {}
@@ -1309,6 +1347,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     df["inj_skip"] = False
     df["inj_hurt"] = False
     df["inj_rest"] = False
+    df["inj_tac"] = False
     df["inj_note"] = ""  # what the absence was, for the reason shown on the Minutes page
     season = ~df["future"] & (df["season"] == CURRENT_SEASON) & df["minutes"].notna()
     manual_rows = set()  # matches inside an absence the admin set by hand: always left out
@@ -1376,6 +1415,12 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
         df.loc[rows, "inj_skip"] = True
         df.loc[rows, "inj_hurt"] = True
         df.loc[rows, "inj_note"] = "Taken off injured after " + df.loc[rows, "minutes"].fillna(0).astype(int).astype(str) + " minutes (FotMob's match events)"
+    if TACTICAL:
+        keys = pd.Series(list(zip(df["pid"], df["GW"].fillna(-1).astype(int))), index=df.index)
+        for (pid, gw), txt in TACTICAL.items():
+            rows = season & (keys == (pid, gw)) & ~df["inj_skip"]
+            df.loc[rows, ["inj_skip", "inj_tac"]] = True
+            df.loc[rows, "inj_note"] = txt
     # A goalkeeper who came on for his injured team-mate: that part match says nothing of his role, left out too.
     df["gk_cover"] = False
     if "position" in df and df["inj_hurt"].any():
@@ -1388,7 +1433,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
     # A match he got hurt in or a recovery match is left out only if it would pull his usual minutes down. Where he
     # played at least the usual minutes the formula gives without it (5-4-3-2-1 of his 5 counted matches before it),
     # keeping it can only raise them, so it counts as normal and is not flagged.
-    cand = df.index[season & (df["inj_hurt"] | df["inj_rest"]) & ~df["gk_cover"] & (df["minutes"] > 0) & ~df.index.isin(list(manual_rows))]
+    cand = df.index[season & (df["inj_hurt"] | df["inj_rest"] | df["inj_tac"]) & ~df["gk_cover"] & (df["minutes"] > 0) & ~df.index.isin(list(manual_rows))]
     kept = 0
     for pid in df.loc[cand, "pid"].unique():
         g = df.loc[(df["pid"] == pid) & ~df["future"] & df["minutes"].notna()].sort_values("kickoff_time")
@@ -1402,7 +1447,7 @@ def mark_injuries(df: pd.DataFrame, log: list[dict], admin: dict | None = None, 
             w = MINUTE_WEIGHTS[:len(prev)]
             usual = float(np.dot(prev, w) / w.sum())
             if float(df.at[i, "minutes"]) >= usual:
-                df.loc[i, ["inj_skip", "inj_hurt", "inj_rest"]] = False
+                df.loc[i, ["inj_skip", "inj_hurt", "inj_rest", "inj_tac"]] = False
                 df.at[i, "inj_note"] = ""
                 kept += 1
     if kept:
@@ -3532,10 +3577,15 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     note = played.get("inj_note", pd.Series("", index=played.index)).fillna("").astype(str).copy()
     for _, g in played.groupby("pid"):
         left, red_gw, k = 0, None, 0
+        counted = []
         for i, mins, red, gw in zip(g.index, g["minutes"].fillna(0), g["red_cards"].fillna(0), g["GW"]):
             if red > 0:
                 left, red_gw, k = MAX_BAN_MATCHES, int(gw), 0
-                if why[i] == "":
+                last5 = np.array(counted[-5:][::-1], float)
+                usual_now = float(np.dot(last5, MINUTE_WEIGHTS[:len(last5)]) / MINUTE_WEIGHTS[:len(last5)].sum()) if len(last5) else 0.0
+                if why[i] == "" and len(last5) and mins >= usual_now:
+                    counted.append(float(mins))  # sent off after his usual minutes: counted, not flagged
+                elif why[i] == "":
                     why[i] = "c"  # sent off: the match itself is left out of the formula too (see ai_minutes)
                     note[i] = f"Sent off in this match: a red card after playing {int(mins)} minutes"
             elif left > 0 and mins == 0:
@@ -3545,6 +3595,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                     note[i] = f"Banned after his red card in GW{red_gw}: match {k} of the ban"
             else:
                 left = 0
+                if why[i] == "":
+                    counted.append(float(mins))
     yb = played.get("yellow_ban", pd.Series(False, index=played.index)).fillna(False).astype(bool)
     note[yb & why.eq("b") & note.eq("")] = "Banned for reaching the yellow card limit (5 by GW19, 10 by GW32)"
     if len(cut):
