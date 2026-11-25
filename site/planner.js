@@ -354,12 +354,11 @@
   // The weight of each transfer week's bonus. The free transfers left after the last transfer week also earn it in every
   // gameweek after (no transfers then); the free transfers gained in those weeks are the same for every plan, so they
   // are left out.
-  // Each free transfer kept after a transfer week is worth FTB_X (0.5); after the last transfer week (the plan's last
-  // week for 1-4 weeks, week 5 for 5 weeks or more) it is worth FTB_END (1.5) instead, at that week's decay, and only
-  // for gameweeks still to come: 0.5 for each gameweek left up to GW38, at most 3 (GW36 1.0, GW37 0.5, GW38 0).
-  const FTB_END = 1.5;
-  const ftbEnd = (depth) => { const g = (horizonGws()[depth - 1]) || 0; return Math.min(FTB_END, FTB_X * Math.max(0, 38 - g)); };
-  const ftbWeights = (depth, T, d = PLAN.decay) => [...Array(depth).keys()].map((t) => (t < depth - 1 ? FTB_X : ftbEnd(depth)) * Math.pow(d, t));
+  // The last transfer week's free transfers count in it and in the gameweeks after it: 3 more with Decay, 2 more with
+  // Normal (every gameweek counting in full), never past GW38.
+  const ftbAfter = (depth, d) => { const g = (horizonGws()[depth - 1]) || 0; return Math.max(0, Math.min(d < 1 ? 3 : 2, 38 - g)); };
+  const ftbWeights = (depth, T, d = PLAN.decay) => [...Array(depth).keys()].map((t) => FTB_X * (t < depth - 1 ? Math.pow(d, t)
+    : [...Array(1 + ftbAfter(depth, d)).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
   // What the plans are optimised for, chosen before Auto plan: Decay (each later gameweek 0.85 times the one before)
   // or Normal (every gameweek the same). The switch over the results still shows either kind of figure.
   state.optMode = (() => { try { return localStorage.getItem('planner-opt-v3') === 'normal' ? 'normal' : 'decay'; } catch (e) { return 'decay'; } })();  // Decay unless chosen
@@ -372,7 +371,7 @@
       let kept = 0, keptRaw = 0;
       const wts = ftbWeights(depth, weeks.length);
       weeks.slice(0, depth).forEach((w, t) => {
-        const n = Math.min(ftLeft(w), FTB_CAP), weeksCounted = t < depth - 1 ? 1 : ftbEnd(depth) / FTB_X;
+        const n = Math.min(ftLeft(w), FTB_CAP), weeksCounted = t < depth - 1 ? 1 : 1 + ftbAfter(depth, optDecay());
         kept += wts[t] * n; keptRaw += FTB_X * n * weeksCounted;
       });
       const last = weeks[depth - 1];
