@@ -354,11 +354,11 @@
   // The weight of each transfer week's bonus. The free transfers left after the last transfer week also earn it in every
   // gameweek after (no transfers then); the free transfers gained in those weeks are the same for every plan, so they
   // are left out.
-  // The last transfer week's free transfers count in it and in the gameweeks after it: 3 more with Decay, 2 more with
-  // Normal (every gameweek counting in full), never past GW38.
-  const ftbAfter = (depth, d) => { const g = (horizonGws()[depth - 1]) || 0; return Math.max(0, Math.min(d < 1 ? 3 : 2, 38 - g)); };
+  // The last transfer week's free transfers (week 5 at most) count in it and in the 3 gameweeks after it, Normal or
+  // Decay, never past GW38.
+  const ftbAfter = (depth) => { const g = (horizonGws()[depth - 1]) || 0; return Math.max(0, Math.min(3, 38 - g)); };
   const ftbWeights = (depth, T, d = PLAN.decay) => [...Array(depth).keys()].map((t) => FTB_X * (t < depth - 1 ? Math.pow(d, t)
-    : [...Array(1 + ftbAfter(depth, d)).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
+    : [...Array(1 + ftbAfter(depth)).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
   // What the plans are optimised for, chosen before Auto plan: Decay (each later gameweek 0.85 times the one before)
   // or Normal (every gameweek the same). The switch over the results still shows either kind of figure.
   state.optMode = (() => { try { return localStorage.getItem('planner-opt-v3') === 'normal' ? 'normal' : 'decay'; } catch (e) { return 'decay'; } })();  // Decay unless chosen
@@ -371,7 +371,7 @@
       let kept = 0, keptRaw = 0;
       const wts = ftbWeights(depth, weeks.length);
       weeks.slice(0, depth).forEach((w, t) => {
-        const n = Math.min(ftLeft(w), FTB_CAP), weeksCounted = t < depth - 1 ? 1 : 1 + ftbAfter(depth, optDecay());
+        const n = Math.min(ftLeft(w), FTB_CAP), weeksCounted = t < depth - 1 ? 1 : 1 + ftbAfter(depth);
         kept += wts[t] * n; keptRaw += FTB_X * n * weeksCounted;
       });
       const last = weeks[depth - 1];
