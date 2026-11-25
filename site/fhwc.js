@@ -10,7 +10,7 @@
   const table = (head, rows) => el('div', { className: 'wrap fh-wrap' }, el('table', { className: 'fh-table' },
     el('thead', {}, el('tr', {}, ...head.map((h) => el('th', { scope: 'col', textContent: h })))), el('tbody', {}, ...rows)));
   const diff = (a, x) => (has(a) ? `${a - x >= 0 ? '+' : '−'}${f1(Math.abs(a - x))}` : '');
-  const when = (t) => new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const when = (t) => (t === 'replay' ? 'replay' : new Date(t).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }));
   const entries = () => Object.values(log.entries).sort((a, b) => b.gw - a.gw);
   const num = (t) => el('td', { className: 'num', textContent: t });
 
@@ -18,7 +18,7 @@
     if (tab === 'fh') {
       $('sum-h').textContent = 'Free Hit, every gameweek';
       $('sum').tHead.replaceChildren(el('tr', {}, ...['GW', 'xPts', 'Actual', '±'].map((h) => el('th', { scope: 'col', textContent: h }))));
-      $('sum').tBodies[0].replaceChildren(...entries().map((e) => el('tr', {}, el('td', { textContent: `GW${e.gw}${e.locked ? '' : ' (not final)'}` }),
+      $('sum').tBodies[0].replaceChildren(...entries().map((e) => el('tr', {}, el('td', { textContent: `GW${e.gw}${e.replay ? ' (replay)' : e.locked ? '' : ' (not final)'}` }),
         num(f1(e.fh.week.xpts)), num(has(e.fh.week.actual) ? e.fh.week.actual : '–'), num(diff(e.fh.week.actual, e.fh.week.xpts)))));
     } else {
       $('sum-h').textContent = 'Wildcard, 5 gameweeks from each start';
@@ -26,7 +26,7 @@
       $('sum').tBodies[0].replaceChildren(...entries().map((e) => {
         const played = e.wc.weeks.filter((w) => has(w.actual));
         const x = played.reduce((a, w) => a + w.xpts, 0), a = played.reduce((s, w) => s + w.actual, 0);
-        return el('tr', {}, el('td', { textContent: `WC GW${e.gw}` }), num(`${played.length} of 5`), num(played.length ? f1(x) : '–'),
+        return el('tr', {}, el('td', { textContent: `WC GW${e.gw}${e.replay ? ' (replay)' : ''}` }), num(`${played.length} of 5`), num(played.length ? f1(x) : '–'),
           num(played.length ? a : '–'), num(played.length ? diff(a, x) : ''), num(f1(e.wc.weeks.reduce((s, w) => s + w.xpts, 0))));
       }));
     }
@@ -51,14 +51,14 @@
     if (tab === 'fh') {
       const fw = e.fh.week;
       $('one').replaceChildren(el('h2', { textContent: `Free Hit GW${e.gw}` }),
-        el('p', { className: 'meta', textContent: `£${Number(e.fh.cost).toFixed(1)}m · saved ${when(e.saved)}${e.locked ? ' (final, before the deadline)' : ' (not final yet)'}` }),
+        el('p', { className: 'meta', textContent: `£${Number(e.fh.cost).toFixed(1)}m · ${e.replay ? 'replay: made from the site rebuilt as it was before that deadline, prices of that gameweek' : `saved ${when(e.saved)}${e.locked ? ' (final, before the deadline)' : ' (not final yet)'}`}` }),
         el('p', {}, 'xPts ', el('b', { textContent: f1(fw.xpts) }), ' · actual ', el('b', { textContent: has(fw.actual) ? fw.actual : '–' }), has(fw.actual) ? ` (${diff(fw.actual, fw.xpts)})` : ''),
         table(['', 'Player', 'xPts', 'Pts'], weekRows(fw)));
       return;
     }
     const W = e.wc.weeks, played = W.filter((w) => has(w.actual));
     const rows = W.map((w) => el('tr', {}, el('td', { textContent: `GW${w.gw}` }), el('td', { textContent: name(w.cap).name }),
-      el('td', { className: 'small', textContent: w.picked ? `${w.locked ? 'final' : 'latest'} ${when(w.picked)}` : `planned ${when(e.saved)}` }),
+      el('td', { className: 'small', textContent: w.picked === 'replay' ? 'replay' : w.picked ? `${w.locked ? 'final' : 'latest'} ${when(w.picked)}` : e.replay ? 'replay' : `planned ${when(e.saved)}` }),
       num(f1(w.xpts)), num(has(w.actual) ? w.actual : '–'), num(diff(w.actual, w.xpts))));
     const tx = W.reduce((a, w) => a + w.xpts, 0), px = played.reduce((a, w) => a + w.xpts, 0), pa = played.reduce((a, w) => a + w.actual, 0);
     rows.push(el('tr', { className: 'total' }, el('td', { textContent: '5 GWs' }), el('td'), el('td'), num(f1(tx)),
