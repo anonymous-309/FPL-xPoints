@@ -351,11 +351,10 @@
   // A week's moves must still gain 0.5 per free transfer they use.
   const FTB = true; // the FT bonus way of judging plans (the older transfer cost and end value are kept below for reference)
   const FTB_X = 0.5, FTB_CAP = 4;
-  // The weight of each transfer week's bonus. The free transfers left after the last transfer week also earn it in every
-  // gameweek after (no transfers then); the free transfers gained in those weeks are the same for every plan, so they
-  // are left out.
-  const ftbWeights = (depth, T, d = PLAN.decay) => [...Array(depth).keys()].map((t) => FTB_X * (t < depth - 1 ? Math.pow(d, t)
-    : [...Array(Math.max(1, T - t)).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
+  // The weight of each transfer week's bonus: once per transfer week, the last one included. (Counting the free
+  // transfers left after the last transfer week again in every later gameweek made a long Normal plan worth many points
+  // for saving transfers it can never use.)
+  const ftbWeights = (depth, T, d = PLAN.decay) => [...Array(depth).keys()].map((t) => FTB_X * Math.pow(d, t));
   // What the plans are optimised for, chosen before Auto plan: Decay (each later gameweek 0.85 times the one before)
   // or Normal (every gameweek the same). The switch over the results still shows either kind of figure.
   state.optMode = (() => { try { return localStorage.getItem('planner-opt-v2') === 'decay' ? 'decay' : 'normal'; } catch (e) { return 'normal'; } })();  // Normal unless chosen
@@ -368,8 +367,8 @@
       let kept = 0, keptRaw = 0;
       const wts = ftbWeights(depth, weeks.length);
       weeks.slice(0, depth).forEach((w, t) => {
-        const n = Math.min(ftLeft(w), FTB_CAP), weeksCounted = t < depth - 1 ? 1 : Math.max(1, weeks.length - t);
-        kept += wts[t] * n; keptRaw += FTB_X * n * weeksCounted;
+        const n = Math.min(ftLeft(w), FTB_CAP);
+        kept += wts[t] * n; keptRaw += FTB_X * n;
       });
       const last = weeks[depth - 1];
       const left = weeks[depth] ? weeks[depth].freeTransfers : Math.min(S.MAX_FT, ftLeft(last) + (last.chip === 'wildcard' || last.chip === 'freehit' ? 0 : 1));
