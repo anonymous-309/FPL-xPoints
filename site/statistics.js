@@ -19,6 +19,11 @@
     ['saves', 'Saves', null, '', 'def'], ['pensave', 'Pen saves', null, '', 'def'],
     ['bonus', 'Bonus', null, '', 'oth'], ['bps', 'BPS', null, 'Bonus Points System score', 'oth'], ['yc', 'YC', null, 'Yellow cards', 'oth'], ['rc', 'RC', null, 'Red cards', 'oth']];
   const GROUPS = { att: 'Attack', def: 'Defence', oth: 'Bonus and cards' };
+  // Show: all columns, or the player plus one group (match stats = the columns without a group)
+  const shownCols = () => {
+    const v = $('view') ? $('view').value : '';
+    return COLS.filter(([k, , , , grp]) => k === 'name' || !v || (v === 'match' ? !grp : grp === v));
+  };
   // header row of groups over the columns
   function groupRow(cols) {
     const cells = [];
@@ -55,7 +60,8 @@
   const val = (p, k) => (k === 'name' ? p.name.toLowerCase() : k === 'price' ? p.price : p.st[k]);
 
   function header() {
-    $('table').tHead.replaceChildren(groupRow(COLS), el('tr', {}, ...COLS.map(([k, label, , tip, grp]) => {
+    const cols = shownCols();
+    $('table').tHead.replaceChildren(groupRow(cols), el('tr', {}, ...cols.map(([k, label, , tip, grp]) => {
       const th = el('th', { scope: 'col', title: tip || '', className: grp ? `grp-${grp}` : '' }, el('button', { type: 'button', textContent: label, onclick: () => {
         if (state.sort === k) state.dir *= -1; else { state.sort = k; state.dir = k === 'name' ? 1 : -1; }
         render();
@@ -118,7 +124,7 @@
       .sort((a, b) => { const x = val(a, state.sort) ?? -1, y = val(b, state.sort) ?? -1; return (x < y ? -1 : x > y ? 1 : 0) * state.dir; });
     const body = [];
     shown.forEach((p) => {
-      const tr = el('tr', { className: 'stat-row' }, ...COLS.map(([k, , d, , grp]) => {
+      const tr = el('tr', { className: 'stat-row' }, ...shownCols().map(([k, , d, , grp]) => {
         if (k === 'name') return el('td', { className: 'player', title: 'Tap for each gameweek' }, el('b', { textContent: p.name }), el('span', { textContent: `${p.team} ${p.position}` }));
         if (k === 'price') return el('td', { textContent: `£${p.price.toFixed(1)}` });
         const td = el('td', { textContent: fmt(p.st[k], d), className: [grp ? `grp-${grp}` : '', k === state.sort ? 'sorted' : ''].join(' ').trim() });
@@ -127,7 +133,7 @@
       tr.addEventListener('click', () => openPlayer(p));
       body.push(tr);
     });
-    $('table').tBodies[0].replaceChildren(...(body.length ? body : [el('tr', {}, el('td', { colSpan: COLS.length, className: 'none', textContent: 'No players match these filters.' }))]));
+    $('table').tBodies[0].replaceChildren(...(body.length ? body : [el('tr', {}, el('td', { colSpan: shownCols().length, className: 'none', textContent: 'No players match these filters.' }))]));
   }
 
   function fillRange(gws) {

@@ -753,3 +753,8 @@ table.stats.inner { font-size: .85em; margin: 0; width: auto; }
 .odds-table td.num { padding: 7px 8px; }
 .odds-table th button { white-space: normal; text-align: inherit; line-height: 1.2; }
 .odds-table td.odds-tname { white-space: normal; }
+
+/* Statistics: both heading rows stay at the top while the table scrolls */
+table.stats thead tr.grp-row th { top: 0; height: 28px; box-sizing: border-box; z-index: 4; }
+table.stats thead tr:nth-child(2) th { top: 28px; z-index: 3; }
+table.stats thead tr:nth-child(2) th:first-child { z-index: 5; }
