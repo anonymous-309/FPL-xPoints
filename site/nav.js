@@ -8,8 +8,8 @@
       ['statistics.html', 'Statistics', 'This season: points, xG, xA, DefCon, BPS…'],
       ['setpieces.html', 'Set pieces', 'Penalty, free kick and corner takers'], ['oop.html', 'OOP', 'Out of position players'],
       ['injuries.html', 'Injuries', 'Absence log']]],
-    ['About', [['explain.html', 'How it works', 'The formula, step by step'], ['accuracy.html', 'Accuracy', 'Model against real results'],
-      ['admin.html', 'Admin', 'Minutes and absences'], ['fhwc.html', 'FH & WC', 'Best Free Hit and Wildcard teams against what they scored']]],
+    ['About', [['fhwc.html', 'FH & WC', 'Best Free Hit and Wildcard teams against what they scored'], ['accuracy.html', 'Accuracy', 'Model against real results'],
+      ['explain.html', 'How it works', 'The formula, step by step'], ['admin.html', 'Admin', 'Minutes and absences']]],
   ];
   const nav = document.querySelector('nav.sitenav');
   if (!nav) return;

@@ -98,6 +98,30 @@ def solve(players, weeks):
     return {"squad": [players[i]["id"] for i in squad], "cost": cost}, out
 
 
+def lineup(squad, info, g):
+    """Best 11 of a fixed 15 for gameweek g (at least 3 DEF, 2 MID, 1 FWD), captain and vice the two highest, bench in
+    xPoints order; info: id -> {pos, xp: {gw: x}}."""
+    xp = lambda i: info[i]["xp"].get(str(g), 0.0)
+    pos = lambda i: info[i]["pos"]
+    by = sorted(squad, key=lambda i: -xp(i))
+    xi = [next(i for i in by if pos(i) == "GK")]
+    for p, k in (("DEF", 3), ("MID", 2), ("FWD", 1)):
+        xi += [i for i in by if pos(i) == p][:k]
+    room = {"DEF": 5, "MID": 5, "FWD": 3}
+    for i in by:
+        if len(xi) < 11 and i not in xi and pos(i) != "GK" and sum(pos(x) == pos(i) for x in xi) < room[pos(i)]:
+            xi.append(i)
+    order = {"GK": 0, "DEF": 1, "MID": 2, "FWD": 3}
+    xi.sort(key=lambda i: (order[pos(i)], -xp(i)))
+    caps = sorted(xi, key=lambda i: -xp(i))
+    rest = [i for i in by if i not in xi]
+    bench = [i for i in rest if pos(i) == "GK"] + [i for i in rest if pos(i) != "GK"]
+    exp = sum(xp(i) * (XI_GK if pos(i) == "GK" else XI_OUT) for i in xi) + xp(caps[0]) * XI_OUT
+    exp += xp(bench[0]) * BENCH_GK + sum(xp(i) * w for i, w in zip(bench[1:], BENCH_SLOTS))
+    return {"gw": g, "xi": xi, "bench": bench, "cap": caps[0], "vice": caps[1], "xpts": round(exp, 2),
+            "xp": {i: round(xp(i), 2) for i in squad}}
+
+
 def real_points(week, live, pos):
     """FPL points of a gameweek's team: starters who played, automatic subs in bench order (keeping a legal
     formation), captain double (the vice if the captain did not play)."""
@@ -162,6 +186,21 @@ def main(site):
         log["entries"][str(nxt)] = {"gw": nxt, "saved": now.isoformat(timespec="minutes"), "deadline": events[nxt]["deadline_time"],
                                      "fh": {**fh_squad, "week": fh_weeks[0]}, "wc": {**wc_squad, "weeks": wc_weeks}, "locked": final_run}
         print(f"GW{nxt}: Free Hit {fh_weeks[0]['xpts']:.1f} xPts (£{fh_squad['cost']}m), Wildcard {sum(w['xpts'] for w in wc_weeks):.1f} over GW{wc_w[0]}-{wc_w[-1]} (£{wc_squad['cost']}m)")
+    # Wildcard teams: before each of their later gameweeks, the same 15 re-picked (best 11, captain, bench) with the
+    # xPoints of the day; the run before that deadline keeps it.
+    if now < deadline:
+        info = {p["id"]: {"pos": p["position"], "xp": {str(g): float(((p["byGw"].get(str(g)) or {}).get("xpts")) or 0) for g in gws[:1]}} for p in data["players"]}
+        for key, e in log["entries"].items():
+            for w in e["wc"]["weeks"]:
+                if w["gw"] != nxt or w.get("locked"):
+                    continue
+                if not all(i in info for i in e["wc"]["squad"]):
+                    continue
+                new = lineup(e["wc"]["squad"], info, nxt)
+                w.setdefault("xptsPlan", w["xpts"])  # what the week was worth on the Wildcard's own day
+                w.update({k: new[k] for k in ("xi", "bench", "cap", "vice", "xpts", "xp")})
+                w["picked"] = now.isoformat(timespec="minutes")
+                w["locked"] = final_run
     # real points of every gameweek played so far (until FPL has checked the data)
     live_cache = {}
     def live(g):
