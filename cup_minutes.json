@@ -2694,5 +2694,116 @@
 "Rayan": 45
 }
 }
+},
+"6106256": {
+"teams": {
+"Napoli": {
+"Kevin De Bruyne": 75,
+"Leonardo Spinazzola": 90,
+"Matteo Politano": 90,
+"Vanja Milinković-Savić": 90,
+"Amir Rrahmani": 90,
+"Frank Anguissa": 15,
+"Mathías Olivera": 90,
+"Noa Lang": 90,
+"Scott McTominay": 90,
+"Sam Beukema": 90,
+"Billy Gilmour": 90,
+"Rasmus Højlund": 75,
+"Giovane Nascimento": 15
+},
+"Manchester City": {
+"Gianluigi Donnarumma": 90,
+"Erling Haaland": 90,
+"Marc Guéhi": 90,
+"Jérémy Doku": 35,
+"Matheus Nunes": 90,
+"Iliman Ndiaye": 27,
+"Joško Gvardiol": 90,
+"Elliot Anderson": 90,
+"Rayan Cherki": 90,
+"Enzo Fernández": 63,
+"Nico O'Reilly": 90,
+"Ayyoub Bouaddi": 90,
+"Allan": 55
+}
+}
+},
+"6106259": {
+"teams": {
+"Borussia Dortmund": {
+"Marcel Sabitzer": 17,
+"Serhou Guirassy": 26,
+"Julian Ryerson": 90,
+"Waldemar Anton": 90,
+"Gregor Kobel": 90,
+"Joey Veerman": 90,
+"Felix Nmecha": 90,
+"Nico Schlotterbeck": 90,
+"Maximilian Beier": 64,
+"Fábio Silva": 64,
+"Daniel Svensson": 90,
+"Jobe Bellingham": 73,
+"Joane Gadou": 89,
+"Konstantinos Karetsas": 26,
+"Filippo Mane": 1
+},
+"Arsenal": {
+"Kepa Arrizabalaga": 90,
+"Martin Ødegaard": 90,
+"Mikel Merino": 3,
+"Declan Rice": 90,
+"Viktor Gyökeres": 87,
+"Ezri Konsa": 90,
+"Ben White": 65,
+"Gabriel": 90,
+"Eberechi Eze": 25,
+"Bruno Guimarães": 25,
+"Jurriën Timber": 25,
+"Noni Madueke": 90,
+"Piero Hincapié": 90,
+"Christos Tzolis": 65,
+"Myles Lewis-Skelly": 65
+}
+}
+},
+"6106339": {
+"teams": {
+"Galatasaray": {
+"İlkay Gündoğan": 1,
+"Abdülkerim Bardakci": 90,
+"Mario Lemina": 74,
+"Lucas Torreira": 89,
+"Uğurcan Çakır": 90,
+"Davinson Sánchez": 90,
+"Yunus Akgün": 90,
+"Barış Alper Yılmaz": 90,
+"Gabriel Sara": 16,
+"Ismail Jakobs": 90,
+"Wilfried Singo": 90,
+"Eren Elmalı": 62,
+"Lesley Ugochukwu": 16,
+"Deniz Gül": 28,
+"Aleksey Batrakov": 74
+},
+"Aston Villa": {
+"Ross Barkley": 16,
+"Victor Nilsson Lindelöf": 90,
+"Leon Goretzka": 24,
+"John McGinn": 74,
+"Tyrone Mings": 90,
+"Emiliano Buendía": 8,
+"Boubacar Kamara": 82,
+"Taylor Harwood-Bellis": 90,
+"Ian Maatsen": 90,
+"Zion Suzuki": 90,
+"João Gomes": 66,
+"Nicolas Jackson": 90,
+"Johan Manzambi": 74,
+"Ibrahim Mbaye": 24,
+"George Hemmings": 16,
+"Alysson Edward": 66
+}
+}
 }
 }
