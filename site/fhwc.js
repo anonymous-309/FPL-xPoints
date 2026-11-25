@@ -48,7 +48,7 @@
     if (!e) return;
     const fw = e.fh.week;
     $('fh').replaceChildren(el('h2', { textContent: `Free Hit GW${e.gw}` }),
-      el('p', { className: 'meta', textContent: `£${e.fh.cost}m · saved ${e.saved.replace('T', ' ')}${e.locked ? ' (final, before the deadline)' : ' (not final yet)'}` }),
+      el('p', { className: 'meta', textContent: `£${Number(e.fh.cost).toFixed(1)}m · saved ${new Date(e.saved).toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}${e.locked ? ' (final, before the deadline)' : ' (not final yet)'}` }),
       el('p', {}, 'xPts ', el('b', { textContent: f1(fw.xpts) }), ' · actual ', el('b', { textContent: fw.actual === undefined ? '–' : fw.actual }), fw.actual === undefined ? '' : ` (${diff(fw.actual, fw.xpts)})`),
       table(['', 'Player', 'xPts', 'Pts'], weekRows(fw)));
     const wrows = e.wc.weeks.map((w) => el('tr', {}, el('td', { textContent: `GW${w.gw}` }), el('td', { textContent: name(w.cap).name }),
@@ -63,7 +63,7 @@
     const one = () => { const w = e.wc.weeks.find((x) => String(x.gw) === pick.value); box.replaceChildren(table(['', 'Player', 'xPts', 'Pts'], weekRows(w))); };
     pick.addEventListener('change', one);
     $('wc').replaceChildren(el('h2', { textContent: `Wildcard from GW${e.gw} (5 gameweeks)` }),
-      el('p', { className: 'meta', textContent: `£${e.wc.cost}m · the same 15 every week, best 11 and captain each week` }),
+      el('p', { className: 'meta', textContent: `£${Number(e.wc.cost).toFixed(1)}m · the same 15 every week, best 11 and captain each week` }),
       table(['GW', 'Captain', 'xPts', 'Actual', '±'], wrows.concat([tot])),
       el('label', { className: 'fh-pick' }, 'Team in ', pick), box);
     one();
