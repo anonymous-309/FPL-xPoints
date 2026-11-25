@@ -639,7 +639,8 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # FotMob's match events mark a substitution made because the player going off was hurt ("injuredPlayerOut"). Each
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
-TACTICAL: dict = {}  # (pid, gameweek) -> note, for a winger or striker taken off after a team-mate's early red card
+TACTICAL: dict = {}  # (pid, gameweek) -> note: taken off for a defender just after a team-mate's red card
+RED_TACTICAL_BEFORE, RED_TACTICAL_WINDOW = 70, 20  # a red card before this minute; the sub within this many minutes after it
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
 RED_HALFLIFE_TF = 19  # gameweeks (about half a season) for a red card's weight in the position average to halve
 OOP_MIN_SHARE = 0.10  # at or below this share he counts as a plain defender
@@ -709,7 +710,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         if not (m.get("status") or {}).get("finished"):
             continue
         rnd = int(m.get("round") or 0)
-        if str(m["id"]) in store and ("offs" in store[str(m["id"])] or offline):
+        if str(m["id"]) in store and ("subs" in store[str(m["id"])] or offline):
             got = store[str(m["id"])]
         elif offline:
             done[rnd] = False
@@ -728,8 +729,9 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
                        # red cards (straight or second yellow) and every player taken off, with the minute
                        "reds": [{"name": (e.get("player") or {}).get("name") or e.get("nameStr"), "home": e.get("isHome"), "time": e.get("time")}
                                 for e in ev if e.get("type") == "Card" and str(e.get("card") or "") in ("Red", "YellowRed")],
-                       "offs": [{"name": e["swap"][1]["name"] if len(e.get("swap") or []) > 1 else None, "home": e.get("isHome"), "time": e.get("time")}
-                                for e in ev if e.get("type") == "Substitution"]}
+                       # every substitution: who came on, who went off, the minute
+                       "subs": [{"in": (e.get("swap") or [{}])[0].get("name"), "out": e["swap"][1]["name"] if len(e.get("swap") or []) > 1 else None,
+                                 "home": e.get("isHome"), "time": e.get("time")} for e in ev if e.get("type") == "Substitution"]}
                 store[str(m["id"])] = got
                 fetched += 1
                 time.sleep(0.4)
@@ -748,33 +750,27 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     if fetched:
         INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
     covered = {r for r, ok in done.items() if ok}
-    # A winger or striker taken off after a team-mate (keeper, defender or central midfielder) was sent off before the
-    # 60th minute: a tactical sub, which says nothing of his role.
+    # Team red card, tactical sub: a team-mate sent off before the 70th minute (any position), and within 20 minutes a
+    # defender comes on for him. That match says nothing of his role.
     TACTICAL.clear()
     for got in store.values():
         for k, team in (("home", got.get("home")), ("away", got.get("away"))):
             home = k == "home"
-            roles = {_name_key(n): ROLE_OF(pid) for n, pid, _ in (got.get("starters") or {}).get(k) or [] if n}
             for rc in got.get("reds") or []:
                 t = rc.get("time")
-                if rc.get("home") != home or not rc.get("name") or t is None or t >= 60:
+                if rc.get("home") != home or t is None or t >= RED_TACTICAL_BEFORE:
                     continue
-                q = find(rc["name"], team)
-                role = role_base(roles.get(_name_key(rc["name"]), ""))
-                back = role in ("GK", "CB", "RB", "LB", "RWB", "LWB", "DM", "CM") or (not role and q and q["element_type"] in (1, 2))
-                if not back:
-                    continue
-                for off in got.get("offs") or []:
-                    if off.get("home") != home or not off.get("name") or (off.get("time") or 0) < t:
+                for sb in got.get("subs") or []:
+                    st = sb.get("time")
+                    if sb.get("home") != home or not sb.get("out") or not sb.get("in") or st is None or not (t <= st <= t + RED_TACTICAL_WINDOW):
                         continue
-                    r2 = role_base(roles.get(_name_key(off["name"]), ""))
-                    p2 = find(off["name"], team)
-                    if not p2 or not (r2 in ("RW", "LW", "RM", "LM", "AM", "ST") or (not r2 and p2["element_type"] == 4)):
+                    p_in, p_out = find(sb["in"], team), find(sb["out"], team)
+                    if not p_out or not p_in or p_in["element_type"] != 2:
                         continue
-                    TACTICAL[(f"c{p2['code']}", got.get("round") or 0)] = (f"Tactical sub after a team-mate's red card: taken off at {off.get('time')}' "
-                                                                       f"after {rc['name']} was sent off at {t}'")
+                    TACTICAL[(f"c{p_out['code']}", got.get("round") or 0)] = (f"Tactical sub (team red card): taken off at {st}' for {sb['in']} (defender) "
+                                                                         f"after {rc.get('name')} was sent off at {t}'")
     if TACTICAL:
-        print("Tactical subs after a team-mate's red card: " + "; ".join(f"{k[0]} GW{k[1]}: {v}" for k, v in sorted(TACTICAL.items(), key=lambda kv: kv[0][1])))
+        print("Tactical subs (team red card): " + "; ".join(f"{k[0]} GW{k[1]}: {v}" for k, v in sorted(TACTICAL.items(), key=lambda kv: kv[0][1])))
     # Where each player started his last league matches (FotMob places): a defender in FPL who started in midfield or
     # on a wing in most of his last OOP_LAST starts plays out of position.
     starts = {}
