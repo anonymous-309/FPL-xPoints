@@ -751,8 +751,20 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
     covered = {r for r, ok in done.items() if ok}
     # Team red card, tactical sub: a team-mate sent off before the 70th minute (any position), and within 20 minutes a
-    # defender comes on for him. That match says nothing of his role.
+    # defender or a central midfielder comes on for him. That match says nothing of his role.
     TACTICAL.clear()
+    roles_of = {}  # each player's FotMob places in his league starts, to tell a central midfielder
+    for got in store.values():
+        for k, team in (("home", got.get("home")), ("away", got.get("away"))):
+            for name, pid, _ in (got.get("starters") or {}).get(k) or []:
+                q = find(name, team) if name else None
+                if q:
+                    roles_of.setdefault(q["code"], []).append(role_base(ROLE_OF(pid)))
+    def holding(q):
+        if q["element_type"] == 2:
+            return "defender"
+        r = roles_of.get(q["code"], [])
+        return "central midfielder" if q["element_type"] == 3 and r and sum(x in ("DM", "CM") for x in r) * 2 > len(r) else None
     for got in store.values():
         for k, team in (("home", got.get("home")), ("away", got.get("away"))):
             home = k == "home"
@@ -765,9 +777,10 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
                     if sb.get("home") != home or not sb.get("out") or not sb.get("in") or st is None or not (t <= st <= t + RED_TACTICAL_WINDOW):
                         continue
                     p_in, p_out = find(sb["in"], team), find(sb["out"], team)
-                    if not p_out or not p_in or p_in["element_type"] != 2:
+                    kind = holding(p_in) if p_in else None
+                    if not p_out or not kind:
                         continue
-                    TACTICAL[(f"c{p_out['code']}", got.get("round") or 0)] = (f"Tactical sub (team red card): taken off at {st}' for {sb['in']} (defender) "
+                    TACTICAL[(f"c{p_out['code']}", got.get("round") or 0)] = (f"Tactical sub (team red card): taken off at {st}' for {sb['in']} ({kind}) "
                                                                          f"after {rc.get('name')} was sent off at {t}'")
     if TACTICAL:
         print("Tactical subs (team red card): " + "; ".join(f"{k[0]} GW{k[1]}: {v}" for k, v in sorted(TACTICAL.items(), key=lambda kv: kv[0][1])))
