@@ -757,7 +757,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
     if fetched:
         INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
     covered = {r for r, ok in done.items() if ok}
-    # Team red card, tactical sub: a defensive player (defender or central midfielder) sent off before the 70th minute,
+    # Team red card, tactical sub: a defensive player (keeper, defender or central midfielder) sent off before the 70th minute,
     # and the club's first change after it (within 20 minutes) takes an attacking player (winger, attacking midfielder
     # or striker) off for a defensive one. That match says nothing of the attacking player's role.
     TACTICAL.clear()
@@ -773,11 +773,11 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         by where he usually starts)."""
         r = roles_now.get(_name_key(name))
         if r:
-            return "defensive" if r in BACK + HOLD else "attacking" if r in ATTACK else None
+            return "defensive" if r in ("GK",) + BACK + HOLD else "attacking" if r in ATTACK else None
         q = q or find_any(name)
         usual = roles_of.get(_name_key(name), [])
         most = lambda roles: usual and sum(x in roles for x in usual) * 2 > len(usual)
-        if (q and q["element_type"] == 2) or (not q and most(BACK)):
+        if (q and q["element_type"] in (1, 2)) or (not q and most(("GK",) + BACK)):
             return "defensive"
         if q and q["element_type"] == 4:
             return "attacking"
