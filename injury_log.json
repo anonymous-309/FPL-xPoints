@@ -36,7 +36,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c486672-2026-27-GW11",
@@ -66,7 +66,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c451490-2026-27-GW11",
@@ -96,7 +96,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c455084-2026-27-GW11",
@@ -135,7 +135,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c243298-2026-27-GW11",
@@ -174,7 +174,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c462635-2026-27-GW11",
@@ -204,7 +204,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c487838-2026-27-GW11",
@@ -234,7 +234,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c490094-2026-27-GW11",
@@ -273,7 +273,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c242313-2026-27-GW11",
@@ -303,7 +303,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c154561-2026-27-GW11",
@@ -351,7 +351,7 @@
   "chance": 50,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c510281-2026-27-GW11",
@@ -390,7 +390,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c17761-2026-27-GW11",
@@ -420,7 +420,7 @@
   "chance": 0,
   "expectedReturnGw": 15,
   "expectedReturnDate": "2026-12-13",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c611695-2026-27-GW11",
@@ -450,7 +450,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c488024-2026-27-GW11",
@@ -480,7 +480,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c535301-2026-27-GW10",
@@ -510,7 +510,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c441264-2026-27-GW10",
@@ -549,7 +549,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c199796-2026-27-GW10",
@@ -597,7 +597,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c432830-2026-27-GW10",
@@ -636,7 +636,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c512123-2026-27-GW10",
@@ -666,7 +666,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c472713-2026-27-GW10",
@@ -705,7 +705,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c180974-2026-27-GW10",
@@ -735,7 +735,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c231747-2026-27-GW10",
@@ -765,7 +765,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c445028-2026-27-GW10",
@@ -795,7 +795,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c511499-2026-27-GW10",
@@ -834,7 +834,7 @@
   "chance": 0,
   "expectedReturnGw": 14,
   "expectedReturnDate": "2026-12-06",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c502500-2026-27-GW10",
@@ -864,7 +864,7 @@
   "chance": 0,
   "expectedReturnGw": 14,
   "expectedReturnDate": "2026-12-05",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c84450-2026-27-GW10",
@@ -903,7 +903,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c661888-2026-27-GW10",
@@ -933,7 +933,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c481655-2026-27-GW10",
@@ -972,7 +972,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c547027-2026-27-GW9",
@@ -1002,7 +1002,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c441266-2026-27-GW9",
@@ -1041,7 +1041,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c551210-2026-27-GW9",
@@ -1080,7 +1080,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c209046-2026-27-GW9",
@@ -1110,7 +1110,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c437499-2026-27-GW9",
@@ -1140,7 +1140,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c241293-2026-27-GW9",
@@ -1170,7 +1170,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c135720-2026-27-GW8",
@@ -1200,7 +1200,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c250199-2026-27-GW8",
@@ -1230,7 +1230,7 @@
   "chance": 0,
   "expectedReturnGw": 18,
   "expectedReturnDate": "2026-12-30",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c475168-2026-27-GW8",
@@ -1260,7 +1260,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c223340-2026-27-GW8",
@@ -1299,7 +1299,7 @@
   "chance": 0,
   "expectedReturnGw": 16,
   "expectedReturnDate": "2026-12-20",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c437730-2026-27-GW8",
@@ -1329,7 +1329,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c109646-2026-27-GW8",
@@ -1359,7 +1359,7 @@
   "chance": 0,
   "expectedReturnGw": 12,
   "expectedReturnDate": "2026-11-29",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c176297-2026-27-GW7",
@@ -1389,7 +1389,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c487992-2026-27-GW7",
@@ -1428,7 +1428,7 @@
   "chance": 0,
   "expectedReturnGw": 19,
   "expectedReturnDate": "2027-01-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c494928-2026-27-GW7",
@@ -1458,7 +1458,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c232185-2026-27-GW7",
@@ -1497,7 +1497,7 @@
   "chance": 0,
   "expectedReturnGw": 12,
   "expectedReturnDate": "2026-11-29",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c106760-2026-27-GW7",
@@ -1536,7 +1536,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c209289-2026-27-GW7",
@@ -1566,7 +1566,7 @@
   "chance": 0,
   "expectedReturnGw": 12,
   "expectedReturnDate": "2026-11-29",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c223827-2026-27-GW6",
@@ -1596,7 +1596,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c223723-2026-27-GW6",
@@ -1635,7 +1635,7 @@
   "chance": 0,
   "expectedReturnGw": 12,
   "expectedReturnDate": "2026-11-29",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c614574-2026-27-GW6",
@@ -1665,7 +1665,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c539142-2026-27-GW5",
@@ -1695,7 +1695,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c225796-2026-27-GW5",
@@ -1725,7 +1725,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c485711-2026-27-GW5",
@@ -1755,7 +1755,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c465920-2026-27-GW4",
@@ -1785,7 +1785,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c626751-2026-27-GW3",
@@ -1815,7 +1815,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c194010-2026-27-GW3",
@@ -1845,7 +1845,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c461199-2026-27-GW3",
@@ -1875,7 +1875,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c515621-2026-27-GW2",
@@ -1905,7 +1905,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c169359-2026-27-GW2",
@@ -1935,7 +1935,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c700308-2026-27-GW2",
@@ -1974,7 +1974,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c492777-2026-27-GW1",
@@ -2013,7 +2013,7 @@
   "chance": 0,
   "expectedReturnGw": 15,
   "expectedReturnDate": "2026-12-12",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c59735-2026-27-GW1",
@@ -2043,7 +2043,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c183656-2026-27-GW1",
@@ -2082,7 +2082,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c439668-2026-27-GW1",
@@ -2112,7 +2112,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c510663-2026-27-GW1",
@@ -2142,7 +2142,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c487117-2026-27-GW1",
@@ -2172,7 +2172,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c593174-2026-27-GW1",
@@ -2202,7 +2202,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c463936-2026-27-GW1",
@@ -2232,7 +2232,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c470294-2026-27-GW1",
@@ -2262,7 +2262,7 @@
   "chance": 75,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c501902-2026-27-GW1",
@@ -2292,7 +2292,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c436893-2026-27-GW1",
@@ -2322,7 +2322,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c554578-2026-27-GW1",
@@ -2352,7 +2352,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c432987-2026-27-GW1",
@@ -2382,7 +2382,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c86873-2026-27-GW1",
@@ -2412,7 +2412,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c647681-2026-27-GW1",
@@ -2451,7 +2451,7 @@
   "chance": 0,
   "expectedReturnGw": 15,
   "expectedReturnDate": "2026-12-12",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c465525-2026-27-GW1",
@@ -2481,7 +2481,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c565297-2026-27-GW1",
@@ -2511,7 +2511,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c543295-2026-27-GW1",
@@ -2541,7 +2541,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c620487-2026-27-GW1",
@@ -2589,7 +2589,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c451340-2026-27-GW1",
@@ -2628,7 +2628,7 @@
   "chance": 0,
   "expectedReturnGw": 13,
   "expectedReturnDate": "2026-12-02",
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c550839-2026-27-GW1",
@@ -2658,7 +2658,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c449871-2026-27-GW1",
@@ -2688,7 +2688,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c500151-2026-27-GW1",
@@ -2718,7 +2718,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c608181-2026-27-GW1",
@@ -2748,7 +2748,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c232112-2026-27-GW1",
@@ -2778,7 +2778,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c220583-2026-27-GW1",
@@ -2808,7 +2808,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c176412-2026-27-GW1",
@@ -2847,7 +2847,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c493362-2026-27-GW1",
@@ -2877,7 +2877,7 @@
   "chance": 0,
   "expectedReturnGw": null,
   "expectedReturnDate": null,
-  "lastSeen": "2026-11-25T13:13Z"
+  "lastSeen": "2026-11-25T14:35Z"
  },
  {
   "id": "c184667-2026-27-GW11",
