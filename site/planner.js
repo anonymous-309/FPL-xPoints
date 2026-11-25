@@ -1166,7 +1166,7 @@
     return part === 'subs' ? r.subs : r.xpts;
   }
   // "Bench adds about 1.8 (1.5 decay)": the bench's share of a gameweek, and the same with that week's decay
-  const benchText = (x, t) => `Bench adds about ${f1(x)}${t ? ` (${f1(x * Math.pow(PLAN.decay, t))} decay)` : ''}.`;
+  const benchText = (x, t) => `Bench adds about ${f1(x)} (${f1(x * Math.pow(PLAN.decay, t))} decay).`;
 
   function manualWeeks() {
     const box = $('manualWeeks');
