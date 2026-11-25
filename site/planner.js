@@ -354,8 +354,11 @@
   // The weight of each transfer week's bonus. The free transfers left after the last transfer week also earn it in every
   // gameweek after (no transfers then); the free transfers gained in those weeks are the same for every plan, so they
   // are left out.
+  // The last transfer week's free transfers count in it and the FTB_AFTER gameweeks after it, whatever the plan's length
+  // (a 4-week plan: weeks 4-7; 5 weeks or more: weeks 5-8).
+  const FTB_AFTER = 3;
   const ftbWeights = (depth, T, d = PLAN.decay) => [...Array(depth).keys()].map((t) => FTB_X * (t < depth - 1 ? Math.pow(d, t)
-    : [...Array(Math.max(1, T - t)).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
+    : [...Array(1 + FTB_AFTER).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
   // What the plans are optimised for, chosen before Auto plan: Decay (each later gameweek 0.85 times the one before)
   // or Normal (every gameweek the same). The switch over the results still shows either kind of figure.
   state.optMode = (() => { try { return localStorage.getItem('planner-opt-v3') === 'normal' ? 'normal' : 'decay'; } catch (e) { return 'decay'; } })();  // Decay unless chosen
@@ -368,7 +371,7 @@
       let kept = 0, keptRaw = 0;
       const wts = ftbWeights(depth, weeks.length);
       weeks.slice(0, depth).forEach((w, t) => {
-        const n = Math.min(ftLeft(w), FTB_CAP), weeksCounted = t < depth - 1 ? 1 : Math.max(1, weeks.length - t);
+        const n = Math.min(ftLeft(w), FTB_CAP), weeksCounted = t < depth - 1 ? 1 : 1 + FTB_AFTER;
         kept += wts[t] * n; keptRaw += FTB_X * n * weeksCounted;
       });
       const last = weeks[depth - 1];
