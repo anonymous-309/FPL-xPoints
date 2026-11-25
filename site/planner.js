@@ -358,7 +358,7 @@
     : [...Array(Math.max(1, T - t)).keys()].reduce((a, j) => a + Math.pow(d, t + j), 0)));
   // What the plans are optimised for, chosen before Auto plan: Decay (each later gameweek 0.85 times the one before)
   // or Normal (every gameweek the same). The switch over the results still shows either kind of figure.
-  state.optMode = (() => { try { return localStorage.getItem('planner-opt-v2') === 'decay' ? 'decay' : 'normal'; } catch (e) { return 'normal'; } })();  // Normal unless chosen
+  state.optMode = (() => { try { return localStorage.getItem('planner-opt-v3') === 'normal' ? 'normal' : 'decay'; } catch (e) { return 'decay'; } })();  // Decay unless chosen
   const optDecay = () => (state.optMode === 'normal' ? 1 : PLAN.decay);
   const ftLeft = (w) => (w.chip === 'wildcard' || w.chip === 'freehit' ? w.freeTransfers : Math.max(w.freeTransfers - Math.min(w.ins.length, w.freeTransfers), 0));
 
@@ -1424,7 +1424,7 @@
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('infoPop').hidden = true; });
   $('pick').addEventListener('submit', (e) => { e.preventDefault(); go(); });
   $('optMode').value = state.optMode;
-  $('optMode').addEventListener('change', () => { state.optMode = $('optMode').value; try { localStorage.setItem('planner-opt-v2', state.optMode); } catch (e) { /* private mode */ } if (!$('manual').hidden) manualWeeks(); });
+  $('optMode').addEventListener('change', () => { state.optMode = $('optMode').value; try { localStorage.setItem('planner-opt-v3', state.optMode); } catch (e) { /* private mode */ } if (!$('manual').hidden) manualWeeks(); });
   $('horizon').addEventListener('change', () => { chipChoices(); readSettings(); settingsForm(); if (!$('manual').hidden) manualWeeks(); });
   ['keep', 'avoid', 'forceIn', 'forceOut'].forEach((kind) => {
     $(`${kind}Add`).addEventListener('click', () => addPick(kind));
