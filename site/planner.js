@@ -429,7 +429,7 @@
     const index = new Map(P.map((p, i) => [p.id, i]));
     // After the transfer weeks the squad stays, so those gameweeks are searched as one (their points summed, each
     // weighed as usual) to keep the search small; their starting 11, captain and bench are picked afterwards.
-    const depth = manual ? T : Math.min(PLAN.depth, T); // your own transfers: any of the gameweeks planned
+    const depth = Math.min(PLAN.depth, T); // transfers in the first 5 gameweeks, then the squad stays (own plan too)
     const merge = T > depth + 1 && !Object.values(chips).some((arr) => (arr || []).some((t) => t >= depth));
     const Tm = merge ? depth + 1 : T;
     const OD = optDecay();
@@ -1123,7 +1123,7 @@
   state.replacing = null; // the player being replaced (id), while the list of players to bring in is open
   function manualCtx() {
     const gws = horizonGws();
-    const depth = gws.length; // My own transfers: every gameweek planned
+    const depth = Math.min(PLAN.depth, gws.length); // transfers in the first 5 gameweeks, as in Suggest transfers; later ones locked
     const byId = new Map(state.data.players.map((p) => [p.id, p]));
     const sellNow = new Map(state.team.squad.map((x) => [x.id, x.sell !== undefined ? x.sell : x.price]));
     const sellOf = (id) => (sellNow.has(id) ? sellNow.get(id) : (byId.get(id) || {}).price || 0);
@@ -1134,7 +1134,7 @@
     const xpAt = (p, g) => { const v = view(p, g); return v ? v.xpts : 0; };
     const longXp = (p) => gws.reduce((a, g, k) => a + Math.pow(PLAN.decay, k) * xpAt(p, g), 0);
     const tidy = (from) => { for (let k = from; k < depth; k++) state.manual[k] = (state.manual[k] || []).filter((m) => squadAt(k).has(m.out) && !squadAt(k).has(m.in)); };
-    return { gws, depth, byId, sellOf, priceOf, bankAt, bankAfter, view, xpAt, longXp, tidy };
+    return { gws, depth, all: gws.length, byId, sellOf, priceOf, bankAt, bankAfter, view, xpAt, longXp, tidy };
   }
   // the squad in week t, after that week's own moves
   const squadAfter = (t) => { const ids = squadAt(t); (state.manual[t] || []).forEach((m) => { ids.delete(m.out); ids.add(m.in); }); return ids; };
@@ -1176,15 +1176,15 @@
     }
     const c = manualCtx();
     Object.keys(state.manual).forEach((t) => { if (Number(t) >= c.depth) delete state.manual[t]; });
-    state.mt = Math.min(state.mt, c.depth - 1);
+    state.mt = Math.min(state.mt, c.all - 1);
     const t = state.mt, g = c.gws[t];
     // free transfers and hits, week by week (one more each week, 5 at most)
     let ft = state.team.ft, hits = 0;
     for (let k = 0; k <= t; k++) { const n = (state.manual[k] || []).length; if (k === t) hits = Math.max(0, n - ft); else ft = Math.min(S.MAX_FT, Math.max(0, ft - n) + 1); }
-    const tabs = el('div', { className: 'seg week-tabs', role: 'tablist' }, ...[...Array(c.depth).keys()].map((k) => {
+    const tabs = el('div', { className: 'seg week-tabs', role: 'tablist' }, ...[...Array(c.all).keys()].map((k) => {
       const n = (state.manual[k] || []).length;
       const b = el('button', { type: 'button', role: 'tab', onclick: () => { state.mt = k; state.replacing = null; manualWeeks(); } },
-        el('span', { textContent: `GW${c.gws[k]}` }), el('small', { textContent: n ? `${n} move${n > 1 ? 's' : ''}` : 'save' }));
+        el('span', { textContent: `GW${c.gws[k]}` }), el('small', { textContent: k >= c.depth ? 'locked' : n ? `${n} move${n > 1 ? 's' : ''}` : 'save' }));
       b.setAttribute('aria-pressed', String(k === t));
       return b;
     }));
@@ -1215,7 +1215,7 @@
       el('span', { className: 'pp-slot-label', textContent: k === 0 ? 'GKP' : `${k}. ${POS_LABEL[p.position]}` }), mcard(p))));
     const d = modeDecay();
     let movesEl;
-    if (!moves.length) movesEl = el('p', { className: 'meta', textContent: 'No transfer: save it. Tap a player to replace him.' });
+    if (!moves.length) movesEl = t >= c.depth ? '' : el('p', { className: 'meta', textContent: 'No transfer: save it. Tap a player to replace him.' });
     else {
       // the same figures as the plan row below once it is worked out (until then, worked out here)
       const solved = state.plan && state.plan.manual && state.plan.sig === ownSig && ownSig === ownKey() && state.plan.options[0].gains ? state.plan.options[0].gains[t] : null;
@@ -1238,7 +1238,8 @@
         el('tfoot', {}, el('tr', { className: 'moves-total' }, el('td', {}),
           el('td', { className: 'inp' }, el('b', { textContent: 'Total' }), ...lines.map((x) => el('small', { textContent: x }))), el('td', {}))));
     }
-    const facts = `Beginning: ${ft} free transfer${ft === 1 ? '' : 's'}, budget £${c.bankAt(t).toFixed(1)}m.`;
+    const facts = t >= c.depth ? `No transfers from GW${c.gws[c.depth]}: the squad stays, best 11 and captain each week (as in Suggest transfers).`
+      : `Beginning: ${ft} free transfer${ft === 1 ? '' : 's'}, budget £${c.bankAt(t).toFixed(1)}m.`;
     const view = el('section', { className: 'week-view' },
       el('div', { className: 'week-head' }, el('h2', {}, `GW${g}`), weekPts(total, t)),
       el('p', { className: 'meta', textContent: facts }), movesEl,
@@ -1384,7 +1385,8 @@
       const ch = document.querySelector('.chooser');
       if (ch) ch.scrollIntoView({ behavior: 'smooth', block: 'start' });
     };
-    const acts = [el('button', { type: 'button', className: 'update', textContent: 'Replace', onclick: out }),
+    const acts = t >= c.depth ? [el('p', { className: 'meta', textContent: `No transfers from GW${c.gws[c.depth]}: the squad stays, as in Suggest transfers.` })]
+      : [el('button', { type: 'button', className: 'update', textContent: 'Replace', onclick: out }),
       el('button', { type: 'button', className: 'update alt', textContent: move ? 'Remove (undo this transfer)' : 'Remove', onclick: move ? () => {
         state.manual[t] = state.manual[t].filter((m) => m !== move); c.tidy(t + 1); saveManual(); $('detail').hidden = true; manualWeeks();
       } : out })];
