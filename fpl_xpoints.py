@@ -698,11 +698,18 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         pool = by_team.get(tid, [])
         full = lambda p: _name_key(f'{p["first_name"]} {p["second_name"]}')
         for test in (lambda p: full(p) == n, lambda p: _name_key(p["web_name"]) == n, lambda p: set(n.split()) <= set(full(p).split()),
-                     lambda p: set(_name_key(p["web_name"]).split()) <= set(n.split()), lambda p: n.split()[-1] == _name_key(p["second_name"]).split()[-1]):
+                     lambda p: set(_name_key(p["web_name"]).split()) <= set(n.split()), lambda p: n.split()[-1] == _name_key(p["second_name"]).split()[-1],
+                     lambda p: n.split()[-1] in full(p).split()):  # "Yeremi Pino" is Yeremy Pino Santos
             hit = [p for p in pool if test(p)]
             if len(hit) == 1:
                 return hit[0]
         return None
+
+    def find_any(name: str):
+        """The same name anywhere in FPL (a player FotMob lists at a club FPL does not, yet)."""
+        n = _name_key(name)
+        hit = [p for p in boot["elements"] if _name_key(f'{p["first_name"]} {p["second_name"]}') == n or n.split()[-1] in _name_key(p["second_name"]).split() and n.split()[0][:3] == _name_key(p["first_name"])[:3]]
+        return hit[0] if len(hit) == 1 else None
 
     store = json.loads(INJURY_SUBS.read_text(encoding="utf-8")) if INJURY_SUBS.exists() else {}
     hurt, done, missing, fetched = set(), {}, [], 0
@@ -780,7 +787,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
                     if sb.get("home") != home or not sb.get("out") or not sb.get("in") or st is None or not (t <= st <= t + RED_TACTICAL_WINDOW):
                         continue
                     p_in, p_out = find(sb["in"], team), find(sb["out"], team)
-                    kind = holding(sb["in"], p_in)  # a player not in FPL (yet) goes by his FotMob places
+                    kind = holding(sb["in"], p_in or find_any(sb["in"]))  # else his FotMob places
                     if not p_out or not kind:
                         continue
                     TACTICAL[(f"c{p_out['code']}", got.get("round") or 0)] = (f"Tactical sub (team red card): taken off at {st}' for {sb['in']} ({kind}) "
