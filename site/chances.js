@@ -260,9 +260,9 @@
     render();
   });
   $('filters').addEventListener('submit', (e) => e.preventDefault());
-  document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#filters .seg button').forEach((b) => b.addEventListener('click', () => {
     state.pos = b.dataset.pos;
-    document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    document.querySelectorAll('#filters .seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     render();
   }));
 
@@ -283,4 +283,47 @@
       $('error').hidden = false;
       $('status').textContent = 'No data yet';
     });
+
+  // Accuracy tab: the Chance 90min figures tested on last season's matches where the player played the full 90
+  let accLoaded = false;
+  function showView(v) {
+    document.querySelectorAll('#viewSeg button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === v)));
+    const acc = v === 'accuracy';
+    $('accBox').hidden = !acc;
+    $('filters').hidden = acc;
+    document.querySelector('main').hidden = acc;
+    const notes = document.querySelector('footer'); if (notes) notes.hidden = acc;
+    if (acc && !accLoaded) {
+      accLoaded = true;
+      fetch('backtest.txt', { cache: 'no-cache' }).then((r) => { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(drawAcc).catch((e) => $('accBox').replaceChildren(el('p', { className: 'error', textContent: `Could not load the accuracy figures (${e.message}).` })));
+    }
+  }
+  function drawAcc(text) {
+    const sec = {};
+    let cur = null;
+    text.split('\n').forEach((line) => {
+      const m = line.match(/^=== (.+?) ===/);
+      if (m) { cur = m[1]; sec[cur] = []; return; }
+      if (cur && line.includes(' | ')) sec[cur].push(line.split(' | ').map((x) => x.trim()));
+    });
+    const main = (sec['Chance 90min on full-90 matches'] || []).slice(1);
+    const bands = (sec['Chance 90min on full-90 matches, by predicted chance'] || []).slice(1);
+    const table = (head, rows) => el('div', { className: 'wrap' }, el('table', { className: 'acc-table' },
+      el('thead', {}, el('tr', {}, ...head.map((h, k) => el('th', { scope: 'col', className: k ? 'num' : '', textContent: h })))),
+      el('tbody', {}, ...rows.map((r) => el('tr', {}, ...r.map((c, k) => el('td', { className: k ? 'num' : '', textContent: c })))))));
+    if (!main.length) { $('accBox').replaceChildren(el('p', { className: 'meta', textContent: 'No accuracy figures yet.' })); return; }
+    const out = [el('h2', { textContent: 'How accurate the Chance 90min figures are' }),
+      el('p', { textContent: 'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Only matches where the player played the full 90 minutes are used, because that is exactly what this page shows (every column assumes 90 minutes), so no minutes guess gets in the way.' }),
+      el('p', { textContent: 'Predicted = the average chance the model gave; Real = how often it happened. Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).' }),
+      table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], main)];
+    const byFig = {};
+    bands.forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
+    Object.entries(byFig).forEach(([fig, rows]) => {
+      out.push(el('h3', { textContent: `${fig}: by predicted chance` }), table(['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
+    });
+    out.push(el('p', { className: 'meta', textContent: 'Groups with few matches move a lot by luck alone: a group of 100 matches at 20% can come out anywhere from about 12% to 28%.' }));
+    $('accBox').replaceChildren(el('section', { className: 'acc-card' }, ...out));
+  }
+  document.querySelectorAll('#viewSeg button').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 })();

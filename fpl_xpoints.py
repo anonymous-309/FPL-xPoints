@@ -156,7 +156,7 @@ NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "wa
           "team_h_score", "team_a_score", "value"]
 NUMERIC = ["element", "fixture", "minutes", "total_points", "goals_scored", "assists", "bonus",
            "bps", "saves", "yellow_cards", "red_cards", "expected_goals", "expected_assists",
-           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp", "goals_conceded", "clean_sheets"]
+           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp", "core_sot", "core_bcm", "goals_conceded", "clean_sheets"]
 
 
 # ---------------------------------------------------------------- data access
@@ -231,12 +231,12 @@ def load_core(data_dir: Path, season: str) -> pd.DataFrame:
     if not frames:
         return pd.DataFrame()
     d = pd.concat(frames, ignore_index=True)
-    for c in ["minutes_played", "xgot", "penalties_scored", "penalties_missed", "total_shots", "shots_on_target", "touches_opposition_box", "chances_created"]:
+    for c in ["minutes_played", "xgot", "penalties_scored", "penalties_missed", "total_shots", "shots_on_target", "touches_opposition_box", "chances_created", "big_chances_missed"]:
         d[c] = pd.to_numeric(d.get(c), errors="coerce")
     d = d[d["minutes_played"].fillna(0) > 0].merge(codes, on="player_id", how="inner")
     g = d.groupby(["GW", "player_code"], as_index=False).agg(core_xgot=("xgot", "sum"), core_pen_scored=("penalties_scored", "sum"),
                                                           core_pen_missed=("penalties_missed", "sum"), core_shots=("total_shots", "sum"),
-                                                          core_box=("touches_opposition_box", "sum"), core_kp=("chances_created", "sum"))
+                                                          core_box=("touches_opposition_box", "sum"), core_kp=("chances_created", "sum"), core_sot=("shots_on_target", "sum"), core_bcm=("big_chances_missed", "sum"))
     return g.rename(columns={"player_code": "code"}).assign(season=season)
 
 
@@ -246,7 +246,7 @@ def add_core(df: pd.DataFrame, data_dir: Path, seasons: list[str]) -> pd.DataFra
     df = df.copy()
     df["code"] = pd.to_numeric(df["code"], errors="coerce")
     if not core:
-        for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp"]:
+        for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp", "core_sot", "core_bcm"]:
             df[col] = np.nan
         df["has_core"] = False
         return df
@@ -256,7 +256,7 @@ def add_core(df: pd.DataFrame, data_dir: Path, seasons: list[str]) -> pd.DataFra
     # a double gameweek is one Core Insights row per match but one per gameweek here: split by minutes
     mins = pd.to_numeric(df["minutes"], errors="coerce").fillna(0)
     share = mins / mins.groupby([df["season"], df["GW"], df["code"]]).transform("sum").replace(0, np.nan)
-    for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp"]:
+    for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp", "core_sot", "core_bcm"]:
         if col in df:
             df[col] = df[col] * share.fillna(0)
     df["has_core"] = df["core_xgot"].notna() & (mins > 0)
@@ -1630,7 +1630,9 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         "xg": df["np_xg"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
         "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
         "ptk": df["pen_taken_k"], "pmk": df["pen_missed_k"],
-        "box": df["core_box"].fillna(0), "shots": df["core_shots"].fillna(0) if "core_shots" in df else 0.0,
+        "box": df["core_box"].fillna(0),
+        # non-penalty shots: penalties taken (scored or missed) out
+        "shots": (df["core_shots"].fillna(0) - df["core_pen_scored"].fillna(0) - df["core_pen_missed"].fillna(0)).clip(lower=0) if "core_shots" in df else 0.0,
         "kp": df["core_kp"].fillna(0) if "core_kp" in df else 0.0, "boxn90": (mins / 90).where(df["has_core"].fillna(False).astype(bool), 0),
         "st": started.where(obs, 0), "n": obs.astype(float),
         "ban": (skipped(df) & obs).astype(float),
@@ -2402,6 +2404,40 @@ def _auc_ceiling(prob: np.ndarray) -> float:
     return num / den if den > 0 else float("nan")
 
 
+def full90_report(played: pd.DataFrame) -> None:
+    """The Chance 90min figures on the matches where he played the full 90 (what the page shows), for the page's
+    Accuracy tab: one row per figure, then the predicted chance in bands against the real share."""
+    full = played[played["minutes"] >= 90]
+    if full.empty:
+        return
+    fd = full[full["defensive_contribution"].notna() & (full["position"] != "GK")]
+    gk = full[full["position"] == "GK"]
+    figs = [("Score 1+ (no pens)", 1 - np.exp(-full["np_g90"].to_numpy(float)), (full["np_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("Fantasy Assist 1+", 1 - np.exp(-full["a90"].to_numpy(float)), (full["assists"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("DefCon", fd["p_defcon"].to_numpy(float), (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float), fd["position"]),
+            ("Yellow card", 1 - np.exp(-full["y90"].to_numpy(float)), (full["yellow_cards"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("Own goal", 1 - np.exp(-full["og90"].to_numpy(float)), (full["own_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("Pen save (GK)", 1 - np.exp(-gk["ps90"].to_numpy(float)), (gk["penalties_saved"].fillna(0) >= 1).to_numpy(float), gk["position"])]
+    print("\n=== Chance 90min on full-90 matches ===")
+    print("figure | matches | predicted | real | skill | AUC")
+    bands_out = []
+    for title, prob, hit, grp in figs:
+        if not len(prob):
+            continue
+        prob = np.clip(prob, 1e-6, 1 - 1e-6)
+        base = pd.Series(hit).groupby(np.asarray(grp)).transform("mean").clip(1e-6, 1 - 1e-6).to_numpy()
+        skill = 1 - np.mean((prob - hit) ** 2) / np.mean((base - hit) ** 2) if 0 < hit.sum() < len(hit) else np.nan
+        print(f"{title} | {len(hit)} | {prob.mean():.1%} | {hit.mean():.1%} | {skill:+.3f} | {_auc(prob, hit):.3f}")
+        if title in ("Score 1+ (no pens)", "Fantasy Assist 1+", "DefCon", "Yellow card"):
+            b = pd.cut(prob, [0, .05, .1, .15, .2, .3, .4, .5, .6, .8, 1.0], include_lowest=True)
+            for iv, x in pd.DataFrame({"p": prob, "h": hit, "b": b}).groupby("b", observed=True):
+                if len(x) >= 10:
+                    bands_out.append(f"{title} | {max(iv.left, 0):.0%}-{iv.right:.0%} | {x['p'].mean():.1%} | {x['h'].mean():.1%} | {len(x)}")
+    print("\n=== Chance 90min on full-90 matches, by predicted chance ===")
+    print("figure | band | predicted | real | matches")
+    print("\n".join(bands_out))
+
+
 def chance_report(pred: pd.DataFrame) -> None:
     """How good each Chance 90min figure was on the test season, against what happened.
 
@@ -2459,44 +2495,12 @@ def chance_report(pred: pd.DataFrame) -> None:
     per90("Own goal", "og90", "own_goals", played)
     per90("Red card", "r90", "red_cards", played)
     p, h = per90("Yellow card", "y90", "yellow_cards", played); calib["Yellow card"] = (p, h)
-    # The same figures on the matches where he played the full 90: the Chance 90min page shows exactly these
-    full = played[played["minutes"] >= 90]
-    full_rows_from = len(rows)
-    if len(full):
-        rows_before = len(rows)
-        per90("Score 1+ (no pens), full 90", "np_g90", "np_goals", full)
-        per90("Assist 1+, full 90", "a90", "assists", full)
-        fd = full[full["defensive_contribution"].notna() & (full["position"] != "GK")]
-        if len(fd):
-            binary("DefCon, full 90", fd["p_defcon"], fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD), fd["position"])
-        per90("Yellow card, full 90", "y90", "yellow_cards", full)
-        per90("Own goal, full 90", "og90", "own_goals", full)
-        if len(fd):
-            # DefCon chance from expected actions with more spread than Poisson (negative binomial, size r)
-            thr_fd = fd["position"].map(DEFCON_THRESHOLD).to_numpy(float)
-            hit_fd = (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float)
-            for r in (3, 5, 8, 12, 20):
-                pr = _nb_sf(thr_fd, fd["dc90"].to_numpy(float), r)
-                bands = pd.cut(pr, [0, .05, .1, .15, .2, .3, .4, .5, .6, .8, 1.0], include_lowest=True)
-                gg = pd.DataFrame({"p": pr, "h": hit_fd, "b": bands}).groupby("b", observed=True)
-                print(f"DefCon size {r}: Brier {np.mean((pr - hit_fd) ** 2):.4f} (Poisson {np.mean((fd['p_defcon'].to_numpy(float) - hit_fd) ** 2):.4f}), mean {pr.mean():.1%} vs {hit_fd.mean():.1%}; "
-                      + "; ".join(f"{iv.left:.0%}-{iv.right:.0%} {x['p'].mean():.1%} vs {x['h'].mean():.1%}" for iv, x in gg if len(x)))
-        # by band: predicted chance against the real share (full 90 only)
-        print("\nChance 90min on full-90 matches, by predicted chance: predicted | real | matches")
-        for title, prob, hit in (("Score 1+", 1 - np.exp(-full["np_g90"].to_numpy(float)), (full["np_goals"].fillna(0) >= 1).to_numpy(float)),
-                                 ("Assist 1+", 1 - np.exp(-full["a90"].to_numpy(float)), (full["assists"].fillna(0) >= 1).to_numpy(float)),
-                                 ("DefCon", fd["p_defcon"].to_numpy(float) if len(fd) else np.array([]),
-                                  (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float) if len(fd) else np.array([]))):
-            if not len(prob):
-                continue
-            bands = pd.cut(prob, [0, .05, .1, .15, .2, .3, .4, .5, .6, .8, 1.0], include_lowest=True)
-            g = pd.DataFrame({"p": prob, "h": hit, "b": bands}).groupby("b", observed=True)
-            print(title + ": " + "; ".join(f"{iv.left:.0%}-{iv.right:.0%} {x['p'].mean():.1%} vs {x['h'].mean():.1%} ({len(x)})" for iv, x in g if len(x)))
     t = pd.DataFrame(rows)
     print("\n=== Chance 90min: each chance against what happened (test season) ===")
     print("Skill: 1 - error / error of the position average (0 = no better, 1 = perfect). AUC: 0.5 = coin flip, 1 = perfect order; ceiling: the AUC if every chance were exactly right.")
     print(t.to_string(index=False, formatters={"predicted": "{:.2%}".format, "actual": "{:.2%}".format, "Brier skill": "{:+.3f}".format,
                                                  "log-loss skill": "{:+.3f}".format, "AUC": "{:.3f}".format, "AUC ceiling": "{:.3f}".format}))
+    full90_report(played)
 
     counts = []
     def count(title, rate, actual, frame, scale=True):
@@ -3987,9 +3991,13 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             out[pid] = [[int(r.GW), r.opp, int(r.mins), int(r.starts), int(r.pts), int(r.goals), int(r.assists), round(float(r.xg), 2), round(float(r.xa), 2),
                          round(float(r.xgot), 2) if r.has_core else None, int(r.pens) if r.has_core else None, int(r.dc), int(r.bonus), int(r.bps), int(r.cs),
                          int(r.saves), int(r.pensave), int(r.yc), int(r.rc),
-                         int(r.shots) if r.has_core else None, int(r.kp) if r.has_core else None] for r in g.itertuples()]
+                         int(r.shots) if r.has_core else None, int(r.kp) if r.has_core else None,
+                         int(r.sot) if r.has_core else None, int(r.bcm) if r.has_core else None] for r in g.itertuples()]
         return out
-    cur["shots"], cur["kp"] = num("core_shots"), num("core_kp")
+    # penalties out of shots and shots on target (a penalty taken is a shot; a scored or saved one is on target)
+    cur["shots"] = (num("core_shots") - num("core_pen_scored") - num("core_pen_missed")).clip(lower=0)
+    cur["kp"], cur["sot"] = num("core_kp"), (num("core_sot") - num("core_pen_scored") - num("core_pen_missed")).clip(lower=0)
+    cur["bcm"] = (num("core_bcm") - num("core_pen_missed")).clip(lower=0)  # a missed penalty counts as a big chance missed
     season_rows = match_rows(played, cur)
     # last season too (same columns), for the Statistics page
     prev_season = sorted(s_ for s_ in df["season"].unique() if s_ < CURRENT_SEASON)[-1:] if "season" in df else []
@@ -4004,7 +4012,9 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                            "has_core": pv.get("has_core", pd.Series(False, index=pv.index)).fillna(False).astype(bool),
                            "yc": nm("yellow_cards"), "rc": nm("red_cards"),
                            "cs": nm("clean_sheets") if "clean_sheets" in pv else (nm("minutes").ge(60) & nm("ga").eq(0)).astype(float),
-                           "shots": nm("core_shots"), "kp": nm("core_kp")})
+                           "shots": (nm("core_shots") - nm("core_pen_scored") - nm("core_pen_missed")).clip(lower=0), "kp": nm("core_kp"),
+                           "sot": (nm("core_sot") - nm("core_pen_scored") - nm("core_pen_missed")).clip(lower=0),
+                           "bcm": (nm("core_bcm") - nm("core_pen_missed")).clip(lower=0)})
         pc["opp"] = [lab(o, h) for o, h in zip(pv["opp"], pv["was_home"])] if "opp" in pv else ""
         last_rows = match_rows(pv, pc)
     players: dict[str, dict] = {}

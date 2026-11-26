@@ -15,6 +15,9 @@
   <nav class="sitenav" aria-label="Pages"></nav>
 </header>
 <div id="error" class="error" role="alert" hidden></div>
+<div class="seg view-seg" role="group" aria-label="View" id="viewSeg">
+  <button type="button" data-view="table" aria-pressed="true">Table</button><button type="button" data-view="accuracy" aria-pressed="false">Accuracy</button>
+</div>
 <form id="filters" class="filters" autocomplete="off">
   <div class="seg" role="group" aria-label="Position">
     <button type="button" data-pos="" aria-pressed="true">All</button>
@@ -30,6 +33,7 @@
   <button id="order" class="toggle" type="button" aria-pressed="true">Same order as xPoints</button>
   <button id="hide-out" class="toggle" type="button" aria-pressed="true">Hide players at 0% appearance</button>
 </form>
+<div id="accBox" class="acc" hidden></div>
 <main>
   <div id="wrap" class="wrap" hidden tabindex="0" aria-label="Chances for each player">
     <table id="table"><thead></thead><tbody></tbody></table>

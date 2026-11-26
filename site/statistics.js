@@ -3,7 +3,7 @@
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   // one row per league match this season, in this order (fpl_xpoints.py export_site)
-  const K = ['gw', 'opp', 'mins', 'starts', 'pts', 'g', 'a', 'xg', 'xa', 'xgot', 'pens', 'dc', 'bonus', 'bps', 'cs', 'saves', 'pensave', 'yc', 'rc', 'shots', 'kp'];
+  const K = ['gw', 'opp', 'mins', 'starts', 'pts', 'g', 'a', 'xg', 'xa', 'xgot', 'pens', 'dc', 'bonus', 'bps', 'cs', 'saves', 'pensave', 'yc', 'rc', 'shots', 'kp', 'sot', 'bcm'];
   const I = Object.fromEntries(K.map((k, i) => [k, i]));
   const NPXG_PEN = 0.79;
   const state = { data: null, pos: '', sort: 'pts', dir: -1, from: 1, to: 1, season: 'cur' };
@@ -12,9 +12,9 @@
   const COLS = [['name', 'Player'], ['apps', 'Matches', null, 'League matches he played in (1+ minutes)'], ['pts', 'Total pts', null, 'FPL points'],
     ['ppm', 'Pts/match', 2, 'Points per match played'], ['gwPts', 'GW pts', null, 'Points in the last gameweek of the range'], ['price', 'Price', 1],
     ['mins', 'Minutes', null], ['starts', 'Starts', null],
-    ['shots', 'Shots', null, 'Shots (FPL Core)', 'att'], ['g', 'G', null, 'Goals', 'att'], ['xg', 'xG', 2, 'Expected goals, penalties included', 'att'], ['npxg', 'npxG', 2, 'Non-penalty xG: xG less 0.79 for each penalty taken', 'att'], ['xgot', 'xGoT', 2, 'Expected goals on target: the shot\'s placement counted too', 'att'], ['gmxg', 'G−xG', 2, 'Goals less xG: above 0 = scoring more than his chances', 'att'],
-    ['kp', 'Key passes', null, 'Key passes: passes that led to a shot (chances created, FPL Core)', 'att'], ['a', 'A', null, 'Assists as FPL counts them', 'att'], ['xa', 'xA', 2, 'Expected assists', 'att'], ['gi', 'GI', null, 'Goal involvements: goals + FPL assists', 'att'], ['xgi', 'xGI', 2, 'xG + xA', 'att'], ['npxgxa', 'npxG+xA', 2, 'Non-penalty xG + xA', 'att'],
-    ['shots90', 'Shots/90', 2, 'Shots per 90 minutes', 'att'], ['kp90', 'KP/90', 2, 'Key passes per 90 minutes', 'att'], ['xgi90', 'xGI/90', 2, 'xGI per 90 minutes', 'att'], ['npxgxa90', 'npxG+xA/90', 2, 'Non-penalty xG + xA per 90 minutes', 'att'],
+    ['shots', 'Shots', null, 'Non-penalty shots (FPL Core)', 'att'], ['sot', 'SoT', null, 'Non-penalty shots on target (FPL Core)', 'att'], ['bcm', 'BCM', null, 'Big chances missed, penalties out (FPL Core)', 'att'], ['g', 'G', null, 'Goals', 'att'], ['xg', 'xG', 2, 'Expected goals, penalties included', 'att'], ['npxg', 'npxG', 2, 'Non-penalty xG: xG less 0.79 for each penalty taken', 'att'], ['xgot', 'xGoT', 2, 'Expected goals on target: the shot\'s placement counted too', 'att'], ['gmxg', 'G−xG', 2, 'Goals less xG: above 0 = scoring more than his chances', 'att'],
+    ['kp', 'Chances created', null, 'Chances created: passes that led to a shot (FPL Core)', 'att'], ['a', 'A', null, 'Assists as FPL counts them', 'att'], ['xa', 'xA', 2, 'Expected assists', 'att'], ['gi', 'GI', null, 'Goal involvements: goals + FPL assists', 'att'], ['xgi', 'xGI', 2, 'xG + xA', 'att'], ['npxgxa', 'npxG+xA', 2, 'Non-penalty xG + xA', 'att'],
+    ['shots90', 'Shots/90', 2, 'Non-penalty shots per 90 minutes', 'att'], ['sot90', 'SoT/90', 2, 'Non-penalty shots on target per 90 minutes', 'att'], ['bcm90', 'BCM/90', 2, 'Big chances missed per 90 minutes', 'att'], ['kp90', 'CC/90', 2, 'Chances created per 90 minutes', 'att'], ['xgi90', 'xGI/90', 2, 'xGI per 90 minutes', 'att'], ['npxgxa90', 'npxG+xA/90', 2, 'Non-penalty xG + xA per 90 minutes', 'att'],
     ['cs', 'CS', null, 'Clean sheets', 'def'], ['dc', 'DefCon', null, 'Defensive contributions (FPL)', 'def'], ['dc90', 'DefCon/90', 1, 'DefCon per 90 minutes', 'def'],
     ['saves', 'Saves', null, '', 'def'], ['pensave', 'Pen saves', null, '', 'def'],
     ['bonus', 'Bonus', null, '', 'oth'], ['bps', 'BPS', null, 'Bonus Points System score', 'oth'], ['yc', 'YC', null, 'Yellow cards', 'oth'], ['rc', 'RC', null, 'Red cards', 'oth']];
@@ -58,6 +58,10 @@
     s.kp = core ? rows.reduce((t, r) => t + (r[I.kp] || 0), 0) : null;
     s.shots90 = n90 && core ? s.shots / n90 : null;
     s.kp90 = n90 && core ? s.kp / n90 : null;
+    s.sot = core ? rows.reduce((t, r) => t + (r[I.sot] || 0), 0) : null;
+    s.sot90 = n90 && core ? s.sot / n90 : null;
+    s.bcm = core ? rows.reduce((t, r) => t + (r[I.bcm] || 0), 0) : null;
+    s.bcm90 = n90 && core ? s.bcm / n90 : null;
     s.rows = rows;
     return s;
   }
@@ -77,8 +81,8 @@
 
   // the player's matches, one row per gameweek, in a popup; columns in the same groups as the table
   const GWCOLS = [['gw', 'GW'], ['opp', 'Opp'], ['mins', 'Min'], ['starts', 'Start'], ['pts', 'Pts'],
-    ['shots', 'Shots', null, 'att'], ['g', 'G', null, 'att'], ['xg', 'xG', 2, 'att'], ['npxg', 'npxG', 2, 'att'], ['xgot', 'xGoT', 2, 'att'], ['gmxg', 'G−xG', 2, 'att'],
-    ['kp', 'KP', null, 'att'], ['a', 'A', null, 'att'], ['xa', 'xA', 2, 'att'], ['gi', 'GI', null, 'att'], ['xgi', 'xGI', 2, 'att'], ['npxgxa', 'npxG+xA', 2, 'att'],
+    ['shots', 'Shots', null, 'att'], ['sot', 'SoT', null, 'att'], ['bcm', 'BCM', null, 'att'], ['g', 'G', null, 'att'], ['xg', 'xG', 2, 'att'], ['npxg', 'npxG', 2, 'att'], ['xgot', 'xGoT', 2, 'att'], ['gmxg', 'G−xG', 2, 'att'],
+    ['kp', 'CC', null, 'att'], ['a', 'A', null, 'att'], ['xa', 'xA', 2, 'att'], ['gi', 'GI', null, 'att'], ['xgi', 'xGI', 2, 'att'], ['npxgxa', 'npxG+xA', 2, 'att'],
     ['cs', 'CS', null, 'def'], ['dc', 'DefCon', null, 'def'], ['saves', 'Saves', null, 'def'], ['pensave', 'Pen saves', null, 'def'],
     ['bonus', 'Bonus', null, 'oth'], ['bps', 'BPS', null, 'oth'], ['yc', 'YC', null, 'oth'], ['rc', 'RC', null, 'oth']];
   function gwValue(r, k) {
