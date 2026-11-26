@@ -36,7 +36,7 @@
       // every per-minute part scales by the same xMin/90 (worked back from rounded figures it looked uneven)
       const on = d.m60 && d.m60.length ? Math.round(d.m60.reduce((a, b) => a + b, 0) / d.m60.length) : 90;
       const how = kind === 'p60' ? `P60 ${Math.round(d.pApp60 * 100)}%, ${on} min on`
-        : kind === 'dc' ? `P60 ${Math.round(d.pApp60 * 100)}%, ${on} min: × ${Math.round(Math.pow(on / 90, 5.5) * 100)}%`
+        : kind === 'dc' ? `× P60 ${Math.round(d.pApp60 * 100)}%, ${on} min: × ${Math.round(Math.pow(on / 90, 5.5) * 100)}%`
         : `${Math.round(d.xmin / n)}/90 min`;
       rows.push(el('tr', {}, el('th', { scope: 'row', textContent: label }), el('td', { textContent: f2(full) }), el('td', { textContent: how }), el('td', { textContent: f2(pts) })));
     });
@@ -47,8 +47,47 @@
       + `"Over 90 minutes" is the points expected from that part if he plays the full 90${n > 1 ? ' (both matches added)' : ''}. Goals conceded and cards are negative.`;
   }
 
+  // The 3 highest xPoints of a position in the chosen gameweek, side by side.
+  let topPos = 'MID';
+  function factorText(d, kind) {
+    const n = d.opp.length;
+    const on = d.m60 && d.m60.length ? Math.round(d.m60.reduce((a, b) => a + b, 0) / d.m60.length) : 90;
+    return kind === 'p60' ? `× P60 ${Math.round(d.pApp60 * 100)}%, ${on} min on`
+      : kind === 'dc' ? `× P60 ${Math.round(d.pApp60 * 100)}%, ${on} min: × ${Math.round(Math.pow(on / 90, 5.5) * 100)}%`
+        : `× ${Math.round(d.xmin / n)}/90 min`;
+  }
+  function renderTop() {
+    const g = $('gw').value;
+    const top = data.players.filter((p) => p.position === topPos && p.byGw[g])
+      .sort((a, b) => b.byGw[g].xpts - a.byGw[g].xpts).slice(0, 3);
+    if (!top.length) { $('top').replaceChildren(); return; }
+    const head = el('tr', {}, el('th', { scope: 'col', textContent: 'Part' }), ...top.map((p) => el('th', { scope: 'col' },
+      el('b', { textContent: p.name }), el('span', { className: 'meta', textContent: ` ${p.team} v ${p.byGw[g].opp.join(', ')}` }))));
+    const cell = (main, sub) => el('td', {}, el('b', { textContent: main }), sub ? el('span', { className: 'ex-sub', textContent: sub }) : '');
+    const rows = [
+      el('tr', {}, el('th', { scope: 'row', textContent: 'Minutes' }), ...top.map((p) => { const d = p.byGw[g];
+        const on = d.m60 && d.m60.length ? Math.round(d.m60.reduce((a, b) => a + b, 0) / d.m60.length) : null;
+        return cell(`xMin ${Math.round(d.xmin)}`, `P1 ${Math.round(d.pApp1 * 100)}%, P60 ${Math.round(d.pApp60 * 100)}%${on ? `, m60 ${on}` : ''}`); })),
+      el('tr', {}, el('th', { scope: 'row', textContent: 'Appearance' }), ...top.map((p) => { const d = p.byGw[g];
+        return cell(f2(d.parts.app), `P1 ${Math.round(d.pApp1 * 100)}% + P60 ${Math.round(d.pApp60 * 100)}%`); })),
+    ];
+    ROWS.forEach(([k, label, kind]) => {
+      if (top.every((p) => Math.abs(p.byGw[g].parts[k] || 0) < 0.005 && Math.abs(p.byGw[g].full[k] || 0) < 0.005)) return;
+      rows.push(el('tr', {}, el('th', { scope: 'row', textContent: label }), ...top.map((p) => { const d = p.byGw[g];
+        const full = d.full[k] || 0, pts = d.parts[k] || 0;
+        return Math.abs(full) < 0.005 && Math.abs(pts) < 0.005 ? el('td', { className: 'none', textContent: '–' }) : cell(f2(pts), `${f2(full)} ${factorText(d, kind)}`); })));
+    });
+    rows.push(el('tr', { className: 'sum' }, el('th', { scope: 'row', textContent: 'xPoints' }), ...top.map((p) => el('td', {}, el('b', { textContent: f2(p.byGw[g].xpts) })))));
+    $('top').replaceChildren(el('table', {}, el('thead', {}, head), el('tbody', {}, ...rows)));
+  }
+  document.querySelectorAll('#topPos button').forEach((b) => b.addEventListener('click', () => {
+    topPos = b.dataset.pos;
+    document.querySelectorAll('#topPos button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    renderTop();
+  }));
+
   $('filters').addEventListener('submit', (e) => e.preventDefault());
-  $('filters').addEventListener('input', render);
+  $('filters').addEventListener('input', () => { render(); renderTop(); });
   fetch('data.json', { cache: 'no-cache' })
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((json) => {
@@ -59,6 +98,7 @@
       const top = json.players.slice().sort((a, b) => ((b.byGw[upcoming[0]] || {}).xpts || 0) - ((a.byGw[upcoming[0]] || {}).xpts || 0))[0];
       if (top) $('player').value = `${top.name} (${top.team})`;
       render();
+      renderTop();
     })
     .catch((e) => { $('error').hidden = false; $('error').textContent = `Could not load the data (${e.message}).`; });
 })();

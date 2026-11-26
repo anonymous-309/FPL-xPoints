@@ -785,3 +785,8 @@ table.stats thead tr:nth-child(2) th:first-child { z-index: 5; }
 .acc-legend i { display: inline-block; width: 14px; height: 3px; margin-right: .35rem; vertical-align: middle; }
 
 .dgw-tag { color: var(--muted); font-size: .8em; }
+
+.top-ex th .meta { display: block; font-weight: 400; font-size: .8rem; }
+.top-ex td b { display: block; }
+.ex-sub { display: block; font-size: .78rem; color: var(--muted); }
+#topPos { margin: .4rem 0 .6rem; }

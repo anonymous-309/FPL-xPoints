@@ -99,6 +99,12 @@
 
   <section>
     <h2>Worked example with live data</h2>
+    <p>The 3 players with the most xPoints in each position this gameweek, part by part: the points, and under them the figure over 90 minutes and the minutes factor it is multiplied by.</p>
+    <div class="seg" role="group" aria-label="Position" id="topPos">
+      <button type="button" data-pos="GK" aria-pressed="false">GK</button><button type="button" data-pos="DEF" aria-pressed="false">DEF</button><button type="button" data-pos="MID" aria-pressed="true">MID</button><button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+    </div>
+    <div id="top" class="wrap explain-table top-ex" tabindex="0" aria-label="Top 3 worked examples"></div>
+    <h3>Any player</h3>
     <form id="filters" class="filters example-filters" autocomplete="off">
       <label>Player <input id="player" list="players" placeholder="Haaland"></label>
       <datalist id="players"></datalist>
