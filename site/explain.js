@@ -28,15 +28,15 @@
     if (!d) { $('exNote').textContent = p ? `${p.name} has no match in GW${g}.` : 'Type a player name to see the calculation.'; return; }
     const n = d.opp.length, m = d.xmin / 90 / n;
     const rows = [el('tr', {}, el('th', { scope: 'row', textContent: 'Appearance' }),
-      el('td', { textContent: `P1 ${Math.round(d.pApp1 * 100)}% + P60 ${Math.round(d.pApp60 * 100)}%` }), el('td', { textContent: '' }),
+      el('td', { textContent: `Appearance 1+ ${Math.round(d.pApp1 * 100)}% + Appearance 60+ ${Math.round(d.pApp60 * 100)}%` }), el('td', { textContent: '' }),
       el('td', { textContent: f2(d.parts.app) }))];
     ROWS.forEach(([k, label, kind]) => {
       const full = d.full[k] || 0, pts = d.parts[k] || 0;
       if (Math.abs(full) < 0.005 && Math.abs(pts) < 0.005) return;
       // every per-minute part scales by the same xMin/90 (worked back from rounded figures it looked uneven)
       const on = d.m60 && d.m60.length ? Math.round(d.m60.reduce((a, b) => a + b, 0) / d.m60.length) : 90;
-      const how = kind === 'p60' ? `P60 ${Math.round(d.pApp60 * 100)}%, ${on} min on`
-        : kind === 'dc' ? `× P60 ${Math.round(d.pApp60 * 100)}%, ${on} min: × ${Math.round(Math.pow(on / 90, 5.5) * 100)}%`
+      const how = kind === 'p60' ? `Appearance 60+ ${Math.round(d.pApp60 * 100)}%, ${on} min on`
+        : kind === 'dc' ? `× Appearance 60+ ${Math.round(d.pApp60 * 100)}%, ${on} min: × ${Math.round(Math.pow(on / 90, 5.5) * 100)}%`
         : `${Math.round(d.xmin / n)}/90 min`;
       rows.push(el('tr', {}, el('th', { scope: 'row', textContent: label }), el('td', { textContent: f2(full) }), el('td', { textContent: how }), el('td', { textContent: f2(pts) })));
     });
@@ -52,8 +52,8 @@
   function factorText(d, kind) {
     const n = d.opp.length;
     const on = d.m60 && d.m60.length ? Math.round(d.m60.reduce((a, b) => a + b, 0) / d.m60.length) : 90;
-    return kind === 'p60' ? `× P60 ${Math.round(d.pApp60 * 100)}%, ${on} min on`
-      : kind === 'dc' ? `× P60 ${Math.round(d.pApp60 * 100)}%, ${on} min: × ${Math.round(Math.pow(on / 90, 5.5) * 100)}%`
+    return kind === 'p60' ? `× Appearance 60+ ${Math.round(d.pApp60 * 100)}%, ${on} min on`
+      : kind === 'dc' ? `× Appearance 60+ ${Math.round(d.pApp60 * 100)}%, ${on} min: × ${Math.round(Math.pow(on / 90, 5.5) * 100)}%`
         : `× ${Math.round(d.xmin / n)}/90 min`;
   }
   function renderTop() {
@@ -67,9 +67,9 @@
     const rows = [
       el('tr', {}, el('th', { scope: 'row', textContent: 'Minutes' }), ...top.map((p) => { const d = p.byGw[g];
         const on = d.m60 && d.m60.length ? Math.round(d.m60.reduce((a, b) => a + b, 0) / d.m60.length) : null;
-        return cell(`xMin ${Math.round(d.xmin)}`, `P1 ${Math.round(d.pApp1 * 100)}%, P60 ${Math.round(d.pApp60 * 100)}%${on ? `, m60 ${on}` : ''}`); })),
+        return cell(`xMin ${Math.round(d.xmin)}`, `Appearance 1+ ${Math.round(d.pApp1 * 100)}%, Appearance 60+ ${Math.round(d.pApp60 * 100)}%${on ? `, m60 ${on}` : ''}`); })),
       el('tr', {}, el('th', { scope: 'row', textContent: 'Appearance' }), ...top.map((p) => { const d = p.byGw[g];
-        return cell(f2(d.parts.app), `P1 ${Math.round(d.pApp1 * 100)}% + P60 ${Math.round(d.pApp60 * 100)}%`); })),
+        return cell(f2(d.parts.app), `Appearance 1+ ${Math.round(d.pApp1 * 100)}% + Appearance 60+ ${Math.round(d.pApp60 * 100)}%`); })),
     ];
     ROWS.forEach(([k, label, kind]) => {
       if (top.every((p) => Math.abs(p.byGw[g].parts[k] || 0) < 0.005 && Math.abs(p.byGw[g].full[k] || 0) < 0.005)) return;
