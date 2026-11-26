@@ -4258,7 +4258,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     print(f'Hull history rows by season: {hs.groupby("season").size().to_dict()}, goals conceded {hs.groupby("season")["ga"].sum().to_dict()}')
     xgc = df[df["opp"].astype(str).str.contains("Hull") & ~df["future"]].groupby(["season", "fixture"])["expected_goals"].sum()
     print(f'Hull xG conceded by season: {xgc.groupby(level=0).sum().round(1).to_dict()}')
-    for name in ("De Cuyper", "Rogers", "Haaland", "Groß", "Palacios", "B.Fernandes", "Rice", "Saka", "Van Hecke"):
+    for name in ("De Cuyper", "Rogers", "Haaland", "Groß", "Palacios", "B.Fernandes", "Rice", "Saka", "Van Hecke", "Osula"):
         rows = hist_rows[hist_rows["web_name"].astype(str).str.contains(name) & (hist_rows["GW"] == int(first))]
         for _, m in rows.head(2).iterrows():
             print(f'Finishing {m["web_name"]} v {m["opp_short"]}: weighted 90s {m["L_n90"]:.1f}, weighted goals {m["L_g"]:.1f}, weighted xG {m["L_xg"]:.2f}, '
@@ -4266,8 +4266,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                   f'finish {m["finish"]:.3f}, finish_goals {m["finish_goals"]:.3f}, finish_xgot {m["finish_xgot"]:.3f}, long-run npG {m["F_g"]:.1f}, npxG {m["F_xg"]:.1f}, npxGOT {m["F_xgot"]:.1f} on npxG {m["F_xgk"]:.1f}, pen share {m["pen_cond_used"]:.2f}, form {m["form_xg"]:.3f}, team att {m["team_att"]:.2f}, opp def {m["opp_def"]:.2f}, home {m["was_home"]}, '
                   f'model goals/90 {m["g90"]:.3f}, score 1+ at 90 {1 - np.exp(-m["g90"]):.1%}')
             print(f'Creating {m["web_name"]}: weighted 90s {m["L_n90"]:.1f}, weighted xA {m["L_xa"]:.2f}, raw xA/90 {m["L_xa"] / max(m["L_n90"], 1e-9):.3f}, '
-                  f'position/role prior xA/90 {m["p_xa"]:.3f}, prior xG/90 {m["p_xg"]:.3f}, shrunk xA/90 {m["r_xa"]:.3f}, form xA {m["form_xa"]:.3f}, model assists/90 {m["a90"]:.3f}, role {m.get("role", "")}, group {m.get("grp", "")}, box/90 {m.get("role_box90", float("nan")):.2f}')
-    for (season_name, pid), g in df[~df["future"] & df["web_name"].astype(str).str.contains("Palacios|Van Hecke")].groupby(["season", "pid"]):
+                  f'position/role prior xA/90 {m["p_xa"]:.3f}, prior xG/90 {m["p_xg"]:.3f}, shot factor {m.get("sk_factor_shots", float("nan")):.2f}, kp factor {m.get("sk_factor_kp", float("nan")):.2f}, shrunk xG/90 {m["r_xg"]:.3f}, shrunk xA/90 {m["r_xa"]:.3f}, form xA {m["form_xa"]:.3f}, model assists/90 {m["a90"]:.3f}, role {m.get("role", "")}, group {m.get("grp", "")}, box/90 {m.get("role_box90", float("nan")):.2f}')
+    for (season_name, pid), g in df[~df["future"] & df["web_name"].astype(str).str.contains("Palacios|Van Hecke|Osula")].groupby(["season", "pid"]):
         print(f'{g["web_name"].iloc[0]} {season_name} ({pid}): minutes {g["minutes"].sum():.0f}, goals {g["goals_scored"].sum():.0f}, xG {g["expected_goals"].sum():.2f}, assists {g["assists"].sum():.0f}, xA {g["expected_assists"].sum():.2f}')
     season = df[(df["season"] == CURRENT_SEASON) & ~df["future"] & df["name"].astype(str).str.contains("Rogers")]
     for pid, g in season.groupby("pid"):
