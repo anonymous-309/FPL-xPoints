@@ -2498,8 +2498,10 @@ def minutes_on_report(pred: pd.DataFrame) -> None:
     thr = d["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
     p90 = g("full_defcon") / DEFCON_PTS
     alt = {"power 5.5": DEFCON_PTS * p90 * (np.clip(m, 0, 90) / 90) ** DC_MIN_POWER}
-    for r in (0, 2, 4, 8, 16):
+    for r in (0, 8):
         alt[f"size {r or 'Poisson'}"] = DEFCON_PTS * defcon_at(p90, thr, m, r if r else 0)
+    # straight from his expected actions per 90 (the DefCon actions column) x minutes / 90, then the Poisson table
+    alt["actions direct"] = DEFCON_PTS * (m > 0) * poisson.sf(thr - 1, np.clip(g("dc90"), 1e-6, None) * np.clip(m, 0, 90) / 90) * (d["position"] != "GK").to_numpy()
     band = pd.cut(d["minutes"], [0, 59, 74, 84, 89, 90], labels=["1-59", "60-74", "75-84", "85-89", "90"])
     print("\nClean sheet, goals conceded and DefCon by real minutes: real points | minutes on the pitch (now) | straight share (before)")
     print("part | minutes | matches | real | now | before")
