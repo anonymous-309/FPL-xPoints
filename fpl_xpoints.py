@@ -100,10 +100,10 @@ HL_LONG, HL_SHORT, HL_MIN_SHORT, HL_MIN_LONG, HL_TEAM = 12, 4, 2, 8, 12
 K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0, 4.0, 8.0, 40.0, 60.0
 # The average his own goals and assists record is padded with: the average of his role, scaled by how often he
 # touches the ball in the opposition box against that role's average (shrunk by K_BOX 90s), to these powers
-# (goals/xG, assists/xA). So a holding midfielder with few box touches is padded with a lower average than an attacking
+# (xG, xA; square roots: box touches say less about a wing-back's shots than a forward's). So a holding midfielder with few box touches is padded with a lower average than an attacking
 # one. FPL_PRIOR_TYPE="0,0" turns it off (for testing).
 K_BOX = 3.0
-PRIOR_TYPE = tuple(float(x) for x in os.environ.get("FPL_PRIOR_TYPE", "1,0.5").split(","))
+PRIOR_TYPE = tuple(float(x) for x in os.environ.get("FPL_PRIOR_TYPE", "0.5,0.5").split(","))
 # Rare events need long memory and strong pull to the role average (rare-tune, log loss on 2025-26):
 # (half-life in matches, latest matches used, k). Red cards: a player's own record did not beat the role average.
 RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 400.0)}
@@ -1723,7 +1723,10 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         ra = df["role"].map(avg).astype(float)
         fac = (((box + K_BOX * ra) / (bn + K_BOX)) / ra).where(ra > 0, 1.0).fillna(1.0).clip(0.2, 3.0)
         df["box_factor"] = fac
-        for c, pw in (("g", pw_g), ("xg", pw_g), ("a", pw_a), ("xa", pw_a)):
+        # only the xG and xA averages: finishing (goals against xG) keeps the plain role averages on both sides, or a
+        # player with many box touches would look like a better finisher than he is
+        for c, pw in (("xg", pw_g), ("xa", pw_a)):
+            df[f"p0_{c}"] = df[f"p_{c}"]
             df[f"p_{c}"] = df[f"p_{c}"] * fac ** pw
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         k = K_RED if c == "rc" else K_PEN if c in ("ps", "pm", "og") else K_FINISH if c in ("g", "a") else K_PLAYER
@@ -1750,7 +1753,8 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     ln = lambda s: np.log(s.clip(lower=EPS))
     df["l_xg"], df["l_xa"] = ln(df["r_xg"]), ln(df["r_xa"])
     df["form_xg"], df["form_xa"] = ln(df["f_xg"]) - ln(df["r_xg"]), ln(df["f_xa"]) - ln(df["r_xa"])
-    df["finish"], df["creat"] = ln(df["r_g"]) - ln(df["r_xg"]), ln(df["r_a"]) - ln(df["r_xa"])
+    plain = lambda c: (df[f"L_{c}"] + K_PLAYER * df[f"p0_{c}"]) / (df["L_n90"] + K_PLAYER) if f"p0_{c}" in df else df[f"r_{c}"]
+    df["finish"], df["creat"] = ln(df["r_g"]) - ln(plain("xg")), ln(df["r_a"]) - ln(plain("xa"))
     # Long-run finishing over several seasons: non-penalty goals and xGOT against non-penalty xG, shrunk by xG volume.
     df["finish_goals"] = np.log((df["F_g"] + K_FINISH_XG) / (df["F_xg"] + K_FINISH_XG))
     df["finish_xgot"] = np.log((df["F_xgot"] + K_XGOT) / (df["F_xgk"] + K_XGOT))
