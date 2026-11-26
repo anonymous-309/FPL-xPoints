@@ -2463,6 +2463,11 @@ def team_report(pred: pd.DataFrame) -> None:
     order = t.sort_values("xg").reset_index(drop=True)  # 7 groups with the same number of matches
     for k, x in order.groupby(np.arange(len(order)) * 7 // len(order)):
         print(f"{x['xg'].min():.2f}-{x['xg'].max():.2f} | {len(x)} | {x['xg'].mean():.2f} | {x['gf'].mean():.2f}")
+    print("\nExpected goals in steps of 0.1")
+    print("expected from | matches | real goals average")
+    step = (t["xg"] * 10).astype(int)
+    for k, x in t.groupby(step):
+        print(f"{k / 10:.1f} | {len(x)} | {x['gf'].mean():.2f}")
     brier = ((t["cs"] - t["clean"]) ** 2).mean()
     base_cs = t.groupby("home")["clean"].transform("mean")
     brier0 = ((base_cs - t["clean"]) ** 2).mean()
