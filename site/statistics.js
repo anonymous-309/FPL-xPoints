@@ -3,10 +3,11 @@
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   // one row per league match this season, in this order (fpl_xpoints.py export_site)
-  const K = ['gw', 'opp', 'mins', 'starts', 'pts', 'g', 'a', 'xg', 'xa', 'xgot', 'pens', 'dc', 'bonus', 'bps', 'cs', 'saves', 'pensave', 'yc', 'rc'];
+  const K = ['gw', 'opp', 'mins', 'starts', 'pts', 'g', 'a', 'xg', 'xa', 'xgot', 'pens', 'dc', 'bonus', 'bps', 'cs', 'saves', 'pensave', 'yc', 'rc', 'shots', 'kp'];
   const I = Object.fromEntries(K.map((k, i) => [k, i]));
   const NPXG_PEN = 0.79;
-  const state = { data: null, pos: '', sort: 'pts', dir: -1, from: 1, to: 1 };
+  const state = { data: null, pos: '', sort: 'pts', dir: -1, from: 1, to: 1, season: 'cur' };
+  const rowsOf = (p) => (state.season === 'last' ? p.lastSeasonGw : p.seasonGw) || [];
   // [key, label, digits, tooltip, group]: digits null = whole number; group colours the column
   const COLS = [['name', 'Player'], ['apps', 'Matches', null, 'League matches he played in (1+ minutes)'], ['pts', 'Total pts', null, 'FPL points'],
     ['ppm', 'Pts/match', 2, 'Points per match played'], ['gwPts', 'GW pts', null, 'Points in the last gameweek of the range'], ['price', 'Price', 1],
@@ -14,6 +15,8 @@
     ['g', 'G', null, 'Goals', 'att'], ['xg', 'xG', 2, 'Expected goals, penalties included', 'att'], ['npxg', 'npxG', 2, 'Non-penalty xG: xG less 0.79 for each penalty taken', 'att'],
     ['xgot', 'xGoT', 2, 'Expected goals on target: the shot\'s placement counted too', 'att'], ['gmxg', 'G−xG', 2, 'Goals less xG: above 0 = scoring more than his chances', 'att'],
     ['a', 'A', null, 'Assists as FPL counts them', 'att'], ['xa', 'xA', 2, 'Expected assists', 'att'], ['gi', 'GI', null, 'Goal involvements: goals + FPL assists', 'att'],
+    ['shots', 'Shots', null, 'Shots (FPL Core)', 'att'], ['shots90', 'Shots/90', 2, 'Shots per 90 minutes', 'att'],
+    ['kp', 'Key passes', null, 'Key passes: passes that led to a shot (chances created, FPL Core)', 'att'], ['kp90', 'KP/90', 2, 'Key passes per 90 minutes', 'att'],
     ['xgi', 'xGI', 2, 'xG + xA', 'att'], ['npxgxa', 'npxG+xA', 2, 'Non-penalty xG + xA', 'att'], ['xgi90', 'xGI/90', 2, 'xGI per 90 minutes', 'att'], ['npxgxa90', 'npxG+xA/90', 2, 'Non-penalty xG + xA per 90 minutes', 'att'],
     ['cs', 'CS', null, 'Clean sheets', 'def'], ['dc', 'DefCon', null, 'Defensive contributions (FPL)', 'def'], ['dc90', 'DefCon/90', 1, 'DefCon per 90 minutes', 'def'],
     ['saves', 'Saves', null, '', 'def'], ['pensave', 'Pen saves', null, '', 'def'],
@@ -37,7 +40,7 @@
 
   // totals over the chosen gameweeks
   function stats(p) {
-    const rows = (p.seasonGw || []).filter((r) => r[I.gw] >= state.from && r[I.gw] <= state.to);
+    const rows = rowsOf(p).filter((r) => r[I.gw] >= state.from && r[I.gw] <= state.to);
     const s = Object.fromEntries(['mins', 'starts', 'pts', 'g', 'a', 'xg', 'xa', 'dc', 'bonus', 'bps', 'cs', 'saves', 'pensave', 'yc', 'rc'].map((k) => [k, rows.reduce((t, r) => t + (r[I[k]] || 0), 0)]));
     s.apps = rows.filter((r) => r[I.mins] > 0).length;
     s.ppm = s.apps ? s.pts / s.apps : null;
@@ -54,6 +57,10 @@
     s.xgi90 = n90 ? s.xgi / n90 : null;
     s.npxgxa90 = n90 && core ? s.npxgxa / n90 : null;
     s.dc90 = n90 ? s.dc / n90 : null;
+    s.shots = core ? rows.reduce((t, r) => t + (r[I.shots] || 0), 0) : null;
+    s.kp = core ? rows.reduce((t, r) => t + (r[I.kp] || 0), 0) : null;
+    s.shots90 = n90 && core ? s.shots / n90 : null;
+    s.kp90 = n90 && core ? s.kp / n90 : null;
     s.rows = rows;
     return s;
   }
@@ -74,7 +81,7 @@
   // the player's matches, one row per gameweek, in a popup; columns in the same groups as the table
   const GWCOLS = [['gw', 'GW'], ['opp', 'Opp'], ['mins', 'Min'], ['starts', 'Start'], ['pts', 'Pts'],
     ['g', 'G', null, 'att'], ['xg', 'xG', 2, 'att'], ['npxg', 'npxG', 2, 'att'], ['xgot', 'xGoT', 2, 'att'], ['gmxg', 'G−xG', 2, 'att'],
-    ['a', 'A', null, 'att'], ['xa', 'xA', 2, 'att'], ['gi', 'GI', null, 'att'], ['xgi', 'xGI', 2, 'att'], ['npxgxa', 'npxG+xA', 2, 'att'],
+    ['a', 'A', null, 'att'], ['xa', 'xA', 2, 'att'], ['gi', 'GI', null, 'att'], ['shots', 'Shots', null, 'att'], ['kp', 'KP', null, 'att'], ['xgi', 'xGI', 2, 'att'], ['npxgxa', 'npxG+xA', 2, 'att'],
     ['cs', 'CS', null, 'def'], ['dc', 'DefCon', null, 'def'], ['saves', 'Saves', null, 'def'], ['pensave', 'Pen saves', null, 'def'],
     ['bonus', 'Bonus', null, 'oth'], ['bps', 'BPS', null, 'oth'], ['yc', 'YC', null, 'oth'], ['rc', 'RC', null, 'oth']];
   function gwValue(r, k) {
@@ -106,7 +113,7 @@
       const v = k === 'gw' ? 'Per 90' : ['opp', 'mins', 'starts'].includes(k) || !n90 || raw === null || raw === undefined ? '' : (raw / n90).toFixed(2);
       return el('td', { className: grp ? `grp-${grp}` : '', textContent: v });
     }));
-    $('pop-title').textContent = `${p.name}, ${p.team} ${p.position} £${p.price.toFixed(1)} · GW${state.from}–GW${state.to}`;
+    $('pop-title').textContent = `${p.name}, ${p.team} ${p.position} £${p.price.toFixed(1)} · ${state.season === 'last' ? (state.data.lastSeason || 'last season') + ' ' : ''}GW${state.from}–GW${state.to}`;
     $('pop-body').replaceChildren(el('table', { className: 'stats inner' },
       el('thead', {}, groupRow(cols), el('tr', {}, ...GWCOLS.map(([, l, , grp]) => el('th', { textContent: l, className: grp ? `grp-${grp}` : '' })))),
       el('tbody', {}, ...body, tot, per90)));
@@ -141,7 +148,18 @@
     $('from').replaceChildren(...opts(state.from));
     $('to').replaceChildren(...opts(state.to));
   }
+  // the gameweeks of the chosen season, all of them selected
+  function seasonGws() {
+    return [...new Set(state.data.players.flatMap((p) => rowsOf(p).map((r) => r[I.gw])))].sort((a, b) => a - b);
+  }
+  function setSeason() {
+    state.season = $('season').value;
+    const gws = seasonGws();
+    state.from = gws[0] || 1; state.to = gws[gws.length - 1] || 1;
+    fillRange(gws);
+  }
   $('filters').addEventListener('input', (e) => {
+    if (e.target.id === 'season') setSeason();
     if (e.target.id === 'from' || e.target.id === 'to') {
       state.from = Number($('from').value); state.to = Number($('to').value);
       if (state.from > state.to) { [state.from, state.to] = [state.to, state.from]; fillRange([...$('from').options].map((o) => Number(o.value))); }
@@ -161,7 +179,9 @@
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((d) => {
       state.data = d;
-      const gws = [...new Set(d.players.flatMap((p) => (p.seasonGw || []).map((r) => r[I.gw])))].sort((a, b) => a - b);
+      $('season').replaceChildren(el('option', { value: 'cur', textContent: d.season || 'This season' }),
+        ...(d.lastSeason ? [el('option', { value: 'last', textContent: d.lastSeason })] : []));
+      const gws = seasonGws();
       if (!gws.length) throw new Error('no season data');
       state.from = gws[0]; state.to = gws[gws.length - 1];
       fillRange(gws);

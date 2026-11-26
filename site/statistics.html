@@ -26,6 +26,7 @@
   <label>Search player <input id="search" type="search"></label>
   <label>Team <select id="team"><option value="">All</option></select></label>
   <label>Max price <input id="price" type="number" min="3.5" max="16" step="0.1" inputmode="decimal"></label>
+  <label>Season <select id="season"><option value="cur">This season</option></select></label>
   <label>From <select id="from"></select></label>
   <label>To <select id="to"></select></label>
   <label>Min. minutes <input id="minmins" type="number" min="0" step="90" value="270" inputmode="numeric"></label>
@@ -43,7 +44,7 @@
   </div>
 </div>
 <footer>
-  <p>This season's league matches so far, from FPL. Assists are fantasy assists as FPL counts them; GI = goals + assists. xG and xA are FPL's (Opta) expected goals and assists, penalties included; xGI = xG + xA; npxG takes 0.79 off xG for each penalty he took; xGoT (expected goals on target) and the penalties come from the Core Insights data, so they show – where it has no match for him; DefCon is FPL's defensive contribution count (clearances, blocks, interceptions and tackles, plus recoveries for midfielders and forwards). Per 90 = the total divided by minutes / 90; players under the minimum minutes are hidden so a few minutes do not top the per-90 columns. Choose the gameweeks with From and To; every figure, Matches and Pts/match included, covers only those (GW pts is the last of them). Tap a column to sort, tap a player to see each gameweek. G−xG above 0 means he scored more than his chances suggest. Not affiliated with the Premier League.</p>
+  <p>League matches from FPL, this season so far or last season (choose Season). Assists are fantasy assists as FPL counts them; GI = goals + assists. xG and xA are FPL's (Opta) expected goals and assists, penalties included; xGI = xG + xA; npxG takes 0.79 off xG for each penalty he took; xGoT (expected goals on target) and the penalties come from the Core Insights data, so they show – where it has no match for him; Shots and key passes (passes that led to a shot) come from Core Insights too; DefCon is FPL's defensive contribution count (clearances, blocks, interceptions and tackles, plus recoveries for midfielders and forwards). Per 90 = the total divided by minutes / 90; players under the minimum minutes are hidden so a few minutes do not top the per-90 columns. Choose the gameweeks with From and To; every figure, Matches and Pts/match included, covers only those (GW pts is the last of them). Tap a column to sort, tap a player to see each gameweek. G−xG above 0 means he scored more than his chances suggest. Not affiliated with the Premier League.</p>
 </footer>
 <script src="statistics.js"></script>
 <script src="tips.js"></script>

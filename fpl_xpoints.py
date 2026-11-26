@@ -3948,11 +3948,32 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     # each match of this season, for the Statistics page (gameweek range, the player's matches): SEASON_KEYS order
     opp_lab = pd.Series([lab(o, h) for o, h in zip(played["opp"], played["was_home"])], index=played.index) if "opp" in played else pd.Series("", index=played.index)
     cur["opp"] = opp_lab
-    season_rows = {}
-    for pid, g in cur.groupby("pid"):
-        season_rows[pid] = [[int(r.GW), r.opp, int(r.mins), int(r.starts), int(r.pts), int(r.goals), int(r.assists), round(float(r.xg), 2), round(float(r.xa), 2),
-                             round(float(r.xgot), 2) if r.has_core else None, int(r.pens) if r.has_core else None, int(r.dc), int(r.bonus), int(r.bps), int(r.cs),
-                             int(r.saves), int(r.pensave), int(r.yc), int(r.rc)] for r in g.itertuples()]
+    def match_rows(frame: pd.DataFrame, cc: pd.DataFrame) -> dict:
+        out = {}
+        for pid, g in cc.groupby("pid"):
+            out[pid] = [[int(r.GW), r.opp, int(r.mins), int(r.starts), int(r.pts), int(r.goals), int(r.assists), round(float(r.xg), 2), round(float(r.xa), 2),
+                         round(float(r.xgot), 2) if r.has_core else None, int(r.pens) if r.has_core else None, int(r.dc), int(r.bonus), int(r.bps), int(r.cs),
+                         int(r.saves), int(r.pensave), int(r.yc), int(r.rc),
+                         int(r.shots) if r.has_core else None, int(r.kp) if r.has_core else None] for r in g.itertuples()]
+        return out
+    cur["shots"], cur["kp"] = num("core_shots"), num("core_kp")
+    season_rows = match_rows(played, cur)
+    # last season too (same columns), for the Statistics page
+    prev_season = sorted(s_ for s_ in df["season"].unique() if s_ < CURRENT_SEASON)[-1:] if "season" in df else []
+    last_rows = {}
+    if prev_season:
+        pv = df[(df["season"] == prev_season[0]) & ~df["future"] & df["minutes"].notna()].sort_values(["kickoff_time", "fixture"])
+        nm = lambda c: pd.to_numeric(pv[c], errors="coerce").fillna(0) if c in pv else pd.Series(0.0, index=pv.index)
+        pc = pd.DataFrame({"pid": pv["pid"], "GW": pv["GW"], "mins": nm("minutes"), "starts": nm("starts"), "xg": nm("expected_goals"), "xa": nm("expected_assists"),
+                           "dc": nm("defensive_contribution"), "goals": nm("goals_scored"), "assists": nm("assists"), "pts": nm("total_points"),
+                           "bonus": nm("bonus"), "bps": nm("bps"), "saves": nm("saves"), "pensave": nm("penalties_saved"),
+                           "xgot": nm("core_xgot"), "pens": nm("core_pen_scored") + nm("core_pen_missed"),
+                           "has_core": pv.get("has_core", pd.Series(False, index=pv.index)).fillna(False).astype(bool),
+                           "yc": nm("yellow_cards"), "rc": nm("red_cards"),
+                           "cs": nm("clean_sheets") if "clean_sheets" in pv else (nm("minutes").ge(60) & nm("ga").eq(0)).astype(float),
+                           "shots": nm("core_shots"), "kp": nm("core_kp")})
+        pc["opp"] = [lab(o, h) for o, h in zip(pv["opp"], pv["was_home"])] if "opp" in pv else ""
+        last_rows = match_rows(pv, pc)
     players: dict[str, dict] = {}
     for r in res.sort_values(["GW", "fixture"]).to_dict("records"):
         p = players.setdefault(r["pid"], {
@@ -3978,7 +3999,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "penMiss": round(float(r["pen_miss_rate"]), 4) if pd.notna(r.get("pen_miss_rate")) else None,
             # Start (5-4-3-2-1 over his last 5 matches) and his minutes when starting and not, for penalty shares
             "pitch": {"start": round(float(r["pit_start"]), 3), "last": int(r["pit_last"]), "ms": round(float(r["pit_ms"]), 1), "mb": round(float(r["pit_mb"]), 1)},
-            "season": season_stats.get(r["pid"]), "seasonGw": season_rows.get(r["pid"], [])})
+            "season": season_stats.get(r["pid"]), "seasonGw": season_rows.get(r["pid"], []), "lastSeasonGw": last_rows.get(r["pid"], [])})
         g = p["byGw"].setdefault(str(int(r["GW"])), {"xpts": 0.0, "xmin": 0.0, "mins": [], "xg": 0.0, "xa": 0.0, "opp": [], "parts": {}, "full": {}, "lg": 0.0, "la": 0.0, "ly": 0.0, "lr": 0.0, "lps": 0.0, "lpm": 0.0, "log": 0.0, "xSaves": 0.0, "xConceded": 0.0, "bonus": 0.0, "xDefcon": 0.0, "xBps": 0.0, "noCs": 1.0, "noDef": 1.0, "noApp": 1.0, "no60": 1.0})
         for k in ("xpts", "xmin", "xg", "xa"):
             g[k] = round(g[k] + float(r[k]), 3)
@@ -4048,6 +4069,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             if len(g.get("byMatch", [])) < 2:
                 g.pop("byMatch", None)
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws,
+               "season": CURRENT_SEASON, "lastSeason": prev_season[0] if prev_season else None,
                "dcSize": DC_SIZE, "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])
