@@ -2884,5 +2884,85 @@
 "Rio Ngumoha": 48
 }
 }
+},
+"6112348": {
+"teams": {
+"Celta de Vigo": {
+"Iago Aspas": 90,
+"Marcos Alonso": 90,
+"Aleix Febas": 90,
+"Ionuț Radu": 90,
+"Ferrán Jutglà": 16,
+"Sergio Carreira": 90,
+"Álvaro Núñez": 23,
+"Couhaib Driouech": 67,
+"Williot Swedberg": 16,
+"Hugo Álvarez": 23,
+"Javi Rueda": 67,
+"Pablo Durán": 74,
+"Javi Rodríguez": 74,
+"Yoel Lago": 90,
+"Ángel Arcos": 9,
+"Hugo Burcio": 81
+},
+"Bournemouth": {
+"Ryan Christie": 25,
+"Lewis Cook": 90,
+"David Brooks": 68,
+"Tyler Adams": 45,
+"Michele Di Gregorio": 90,
+"Marcus Tavernier": 22,
+"Justin Kluivert": 45,
+"James Hill": 90,
+"Bafodé Diakité": 23,
+"Amine Adli": 68,
+"Adrien Truffert": 22,
+"Alex Scott": 65,
+"António Silva": 90,
+"Álvaro Rodríguez": 90,
+"Julio Soler": 68,
+"Rayan": 22
+}
+}
+},
+"6112421": {
+"teams": {
+"Brighton and Hove Albion": {
+"Jason Steele": 90,
+"Pascal Groß": 72,
+"Ferdi Kadıoğlu": 90,
+"Pascal Struijk": 62,
+"Matthew O'Riley": 45,
+"Michael Svoboda": 90,
+"Costinha": 45,
+"Femi Azeez": 45,
+"Maxim De Cuyper": 45,
+"Yasin Ayari": 45,
+"Ibrahim Osman": 90,
+"Jack Hinshelwood": 90,
+"Promise David": 18,
+"Luka Vušković": 28,
+"Charalampos Kostoulas": 90,
+"Chema Andrés": 45
+},
+"Universitatea Craiova": {
+"Alexandru Crețu": 8,
+"Nicușor Bancu": 90,
+"Alexandru Cicâldau": 76,
+"Teles": 18,
+"Vladimir Screciu": 39,
+"Laurențiu Popescu": 90,
+"Adrian Rus": 45,
+"Tudor Băluță": 82,
+"Oleksandr Romanchuk": 90,
+"João Lameira": 72,
+"Nikola Stevanović": 90,
+"Ștefan Baiaram": 45,
+"Simon Elisor": 45,
+"Carlos Mora": 90,
+"Steven Nsimba": 45,
+"David Matei": 14
+}
+}
 }
 }
