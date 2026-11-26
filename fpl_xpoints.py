@@ -1773,6 +1773,11 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
             num = df[f"SK_{c}"].fillna(0.0)
             avg = num[hist].groupby(df.loc[hist, "role"]).sum() / den[hist].groupby(df.loc[hist, "role"]).sum()
             ra = df["role"].map(avg).astype(float)
+            # a defender partly playing further forward has the defender and midfielder averages mixed (see above):
+            # his shots and key passes are judged against the same mix
+            sh = df["oop_share"].fillna(0.0)
+            if (sh > 0).any() and "DEF" in avg and "MID" in avg:
+                ra = ra.where(sh <= 0, (1 - sh) * avg["DEF"] + sh * avg["MID"])
             fac = (((num + K_SK * ra) / (den + K_SK)) / ra).where(ra > 0).fillna(1.0).clip(0.1, 5.0)
             df[f"sk_factor_{c}"] = fac
             for q in pair:
