@@ -10,8 +10,8 @@ window.XMin = (function () {
   // chance of thr or more actions when mu are expected (negative binomial, size r)
   function nbAtLeast(thr, mu, r) {
     if (mu <= 0) return 0;
-    let pmf = Math.pow(r / (r + mu), r), cdf = 0;
-    for (let k = 0; k < thr; k++) { cdf += pmf; pmf *= (k + r) / (k + 1) * mu / (r + mu); }
+    let pmf = r ? Math.pow(r / (r + mu), r) : Math.exp(-mu), cdf = 0;  // r 0: Poisson
+    for (let k = 0; k < thr; k++) { cdf += pmf; pmf *= r ? (k + r) / (k + 1) * mu / (r + mu) : mu / (k + 1); }
     return Math.max(0, 1 - cdf);
   }
   const PEN_TAKE_ON_PITCH = 1;  // same as the model: the listed taker takes them while he is on the pitch

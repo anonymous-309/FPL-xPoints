@@ -58,7 +58,7 @@ DC_MIN_POWER = 5.5
 # DefCon in m minutes: his chance over 90 is turned into an equal number of defensive actions over 90 (a negative
 # binomial count with this spread, size r; smaller r = more spread), that number x m/90, then the chance of reaching
 # the threshold with it. A player far above the threshold keeps more of it in fewer minutes than one near it.
-DC_SIZE = 8.0
+DC_SIZE = 0.0  # 0 = Poisson: closest to last season's real DefCon by minutes played (sizes 2 to 16 tried)
 
 
 def _nb_sf(thr: np.ndarray, mu: np.ndarray, r: float | None) -> np.ndarray:
@@ -72,7 +72,8 @@ def _nb_sf(thr: np.ndarray, mu: np.ndarray, r: float | None) -> np.ndarray:
 
 def defcon_actions90(p90: np.ndarray, thr: np.ndarray, r: float | None = None) -> np.ndarray:
     """The expected actions over 90 that give his DefCon chance over 90."""
-    r = DC_SIZE if r is None else (None if r == 0 else r)
+    r = DC_SIZE if r is None else r
+    r = None if not r else r
     grid = np.linspace(0.01, 60, 6000)
     out = np.zeros(len(p90))
     for t in np.unique(thr):
@@ -86,7 +87,8 @@ def defcon_at(p90: np.ndarray, thr: np.ndarray, minutes, r: float | None = None)
     """DefCon chance in the given minutes, from his chance over 90."""
     p90, thr = np.asarray(p90, float), np.asarray(thr, float)
     mu = defcon_actions90(p90, thr, r) * np.clip(np.asarray(minutes, float), 0, 90) / 90
-    rr = DC_SIZE if r is None else (None if r == 0 else r)
+    rr = DC_SIZE if r is None else r
+    rr = None if not rr else rr
     return np.where(np.asarray(minutes, float) > 0, _nb_sf(thr, mu, rr), 0.0) * (p90 > 0)
 DEFCON_PTS = 2
 PEN_SAVE_PTS = 5
@@ -2600,10 +2602,10 @@ def team_report(pred: pd.DataFrame) -> None:
     order = t.sort_values("conc").reset_index(drop=True)
     for k, x in order.groupby(np.arange(len(order)) * 7 // len(order)):
         print(f"{x['conc'].min():.2f}-{x['conc'].max():.2f} | {len(x)} | {x['conc'].mean():.2f} | {x['cs'].mean():.1%} | {x['clean'].mean():.1%} | {x['ga'].mean():.2f}")
-    print("\nClean sheet chance in steps of 2%")
+    print("\nClean sheet chance in steps of 1%")
     print("predicted from | matches | real clean sheet share")
-    for k, x in t.groupby((t["cs"] * 50).astype(int)):
-        print(f"{k * 2}% | {len(x)} | {x['clean'].mean():.1%}")
+    for k, x in t.groupby((t["cs"] * 100).astype(int)):
+        print(f"{k}% | {len(x)} | {x['clean'].mean():.1%}")
     print("\nSeason totals by club")
     print("club | matches | expected goals | real goals | expected clean sheets | real clean sheets")
     s = t.groupby("team").agg(n=("xg", "size"), xg=("xg", "sum"), gf=("gf", "sum"), cs=("cs", "sum"), clean=("clean", "sum")).sort_values("gf", ascending=False)

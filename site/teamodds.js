@@ -55,7 +55,10 @@
 
   function render() {
     $('tableBox').hidden = state.view !== 'table';
-    $('list').hidden = state.view === 'table';
+    $('list').hidden = state.view !== 'matches';
+    $('accBox').hidden = state.view !== 'accuracy';
+    $('gw').closest('label').hidden = state.view === 'accuracy';
+    if (state.view === 'accuracy') { window.TeamAcc.render($('accBox')); return; }
     if (state.view === 'table') { renderTable(); return; }
     const gw = $('gw').value;
     const list = (state.matches[gw] || []).slice();
