@@ -2459,6 +2459,29 @@ def chance_report(pred: pd.DataFrame) -> None:
     per90("Own goal", "og90", "own_goals", played)
     per90("Red card", "r90", "red_cards", played)
     p, h = per90("Yellow card", "y90", "yellow_cards", played); calib["Yellow card"] = (p, h)
+    # The same figures on the matches where he played the full 90: the Chance 90min page shows exactly these
+    full = played[played["minutes"] >= 90]
+    full_rows_from = len(rows)
+    if len(full):
+        rows_before = len(rows)
+        per90("Score 1+ (no pens), full 90", "np_g90", "np_goals", full)
+        per90("Assist 1+, full 90", "a90", "assists", full)
+        fd = full[full["defensive_contribution"].notna() & (full["position"] != "GK")]
+        if len(fd):
+            binary("DefCon, full 90", fd["p_defcon"], fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD), fd["position"])
+        per90("Yellow card, full 90", "y90", "yellow_cards", full)
+        per90("Own goal, full 90", "og90", "own_goals", full)
+        # by band: predicted chance against the real share (full 90 only)
+        print("\nChance 90min on full-90 matches, by predicted chance: predicted | real | matches")
+        for title, prob, hit in (("Score 1+", 1 - np.exp(-full["np_g90"].to_numpy(float)), (full["np_goals"].fillna(0) >= 1).to_numpy(float)),
+                                 ("Assist 1+", 1 - np.exp(-full["a90"].to_numpy(float)), (full["assists"].fillna(0) >= 1).to_numpy(float)),
+                                 ("DefCon", fd["p_defcon"].to_numpy(float) if len(fd) else np.array([]),
+                                  (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float) if len(fd) else np.array([]))):
+            if not len(prob):
+                continue
+            bands = pd.cut(prob, [0, .05, .1, .15, .2, .3, .4, .5, .6, .8, 1.0], include_lowest=True)
+            g = pd.DataFrame({"p": prob, "h": hit, "b": bands}).groupby("b", observed=True)
+            print(title + ": " + "; ".join(f"{iv.left:.0%}-{iv.right:.0%} {x['p'].mean():.1%} vs {x['h'].mean():.1%} ({len(x)})" for iv, x in g if len(x)))
     t = pd.DataFrame(rows)
     print("\n=== Chance 90min: each chance against what happened (test season) ===")
     print("Skill: 1 - error / error of the position average (0 = no better, 1 = perfect). AUC: 0.5 = coin flip, 1 = perfect order; ceiling: the AUC if every chance were exactly right.")
