@@ -2467,6 +2467,16 @@ def full90_report(played: pd.DataFrame) -> None:
         for iv, x in pd.DataFrame({"p": ps_, "h": rs_, "b": b_}).groupby("b", observed=True):
             if len(x) >= 10:
                 bands_out.append(f"Saves | {iv.left:.1f}-{iv.right:.1f} | {x['p'].mean():.2f} | {x['h'].mean():.2f} | {len(x)}")
+    # Score 1+ and Assist 1+ in steps of 3% (charts on the Chance 90min page)
+    steps = []
+    for title, prob, hit in (("Score 1+ (no pens)", 1 - np.exp(-full["np_g90"].to_numpy(float)), (full["np_goals"].fillna(0) >= 1).to_numpy(float)),
+                             ("Fantasy Assist 1+", 1 - np.exp(-full["a90"].to_numpy(float)), (full["assists"].fillna(0) >= 1).to_numpy(float))):
+        k = (prob * 100 // 3).astype(int)
+        for b_, x in pd.DataFrame({"p": prob, "h": hit, "k": k}).groupby("k"):
+            steps.append(f"{title} | {b_ * 3}% | {len(x)} | {x['p'].mean():.1%} | {x['h'].mean():.1%}")
+    print("\n=== Chance 90min on full-90 matches, steps of 3% ===")
+    print("figure | from | matches | predicted | real")
+    print("\n".join(steps))
     print("\n=== Chance 90min on full-90 matches, by predicted chance ===")
     print("figure | band | predicted | real | matches")
     print("\n".join(bands_out))

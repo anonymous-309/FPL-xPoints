@@ -14,7 +14,9 @@ window.TeamAcc = (function () {
   function svgChart({ labels, series, bars, yTitle, xTitle, yMin, yMax, every = 1 }) {
     const W = 640, H = 260, L = 44, R = 10, T = 12, B = 44;
     const all = series.flatMap((x) => x.values.filter((v) => v !== null));
-    const lo = yMin !== undefined ? yMin : 0, hi = yMax !== undefined ? yMax : Math.ceil(Math.max(...all) * 1.05 / 20) * 20;
+    const lo = yMin !== undefined ? yMin : 0;
+    const nice = (x) => { const e = Math.pow(10, Math.floor(Math.log10(x))); return [1, 2, 2.5, 5, 10].map((m) => m * e).find((v) => v >= x); };
+    const hi = yMax !== undefined ? yMax : nice(Math.max(...all) * 1.02 / 4) * 4;
     const n = labels.length, bw = (W - L - R) / n;
     const X = (i) => L + bw * (i + 0.5), Y = (v) => T + (H - T - B) * (1 - (v - lo) / (hi - lo));
     const g = sv('svg', { viewBox: `0 0 ${W} ${H}`, class: 'acc-chart', role: 'img' });
@@ -117,5 +119,5 @@ window.TeamAcc = (function () {
 
     if (!tmKey) box.replaceChildren(el('p', { className: 'meta', textContent: 'No accuracy figures yet.' }));
   }
-  return { render };
+  return { render, svgChart };
 })();
