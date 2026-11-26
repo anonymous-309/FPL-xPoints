@@ -5,7 +5,7 @@
   const state = { data: null, pos: '', sort: 'order', dir: 1, hideOut: true, overrides: XMin.load() };
   // key, header, value at full colour, format ('pct', 'pct1' or number of decimals)
   const METRICS = [
-    ['pStart', 'Start', 1, 'pct'], ['pApp1', 'Appearance 1+', 1, 'pct'], ['pApp60', 'Appearance 60+', 1, 'pct'],
+    ['pStart', 'Start', 1, 'pct'], ['pApp1', 'Appearance 1+', 1, 'pct'], ['pApp60', 'Appearance 60+', 1, 'pct'], ['pUnder60', 'Under 60', 1, 'pct'], ['pNotPlay', 'Not playing', 1, 'pct'],
     ['pScore', 'Score 1+', 0.6, 'pct'], ['npxGoals', 'NPxGoals', 0.8, 2], ['xPenGoals', 'Pen goals', 0.15, 2], ['pAssist', 'Fantasy Assist 1+', 0.35, 'pct'], ['xAssists', 'xAssists', 0.45, 2],
     ['pCs', 'Clean sheet', 0.6, 'pct'], ['xConceded', 'Conceded', 2.4, 2], ['pDefcon', 'DefCon', 0.7, 'pct'], ['xDefcon', 'DefCon actions', 14, 1], ['xSaves', 'Saves', 4.5, 1],
     ['pPenSave', 'Pen save', 0.03, 'pct1'], ['pPenMiss', 'Pen miss', 0.03, 'pct1'], ['pOwnGoal', 'Own goal', 0.03, 'pct1'],
@@ -30,7 +30,7 @@
       missed += pens * miss;
     });
     const np = Math.max(0, d.xGoals - penModel);
-    const out = { ...d, pStart: XMin.startChance(state.overrides, p, g), npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)), pPenMiss: d.fx ? 1 - Math.exp(-missed) : d.pPenMiss };
+    const out = { ...d, pUnder60: Math.max(0, d.pApp1 - d.pApp60), pNotPlay: 1 - d.pApp1, pStart: XMin.startChance(state.overrides, p, g), npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)), pPenMiss: d.fx ? 1 - Math.exp(-missed) : d.pPenMiss };
     cache.set(key, out);
     return out;
   }
@@ -42,7 +42,7 @@
     const penModel = (d.pc ? d.pc[j] : 0) * tp * (1 - miss);
     const pens = XMin.penCond(state.overrides, p, g, j) * tp;
     const np = Math.max(0, m.xGoals - penModel), pen = pens * (1 - miss);
-    return { ...m, opp: [m.opp], pStart: XMin.startChanceAt(state.overrides, p, g, j), npxGoals: np, xPenGoals: pen,
+    return { ...m, opp: [m.opp], pUnder60: Math.max(0, m.pApp1 - m.pApp60), pNotPlay: 1 - m.pApp1, pStart: XMin.startChanceAt(state.overrides, p, g, j), npxGoals: np, xPenGoals: pen,
       pScore: 1 - Math.exp(-(np + pen)), pPenMiss: 1 - Math.exp(-pens * miss), match: j + 1, of: d.byMatch.length };
   }
   // the rows of a player in gameweek g: one, or one per match in a double gameweek

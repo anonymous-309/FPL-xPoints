@@ -241,7 +241,7 @@ window.XMin = (function () {
   // The same figures as the xPoints page's player pop-up: Chance 90min as on the Chance page (goals split into open
   // play and penalties, with the Minutes page edits), then this season so far.
   const CHANCES = [
-    ['pStart', 'Start', 'pct'], ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'],
+    ['pStart', 'Start', 'pct'], ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'], ['pUnder60', 'Under 60', 'pct'], ['pNotPlay', 'Not playing', 'pct'],
     ['pScore', 'Score 1+', 'pct'], ['npxGoals', 'NPxGoals', 2], ['xPenGoals', 'Pen goals', 2], ['pAssist', 'Fantasy Assist 1+', 'pct'], ['xAssists', 'xAssists', 2],
     ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2], ['pDefcon', 'DefCon', 'pct'], ['xDefcon', 'DefCon actions', 1], ['xSaves', 'Saves', 1],
     ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'], ['pOwnGoal', 'Own goal', 'pct1'],
@@ -259,7 +259,7 @@ window.XMin = (function () {
       missed += pens * miss;
     });
     const np = Math.max(0, d.xGoals - penModel);
-    return { ...d, pStart: startChance(overrides, p, g), npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)), pPenMiss: d.fx ? 1 - Math.exp(-missed) : d.pPenMiss };
+    return { ...d, pUnder60: Math.max(0, d.pApp1 - d.pApp60), pNotPlay: 1 - d.pApp1, pStart: startChance(overrides, p, g), npxGoals: np, xPenGoals: pen, pScore: 1 - Math.exp(-(np + pen)), pPenMiss: d.fx ? 1 - Math.exp(-missed) : d.pPenMiss };
   }
   function seasonText(p) {
     const s = p.season;
