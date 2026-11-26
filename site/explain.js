@@ -33,8 +33,8 @@
     ROWS.forEach(([k, label, kind]) => {
       const full = d.full[k] || 0, pts = d.parts[k] || 0;
       if (Math.abs(full) < 0.005 && Math.abs(pts) < 0.005) return;
-      const factor = full ? pts / full : 0;
-      const how = kind === 'p60' ? `P60 ${Math.round(factor * 100)}%` : `${(factor * 90).toFixed(0)}/90 min`;
+      // every per-minute part scales by the same xMin/90 (worked back from rounded figures it looked uneven)
+      const how = kind === 'p60' ? `P60 ${Math.round(d.pApp60 * 100)}%` : `${Math.round(d.xmin / n)}/90 min`;
       rows.push(el('tr', {}, el('th', { scope: 'row', textContent: label }), el('td', { textContent: f2(full) }), el('td', { textContent: how }), el('td', { textContent: f2(pts) })));
     });
     rows.push(el('tr', { className: 'sum' }, el('th', { scope: 'row', textContent: 'xPoints' }), el('td'), el('td'), el('td', { textContent: f2(d.xpts) })));
