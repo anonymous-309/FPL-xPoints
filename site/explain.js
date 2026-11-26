@@ -36,7 +36,7 @@
       // every per-minute part scales by the same xMin/90 (worked back from rounded figures it looked uneven)
       const on = d.m60 && d.m60.length ? Math.round(d.m60.reduce((a, b) => a + b, 0) / d.m60.length) : 90;
       const how = kind === 'p60' ? `P60 ${Math.round(d.pApp60 * 100)}%, ${on} min on`
-        : kind === 'dc' ? `P60 ${Math.round(d.pApp60 * 100)}% at ${on} min + short games`
+        : kind === 'dc' ? `P60 ${Math.round(d.pApp60 * 100)}%, ${on} min: × ${Math.round(Math.pow(on / 90, 5.5) * 100)}%`
         : `${Math.round(d.xmin / n)}/90 min`;
       rows.push(el('tr', {}, el('th', { scope: 'row', textContent: label }), el('td', { textContent: f2(full) }), el('td', { textContent: how }), el('td', { textContent: f2(pts) })));
     });

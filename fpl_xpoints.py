@@ -52,6 +52,9 @@ GOAL_PTS = {"GK": 10, "DEF": 6, "MID": 5, "FWD": 4}
 CS_PTS = {"GK": 4, "DEF": 4, "MID": 1, "FWD": 0}
 DEFCON_THRESHOLD = {"DEF": 10, "MID": 12, "FWD": 12}
 SUB_MINUTES = 25  # average minutes of an appearance under 60 (a sub on, or taken off early)
+# DefCon chance in m minutes = chance over a full 90 x (m / 90) ** DC_MIN_POWER: the threshold gets much harder with
+# fewer minutes (2025-26, real DefCon by minutes played: 60-74 min about 1/5 of the 90-minute rate, 75-84 under 1/2)
+DC_MIN_POWER = 5.5
 DEFCON_PTS = 2
 PEN_SAVE_PTS = 5
 PEN_MISS_PTS = -2
@@ -1872,9 +1875,8 @@ class XPointsModel:
         self.dc, self.dc_combine = None, None
         if len(outf) >= DC_MIN_ROWS:
             self.dc = _fit_rate(outf, "defensive_contribution", DC_FEATS)
-            # every appearance, with his real minutes: fewer minutes make the threshold much harder to reach
-            full = outf
-            X = self._dc_x(full, self.dc.predict(full[DC_FEATS]), full["minutes"].to_numpy(float))
+            full = outf[outf["minutes"] >= 60]
+            X = self._dc_x(full, self.dc.predict(full[DC_FEATS]))
             hit = (full["defensive_contribution"] >= full["position"].map(DEFCON_THRESHOLD)).astype(int)
             if hit.nunique() == 2:
                 self.dc_combine = LogisticRegression(C=1.0, max_iter=1000).fit(X, hit)
@@ -1883,12 +1885,10 @@ class XPointsModel:
         return self
 
     @staticmethod
-    def _dc_x(df: pd.DataFrame, dc90: np.ndarray, mins=90.0) -> np.ndarray:
+    def _dc_x(df: pd.DataFrame, dc90: np.ndarray) -> np.ndarray:
         rate = df["defcon_rate"].clip(0.01, 0.99).to_numpy(float)
         thr = df["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
-        m = np.broadcast_to(np.clip(np.asarray(mins, float), 1, 90), (len(df),))
-        # his expected actions in those minutes against the threshold, and the minutes on their own
-        return np.column_stack([np.log(rate / (1 - rate)), np.log(np.clip(dc90, 0.1, None) / thr), np.log(m / 90)])
+        return np.column_stack([np.log(rate / (1 - rate)), np.log(np.clip(dc90, 0.1, None) / thr)])
 
     def predict(self, df: pd.DataFrame, availability: pd.Series | None = None) -> pd.DataFrame:
         # xMin = weighted last-5 minutes, reduced by the FPL availability flag. FPL thresholds apply to that figure.
@@ -1936,16 +1936,11 @@ class XPointsModel:
             full_save[gk] = sum(poisson.sf(3 * j - 1, mu) for j in range(1, 11))  # E[floor(S/3)] over 90
         pts_save = full_save * n90
         dc90 = self.dc.predict(df[DC_FEATS]) if self.dc is not None else df["r_dc"].to_numpy(float)
-        if self.dc_combine is not None:
-            pd_at = lambda m: self.dc_combine.predict_proba(self._dc_x(df, dc90, m))[:, 1]
-            p_def, p_def60, p_defsub = pd_at(90.0), pd_at(m60), pd_at(float(SUB_MINUTES))
-            pts_def = (~gk) * (p_60 * p_def60 + p_sub * p_defsub) * DEFCON_PTS
-            self.dc_slope = float(self.dc_combine.coef_[0][-1])
-            dc_logit = np.log(np.clip(p_def, 1e-6, 1 - 1e-6) / np.clip(1 - p_def, 1e-6, None))
-        else:
-            p_def = p_def60 = df["defcon_rate"].to_numpy(float)
-            pts_def = (~gk) * n90 * p_def * DEFCON_PTS
-            self.dc_slope, dc_logit = None, np.full(len(df), np.nan)
+        p_def = (self.dc_combine.predict_proba(self._dc_x(df, dc90))[:, 1] if self.dc_combine is not None
+                 else df["defcon_rate"].to_numpy(float))
+        p_def60 = p_def * (m60 / 90) ** DC_MIN_POWER
+        p_defsub = p_def * (SUB_MINUTES / 90) ** DC_MIN_POWER
+        pts_def = (~gk) * (p_60 * p_def60 + p_sub * p_defsub) * DEFCON_PTS
         saves90 = np.zeros(len(df))
         if gk.any():
             saves90[gk] = mu
@@ -1974,8 +1969,7 @@ class XPointsModel:
         out["full_cards"] = -rate90["yellow"] - 3 * red90
         out["p_defcon"] = (~gk) * p_def  # if he plays the full 90
         out["p_defcon_60"] = (~gk) * p_def60  # in a match where he plays 60+ (his usual minutes then)
-        out["dc_logit"], out["m60"], out["p_cs_on"] = dc_logit, m60, pcs_on
-        out["dc_slope"] = np.nan if self.dc_slope is None else self.dc_slope
+        out["m60"], out["p_cs_on"] = m60, pcs_on
         out["dc90"], out["bps90"] = (~gk) * dc90, self.bps.predict(df[BPS_FEATS])
         # Bonus: half the per-player model, half a simulation of each match, where he competes for the top 3 BPS with
         # everyone on the pitch, both teams (Accuracy page: best correlation of the versions tried).
@@ -2422,11 +2416,7 @@ def parts_at_real_minutes(pred: pd.DataFrame) -> pd.DataFrame:
     gkdef = pred["position"].isin(["GK", "DEF"]).to_numpy()
     cs = on60 * np.exp(-on) * pred["position"].map(CS_PTS).to_numpy(float)
     conc = -1.0 * gkdef * on60 * (on - (1 - np.exp(-2 * on)) / 2) / 2
-    if "dc_logit" in pred and pred["dc_logit"].notna().any():
-        z = g("dc_logit") + g("dc_slope") * np.log(np.clip(m, 1, 90) / 90)
-        dc = (m > 0) * (pred["position"] != "GK").to_numpy() * DEFCON_PTS / (1 + np.exp(-z))
-    else:
-        dc = g("full_defcon") * n90
+    dc = g("full_defcon") * (np.clip(m, 0, 90) / 90) ** DC_MIN_POWER
     return pd.DataFrame({
         "Appearance": (m > 0).astype(float) + on60, "Goals": (g("full_goal") - pen_goal90) * n90, "Assists": g("full_assist") * n90, "Bonus": g("full_bonus") * n90,
         "Clean sheet": cs, "Goals conceded": conc, "Saves": g("full_saves") * n90,
@@ -3808,8 +3798,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         # goals conceded and DefCon for minutes the viewer sets)
         g.setdefault("cc", []).append(round(float(r["conc90"]), 3))
         g.setdefault("m60", []).append(round(float(r["m60"]), 1))
-        if "dc_logit" in r and pd.notna(r["dc_logit"]):
-            g.setdefault("dl", []).append(round(float(r["dc_logit"]), 3))
+        g.setdefault("dp", []).append(round(float(r["p_defcon"]), 4))
         if isinstance(r.get("euro_note"), str) and r["euro_note"]:
             g.setdefault("euro", []).append(r["euro_note"])  # e.g. "UCL 3d": a European match 3 days before
         for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "penmiss", "own", "defcon", "cards"):
@@ -3854,7 +3843,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             g["bonus"] = round(g["bonus"], 3)
             g["xDefcon"], g["xBps"] = round(g["xDefcon"], 2), round(g["xBps"], 1)
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws,
-               "dcSlope": round(float(res["dc_slope"].dropna().iloc[0]), 4) if "dc_slope" in res and res["dc_slope"].notna().any() else None, "players": list(players.values()),
+               "dcPower": DC_MIN_POWER, "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])
     payload["setPiecesByGw"] = {str(g): set_piece_table(res, g) for g in payload["gws"]}  # every gameweek, for the GW picker

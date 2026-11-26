@@ -5,7 +5,7 @@ window.XMin = (function () {
   const STORE = 'xmin-overrides';
   const GOAL_PTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
   const CS_PTS = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
-  let dcSlope = null;  // DefCon: how the log-odds of reaching the threshold move with log(minutes / 90)
+  let dcPower = null;  // DefCon chance in m minutes = chance over 90 x (m / 90) ** dcPower (same as the model)
   const PEN_TAKE_ON_PITCH = 1;  // same as the model: the listed taker takes them while he is on the pitch
   let takers = {};  // team -> players with an FPL penalty order, first taker first
   let fkTakers = {};  // team -> players on FPL's free kick or corner list
@@ -48,7 +48,7 @@ window.XMin = (function () {
   // Call once with all players so penalty shares can follow edited minutes of the takers above.
   let patterns = {};  // team -> [{ ids, pats: [[weight, started flags]] }]: who started together in recent matches
   function setPlayers(players, pats, slope) {
-    if (slope !== undefined) dcSlope = slope;
+    if (slope !== undefined) dcPower = slope;
     patterns = pats || {};
     takers = {};
     fkTakers = {};
@@ -201,8 +201,8 @@ window.XMin = (function () {
       parts.cs = f.cs * full60;
       parts.conceded = f.conceded * full60;
     }
-    if (d.dl && d.dl.length === m.mins.length && dcSlope !== null && p.position !== 'GK') {
-      parts.defcon = m.mins.reduce((a, x, j) => a + (x > 0 ? 2 / (1 + Math.exp(-(d.dl[j] + dcSlope * Math.log(Math.min(90, Math.max(1, x)) / 90)))) : 0), 0);
+    if (d.dp && d.dp.length === m.mins.length && dcPower != null && p.position !== 'GK') {
+      parts.defcon = m.mins.reduce((a, x, j) => a + 2 * d.dp[j] * Math.pow(Math.min(90, Math.max(0, x)) / 90, dcPower), 0);
     }
     return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: r * 90 * m.mins.length, mins: m.mins, xg: f.xg * r, xa: f.xa * r, edited: m.source };
   }
