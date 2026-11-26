@@ -305,6 +305,20 @@ def ai_minute_detail(history: list[float]) -> tuple[float, float, float]:
             float(np.dot(window >= 60, weights) / total))
 
 
+def ai_minutes_60(history: list[float]) -> float:
+    """His minutes in the matches of the same 5 where he played 60+, weighted the same way (nan if none)."""
+    window = np.array(history[::-1][:5], dtype=float)
+    w = MINUTE_WEIGHTS[:len(window)] * (window >= 60)
+    return float(np.dot(window, w) / w.sum()) if len(window) and w.sum() > 0 else np.nan
+
+
+def ai_minutes_60_on_return(history: list[float]) -> float:
+    end = len(history)
+    while end > 0 and history[end - 1] == 0:
+        end -= 1
+    return ai_minutes_60(history[:end]) if end else np.nan
+
+
 def ai_minute(history: list[float]) -> float:
     return ai_minute_detail(history)[0]
 
@@ -326,6 +340,7 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
     and so are matches he missed through a yellow-card ban (banned: how many of the row's matches, see yellow_bans).
     """
     out = np.full((len(mins), 6), np.nan)
+    m60 = np.full((len(mins), 2), np.nan)  # minutes in his 60+ matches, normal and on return
     banned = np.zeros(len(mins)) if banned is None else banned
     recent: list[str] = []
     hist: list[float] = []
@@ -336,6 +351,7 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
         if k != prev:
             hist, raw, ban_left, prev = [], [], 0, k
         out[i] = ai_minute_detail(hist) + ai_minute_on_return(hist)
+        m60[i] = (ai_minutes_60(hist), ai_minutes_60_on_return(hist))
         recent.append(",".join("out" if m < 0 else str(int(round(m))) for m in raw[-8:]))
         if n > 0 and b >= n:
             raw.append(-1.0)  # shown as "out" in the log (ban or injury)
@@ -352,7 +368,7 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
             else:
                 ban_left = 0
                 hist.append(minutes)
-    return out[:, 0], out[:, 1], out[:, 2], out[:, 3], out[:, 4], out[:, 5], recent
+    return out[:, 0], out[:, 1], out[:, 2], out[:, 3], out[:, 4], out[:, 5], recent, m60[:, 0], m60[:, 1]
 
 
 def _start_detail(history: list[tuple[float, float]]) -> tuple[float, float, float]:
@@ -1583,7 +1599,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
     for c in ["g", "xg", "xgot", "xgk"]:
         p[f"F_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_FINISH)
-    p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
+    p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"], p["w5_m60"], p["ret_m60"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     p["w5_st"], p["w5_ms"], p["w5_mb"], p["ret_st"], p["ret_ms"], p["ret_mb"], p["w5_last"], p["ret_last"] = ai_starts(keys, p["mins"].to_numpy(float), p["st"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     for c in ["n90", "xg", "xa", "box", "boxn90"]:
         p[f"R_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_ROLE)
@@ -1741,12 +1757,12 @@ def usual_minutes(df: pd.DataFrame) -> dict[str, np.ndarray]:
     """Minutes and chances of 1+ and 60+ minutes when he is available, before any injury or ban is applied."""
     ret = df["from_return"].fillna(False).astype(bool).to_numpy() if "from_return" in df else np.zeros(len(df), bool)
     out = {}
-    for key, w5, r in (("min", "w5_min", "ret_min"), ("p1", "w5_p1", "ret_p1"), ("p60", "w5_p60", "ret_p60"),
+    for key, w5, r in (("min", "w5_min", "ret_min"), ("p1", "w5_p1", "ret_p1"), ("p60", "w5_p60", "ret_p60"), ("m60", "w5_m60", "ret_m60"),
                        ("st", "w5_st", "ret_st"), ("ms", "w5_ms", "ret_ms"), ("mb", "w5_mb", "ret_mb"), ("last", "w5_last", "ret_last")):
         if w5 not in df:
             out[key] = np.full(len(df), np.nan)
             continue
-        normal = df[w5].fillna(np.nan if key in ("st", "ms", "mb", "last") else 0.0).to_numpy(float)
+        normal = df[w5].fillna(np.nan if key in ("st", "ms", "mb", "last", "m60") else 0.0).to_numpy(float)
         back = df[r].to_numpy(float) if r in df else np.full(len(df), np.nan)
         out[key] = np.where(ret & ~np.isnan(back), back, normal)
     return out
@@ -1900,10 +1916,13 @@ class XPointsModel:
         p_60 = np.clip(base["p60"] * avail, 0, 1)
         pos = df["position"]
         n90 = xmin / 90
-        # Minutes in a match where he plays 60+: his xMin less the short appearances, over the chance of 60+.
-        # Clean sheets, goals conceded and DefCon count only the minutes he is on the pitch.
+        # Minutes in a match where he plays 60+. Clean sheets, goals conceded and DefCon count only the minutes he is
+        # on the pitch.
         p_sub = np.clip(p_play - p_60, 0, 1)
-        m60 = np.where(p_60 > 0.01, np.clip((xmin - p_sub * SUB_MINUTES) / np.maximum(p_60, 0.01), 60, 90), 90.0)
+        # his real minutes in the recent matches where he played 60+ (same 5 matches and weights as xMin); if he
+        # has none, worked back from xMin
+        est = np.where(p_60 > 0.01, np.clip((xmin - p_sub * SUB_MINUTES) / np.maximum(p_60, 0.01), 60, 90), 90.0)
+        m60 = np.where(np.isnan(base["m60"]), est, np.clip(np.nan_to_num(base["m60"], nan=90.0), 60, 90))
         rate90 = {k: self.rates[k].predict(df[f]) for k, (_, f) in GLMS.items()}
         # Penalties on top of open-play goals: his share of team penalties while on the pitch x team penalties per match.
         pen_cond = df["pen_cond"].to_numpy(float) if "pen_cond" in df else df["pen_share_hist"].fillna(0).to_numpy(float)
@@ -3171,7 +3190,8 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
         out = ai_minutes(np.array([pid] * n), mins, np.append(np.ones(n - 1), 0.0), reds, bans)
         rows = target["pid"] == pid
         target.loc[rows, "w5_min"], target.loc[rows, "w5_p1"], target.loc[rows, "w5_p60"] = out[0][-1], out[1][-1], out[2][-1]
-        target.loc[rows, "recent_mins"] = out[-1][-1] + " (without the knock match)"
+        target.loc[rows, "w5_m60"] = out[7][-1]
+        target.loc[rows, "recent_mins"] = out[6][-1] + " (without the knock match)"
     return target
 
 
@@ -3561,6 +3581,8 @@ def admin_minutes(target: pd.DataFrame, path: Path = ADMIN_FILE) -> pd.DataFrame
         target.loc[rows, col] = (m > 0).astype(float)
     for col in ("w5_p60", "ret_p60"):
         target.loc[rows, col] = (m >= 60).astype(float)
+    for col in ("w5_m60", "ret_m60"):  # admin minutes: his minutes when 60+ are those
+        target.loc[rows, col] = m.where(m >= 60)
     for col in ("w5_st", "ret_st", "w5_last", "ret_last"):  # admin minutes: a starter from 45, his minutes when starting are those
         target.loc[rows, col] = (m >= 45).astype(float)
     for col in ("w5_ms", "ret_ms"):
