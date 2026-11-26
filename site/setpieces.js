@@ -43,7 +43,7 @@
   function card(team) {
     const head = el('header', { className: 'sp-head' },
       el('h2', { textContent: team.name }),
-      el('p', { textContent: `GW${data.gw} v ${team.opp.join(', ')} · ${team.penRate.toFixed(2)} penalties per match` }));
+      el('p', { textContent: `GW${data.gw} v ${team.opp.join(', ')} · ${team.penRate.toFixed(3)} penalties per match` }));
     const body = el('div', { className: 'sp-body' }, penTable(team), takerList('Direct free kicks', team.fk), takerList('Corners and indirect free kicks', team.corners));
     const c = el('section', { className: 'sp-card' }, head, body);
     if (team.notes.length) c.append(el('p', { className: 'sp-notes', textContent: team.notes.join(' ') }));
