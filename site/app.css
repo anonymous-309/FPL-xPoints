@@ -778,3 +778,8 @@ table.stats thead tr:nth-child(2) th:first-child { z-index: 5; }
 .tip-pop { position: absolute; z-index: 2000; background: #17261f; color: #fff; border-radius: 8px; padding: 10px 30px 10px 12px;
   font-size: 14px; line-height: 1.4; white-space: pre-line; box-shadow: 0 8px 30px #0004; }
 .tip-close { position: absolute; top: 2px; right: 6px; border: 0; background: none; color: #fff; font-size: 20px; cursor: pointer; }
+
+.acc-chart-wrap { margin: .4rem 0 1rem; }
+.acc-chart { width: 100%; height: auto; max-width: 720px; display: block; }
+.acc-legend { display: flex; gap: 1rem; flex-wrap: wrap; font-size: .85rem; color: var(--muted); margin-top: .2rem; }
+.acc-legend i { display: inline-block; width: 14px; height: 3px; margin-right: .35rem; vertical-align: middle; }
