@@ -182,7 +182,7 @@
           ' if every team got the league average), but grouped by the expected figure the real goals match it closely:'),
         table(['Expected goals', 'Matches', 'Expected', 'Real'], gb),
         el('h3', { textContent: 'Clean sheets' }),
-        p('Predicted ', b(c['predicted share'] || '–'), ' of matches, real ', b(c['real share'] || '–'), '. A clean sheet means the opponent scores 0, so the two figures go together: the more goals the opponent is expected to score, the lower the chance. Grouped by the opponent\'s expected goals (the same groups as above):'),
+        p('Predicted ', b(c['predicted share'] || '–'), ' of matches, real ', b(c['real share'] || '–'), '. A clean sheet means the opponent scores 0, so the two figures go together: the more goals the opponent is expected to score, the lower the chance. Grouped by the opponent\'s expected goals, in 10 groups with the same number of matches:'),
         table(["Opponent's expected goals", 'Matches', 'Opponent expected', 'Clean sheet predicted', 'Clean sheet real', 'Goals conceded real'], cb),
         el('h3', { textContent: 'Season totals by club' }),
         p(`How close the season adds up for each club (correlation: ${corr.trim()}).`),

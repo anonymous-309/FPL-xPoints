@@ -2473,13 +2473,12 @@ def team_report(pred: pd.DataFrame) -> None:
     print(f"real share | {t['clean'].mean():.1%}")
     print(f"Brier skill against the league home/away average | {1 - brier / brier0:.3f}")
     print(f"AUC | {_auc(t['cs'].to_numpy(float), t['clean'].to_numpy(float)):.3f}")
-    # a clean sheet is the other side scoring 0, so it goes with the opponent's expected goals (the same bands)
+    # a clean sheet is the other side scoring 0, so it goes with the opponent's expected goals: 10 groups of equal size
     print("\nClean sheets by the opponent's expected goals")
     print("opponent's expected goals | matches | opponent's expected average | predicted clean sheet | real clean sheet | real goals conceded")
-    for lo, hi in XG_BANDS:
-        x = t[(t["conc"] >= lo) & (t["conc"] < hi)]
-        if len(x):
-            print(f"{band(lo, hi)} | {len(x)} | {x['conc'].mean():.2f} | {x['cs'].mean():.1%} | {x['clean'].mean():.1%} | {x['ga'].mean():.2f}")
+    order = t.sort_values("conc").reset_index(drop=True)
+    for k, x in order.groupby(np.arange(len(order)) * 10 // len(order)):
+        print(f"{x['conc'].min():.2f}-{x['conc'].max():.2f} | {len(x)} | {x['conc'].mean():.2f} | {x['cs'].mean():.1%} | {x['clean'].mean():.1%} | {x['ga'].mean():.2f}")
     print("\nSeason totals by club")
     print("club | matches | expected goals | real goals | expected clean sheets | real clean sheets")
     s = t.groupby("team").agg(n=("xg", "size"), xg=("xg", "sum"), gf=("gf", "sum"), cs=("cs", "sum"), clean=("clean", "sum")).sort_values("gf", ascending=False)
