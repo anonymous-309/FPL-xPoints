@@ -2431,6 +2431,13 @@ def real_parts(pred: pd.DataFrame) -> pd.DataFrame:
 CORE_GROUP = {"GK": 15, "DEF": 35, "MID": 35, "FWD": 15}  # the "core": the top scorers of the test season by position
 
 
+XG_BANDS = ((0, 1.1), (1.1, 1.4), (1.4, 1.7), (1.7, 9))
+
+
+def band(lo: float, hi: float) -> str:
+    return f"under {hi:.1f}" if lo == 0 else f"{lo:.1f}+" if hi > 5 else f"{lo:.1f}-{hi:.1f}"
+
+
 def team_report(pred: pd.DataFrame) -> None:
     """Team odds tested: each club's expected goals (the other side's expected goals conceded) and clean sheet chance
     in every match of the test season, against what happened."""
@@ -2453,10 +2460,10 @@ def team_report(pred: pd.DataFrame) -> None:
     print(f"correlation with real goals | {np.corrcoef(t['xg'], t['gf'])[0, 1]:.2f}")
     print("\nGoals by expected band")
     print("expected | matches | expected average | real average")
-    for lo, hi in ((0, 0.8), (0.8, 1.1), (1.1, 1.4), (1.4, 1.7), (1.7, 2.1), (2.1, 9)):
+    for lo, hi in XG_BANDS:
         x = t[(t["xg"] >= lo) & (t["xg"] < hi)]
         if len(x):
-            print(f"{lo:.1f}-{hi:.1f} | {len(x)} | {x['xg'].mean():.2f} | {x['gf'].mean():.2f}".replace("-9.0", "+"))
+            print(f"{band(lo, hi)} | {len(x)} | {x['xg'].mean():.2f} | {x['gf'].mean():.2f}")
     brier = ((t["cs"] - t["clean"]) ** 2).mean()
     base_cs = t.groupby("home")["clean"].transform("mean")
     brier0 = ((base_cs - t["clean"]) ** 2).mean()
@@ -2466,12 +2473,13 @@ def team_report(pred: pd.DataFrame) -> None:
     print(f"real share | {t['clean'].mean():.1%}")
     print(f"Brier skill against the league home/away average | {1 - brier / brier0:.3f}")
     print(f"AUC | {_auc(t['cs'].to_numpy(float), t['clean'].to_numpy(float)):.3f}")
-    print("\nClean sheets by predicted band")
-    print("predicted | matches | predicted average | real share")
-    for lo, hi in ((0, 0.15), (0.15, 0.25), (0.25, 0.35), (0.35, 0.45), (0.45, 1.01)):
-        x = t[(t["cs"] >= lo) & (t["cs"] < hi)]
+    # a clean sheet is the other side scoring 0, so it goes with the opponent's expected goals (the same bands)
+    print("\nClean sheets by the opponent's expected goals")
+    print("opponent's expected goals | matches | opponent's expected average | predicted clean sheet | real clean sheet | real goals conceded")
+    for lo, hi in XG_BANDS:
+        x = t[(t["conc"] >= lo) & (t["conc"] < hi)]
         if len(x):
-            print(f"{lo:.0%}-{min(hi, 1):.0%} | {len(x)} | {x['cs'].mean():.1%} | {x['clean'].mean():.1%}")
+            print(f"{band(lo, hi)} | {len(x)} | {x['conc'].mean():.2f} | {x['cs'].mean():.1%} | {x['clean'].mean():.1%} | {x['ga'].mean():.2f}")
     print("\nSeason totals by club")
     print("club | matches | expected goals | real goals | expected clean sheets | real clean sheets")
     s = t.groupby("team").agg(n=("xg", "size"), xg=("xg", "sum"), gf=("gf", "sum"), cs=("cs", "sum"), clean=("clean", "sum")).sort_values("gf", ascending=False)

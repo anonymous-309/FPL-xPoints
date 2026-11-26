@@ -172,7 +172,7 @@
         for (let j = 1; j < ls.length && ls[j].trim() && ls[j].split('|').length === n; j++) out.push(ls[j].split('|').map((x) => x.trim())); return out; };
       const kv = (title) => Object.fromEntries(rowsOf(title).map((r) => [r[0], r[1]]));
       const g = kv('Goals per match'), c = kv('Clean sheets');
-      const gb = rowsOf('Goals by expected band'), cb = rowsOf('Clean sheets by predicted band'), clubs = rowsOf('Season totals by club');
+      const gb = rowsOf('Goals by expected band'), cb = rowsOf("Clean sheets by the opponent's expected goals"), clubs = rowsOf('Season totals by club');
       const corr = (L.find((l) => l.startsWith('correlation of season totals')) || '').split('|')[1] || '';
       out.push(card('Team goals and clean sheets',
         p(`Every club's expected goals and clean sheet chance in each of the ${g.matches || ''} team-matches of the test season (the figures on the Team odds page), against what happened.`),
@@ -182,8 +182,8 @@
           ' if every team got the league average), but grouped by the expected figure the real goals match it closely:'),
         table(['Expected goals', 'Matches', 'Expected', 'Real'], gb),
         el('h3', { textContent: 'Clean sheets' }),
-        p('Predicted ', b(c['predicted share'] || '–'), ' of matches, real ', b(c['real share'] || '–'), '. Grouped by the predicted chance:'),
-        table(['Predicted chance', 'Matches', 'Predicted', 'Real'], cb),
+        p('Predicted ', b(c['predicted share'] || '–'), ' of matches, real ', b(c['real share'] || '–'), '. A clean sheet means the opponent scores 0, so the two figures go together: the more goals the opponent is expected to score, the lower the chance. Grouped by the opponent\'s expected goals (the same groups as above):'),
+        table(["Opponent's expected goals", 'Matches', 'Opponent expected', 'Clean sheet predicted', 'Clean sheet real', 'Goals conceded real'], cb),
         el('h3', { textContent: 'Season totals by club' }),
         p(`How close the season adds up for each club (correlation: ${corr.trim()}).`),
         table(['Club', 'Matches', 'Expected goals', 'Real goals', 'Expected CS', 'Real CS'], clubs)));
