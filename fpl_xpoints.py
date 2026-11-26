@@ -2460,10 +2460,9 @@ def team_report(pred: pd.DataFrame) -> None:
     print(f"correlation with real goals | {np.corrcoef(t['xg'], t['gf'])[0, 1]:.2f}")
     print("\nGoals by expected band")
     print("expected | matches | expected average | real average")
-    for lo, hi in XG_BANDS:
-        x = t[(t["xg"] >= lo) & (t["xg"] < hi)]
-        if len(x):
-            print(f"{band(lo, hi)} | {len(x)} | {x['xg'].mean():.2f} | {x['gf'].mean():.2f}")
+    order = t.sort_values("xg").reset_index(drop=True)  # 7 groups with the same number of matches
+    for k, x in order.groupby(np.arange(len(order)) * 7 // len(order)):
+        print(f"{x['xg'].min():.2f}-{x['xg'].max():.2f} | {len(x)} | {x['xg'].mean():.2f} | {x['gf'].mean():.2f}")
     brier = ((t["cs"] - t["clean"]) ** 2).mean()
     base_cs = t.groupby("home")["clean"].transform("mean")
     brier0 = ((base_cs - t["clean"]) ** 2).mean()
@@ -2473,11 +2472,11 @@ def team_report(pred: pd.DataFrame) -> None:
     print(f"real share | {t['clean'].mean():.1%}")
     print(f"Brier skill against the league home/away average | {1 - brier / brier0:.3f}")
     print(f"AUC | {_auc(t['cs'].to_numpy(float), t['clean'].to_numpy(float)):.3f}")
-    # a clean sheet is the other side scoring 0, so it goes with the opponent's expected goals: 10 groups of equal size
+    # a clean sheet is the other side scoring 0, so it goes with the opponent's expected goals: 7 groups of equal size
     print("\nClean sheets by the opponent's expected goals")
     print("opponent's expected goals | matches | opponent's expected average | predicted clean sheet | real clean sheet | real goals conceded")
     order = t.sort_values("conc").reset_index(drop=True)
-    for k, x in order.groupby(np.arange(len(order)) * 10 // len(order)):
+    for k, x in order.groupby(np.arange(len(order)) * 7 // len(order)):
         print(f"{x['conc'].min():.2f}-{x['conc'].max():.2f} | {len(x)} | {x['conc'].mean():.2f} | {x['cs'].mean():.1%} | {x['clean'].mean():.1%} | {x['ga'].mean():.2f}")
     print("\nSeason totals by club")
     print("club | matches | expected goals | real goals | expected clean sheets | real clean sheets")
