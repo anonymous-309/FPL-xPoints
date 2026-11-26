@@ -20,7 +20,7 @@
     if (kind === 'app') return `Appearance 1+ ${pc(d.pApp1)} + Appearance 60+ ${pc(d.pApp60)}`;
     if (kind === 'p60') return `${f2(full)} over 90 × Appearance 60+ ${pc(d.pApp60)}, counting only the goals in his ${on} minutes on`;
     if (kind === 'dc') { const mu = d.dm && d.dm.length ? d.dm[0] : null;
-      return `${f2(full)} over 90 (DefCon chance ${pc(full / 2)}${mu ? `, about ${mu.toFixed(1)} actions over 90` : ''}) × Appearance 60+ ${pc(d.pApp60)}, in his ${on} minutes${mu ? ` about ${(mu * on / 90).toFixed(1)} actions` : ''}, plus almost nothing from short appearances`; }
+      return `${f2(full)} over 90 (DefCon chance ${pc(full / 2)}${mu ? ` from ${mu.toFixed(1)} actions over 90` : ''}) × Appearance 60+ ${pc(d.pApp60)}, in his ${on} minutes${mu ? ` about ${(mu * on / 90).toFixed(1)} actions` : ''}, plus almost nothing from short appearances`; }
     return `${f2(full)} over 90 × ${Math.round(d.xmin / n)}/90 minutes`;
   }
   const value = (p, d, key) => (key === 'name' ? p.name.toLowerCase() : key === 'opp' ? d.opp.join() : key === 'xpts' ? d.xpts

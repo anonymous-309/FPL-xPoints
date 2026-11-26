@@ -58,7 +58,7 @@ DC_MIN_POWER = 5.5
 # DefCon in m minutes: his chance over 90 is turned into an equal number of defensive actions over 90 (a negative
 # binomial count with this spread, size r; smaller r = more spread), that number x m/90, then the chance of reaching
 # the threshold with it. A player far above the threshold keeps more of it in fewer minutes than one near it.
-DC_SIZE = 0.0  # 0 = Poisson: closest to last season's real DefCon by minutes played (sizes 2 to 16 tried)
+DC_SIZE = 0.0  # 0 = Poisson (the site's count rule for DefCon when minutes are edited)
 
 
 def _nb_sf(thr: np.ndarray, mu: np.ndarray, r: float | None) -> np.ndarray:
@@ -347,6 +347,13 @@ def ai_minutes_60(history: list[float]) -> float:
     return float(np.dot(window, w) / w.sum()) if len(window) and w.sum() > 0 else np.nan
 
 
+def ai_minutes_short(history: list[float]) -> float:
+    """His minutes in the matches of the same 5 where he played 1-59, weighted the same way (nan if none)."""
+    window = np.array(history[::-1][:5], dtype=float)
+    w = MINUTE_WEIGHTS[:len(window)] * ((window > 0) & (window < 60))
+    return float(np.dot(window, w) / w.sum()) if len(window) and w.sum() > 0 else np.nan
+
+
 def ai_minutes_60_on_return(history: list[float]) -> float:
     end = len(history)
     while end > 0 and history[end - 1] == 0:
@@ -375,7 +382,7 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
     and so are matches he missed through a yellow-card ban (banned: how many of the row's matches, see yellow_bans).
     """
     out = np.full((len(mins), 6), np.nan)
-    m60 = np.full((len(mins), 2), np.nan)  # minutes in his 60+ matches, normal and on return
+    m60 = np.full((len(mins), 3), np.nan)  # minutes in his 60+ matches, normal and on return; in his 1-59 matches
     banned = np.zeros(len(mins)) if banned is None else banned
     recent: list[str] = []
     hist: list[float] = []
@@ -386,7 +393,7 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
         if k != prev:
             hist, raw, ban_left, prev = [], [], 0, k
         out[i] = ai_minute_detail(hist) + ai_minute_on_return(hist)
-        m60[i] = (ai_minutes_60(hist), ai_minutes_60_on_return(hist))
+        m60[i] = (ai_minutes_60(hist), ai_minutes_60_on_return(hist), ai_minutes_short(hist))
         recent.append(",".join("out" if m < 0 else str(int(round(m))) for m in raw[-8:]))
         if n > 0 and b >= n:
             raw.append(-1.0)  # shown as "out" in the log (ban or injury)
@@ -403,7 +410,7 @@ def ai_minutes(keys: np.ndarray, mins: np.ndarray, matches: np.ndarray, reds: np
             else:
                 ban_left = 0
                 hist.append(minutes)
-    return out[:, 0], out[:, 1], out[:, 2], out[:, 3], out[:, 4], out[:, 5], recent, m60[:, 0], m60[:, 1]
+    return out[:, 0], out[:, 1], out[:, 2], out[:, 3], out[:, 4], out[:, 5], recent, m60[:, 0], m60[:, 1], m60[:, 2]
 
 
 def _start_detail(history: list[tuple[float, float]]) -> tuple[float, float, float]:
@@ -1634,7 +1641,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     p["n_hist"] = g["n"].transform(lambda s: s.shift(1).fillna(0).cumsum())
     for c in ["g", "xg", "xgot", "xgk"]:
         p[f"F_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_FINISH)
-    p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"], p["w5_m60"], p["ret_m60"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
+    p["w5_min"], p["w5_p1"], p["w5_p60"], p["ret_min"], p["ret_p1"], p["ret_p60"], p["recent_mins"], p["w5_m60"], p["ret_m60"], p["w5_m1"] = ai_minutes(keys, p["mins"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     p["w5_st"], p["w5_ms"], p["w5_mb"], p["ret_st"], p["ret_ms"], p["ret_mb"], p["w5_last"], p["ret_last"] = ai_starts(keys, p["mins"].to_numpy(float), p["st"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     for c in ["n90", "xg", "xa", "box", "boxn90"]:
         p[f"R_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_ROLE)
@@ -1792,12 +1799,12 @@ def usual_minutes(df: pd.DataFrame) -> dict[str, np.ndarray]:
     """Minutes and chances of 1+ and 60+ minutes when he is available, before any injury or ban is applied."""
     ret = df["from_return"].fillna(False).astype(bool).to_numpy() if "from_return" in df else np.zeros(len(df), bool)
     out = {}
-    for key, w5, r in (("min", "w5_min", "ret_min"), ("p1", "w5_p1", "ret_p1"), ("p60", "w5_p60", "ret_p60"), ("m60", "w5_m60", "ret_m60"),
+    for key, w5, r in (("min", "w5_min", "ret_min"), ("p1", "w5_p1", "ret_p1"), ("p60", "w5_p60", "ret_p60"), ("m60", "w5_m60", "ret_m60"), ("m1", "w5_m1", "w5_m1"),
                        ("st", "w5_st", "ret_st"), ("ms", "w5_ms", "ret_ms"), ("mb", "w5_mb", "ret_mb"), ("last", "w5_last", "ret_last")):
         if w5 not in df:
             out[key] = np.full(len(df), np.nan)
             continue
-        normal = df[w5].fillna(np.nan if key in ("st", "ms", "mb", "last", "m60") else 0.0).to_numpy(float)
+        normal = df[w5].fillna(np.nan if key in ("st", "ms", "mb", "last", "m60", "m1") else 0.0).to_numpy(float)
         back = df[r].to_numpy(float) if r in df else np.full(len(df), np.nan)
         out[key] = np.where(ret & ~np.isnan(back), back, normal)
     return out
@@ -1990,12 +1997,13 @@ class XPointsModel:
             full_save[gk] = sum(poisson.sf(3 * j - 1, mu) for j in range(1, 11))  # E[floor(S/3)] over 90
         pts_save = full_save * n90
         dc90 = self.dc.predict(df[DC_FEATS]) if self.dc is not None else df["r_dc"].to_numpy(float)
-        p_def = (self.dc_combine.predict_proba(self._dc_x(df, dc90))[:, 1] if self.dc_combine is not None
-                 else df["defcon_rate"].to_numpy(float))
+        # DefCon: his expected defensive actions over 90 x his minutes / 90, then the chance of reaching 10 (DEF) or 12
+        # with that many (a Poisson count), for a match of 60+ (m60 minutes) and a short one (m1 minutes)
         thr = pos.map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
-        p_def60 = defcon_at(p_def, thr, m60)
-        p_defsub = defcon_at(p_def, thr, np.full(len(df), float(SUB_MINUTES)))
-        dc_mu90 = defcon_actions90(p_def, thr)
+        m1 = np.where(np.isnan(base["m1"]), float(SUB_MINUTES), np.clip(np.nan_to_num(base["m1"], nan=SUB_MINUTES), 1, 59))
+        dc_at = lambda mins: poisson.sf(thr - 1, np.clip(dc90, 1e-6, None) * mins / 90)
+        p_def, p_def60, p_defsub = dc_at(90.0), dc_at(m60), dc_at(m1)
+        dc_mu90 = dc90
         pts_def = (~gk) * (p_60 * p_def60 + p_sub * p_defsub) * DEFCON_PTS
         saves90 = np.zeros(len(df))
         if gk.any():
@@ -2473,7 +2481,7 @@ def parts_at_real_minutes(pred: pd.DataFrame) -> pd.DataFrame:
     cs = on60 * np.exp(-on) * pred["position"].map(CS_PTS).to_numpy(float)
     conc = -1.0 * gkdef * on60 * (on - (1 - np.exp(-2 * on)) / 2) / 2
     thr = pred["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
-    dc = DEFCON_PTS * defcon_at(g("full_defcon") / DEFCON_PTS, thr, m) * (pred["position"] != "GK").to_numpy()
+    dc = DEFCON_PTS * (m > 0) * poisson.sf(thr - 1, np.clip(g("dc90"), 1e-6, None) * np.clip(m, 0, 90) / 90) * (pred["position"] != "GK").to_numpy()
     return pd.DataFrame({
         "Appearance": (m > 0).astype(float) + on60, "Goals": (g("full_goal") - pen_goal90) * n90, "Assists": g("full_assist") * n90, "Bonus": g("full_bonus") * n90,
         "Clean sheet": cs, "Goals conceded": conc, "Saves": g("full_saves") * n90,
@@ -3243,7 +3251,7 @@ def doubtful_minutes(target: pd.DataFrame, df: pd.DataFrame) -> pd.DataFrame:
         out = ai_minutes(np.array([pid] * n), mins, np.append(np.ones(n - 1), 0.0), reds, bans)
         rows = target["pid"] == pid
         target.loc[rows, "w5_min"], target.loc[rows, "w5_p1"], target.loc[rows, "w5_p60"] = out[0][-1], out[1][-1], out[2][-1]
-        target.loc[rows, "w5_m60"] = out[7][-1]
+        target.loc[rows, "w5_m60"], target.loc[rows, "w5_m1"] = out[7][-1], out[9][-1]
         target.loc[rows, "recent_mins"] = out[6][-1] + " (without the knock match)"
     return target
 
@@ -3636,6 +3644,7 @@ def admin_minutes(target: pd.DataFrame, path: Path = ADMIN_FILE) -> pd.DataFrame
         target.loc[rows, col] = (m >= 60).astype(float)
     for col in ("w5_m60", "ret_m60"):  # admin minutes: his minutes when 60+ are those
         target.loc[rows, col] = m.where(m >= 60)
+    target.loc[rows, "w5_m1"] = m.where((m > 0) & (m < 60))
     for col in ("w5_st", "ret_st", "w5_last", "ret_last"):  # admin minutes: a starter from 45, his minutes when starting are those
         target.loc[rows, col] = (m >= 45).astype(float)
     for col in ("w5_ms", "ret_ms"):
