@@ -9,16 +9,28 @@
   const state = { data: null, pos: '', sort: 'pts', dir: -1, from: 1, to: 1, season: 'cur' };
   const rowsOf = (p) => (state.season === 'last' ? p.lastSeasonGw : p.seasonGw) || [];
   // [key, label, digits, tooltip, group]: digits null = whole number; group colours the column
-  const COLS = [['name', 'Player'], ['apps', 'Matches', null, 'League matches he played in (1+ minutes)'], ['pts', 'Total pts', null, 'FPL points'],
+  // [key, label, digits, tooltip, group, per90able]: digits null = whole number; group colours the column
+  const COLS = [['name', 'Player'], ['apps', 'Matches', null, 'League matches he played in (1+ minutes)'], ['pts', 'Total pts', null, 'FPL points', '', 1],
     ['ppm', 'Pts/match', 2, 'Points per match played'], ['gwPts', 'GW pts', null, 'Points in the last gameweek of the range'], ['price', 'Price', 1],
     ['mins', 'Minutes', null], ['starts', 'Starts', null],
-    ['shots', 'Shots', null, 'Non-penalty shots (FPL Core)', 'att'], ['sot', 'SoT', null, 'Non-penalty shots on target (FPL Core)', 'att'], ['bcm', 'BCM', null, 'Big chances missed, penalties out (FPL Core)', 'att'], ['g', 'G', null, 'Goals', 'att'], ['xg', 'xG', 2, 'Expected goals, penalties included', 'att'], ['npxg', 'npxG', 2, 'Non-penalty xG: xG less 0.79 for each penalty taken', 'att'], ['xgot', 'xGoT', 2, 'Expected goals on target: the shot\'s placement counted too', 'att'], ['gmxg', 'G−xG', 2, 'Goals less xG: above 0 = scoring more than his chances', 'att'],
-    ['kp', 'Chances created', null, 'Chances created: passes that led to a shot (FPL Core)', 'att'], ['bcc', 'Big chances created', null, 'Big chances created (FotMob, this season only)', 'att'], ['a', 'A', null, 'Assists as FPL counts them', 'att'], ['xa', 'xA', 2, 'Expected assists', 'att'], ['gi', 'GI', null, 'Goal involvements: goals + FPL assists', 'att'], ['xgi', 'xGI', 2, 'xG + xA', 'att'], ['npxgxa', 'npxG+xA', 2, 'Non-penalty xG + xA', 'att'],
-    ['shots90', 'Shots/90', 2, 'Non-penalty shots per 90 minutes', 'att'], ['sot90', 'SoT/90', 2, 'Non-penalty shots on target per 90 minutes', 'att'], ['bcm90', 'BCM/90', 2, 'Big chances missed per 90 minutes', 'att'], ['kp90', 'CC/90', 2, 'Chances created per 90 minutes', 'att'], ['bcc90', 'BCC/90', 2, 'Big chances created per 90 minutes', 'att'], ['xgi90', 'xGI/90', 2, 'xGI per 90 minutes', 'att'], ['npxgxa90', 'npxG+xA/90', 2, 'Non-penalty xG + xA per 90 minutes', 'att'],
-    ['cs', 'CS', null, 'Clean sheets', 'def'], ['dc', 'DefCon', null, 'Defensive contributions (FPL)', 'def'], ['dc90', 'DefCon/90', 1, 'DefCon per 90 minutes', 'def'],
-    ['saves', 'Saves', null, '', 'def'], ['pensave', 'Pen saves', null, '', 'def'],
-    ['bonus', 'Bonus', null, '', 'oth'], ['bps', 'BPS', null, 'Bonus Points System score', 'oth'], ['yc', 'YC', null, 'Yellow cards', 'oth'], ['rc', 'RC', null, 'Red cards', 'oth']];
-  const GROUPS = { att: 'Attack', def: 'Defence', oth: 'Bonus and cards' };
+    ['shots', 'Shots', null, 'Non-penalty shots (FPL Core)', 'gls', 1], ['sot', 'SoT', null, 'Non-penalty shots on target (FPL Core)', 'gls', 1],
+    ['g', 'G', null, 'Goals', 'gls', 1], ['xg', 'xG', 2, 'Expected goals, penalties included', 'gls', 1], ['npxg', 'npxG', 2, 'Non-penalty xG: xG less 0.79 for each penalty taken', 'gls', 1],
+    ['xgot', 'xGoT', 2, 'Expected goals on target: the shot\'s placement counted too', 'gls', 1], ['gmxg', 'G−xG', 2, 'Goals less xG: above 0 = scoring more than his chances', 'gls', 1],
+    ['kp', 'Chances created', null, 'Chances created: passes that led to a shot (FPL Core)', 'ast', 1], ['bcc', 'Big chances created', null, 'Big chances created (FotMob)', 'ast', 1],
+    ['a', 'A', null, 'Assists as FPL counts them', 'ast', 1], ['xa', 'xA', 2, 'Expected assists', 'ast', 1],
+    ['gi', 'GI', null, 'Goal involvements: goals + FPL assists', 'gia', 1], ['xgi', 'xGI', 2, 'xG + xA', 'gia', 1], ['npxgxa', 'npxG+xA', 2, 'Non-penalty xG + xA', 'gia', 1],
+    ['cs', 'CS', null, 'Clean sheets', 'def', 1], ['dc', 'DefCon', null, 'Defensive contributions (FPL)', 'def', 1],
+    ['saves', 'Saves', null, '', 'def', 1], ['pensave', 'Pen saves', null, '', 'def', 1],
+    ['bonus', 'Bonus', null, '', 'oth', 1], ['bps', 'BPS', null, 'Bonus Points System score', 'oth', 1], ['yc', 'YC', null, 'Yellow cards', 'oth', 1], ['rc', 'RC', null, 'Red cards', 'oth', 1]];
+  const GROUPS = { gls: 'Goals', ast: 'Assists', gia: 'Goals + Assists', def: 'Defence', oth: 'Bonus and cards' };
+  // Per 90 switch: every count column divided by his minutes / 90
+  const per90On = () => $('per90') && $('per90').getAttribute('aria-pressed') === 'true';
+  const shownVal = (p, k, d, can) => {
+    const v = p.st[k];
+    if (!per90On() || !can || v === null || v === undefined) return [v, d];
+    const n90 = p.st.mins / 90;
+    return [n90 ? v / n90 : null, 2];
+  };
   // Show: all columns, or the player plus one group (match stats = the columns without a group)
   const shownCols = () => {
     const v = $('view') ? $('view').value : '';
@@ -68,12 +80,12 @@
     s.rows = rows;
     return s;
   }
-  const val = (p, k) => (k === 'name' ? p.name.toLowerCase() : k === 'price' ? p.price : p.st[k]);
+  const val = (p, k) => { if (k === 'name') return p.name.toLowerCase(); if (k === 'price') return p.price; const c = COLS.find((x) => x[0] === k); return shownVal(p, k, null, c && c[5])[0]; };
 
   function header() {
     const cols = shownCols();
-    $('table').tHead.replaceChildren(groupRow(cols), el('tr', {}, ...cols.map(([k, label, , tip, grp]) => {
-      const th = el('th', { scope: 'col', title: tip || '', className: grp ? `grp-${grp}` : '' }, el('button', { type: 'button', textContent: label, onclick: () => {
+    $('table').tHead.replaceChildren(groupRow(cols), el('tr', {}, ...cols.map(([k, label, , tip, grp, can]) => {
+      const th = el('th', { scope: 'col', title: tip || '', className: grp ? `grp-${grp}` : '' }, el('button', { type: 'button', textContent: per90On() && can ? `${label}/90` : label, onclick: () => {
         if (state.sort === k) state.dir *= -1; else { state.sort = k; state.dir = k === 'name' ? 1 : -1; }
         render();
       } }));
@@ -84,8 +96,8 @@
 
   // the player's matches, one row per gameweek, in a popup; columns in the same groups as the table
   const GWCOLS = [['gw', 'GW'], ['opp', 'Opp'], ['mins', 'Min'], ['starts', 'Start'], ['pts', 'Pts'],
-    ['shots', 'Shots', null, 'att'], ['sot', 'SoT', null, 'att'], ['bcm', 'BCM', null, 'att'], ['g', 'G', null, 'att'], ['xg', 'xG', 2, 'att'], ['npxg', 'npxG', 2, 'att'], ['xgot', 'xGoT', 2, 'att'], ['gmxg', 'G−xG', 2, 'att'],
-    ['kp', 'CC', null, 'att'], ['bcc', 'BCC', null, 'att'], ['a', 'A', null, 'att'], ['xa', 'xA', 2, 'att'], ['gi', 'GI', null, 'att'], ['xgi', 'xGI', 2, 'att'], ['npxgxa', 'npxG+xA', 2, 'att'],
+    ['shots', 'Shots', null, 'gls'], ['sot', 'SoT', null, 'gls'], ['g', 'G', null, 'gls'], ['xg', 'xG', 2, 'gls'], ['npxg', 'npxG', 2, 'gls'], ['xgot', 'xGoT', 2, 'gls'], ['gmxg', 'G−xG', 2, 'gls'],
+    ['kp', 'CC', null, 'ast'], ['bcc', 'BCC', null, 'ast'], ['a', 'A', null, 'ast'], ['xa', 'xA', 2, 'ast'], ['gi', 'GI', null, 'gia'], ['xgi', 'xGI', 2, 'gia'], ['npxgxa', 'npxG+xA', 2, 'gia'],
     ['cs', 'CS', null, 'def'], ['dc', 'DefCon', null, 'def'], ['saves', 'Saves', null, 'def'], ['pensave', 'Pen saves', null, 'def'],
     ['bonus', 'Bonus', null, 'oth'], ['bps', 'BPS', null, 'oth'], ['yc', 'YC', null, 'oth'], ['rc', 'RC', null, 'oth']];
   function gwValue(r, k) {
@@ -138,7 +150,8 @@
       const tr = el('tr', { className: 'stat-row' }, ...shownCols().map(([k, , d, , grp]) => {
         if (k === 'name') return el('td', { className: 'player', title: 'Tap for each gameweek' }, el('b', { textContent: p.name }), el('span', { textContent: `${p.team} ${p.position}` }));
         if (k === 'price') return el('td', { textContent: `£${p.price.toFixed(1)}` });
-        const td = el('td', { textContent: fmt(p.st[k], d), className: [grp ? `grp-${grp}` : '', k === state.sort ? 'sorted' : ''].join(' ').trim() });
+        const [v, dd] = shownVal(p, k, d, COLS.find((x) => x[0] === k)[5]);
+        const td = el('td', { textContent: fmt(v, dd), className: [grp ? `grp-${grp}` : '', k === state.sort ? 'sorted' : ''].join(' ').trim() });
         return td;
       }));
       tr.addEventListener('click', () => openPlayer(p));
@@ -171,6 +184,7 @@
     render();
   });
   $('filters').addEventListener('submit', (e) => e.preventDefault());
+  $('per90').addEventListener('click', () => { $('per90').setAttribute('aria-pressed', String(!per90On())); render(); });
   $('pop-close').addEventListener('click', () => { $('pop').hidden = true; });
   $('pop').addEventListener('click', (e) => { if (e.target === $('pop')) $('pop').hidden = true; });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') $('pop').hidden = true; });

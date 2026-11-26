@@ -688,7 +688,9 @@ table.stats td, table.stats th { text-align: center; }
 table.stats td.player { text-align: left; }
 table.stats td.sorted { font-weight: 700; background: color-mix(in srgb, var(--accent, #0e5a41) 8%, transparent); }
 table.stats tr.stat-row { cursor: pointer; }
-table.stats th.grp-att, table.stats td.grp-att { background: #fff4e5; }
+table.stats th.grp-att, table.stats td.grp-att, table.stats th.grp-gls, table.stats td.grp-gls { background: #fff4e5; }
+table.stats th.grp-ast, table.stats td.grp-ast { background: #fdf8d8; }
+table.stats th.grp-gia, table.stats td.grp-gia { background: #f6eedd; }
 table.stats th.grp-def, table.stats td.grp-def { background: #e8f1fb; }
 table.stats th.grp-oth, table.stats td.grp-oth { background: #f1ecf8; }
 table.stats tr.grp-row th { font-size: .75em; text-transform: uppercase; letter-spacing: .04em; color: #4a5a52; padding: .25rem .4rem; }
