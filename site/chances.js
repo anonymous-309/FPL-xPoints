@@ -11,6 +11,141 @@
     ['pPenSave', 'Pen save', 0.03, 'pct1'], ['pPenMiss', 'Pen miss', 0.03, 'pct1'], ['pOwnGoal', 'Own goal', 0.03, 'pct1'],
     ['pRed', 'Red card', 0.02, 'pct1'], ['pYellow', 'Yellow card', 0.4, 'pct'], ['xBps', 'BPS', 32, 0], ['bonus', 'Bonus', 1.5, 2],
   ];
+  // (i) on each column: what it is, where it comes from, how xPoints uses it
+  const INFO = {
+   "pApp1": [
+    "Appearance 1+",
+    "Chance he plays at least 1 minute",
+    "Share of matches he played, weighted 5-4-3-2-1, times the FPL flag",
+    "+1 point × this chance"
+   ],
+   "pApp60": [
+    "Appearance 60+",
+    "Chance he plays 60+ minutes",
+    "As above, counting matches with 60+ minutes",
+    "+1 more point × this chance. Also the factor for clean sheet and goals conceded."
+   ],
+   "pScore": [
+    "Score 1+",
+    "Chance he scores at least once, penalties included",
+    "1 − e<sup>−(NPxGoals + Pen goals)</sup>",
+    "For reference only; xPoints uses NPxGoals and Pen goals"
+   ],
+   "npxGoals": [
+    "NPxGoals",
+    "Expected open-play goals (no penalties) over 90 minutes",
+    "Non-penalty xG per 90, built in steps. (1) A starting figure from his shot volume: his position's average xG per 90 × his shots per 90 against the position's (shots from FPL Core; their weight halves every 6 gameweeks). (2) His own non-penalty xG over up to 38 matches (weight halving every 12 gameweeks), padded with 10 such starting 90s, so a new player leans on his shots and an established one on his xG. (3) Finishing: his non-penalty goals (50%) and xG on target (25%) against his xG, trusted only after about 15 xG. (4) A Poisson model adds recent form, his shots and key passes, his team's attack, the opponent's defence and home or away. NPxG = FPL's xG minus 0.79 per penalty taken.",
+    "(NPxGoals + Pen goals) × xMin/90 × goal points (FWD 4, MID 5, DEF 6, GK 10)"
+   ],
+   "xPenGoals": [
+    "Pen goals",
+    "Expected penalty goals over 90 minutes",
+    "Team penalties per match × his pen share × 0.79 (a penalty's xG: about 21% are missed or saved). His pen share: the number 1 takes every penalty while he is on the pitch; the number 2 takes those left while the number 1 is off, and so on (the chance each is on the pitch comes from his minutes). The Pen share on the <a href=\"setpieces.html\">Set pieces</a> page is this share times xMin/90. If you edit the xMin of a taker above him on the Minutes page, this follows.",
+    "Added to NPxGoals as above"
+   ],
+   "xAssists": [
+    "xAssists",
+    "Expected assists over 90 minutes",
+    "The same way as NPxGoals with key passes: a starting figure from his key passes per 90 (passes that led to a shot) against his position's, his own xA padded with 10 such 90s, how his assists compare with his xA, then form, his key passes and shots, his team's attack, the opponent's defence and home or away.",
+    "xAssists × xMin/90 × 3"
+   ],
+   "pAssist": [
+    "Fantasy Assist 1+",
+    "Chance of at least one FPL assist",
+    "1 − e<sup>−xAssists</sup>",
+    "For reference only"
+   ],
+   "pCs": [
+    "Clean sheet",
+    "Chance his team keeps a clean sheet",
+    "e<sup>−Conceded</sup>: the chance of conceding 0",
+    "Appearance 60+ × the chance of no goal while he is on (his minutes in a 60+ match, not always 90) × clean sheet points (GK/DEF 4, MID 1, FWD 0)"
+   ],
+   "xConceded": [
+    "Conceded",
+    "Goals his team is expected to concede",
+    "His team's defence and the opponent's attack (real goals 70%, xG 30%), home or away",
+    "GK/DEF: −1 point per 2 goals conceded, as the expected value of (goals conceded while he is on ÷ 2, rounded down), times Appearance 60+"
+   ],
+   "xDefcon": [
+    "DefCon actions",
+    "Defensive actions FPL counts (clearances, blocks, interceptions, tackles; recoveries too for MID and FWD)",
+    "His own record, his team and the opponent (data from 2025-26)",
+    "Used for DefCon"
+   ],
+   "pDefcon": [
+    "DefCon",
+    "Chance of reaching the DefCon threshold: 10 actions for DEF, 12 for MID and FWD",
+    "From DefCon actions: the chance of reaching the threshold with that many expected over 90 (a Poisson count)",
+    "2 points × (Appearance 60+ × the chance in his minutes when he plays 60+ + the chance of a short appearance × the chance in those minutes): his DefCon actions × minutes/90 is what he is expected to make, and the chance of reaching 10 or 12 with that many falls fast with fewer minutes (not for GK)."
+   ],
+   "xSaves": [
+    "Saves",
+    "Expected saves (GK only)",
+    "His save record, his team's defence, the opponent's attack",
+    "+1 point per 3 saves: the expected value of (saves ÷ 3, rounded down) × xMin/90"
+   ],
+   "pPenSave": [
+    "Pen save",
+    "Chance he saves a penalty (GK only)",
+    "Penalties the opponent is expected to win (league rate × the opponent's attack) × the share of penalties saved (about 12%)",
+    "Expected number × xMin/90 × 5"
+   ],
+   "pPenMiss": [
+    "Pen miss",
+    "Chance he misses a penalty",
+    "Penalties he takes × the league miss rate",
+    "Expected number × xMin/90 × (−2)"
+   ],
+   "pOwnGoal": [
+    "Own goal",
+    "Chance of an own goal",
+    "His own rate, pulled hard towards the average because own goals are rare",
+    "Expected number × xMin/90 × (−2)"
+   ],
+   "pRed": [
+    "Red card",
+    "Chance of a red card",
+    "The average for his position; red cards are too rare to judge players one by one",
+    "Expected number × xMin/90 × (−3)"
+   ],
+   "pYellow": [
+    "Yellow card",
+    "Chance of a yellow card",
+    "His yellow card rate over about his last 114 matches, pulled towards the position average",
+    "Expected number × xMin/90 × (−1)"
+   ],
+   "xBps": [
+    "BPS",
+    "Expected BPS score over 90 minutes",
+    "His BPS record, form, his team and the opponent",
+    "Used for Bonus"
+   ],
+   "bonus": [
+    "Bonus",
+    "Expected bonus points over 90 minutes",
+    "The average of two methods. (1) A per-player model from his past bonus and BPS. (2) Each match simulated 2,000 times: goals go to scorers by NPxGoals + Pen goals and to assisters by xAssists, clean sheets are added, plus each player's base BPS. The top 3 BPS from both teams get 3, 2 and 1.",
+    "Bonus × xMin/90"
+   ],
+   "pStart": [
+    "Start",
+    "Chance he starts the match",
+    "The share of his last 5 matches he started, weighted 5-4-3-2-1 (newest first, the same matches as his usual minutes), times the share of his usual minutes he is expected to play now (FPL flags, your edits on the Minutes page)",
+    "Not used directly; it places the penalty takers on the pitch (Pen goals)"
+   ],
+   "pUnder60": [
+    "Under 60",
+    "Chance he plays 1 to 59 minutes",
+    "Appearance 1+ minus Appearance 60+",
+    "1 appearance point; no clean sheet; DefCon in his short-match minutes"
+   ],
+   "pNotPlay": [
+    "Not playing",
+    "Chance he does not come on",
+    "100% minus Appearance 1+",
+    "No points (your bench player comes on instead)"
+   ]
+  };
   const LEAGUE_MISS = 0.22;
   const cache = new Map();
   // Goals split into open play (NPxGoals) and penalties. The penalty share follows the minutes set on the Minutes
@@ -56,6 +191,21 @@
     cell.style.color = v > 0.68 ? '#fff' : '#17261f';
   }
 
+  function showInfo(key) {
+    const [label, what, from, use] = INFO[key];
+    let pop = document.getElementById('infoPop');
+    if (!pop) {
+      pop = el('div', { id: 'infoPop', className: 'info-pop', role: 'dialog' });
+      document.body.append(pop);
+      document.addEventListener('click', (e) => { if (!pop.hidden && !e.target.closest('#infoPop') && !e.target.closest('.info-btn')) pop.hidden = true; });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') pop.hidden = true; });
+    }
+    const para = (t, h) => { const n = el('p', {}); n.innerHTML = `<b>${t}</b> ${h}`; return n; };
+    pop.replaceChildren(el('div', { className: 'info-head' }, el('b', { textContent: label }),
+      el('button', { type: 'button', className: 'info-close', textContent: '×', 'aria-label': 'Close', onclick: () => { pop.hidden = true; } })),
+      para('What it is:', what), para('Where it comes from:', from), para('In xPoints:', use));
+    pop.hidden = false;
+  }
   function header() {
     const cols = [['name', 'Player'], ['price', 'Price'], ['opp', 'Opponent'], ...METRICS.map(([k, l]) => [k, l])];
     $('table').tHead.replaceChildren(el('tr', {}, ...cols.map(([key, label]) => {
@@ -63,6 +213,7 @@
         if (state.sort === key) state.dir *= -1; else { state.sort = key; state.dir = key === 'name' || key === 'opp' ? 1 : -1; }
         render();
       } }));
+      if (INFO[key]) th.append(el('button', { type: 'button', className: 'info-btn', textContent: 'i', 'aria-label': `About ${label}`, onclick: (e) => { e.stopPropagation(); showInfo(key); } }));
       if (state.sort === key) th.setAttribute('aria-sort', state.dir < 0 ? 'descending' : 'ascending');
       return th;
     })));

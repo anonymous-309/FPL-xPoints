@@ -800,3 +800,4 @@ table.stats thead tr:nth-child(2) th:first-child { z-index: 5; }
 .ex-all .ex-total { font-weight: 700; }
 #filters .check { display: inline-flex; gap: .35rem; align-items: center; }
 #filters .check input { width: 16px; height: 16px; }
+.info-head { margin: 0 24px 8px 0; font-size: 1.05rem; } .info-pop[hidden] { display: none; } thead th .info-btn { margin-left: 3px; vertical-align: middle; }
