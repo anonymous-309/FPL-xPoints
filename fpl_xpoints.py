@@ -103,6 +103,10 @@ K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0
 # and the rest (holding, central, box-to-box). Each group has its own average. FPL_MID_SPLIT=0 turns it off (testing).
 MID_ATTACK_BOX = float(os.environ.get("FPL_MID_BOX", "2.0"))  # 2.0, 2.5 and 3.0 tried on 2025-26: 2.0 slightly best
 MID_SPLIT = os.environ.get("FPL_MID_SPLIT", "1") != "0"
+# Defenders the same way: attacking (mostly full-backs and wing-backs) at DEF_ATTACK_BOX box touches per 90 or more.
+DEF_ATTACK_BOX = float(os.environ.get("FPL_DEF_BOX", "2.0"))  # 1.0, 1.5 and 2.0 tried on 2025-26: 2.0 best for assists
+DEF_SPLIT = os.environ.get("FPL_DEF_SPLIT", "1") != "0"
+SPLIT_GROUPS = ["MIDA", "MIDD", "DEFA", "DEFD"]
 # Rare events need long memory and strong pull to the role average (rare-tune, log loss on 2025-26):
 # (half-life in matches, latest matches used, k). Red cards: a player's own record did not beat the role average.
 RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 400.0)}
@@ -1683,6 +1687,10 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         mid = p["role"] == "MID"
         p.loc[mid & (p["role_box90"] >= MID_ATTACK_BOX), "grp"] = "MIDA"
         p.loc[mid & (p["role_box90"] < MID_ATTACK_BOX), "grp"] = "MIDD"
+    if DEF_SPLIT:
+        dfn = p["role"] == "DEF"
+        p.loc[dfn & (p["role_box90"] >= DEF_ATTACK_BOX), "grp"] = "DEFA"
+        p.loc[dfn & (p["role_box90"] < DEF_ATTACK_BOX), "grp"] = "DEFD"
     p = p.drop(columns="position")
     roll = roll.merge(p[["pid", "tf", "role", "grp"]], on=["pid", "tf"], how="left")
     roll["role"] = roll["role"].fillna(roll["position"])
@@ -1709,13 +1717,17 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     by_role = priors("role").drop(columns="p_dh").rename(columns={"role": "role"})
     by_position = priors("position")[["position", "tf", "p_dh"]]  # noqa: keep p_dc from role  # DefCon thresholds follow the FPL position
     df = df.merge(by_role, on=["role", "tf"], how="left").merge(by_position, on=["position", "tf"], how="left")
-    if MID_SPLIT:
-        # goals and assists averages of the two midfield groups (a midfielder with too few box-touch data keeps MID)
-        by_grp = priors("grp", ["MIDA", "MIDD"])[["grp", "tf", "p_g", "p_a", "p_xg", "p_xa"]]
+    if MID_SPLIT or DEF_SPLIT:
+        # goals and assists averages of the split groups (a player with too few box-touch data keeps his role's)
+        by_grp = priors("grp", SPLIT_GROUPS)[["grp", "tf", "p_g", "p_a", "p_xg", "p_xa"]]
+        last_tf = by_grp["tf"].max()
+        print("Goals and assists averages per 90 by group: " + "; ".join(
+            f'{r["grp"]} xG {r["p_xg"]:.3f} xA {r["p_xa"]:.3f}' for _, r in by_grp[by_grp["tf"] == last_tf].iterrows())
+            + "; " + "; ".join(f'{r["role"]} xG {r["p_xg"]:.3f} xA {r["p_xa"]:.3f}' for _, r in by_role[by_role["tf"] == last_tf].iterrows()))
         df["grp"] = df["grp"].fillna(df["role"])
         df = df.merge(by_grp.rename(columns={c: f"{c}_grp" for c in ("p_g", "p_a", "p_xg", "p_xa")}), on=["grp", "tf"], how="left")
         for c in ("p_g", "p_a", "p_xg", "p_xa"):
-            ok = df["grp"].isin(["MIDA", "MIDD"]) & (df[f"{c}_grp"] > EPS)
+            ok = df["grp"].isin(SPLIT_GROUPS) & (df[f"{c}_grp"] > EPS)
             df.loc[ok, c] = df.loc[ok, f"{c}_grp"]
         df = df.drop(columns=[f"{c}_grp" for c in ("p_g", "p_a", "p_xg", "p_xa")])
     # Partly out of position (FotMob line-ups, coming gameweeks only): a defender who starts some matches in midfield or
@@ -1727,13 +1739,13 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
             sh = df.loc[rows, "pid"].map(lambda q: fm_oop[q]["share"]).astype(float)
             mid = by_role[by_role["role"] == "MID"].set_index("tf")
             # goals and assists: the attacking or the other midfield average, by his own box touches (as any midfielder)
-            if MID_SPLIT:
+            if MID_SPLIT or DEF_SPLIT:
                 grp_mid = np.where(df.loc[rows, "role_box90"].to_numpy(float) >= MID_ATTACK_BOX, "MIDA",
                                    np.where(df.loc[rows, "role_box90"].notna().to_numpy(), "MIDD", "MID"))
                 by_g = by_grp.set_index(["grp", "tf"])
             for c in [c for c in by_role.columns if c.startswith("p_")]:
                 m = df.loc[rows, "tf"].map(mid[c]).astype(float).to_numpy()
-                if MID_SPLIT and c in ("p_g", "p_a", "p_xg", "p_xa"):
+                if (MID_SPLIT or DEF_SPLIT) and c in ("p_g", "p_a", "p_xg", "p_xa"):
                     alt = np.array([by_g[c].get((g_, t_), np.nan) if g_ != "MID" else np.nan
                                     for g_, t_ in zip(grp_mid, df.loc[rows, "tf"])], dtype=float)
                     m = np.where(np.isfinite(alt) & (alt > EPS), alt, m)
@@ -2384,6 +2396,9 @@ def chance_report(pred: pd.DataFrame) -> None:
         mids = played[played["position"] == "MID"]
         per90("Score 1+, MID", "np_g90", "np_goals", mids)
         per90("Assist 1+, MID", "a90", "assists", mids)
+        defs = played[played["position"] == "DEF"]
+        per90("Score 1+, DEF", "np_g90", "np_goals", defs)
+        per90("Assist 1+, DEF", "a90", "assists", defs)
     teams = d.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
     p, h = binary("Clean sheet (team)", teams["p_cs"], teams["ga"] == 0, np.zeros(len(teams))); calib["Clean sheet (team)"] = (p, h)
     dc = played[(played["minutes"] >= 60) & played["defensive_contribution"].notna() & (played["position"] != "GK")]
