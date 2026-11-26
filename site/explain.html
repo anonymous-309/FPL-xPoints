@@ -99,22 +99,16 @@
 
   <section>
     <h2>Worked example with live data</h2>
-    <p>The 3 players with the most xPoints in each position this gameweek, part by part: the points, and under them the figure over 90 minutes and the minutes factor it is multiplied by.</p>
-    <div class="seg" role="group" aria-label="Position" id="topPos">
-      <button type="button" data-pos="GK" aria-pressed="false">GK</button><button type="button" data-pos="DEF" aria-pressed="false">DEF</button><button type="button" data-pos="MID" aria-pressed="true">MID</button><button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
-    </div>
-    <div id="top" class="wrap explain-table top-ex" tabindex="0" aria-label="Top 3 worked examples"></div>
-    <h3>Any player</h3>
-    <form id="filters" class="filters example-filters" autocomplete="off">
-      <label>Player <input id="player" list="players" placeholder="Haaland"></label>
-      <datalist id="players"></datalist>
-      <label>Gameweek <select id="gw"></select></label>
+    <p id="exIntro">Every player's xPoints for the next gameweek, part by part. Tap a figure to see how it is worked out: the figure over 90 minutes and the minutes factor it is multiplied by. Tap a column to sort.</p>
+    <form id="filters" class="filters example-filters" autocomplete="off" onsubmit="return false">
+      <div class="seg" role="group" aria-label="Position" id="exPos">
+        <button type="button" data-pos="" aria-pressed="true">All</button><button type="button" data-pos="GK" aria-pressed="false">GK</button><button type="button" data-pos="DEF" aria-pressed="false">DEF</button><button type="button" data-pos="MID" aria-pressed="false">MID</button><button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+      </div>
+      <label>Player or team <input id="player" placeholder="Saka, ARS"></label>
+      <label class="check"><input id="hideOut" type="checkbox" checked> Hide players not expected to play</label>
     </form>
     <div id="error" class="error" role="alert" hidden></div>
-    <div id="example" class="wrap explain-table" tabindex="0" aria-label="Worked xPoints example" hidden>
-      <table id="exTable"><thead><tr><th scope="col">Part</th><th scope="col">Over 90 minutes</th><th scope="col">× minutes factor</th><th scope="col">Points</th></tr></thead><tbody></tbody></table>
-    </div>
-    <p id="exNote" class="meta"></p>
+    <div class="wrap explain-table ex-all" tabindex="0" aria-label="xPoints of every player, part by part"><table id="exTable"><thead></thead><tbody></tbody></table></div>
   </section>
 </main>
 <footer>

@@ -790,3 +790,13 @@ table.stats thead tr:nth-child(2) th:first-child { z-index: 5; }
 .top-ex td b { display: block; }
 .ex-sub { display: block; font-size: .78rem; color: var(--muted); }
 #topPos { margin: .4rem 0 .6rem; }
+
+.ex-all { max-height: 75vh; overflow: auto; }
+.ex-all table { font-size: .86rem; }
+.ex-all thead th { position: sticky; top: 0; background: var(--paper); z-index: 1; }
+.ex-all th button { background: none; border: 0; font: inherit; font-weight: 700; cursor: pointer; padding: 0; text-align: left; }
+.ex-all td.player b { display: block; } .ex-all td.player span { color: var(--muted); font-size: .8em; }
+.ex-all .ex-cell { cursor: pointer; text-decoration: underline dotted var(--line); }
+.ex-all .ex-total { font-weight: 700; }
+#filters .check { display: inline-flex; gap: .35rem; align-items: center; }
+#filters .check input { width: 16px; height: 16px; }
