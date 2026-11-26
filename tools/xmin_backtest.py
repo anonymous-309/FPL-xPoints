@@ -147,6 +147,8 @@ def main():
         if reds[i] > 0:
             red_ban = 3
             was_out = False
+            if win and mins[i] >= usual[i]:
+                hist.append(mins[i])  # sent off after his usual minutes: counted, as on the site
             continue
         was_out = False
         if rec[i]:
