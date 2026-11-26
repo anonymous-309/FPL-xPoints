@@ -723,6 +723,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
 BIG_CREATED: dict = {}  # (pid, gameweek) -> big chances created (FotMob, this season)
+PREV_BIG_CREATED: dict = {}  # the same for last season, from archive/fotmob
 TACTICAL: dict = {}  # (pid, gameweek) -> note: taken off for a defender just after a team-mate's red card
 RED_TACTICAL_BEFORE, RED_TACTICAL_WINDOW = 70, 20  # a red card before this minute; the sub within this many minutes after it
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
@@ -4026,7 +4027,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                          int(r.saves), int(r.pensave), int(r.yc), int(r.rc),
                          int(r.shots) if r.has_core else None, int(r.kp) if r.has_core else None,
                          int(r.sot) if r.has_core else None, int(r.bcm) if r.has_core else None,
-                         (BIG_CREATED.get((pid, int(r.GW)), 0) if r.has_fm else None)] for r in g.itertuples()]
+                         ((BIG_CREATED if frame is played else PREV_BIG_CREATED).get((pid, int(r.GW)), 0) if r.has_fm else None)] for r in g.itertuples()]
         return out
     # penalties out of shots and shots on target (a penalty taken is a shot; a scored or saved one is on target)
     cur["shots"] = (num("core_shots") - num("core_pen_scored") - num("core_pen_missed")).clip(lower=0)
@@ -4051,6 +4052,29 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                            "shots": (nm("core_shots") - nm("core_pen_scored") - nm("core_pen_missed")).clip(lower=0), "kp": nm("core_kp"),
                            "sot": (nm("core_sot") - nm("core_pen_scored") - nm("core_pen_missed")).clip(lower=0),
                            "bcm": (nm("core_bcm") - nm("core_pen_missed")).clip(lower=0), "has_fm": False})
+        # big chances created last season, from the kept FotMob stats (archive/fotmob)
+        arc = Path("archive/fotmob") / f"{prev_season[0]}.json.gz"
+        if arc.exists():
+            import gzip as _gz
+            got_bcc, known_gw = {}, set()
+            # FotMob names to last season's FPL players: full name, else surname within the round's players
+            by_round = {}
+            for (gw_, pid_, nm_) in zip(pv["GW"].astype(int), pv["pid"], pv["name"].astype(str)):
+                by_round.setdefault(gw_, {})[_name_key(nm_)] = pid_
+            for mt in json.loads(_gz.open(arc, "rt", encoding="utf-8").read()).values():
+                rnd = int(mt.get("round") or 0)
+                known_gw.add(rnd)
+                names = by_round.get(rnd, {})
+                for name, tid, st in mt.get("players") or []:
+                    n_ = int(st.get("big_chance_created_team_title") or 0)
+                    if not n_ or not name:
+                        continue
+                    k_ = _name_key(name)
+                    pid_ = names.get(k_) or next((v for kk, v in names.items() if kk.split()[-1:] == k_.split()[-1:] and kk.split()[:1] == k_.split()[:1]), None)
+                    if pid_:
+                        got_bcc[(pid_, rnd)] = got_bcc.get((pid_, rnd), 0) + n_
+            pc["has_fm"] = pc["GW"].isin(known_gw) & (pc["mins"] > 0)
+            PREV_BIG_CREATED.update(got_bcc)
         pc["opp"] = [lab(o, h) for o, h in zip(pv["opp"], pv["was_home"])] if "opp" in pv else ""
         last_rows = match_rows(pv, pc)
     players: dict[str, dict] = {}
