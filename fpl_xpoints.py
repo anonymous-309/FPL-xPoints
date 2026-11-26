@@ -98,12 +98,11 @@ OWN_GOAL_PTS = -2
 
 HL_LONG, HL_SHORT, HL_MIN_SHORT, HL_MIN_LONG, HL_TEAM = 12, 4, 2, 8, 12
 K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0, 4.0, 8.0, 40.0, 60.0
-# The average his own goals and assists record is padded with: the average of his role, scaled by how often he
-# touches the ball in the opposition box against that role's average (shrunk by K_BOX 90s), to these powers
-# (xG, xA; square roots: box touches say less about a wing-back's shots than a forward's). So a holding midfielder with few box touches is padded with a lower average than an attacking
-# one. FPL_PRIOR_TYPE="0,0" turns it off (for testing).
-K_BOX = 3.0
-PRIOR_TYPE = tuple(float(x) for x in os.environ.get("FPL_PRIOR_TYPE", "0.5,0.5").split(","))
+# Midfielders are split in two by their recent touches in the opposition box per 90 for the average his goals and
+# assists record is padded with: attacking (wingers, No. 10s, a midfielder playing up front) at MID_ATTACK_BOX or more,
+# and the rest (holding, central, box-to-box). Each group has its own average. FPL_MID_SPLIT=0 turns it off (testing).
+MID_ATTACK_BOX = float(os.environ.get("FPL_MID_BOX", "2.0"))  # 2.0, 2.5 and 3.0 tried on 2025-26: 2.0 slightly best
+MID_SPLIT = os.environ.get("FPL_MID_SPLIT", "1") != "0"
 # Rare events need long memory and strong pull to the role average (rare-tune, log loss on 2025-26):
 # (half-life in matches, latest matches used, k). Red cards: a player's own record did not beat the role average.
 RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 400.0)}
@@ -1678,14 +1677,21 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     for played in ("MID", "FWD"):
         for c in ("role_box90", "role_xgi90"):
             p[f"med_{c}_{played}"] = med.at[played, c] if played in med.index else np.nan
+    # the group for the goals and assists average: the role, with midfielders split attacking / other by box touches
+    p["grp"] = p["role"]
+    if MID_SPLIT:
+        mid = p["role"] == "MID"
+        p.loc[mid & (p["role_box90"] >= MID_ATTACK_BOX), "grp"] = "MIDA"
+        p.loc[mid & (p["role_box90"] < MID_ATTACK_BOX), "grp"] = "MIDD"
     p = p.drop(columns="position")
-    roll = roll.merge(p[["pid", "tf", "role"]], on=["pid", "tf"], how="left")
+    roll = roll.merge(p[["pid", "tf", "role", "grp"]], on=["pid", "tf"], how="left")
     roll["role"] = roll["role"].fillna(roll["position"])
+    roll["grp"] = roll["grp"].fillna(roll["role"])
 
-    def priors(group: str) -> pd.DataFrame:
+    def priors(group: str, values=POSITIONS) -> pd.DataFrame:
         cols = ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "dh", "do", "dcs", "dcn"]
         t = roll[~roll["future"]].groupby([group, "tf"], as_index=False)[cols].sum()
-        idx = pd.MultiIndex.from_product([POSITIONS, sorted(df["tf"].unique())], names=[group, "tf"])
+        idx = pd.MultiIndex.from_product([list(values), sorted(df["tf"].unique())], names=[group, "tf"])
         t = t.set_index([group, "tf"]).reindex(idx, fill_value=0.0).sort_index()
         raw = t.copy()
         t = t.groupby(group).cumsum().groupby(group).shift(1).fillna(0.0)
@@ -1703,6 +1709,15 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     by_role = priors("role").drop(columns="p_dh").rename(columns={"role": "role"})
     by_position = priors("position")[["position", "tf", "p_dh"]]  # noqa: keep p_dc from role  # DefCon thresholds follow the FPL position
     df = df.merge(by_role, on=["role", "tf"], how="left").merge(by_position, on=["position", "tf"], how="left")
+    if MID_SPLIT:
+        # goals and assists averages of the two midfield groups (a midfielder with too few box-touch data keeps MID)
+        by_grp = priors("grp", ["MIDA", "MIDD"])[["grp", "tf", "p_g", "p_a", "p_xg", "p_xa"]]
+        df["grp"] = df["grp"].fillna(df["role"])
+        df = df.merge(by_grp.rename(columns={c: f"{c}_grp" for c in ("p_g", "p_a", "p_xg", "p_xa")}), on=["grp", "tf"], how="left")
+        for c in ("p_g", "p_a", "p_xg", "p_xa"):
+            ok = df["grp"].isin(["MIDA", "MIDD"]) & (df[f"{c}_grp"] > EPS)
+            df.loc[ok, c] = df.loc[ok, f"{c}_grp"]
+        df = df.drop(columns=[f"{c}_grp" for c in ("p_g", "p_a", "p_xg", "p_xa")])
     # Partly out of position (FotMob line-ups, coming gameweeks only): a defender who starts some matches in midfield or
     # on a wing gets the defender and midfielder averages mixed by that share (his own record is used as for anyone).
     df["oop_share"] = 0.0
@@ -1715,19 +1730,6 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
                 df.loc[rows, c] = (1 - sh) * df.loc[rows, c] + sh * df.loc[rows, "tf"].map(mid[c]).astype(float)
             df.loc[rows, "oop_share"] = sh
 
-    pw_g, pw_a = PRIOR_TYPE
-    if (pw_g or pw_a) and "R_box" in df:
-        box, bn = df["R_box"].fillna(0.0), df["R_boxn90"].fillna(0.0)
-        hist = ~df["future"] & (bn >= ROLE_MIN_90S)
-        avg = (box[hist].groupby(df.loc[hist, "role"]).sum() / bn[hist].groupby(df.loc[hist, "role"]).sum())
-        ra = df["role"].map(avg).astype(float)
-        fac = (((box + K_BOX * ra) / (bn + K_BOX)) / ra).where(ra > 0, 1.0).fillna(1.0).clip(0.2, 3.0)
-        df["box_factor"] = fac
-        # only the xG and xA averages: finishing (goals against xG) keeps the plain role averages on both sides, or a
-        # player with many box touches would look like a better finisher than he is
-        for c, pw in (("xg", pw_g), ("xa", pw_a)):
-            df[f"p0_{c}"] = df[f"p_{c}"]
-            df[f"p_{c}"] = df[f"p_{c}"] * fac ** pw
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         k = K_RED if c == "rc" else K_PEN if c in ("ps", "pm", "og") else K_FINISH if c in ("g", "a") else K_PLAYER
         if c == "rc":
@@ -1753,8 +1755,7 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     ln = lambda s: np.log(s.clip(lower=EPS))
     df["l_xg"], df["l_xa"] = ln(df["r_xg"]), ln(df["r_xa"])
     df["form_xg"], df["form_xa"] = ln(df["f_xg"]) - ln(df["r_xg"]), ln(df["f_xa"]) - ln(df["r_xa"])
-    plain = lambda c: (df[f"L_{c}"] + K_PLAYER * df[f"p0_{c}"]) / (df["L_n90"] + K_PLAYER) if f"p0_{c}" in df else df[f"r_{c}"]
-    df["finish"], df["creat"] = ln(df["r_g"]) - ln(plain("xg")), ln(df["r_a"]) - ln(plain("xa"))
+    df["finish"], df["creat"] = ln(df["r_g"]) - ln(df["r_xg"]), ln(df["r_a"]) - ln(df["r_xa"])
     # Long-run finishing over several seasons: non-penalty goals and xGOT against non-penalty xG, shrunk by xG volume.
     df["finish_goals"] = np.log((df["F_g"] + K_FINISH_XG) / (df["F_xg"] + K_FINISH_XG))
     df["finish_xgot"] = np.log((df["F_xgot"] + K_XGOT) / (df["F_xgk"] + K_XGOT))
@@ -4059,7 +4060,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
     print(f'Hull history rows by season: {hs.groupby("season").size().to_dict()}, goals conceded {hs.groupby("season")["ga"].sum().to_dict()}')
     xgc = df[df["opp"].astype(str).str.contains("Hull") & ~df["future"]].groupby(["season", "fixture"])["expected_goals"].sum()
     print(f'Hull xG conceded by season: {xgc.groupby(level=0).sum().round(1).to_dict()}')
-    for name in ("De Cuyper", "Rogers", "Haaland", "Groß", "Palacios"):
+    for name in ("De Cuyper", "Rogers", "Haaland", "Groß", "Palacios", "B.Fernandes", "Rice", "Saka"):
         rows = hist_rows[hist_rows["web_name"].astype(str).str.contains(name) & (hist_rows["GW"] == int(first))]
         for _, m in rows.head(2).iterrows():
             print(f'Finishing {m["web_name"]} v {m["opp_short"]}: weighted 90s {m["L_n90"]:.1f}, weighted goals {m["L_g"]:.1f}, weighted xG {m["L_xg"]:.2f}, '
@@ -4067,7 +4068,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                   f'finish {m["finish"]:.3f}, finish_goals {m["finish_goals"]:.3f}, finish_xgot {m["finish_xgot"]:.3f}, long-run npG {m["F_g"]:.1f}, npxG {m["F_xg"]:.1f}, npxGOT {m["F_xgot"]:.1f} on npxG {m["F_xgk"]:.1f}, pen share {m["pen_cond_used"]:.2f}, form {m["form_xg"]:.3f}, team att {m["team_att"]:.2f}, opp def {m["opp_def"]:.2f}, home {m["was_home"]}, '
                   f'model goals/90 {m["g90"]:.3f}, score 1+ at 90 {1 - np.exp(-m["g90"]):.1%}')
             print(f'Creating {m["web_name"]}: weighted 90s {m["L_n90"]:.1f}, weighted xA {m["L_xa"]:.2f}, raw xA/90 {m["L_xa"] / max(m["L_n90"], 1e-9):.3f}, '
-                  f'position/role prior xA/90 {m["p_xa"]:.3f}, prior xG/90 {m["p_xg"]:.3f}, shrunk xA/90 {m["r_xa"]:.3f}, form xA {m["form_xa"]:.3f}, model assists/90 {m["a90"]:.3f}, role {m.get("role", "")}')
+                  f'position/role prior xA/90 {m["p_xa"]:.3f}, prior xG/90 {m["p_xg"]:.3f}, shrunk xA/90 {m["r_xa"]:.3f}, form xA {m["form_xa"]:.3f}, model assists/90 {m["a90"]:.3f}, role {m.get("role", "")}, group {m.get("grp", "")}, box/90 {m.get("role_box90", float("nan")):.2f}')
     for (season_name, pid), g in df[~df["future"] & df["web_name"].astype(str).str.contains("Palacios")].groupby(["season", "pid"]):
         print(f'Palacios {season_name} ({pid}): minutes {g["minutes"].sum():.0f}, goals {g["goals_scored"].sum():.0f}, xG {g["expected_goals"].sum():.2f}, assists {g["assists"].sum():.0f}, xA {g["expected_assists"].sum():.2f}')
     season = df[(df["season"] == CURRENT_SEASON) & ~df["future"] & df["name"].astype(str).str.contains("Rogers")]
