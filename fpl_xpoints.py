@@ -22,6 +22,7 @@ Requires: pandas, numpy, scipy, scikit-learn.
 from __future__ import annotations
 
 import argparse
+import os
 import gzip
 import json
 import re
@@ -97,6 +98,12 @@ OWN_GOAL_PTS = -2
 
 HL_LONG, HL_SHORT, HL_MIN_SHORT, HL_MIN_LONG, HL_TEAM = 12, 4, 2, 8, 12
 K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0, 4.0, 8.0, 40.0, 60.0
+# The average his own goals and assists record is padded with: the average of his role, scaled by how often he
+# touches the ball in the opposition box against that role's average (shrunk by K_BOX 90s), to these powers
+# (goals/xG, assists/xA). So a holding midfielder with few box touches is padded with a lower average than an attacking
+# one. FPL_PRIOR_TYPE="0,0" turns it off (for testing).
+K_BOX = 3.0
+PRIOR_TYPE = tuple(float(x) for x in os.environ.get("FPL_PRIOR_TYPE", "1,0.5").split(","))
 # Rare events need long memory and strong pull to the role average (rare-tune, log loss on 2025-26):
 # (half-life in matches, latest matches used, k). Red cards: a player's own record did not beat the role average.
 RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 400.0)}
@@ -1708,6 +1715,16 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
                 df.loc[rows, c] = (1 - sh) * df.loc[rows, c] + sh * df.loc[rows, "tf"].map(mid[c]).astype(float)
             df.loc[rows, "oop_share"] = sh
 
+    pw_g, pw_a = PRIOR_TYPE
+    if (pw_g or pw_a) and "R_box" in df:
+        box, bn = df["R_box"].fillna(0.0), df["R_boxn90"].fillna(0.0)
+        hist = ~df["future"] & (bn >= ROLE_MIN_90S)
+        avg = (box[hist].groupby(df.loc[hist, "role"]).sum() / bn[hist].groupby(df.loc[hist, "role"]).sum())
+        ra = df["role"].map(avg).astype(float)
+        fac = (((box + K_BOX * ra) / (bn + K_BOX)) / ra).where(ra > 0, 1.0).fillna(1.0).clip(0.2, 3.0)
+        df["box_factor"] = fac
+        for c, pw in (("g", pw_g), ("xg", pw_g), ("a", pw_a), ("xa", pw_a)):
+            df[f"p_{c}"] = df[f"p_{c}"] * fac ** pw
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
         k = K_RED if c == "rc" else K_PEN if c in ("ps", "pm", "og") else K_FINISH if c in ("g", "a") else K_PLAYER
         if c == "rc":
@@ -2345,6 +2362,13 @@ def chance_report(pred: pd.DataFrame) -> None:
     p, h = binary("Appearance 60+", d["p_60"], d["minutes"] >= 60, d["position"]); calib["Appearance 60+"] = (p, h)
     p, h = per90("Score 1+ (no pens)", "np_g90", "np_goals", played); calib["Score 1+ (no pens)"] = (p, h)
     p, h = per90("Assist 1+", "a90", "assists", played); calib["Assist 1+"] = (p, h)
+    if "L_n90" in played:
+        few = played[played["L_n90"].fillna(0) < 10]
+        per90("Score 1+, under 10 weighted 90s", "np_g90", "np_goals", few)
+        per90("Assist 1+, under 10 weighted 90s", "a90", "assists", few)
+        mids = played[played["position"] == "MID"]
+        per90("Score 1+, MID", "np_g90", "np_goals", mids)
+        per90("Assist 1+, MID", "a90", "assists", mids)
     teams = d.dropna(subset=["ga"]).groupby(["season", "fixture", "team"], as_index=False).first()
     p, h = binary("Clean sheet (team)", teams["p_cs"], teams["ga"] == 0, np.zeros(len(teams))); calib["Clean sheet (team)"] = (p, h)
     dc = played[(played["minutes"] >= 60) & played["defensive_contribution"].notna() & (played["position"] != "GK")]
