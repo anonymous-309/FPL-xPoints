@@ -176,7 +176,16 @@
 "home": false,
 "time": 82
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Victor Torp",
+1
 ]
+]
+}
 },
 "5795364": {
 "round": 1,
@@ -377,7 +386,25 @@
 "home": true,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Regan Slater",
+1
 ]
+],
+"away": [
+[
+"Harry Maguire",
+1
+],
+[
+"Matheus Cunha",
+1
+]
+]
+}
 },
 "5795365": {
 "round": 1,
@@ -562,7 +589,29 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Iliman Ndiaye",
+1
 ]
+],
+"away": [
+[
+"Daichi Kamada",
+1
+],
+[
+"Edward Nketiah",
+2
+],
+[
+"Adam Wharton",
+1
+]
+]
+}
 },
 "5795366": {
 "round": 1,
@@ -753,7 +802,25 @@
 "home": true,
 "time": 80
 }
+],
+"bcc": {
+"home": [
+[
+"Julio Enciso",
+1
+],
+[
+"Abdul Fatawu",
+1
 ]
+],
+"away": [
+[
+"Trai Hume",
+2
+]
+]
+}
 },
 "5795367": {
 "round": 1,
@@ -914,7 +981,11 @@
 "home": true,
 "time": 90
 }
-]
+],
+"bcc": {
+"home": [],
+"away": []
+}
 },
 "5795368": {
 "round": 1,
@@ -1099,7 +1170,29 @@
 "home": false,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Mathias Jensen",
+1
+],
+[
+"Mamadou Sangaré",
+1
 ]
+],
+"away": [
+[
+"Andrew Robertson",
+1
+],
+[
+"Mateus Fernandes",
+1
+]
+]
+}
 },
 "5795369": {
 "round": 1,
@@ -1290,7 +1383,24 @@
 "home": false,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Pascal Groß",
+1
+],
+[
+"Georginio Rutter",
+1
+],
+[
+"Diego Gómez",
+1
 ]
+],
+"away": []
+}
 },
 "5795370": {
 "round": 1,
@@ -1469,7 +1579,33 @@
 "home": false,
 "time": 89
 }
+],
+"bcc": {
+"home": [
+[
+"Phil Foden",
+1
+],
+[
+"Marc Guéhi",
+1
+],
+[
+"Elliot Anderson",
+1
+],
+[
+"Rayan Cherki",
+1
 ]
+],
+"away": [
+[
+"Evanilson",
+1
+]
+]
+}
 },
 "5795371": {
 "round": 1,
@@ -1648,7 +1784,24 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Joseph Willock",
+1
+],
+[
+"Lewis Hall",
+1
+],
+[
+"William Osula",
+1
 ]
+],
+"away": []
+}
 },
 "5795372": {
 "round": 1,
@@ -1827,7 +1980,33 @@
 "home": false,
 "time": 83
 }
+],
+"bcc": {
+"home": [
+[
+"Jorge Cuenca",
+1
 ]
+],
+"away": [
+[
+"Maxence Lacroix",
+1
+],
+[
+"João Pedro",
+1
+],
+[
+"Cole Palmer",
+1
+],
+[
+"Jorrel Hato",
+1
+]
+]
+}
 },
 "5795429": {
 "round": 2,
@@ -2012,7 +2191,41 @@
 "home": false,
 "time": 89
 }
+],
+"bcc": {
+"home": [
+[
+"Yéremi Pino",
+1
+],
+[
+"Tyrick Mitchell",
+1
+],
+[
+"Adam Wharton",
+1
 ]
+],
+"away": [
+[
+"Phil Foden",
+2
+],
+[
+"Antoine Semenyo",
+1
+],
+[
+"Elliot Anderson",
+1
+],
+[
+"Rayan Cherki",
+1
+]
+]
+}
 },
 "5795431": {
 "round": 2,
@@ -2191,7 +2404,33 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Cody Gakpo",
+1
 ]
+],
+"away": [
+[
+"Morgan Gibbs-White",
+1
+],
+[
+"Dan Ndoye",
+1
+],
+[
+"James McAtee",
+1
+],
+[
+"Liam Delap",
+1
+]
+]
+}
 },
 "5795425": {
 "round": 2,
@@ -2370,7 +2609,33 @@
 "home": true,
 "time": 87
 }
+],
+"bcc": {
+"home": [
+[
+"Marcus Tavernier",
+1
+],
+[
+"James Hill",
+2
+],
+[
+"Evanilson",
+1
 ]
+],
+"away": [
+[
+"Kiernan Dewsbury-Hall",
+1
+],
+[
+"Harrison Armstrong",
+1
+]
+]
+}
 },
 "5795428": {
 "round": 2,
@@ -2555,7 +2820,16 @@
 "home": false,
 "time": 83
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Mohamed Belloumi",
+1
 ]
+]
+}
 },
 "5795434": {
 "round": 2,
@@ -2734,7 +3008,25 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Sandro Tonali",
+1
+],
+[
+"Mateus Fernandes",
+1
 ]
+],
+"away": [
+[
+"Nick Woltemade",
+1
+]
+]
+}
 },
 "5795427": {
 "round": 2,
@@ -2913,7 +3205,41 @@
 "home": true,
 "time": 82
 }
+],
+"bcc": {
+"home": [
+[
+"Pedro Neto",
+1
+],
+[
+"Morgan Rogers",
+2
+],
+[
+"Jorrel Hato",
+1
 ]
+],
+"away": [
+[
+"Pascal Groß",
+1
+],
+[
+"Olivier Boscagli",
+1
+],
+[
+"Diego Gómez",
+1
+],
+[
+"Malick Junior Yalcouyé",
+1
+]
+]
+}
 },
 "5795430": {
 "round": 2,
@@ -3104,7 +3430,21 @@
 "home": false,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Lukas Nmecha",
+1
 ]
+],
+"away": [
+[
+"Dango Ouattara",
+1
+]
+]
+}
 },
 "5795433": {
 "round": 2,
@@ -3283,7 +3623,33 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Granit Xhaka",
+2
+],
+[
+"Enzo Le Fée",
+1
+],
+[
+"Habib Diarra",
+1
 ]
+],
+"away": [
+[
+"Sander Berge",
+1
+],
+[
+"Alex Iwobi",
+1
+]
+]
+}
 },
 "5795432": {
 "round": 2,
@@ -3468,7 +3834,41 @@
 "home": false,
 "time": 83
 }
+],
+"bcc": {
+"home": [
+[
+"Bruno Fernandes",
+1
+],
+[
+"Diogo Dalot",
+1
+],
+[
+"Matheus Cunha",
+1
+],
+[
+"Bryan Mbeumo",
+1
 ]
+],
+"away": [
+[
+"Julio Enciso",
+1
+],
+[
+"Abdul Fatawu",
+2
+],
+[
+"Emersonn",
+1
+]
+]
+}
 },
 "5795426": {
 "round": 2,
@@ -3653,7 +4053,16 @@
 "home": false,
 "time": 85
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Riccardo Calafiori",
+1
 ]
+]
+}
 },
 "5795441": {
 "round": 3,
@@ -3826,7 +4235,11 @@
 "home": false,
 "time": 90
 }
-]
+],
+"bcc": {
+"home": [],
+"away": []
+}
 },
 "5795443": {
 "round": 3,
@@ -4011,7 +4424,16 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Anthony Elanga",
+1
 ]
+],
+"away": []
+}
 },
 "5795436": {
 "round": 3,
@@ -4190,7 +4612,29 @@
 "home": true,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Mikkel Damsgaard",
+1
+],
+[
+"Keane Lewis-Potter",
+1
 ]
+],
+"away": [
+[
+"Brian Brobbey",
+1
+],
+[
+"Noah Sadiki",
+1
+]
+]
+}
 },
 "5795437": {
 "round": 3,
@@ -4357,7 +4801,29 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Olivier Boscagli",
+1
+],
+[
+"Maxim De Cuyper",
+1
 ]
+],
+"away": [
+[
+"Nico Elvedi",
+2
+],
+[
+"Ao Tanaka",
+1
+]
+]
+}
 },
 "5795439": {
 "round": 3,
@@ -4542,7 +5008,29 @@
 "home": false,
 "time": 89
 }
+],
+"bcc": {
+"home": [
+[
+"Oscar Bobb",
+1
 ]
+],
+"away": [
+[
+"Daichi Kamada",
+1
+],
+[
+"Edward Nketiah",
+1
+],
+[
+"Yéremi Pino",
+2
+]
+]
+}
 },
 "5795442": {
 "round": 3,
@@ -4721,7 +5209,29 @@
 "home": true,
 "time": 87
 }
+],
+"bcc": {
+"home": [
+[
+"Erling Haaland",
+1
+],
+[
+"Antoine Semenyo",
+1
+],
+[
+"Rayan Cherki",
+1
 ]
+],
+"away": [
+[
+"Bobby Thomas",
+1
+]
+]
+}
 },
 "5795444": {
 "round": 3,
@@ -4906,7 +5416,25 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"James McAtee",
+1
 ]
+],
+"away": [
+[
+"Mohammed Kudus",
+1
+],
+[
+"Sávio",
+1
+]
+]
+}
 },
 "5795440": {
 "round": 3,
@@ -5091,7 +5619,25 @@
 "home": false,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Ryan Giles",
+1
 ]
+],
+"away": [
+[
+"Nicolas Jackson",
+1
+],
+[
+"George Hemmings",
+1
+]
+]
+}
 },
 "5795438": {
 "round": 3,
@@ -5270,7 +5816,21 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Merlin Röhl",
+1
 ]
+],
+"away": [
+[
+"Luke Shaw",
+1
+]
+]
+}
 },
 "5795435": {
 "round": 3,
@@ -5449,7 +6009,20 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Martin Ødegaard",
+2
+],
+[
+"Christos Tzolis",
+1
 ]
+],
+"away": []
+}
 },
 "5795445": {
 "round": 4,
@@ -5634,7 +6207,25 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Marcus Tavernier",
+2
+],
+[
+"Evanilson",
+1
 ]
+],
+"away": [
+[
+"Yehor Yarmoliuk",
+1
+]
+]
+}
 },
 "5795446": {
 "round": 4,
@@ -5813,7 +6404,33 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"John McGinn",
+1
 ]
+],
+"away": [
+[
+"Morgan Gibbs-White",
+3
+],
+[
+"Daniel Muñoz",
+1
+],
+[
+"Dan Ndoye",
+1
+],
+[
+"Neco Williams",
+1
+]
+]
+}
 },
 "5795447": {
 "round": 4,
@@ -6015,7 +6632,25 @@
 "home": true,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Cole Palmer",
+2
 ]
+],
+"away": [
+[
+"Regan Slater",
+1
+],
+[
+"Ryan Giles",
+2
+]
+]
+}
 },
 "5795449": {
 "round": 4,
@@ -6212,7 +6847,20 @@
 "home": false,
 "time": 88
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Leif Davis",
+1
+],
+[
+"Emersonn",
+1
 ]
+]
+}
 },
 "5795451": {
 "round": 4,
@@ -6397,7 +7045,25 @@
 "home": false,
 "time": 77
 }
+],
+"bcc": {
+"home": [
+[
+"Dominik Szoboszlai",
+3
+],
+[
+"Jeremie Frimpong",
+1
 ]
+],
+"away": [
+[
+"Joshua King",
+1
+]
+]
+}
 },
 "5795454": {
 "round": 4,
@@ -6570,7 +7236,21 @@
 "home": true,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Andrew Robertson",
+1
 ]
+],
+"away": [
+[
+"Tyrique George",
+1
+]
+]
+}
 },
 "5795453": {
 "round": 4,
@@ -6749,7 +7429,29 @@
 "home": false,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Granit Xhaka",
+1
+],
+[
+"Enzo Le Fée",
+1
 ]
+],
+"away": [
+[
+"Martin Ødegaard",
+1
+],
+[
+"Declan Rice",
+1
+]
+]
+}
 },
 "5795448": {
 "round": 4,
@@ -6940,7 +7642,25 @@
 "home": false,
 "time": 84
 }
+],
+"bcc": {
+"home": [
+[
+"Jay Dasilva",
+1
 ]
+],
+"away": [
+[
+"Pascal Groß",
+1
+],
+[
+"Maxim De Cuyper",
+1
+]
+]
+}
 },
 "5795452": {
 "round": 4,
@@ -7095,7 +7815,16 @@
 "home": true,
 "time": 83
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Enzo Fernández",
+1
 ]
+]
+}
 },
 "5795450": {
 "round": 4,
@@ -7292,7 +8021,25 @@
 "home": true,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Tarik Muharemović",
+1
 ]
+],
+"away": [
+[
+"Yoane Wissa",
+1
+],
+[
+"Harvey Barnes",
+1
+]
+]
+}
 },
 "5795456": {
 "round": 5,
@@ -7471,7 +8218,25 @@
 "home": true,
 "time": 87
 }
+],
+"bcc": {
+"home": [
+[
+"Mikkel Damsgaard",
+1
+],
+[
+"Jannik Schuster",
+1
 ]
+],
+"away": [
+[
+"Cole Palmer",
+1
+]
+]
+}
 },
 "5795464": {
 "round": 5,
@@ -7662,7 +8427,37 @@
 "home": false,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Andrew Robertson",
+1
+],
+[
+"Mohammed Kudus",
+1
+],
+[
+"Jan Paul van Hecke",
+1
+],
+[
+"Sávio",
+1
 ]
+],
+"away": [
+[
+"Boubacar Kamara",
+1
+],
+[
+"Johan Manzambi",
+1
+]
+]
+}
 },
 "5795457": {
 "round": 5,
@@ -7847,7 +8642,29 @@
 "home": true,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Pascal Groß",
+1
+],
+[
+"Maxim De Cuyper",
+1
+],
+[
+"Malick Junior Yalcouyé",
+1
 ]
+],
+"away": [
+[
+"Viktor Gyökeres",
+1
+]
+]
+}
 },
 "5795458": {
 "round": 5,
@@ -8038,7 +8855,37 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"James Tarkowski",
+1
+],
+[
+"Jack Grealish",
+1
+],
+[
+"Ainsley Maitland-Niles",
+1
+],
+[
+"Tyler Dibling",
+1
+],
+[
+"Harrison Armstrong",
+1
 ]
+],
+"away": [
+[
+"Abdul Fatawu",
+1
+]
+]
+}
 },
 "5795462": {
 "round": 5,
@@ -8222,7 +9069,16 @@
 "home": true,
 "time": 87
 }
+],
+"bcc": {
+"home": [
+[
+"Lewis Hall",
+1
 ]
+],
+"away": []
+}
 },
 "5795463": {
 "round": 5,
@@ -8389,7 +9245,16 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Morgan Gibbs-White",
+1
 ]
+],
+"away": []
+}
 },
 "5795455": {
 "round": 5,
@@ -8568,7 +9433,16 @@
 "home": true,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Rayan",
+1
 ]
+],
+"away": []
+}
 },
 "5795460": {
 "round": 5,
@@ -8735,7 +9609,16 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"James Justin",
+1
 ]
+],
+"away": []
+}
 },
 "5795461": {
 "round": 5,
@@ -8890,7 +9773,45 @@
 "home": true,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Jérémy Doku",
+1
+],
+[
+"Iliman Ndiaye",
+1
+],
+[
+"Joško Gvardiol",
+1
 ]
+],
+"away": [
+[
+"Granit Xhaka",
+2
+],
+[
+"Thomas Meunier",
+1
+],
+[
+"Nordi Mukiele",
+1
+],
+[
+"Enzo Le Fée",
+2
+],
+[
+"Nilson Angulo",
+1
+]
+]
+}
 },
 "5795459": {
 "round": 5,
@@ -9063,7 +9984,29 @@
 "home": false,
 "time": 84
 }
+],
+"bcc": {
+"home": [
+[
+"Alex Iwobi",
+2
+],
+[
+"Gonzalo García",
+1
 ]
+],
+"away": [
+[
+"Matheus Cunha",
+1
+],
+[
+"Bryan Mbeumo",
+1
+]
+]
+}
 },
 "5795465": {
 "round": 6,
@@ -9248,7 +10191,29 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Viktor Gyökeres",
+1
+],
+[
+"Ben White",
+1
+],
+[
+"Noni Madueke",
+1
 ]
+],
+"away": [
+[
+"Gabriel Gudmundsson",
+1
+]
+]
+}
 },
 "5795466": {
 "round": 6,
@@ -9433,7 +10398,20 @@
 "home": true,
 "time": 86
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Mathias Jensen",
+1
+],
+[
+"Jaidon Anthony",
+1
 ]
+]
+}
 },
 "5795467": {
 "round": 6,
@@ -9618,7 +10596,29 @@
 "home": true,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Pep Chavarría",
+1
+],
+[
+"Cole Palmer",
+1
 ]
+],
+"away": [
+[
+"Ryan Christie",
+1
+],
+[
+"Adrien Truffert",
+1
+]
+]
+}
 },
 "5795471": {
 "round": 6,
@@ -9803,7 +10803,29 @@
 "home": false,
 "time": 87
 }
+],
+"bcc": {
+"home": [
+[
+"Jack Clarke",
+1
+],
+[
+"Julio Enciso",
+1
 ]
+],
+"away": [
+[
+"Alex Iwobi",
+1
+],
+[
+"Joshua King",
+2
+]
+]
+}
 },
 "5795474": {
 "round": 6,
@@ -9994,7 +11016,29 @@
 "home": false,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Noah Sadiki",
+1
 ]
+],
+"away": [
+[
+"Pascal Groß",
+2
+],
+[
+"Olivier Boscagli",
+1
+],
+[
+"Georginio Rutter",
+1
+]
+]
+}
 },
 "5795473": {
 "round": 6,
@@ -10185,7 +11229,25 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Carlos Baleba",
+1
 ]
+],
+"away": [
+[
+"Sandro Tonali",
+1
+],
+[
+"Sávio",
+1
+]
+]
+}
 },
 "5795469": {
 "round": 6,
@@ -10358,7 +11420,37 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Quinten Timber",
+1
+],
+[
+"Yéremi Pino",
+1
+],
+[
+"Adam Wharton",
+1
 ]
+],
+"away": [
+[
+"Morgan Gibbs-White",
+2
+],
+[
+"Daniel Muñoz",
+1
+],
+[
+"Neco Williams",
+1
+]
+]
+}
 },
 "5795470": {
 "round": 6,
@@ -10543,7 +11635,41 @@
 "home": false,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Sorba Thomas",
+2
 ]
+],
+"away": [
+[
+"Jack Grealish",
+1
+],
+[
+"Ainsley Maitland-Niles",
+1
+],
+[
+"Kiernan Dewsbury-Hall",
+2
+],
+[
+"James Garner",
+1
+],
+[
+"Jarrad Branthwaite",
+1
+],
+[
+"Brennan Johnson",
+1
+]
+]
+}
 },
 "5795472": {
 "round": 6,
@@ -10728,7 +11854,24 @@
 "home": true,
 "time": 88
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Antoine Semenyo",
+1
+],
+[
+"Jérémy Doku",
+1
+],
+[
+"Joško Gvardiol",
+1
 ]
+]
+}
 },
 "5795468": {
 "round": 6,
@@ -10919,7 +12062,24 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Jacob Murphy",
+1
+],
+[
+"Harvey Barnes",
+1
+],
+[
+"Nico González",
+1
 ]
+]
+}
 },
 "5795478": {
 "round": 7,
@@ -11098,7 +12258,29 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Jack Grealish",
+1
+],
+[
+"Kiernan Dewsbury-Hall",
+1
 ]
+],
+"away": [
+[
+"Pedro Neto",
+1
+],
+[
+"Cole Palmer",
+1
+]
+]
+}
 },
 "5795476": {
 "round": 7,
@@ -11305,7 +12487,16 @@
 "home": false,
 "time": 79
 }
+],
+"bcc": {
+"home": [
+[
+"Igor Thiago",
+1
 ]
+],
+"away": []
+}
 },
 "5795479": {
 "round": 7,
@@ -11495,7 +12686,24 @@
 "home": true,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Alex Iwobi",
+2
+],
+[
+"Shea Charles",
+1
+],
+[
+"Gonzalo García",
+1
 ]
+],
+"away": []
+}
 },
 "5795481": {
 "round": 7,
@@ -11691,7 +12899,41 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Mateo Kovačić",
+1
+],
+[
+"Erling Haaland",
+2
+],
+[
+"Phil Foden",
+1
+],
+[
+"Jérémy Doku",
+1
+],
+[
+"Iliman Ndiaye",
+1
 ]
+],
+"away": [
+[
+"Leif Davis",
+1
+],
+[
+"Abdoul Ouattara",
+1
+]
+]
+}
 },
 "5795482": {
 "round": 7,
@@ -11870,7 +13112,24 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Ross Barkley",
+1
+],
+[
+"João Gomes",
+1
+],
+[
+"Alysson Edward",
+1
 ]
+]
+}
 },
 "5795475": {
 "round": 7,
@@ -12055,7 +13314,24 @@
 "home": true,
 "time": 89
 }
+],
+"bcc": {
+"home": [
+[
+"Ryan Christie",
+1
+],
+[
+"Lewis Cook",
+1
+],
+[
+"Evanilson",
+1
 ]
+],
+"away": []
+}
 },
 "5795477": {
 "round": 7,
@@ -12240,7 +13516,21 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Maxim De Cuyper",
+1
 ]
+],
+"away": [
+[
+"Dwight McNeil",
+1
+]
+]
+}
 },
 "5795480": {
 "round": 7,
@@ -12395,7 +13685,25 @@
 "home": false,
 "time": 84
 }
+],
+"bcc": {
+"home": [
+[
+"Anton Stach",
+1
+],
+[
+"Tarik Muharemović",
+1
 ]
+],
+"away": [
+[
+"Youri Tielemans",
+2
+]
+]
+}
 },
 "5795483": {
 "round": 7,
@@ -12568,7 +13876,16 @@
 "home": true,
 "time": 85
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Declan Rice",
+1
 ]
+]
+}
 },
 "5795484": {
 "round": 7,
@@ -12769,7 +14086,16 @@
 "home": false,
 "time": 87
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Brandon Thomas-Asante",
+1
 ]
+]
+}
 },
 "5795491": {
 "round": 8,
@@ -12948,7 +14274,20 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Daniel Muñoz",
+1
+],
+[
+"Dan Ndoye",
+1
 ]
+]
+}
 },
 "5795486": {
 "round": 8,
@@ -13121,7 +14460,29 @@
 "home": true,
 "time": 82
 }
+],
+"bcc": {
+"home": [
+[
+"John McGinn",
+1
+],
+[
+"Ibrahim Mbaye",
+1
 ]
+],
+"away": [
+[
+"Jérémy Doku",
+2
+],
+[
+"Iliman Ndiaye",
+1
+]
+]
+}
 },
 "5795485": {
 "round": 8,
@@ -13300,7 +14661,29 @@
 "home": false,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Declan Rice",
+1
+],
+[
+"Viktor Gyökeres",
+1
+],
+[
+"Ben White",
+1
 ]
+],
+"away": [
+[
+"Tyrique George",
+1
+]
+]
+}
 },
 "5795488": {
 "round": 8,
@@ -13491,7 +14874,11 @@
 "home": true,
 "time": 86
 }
-]
+],
+"bcc": {
+"home": [],
+"away": []
+}
 },
 "5795487": {
 "round": 8,
@@ -13676,7 +15063,16 @@
 "home": false,
 "time": 89
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Andrew Robertson",
+1
 ]
+]
+}
 },
 "5795489": {
 "round": 8,
@@ -13843,7 +15239,20 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Jacob Murphy",
+1
+],
+[
+"Amar Dedić",
+1
 ]
+]
+}
 },
 "5795490": {
 "round": 8,
@@ -14022,7 +15431,25 @@
 "home": true,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Mohamed-Ali Cho",
+1
 ]
+],
+"away": [
+[
+"Mathias Jensen",
+1
+],
+[
+"Igor Thiago",
+1
+]
+]
+}
 },
 "5795492": {
 "round": 8,
@@ -14211,7 +15638,21 @@
 "home": true,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Bradley Barcola",
+1
 ]
+],
+"away": [
+[
+"Pascal Groß",
+1
+]
+]
+}
 },
 "5795493": {
 "round": 8,
@@ -14390,7 +15831,28 @@
 "home": false,
 "time": 87
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Lewis Cook",
+1
+],
+[
+"Marcus Tavernier",
+2
+],
+[
+"Justin Kluivert",
+2
+],
+[
+"Adrien Truffert",
+1
 ]
+]
+}
 },
 "5795494": {
 "round": 8,
@@ -14569,7 +16031,20 @@
 "home": false,
 "time": 89
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Harry Wilson",
+1
+],
+[
+"Noah Okafor",
+1
 ]
+]
+}
 },
 "5795498": {
 "round": 9,
@@ -14760,7 +16235,29 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Roméo Lavia",
+1
+],
+[
+"Malo Gusto",
+1
 ]
+],
+"away": [
+[
+"Bruno Fernandes",
+1
+],
+[
+"Bryan Mbeumo",
+2
+]
+]
+}
 },
 "5795495": {
 "round": 9,
@@ -14945,7 +16442,25 @@
 "home": true,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Justin Kluivert",
+1
+],
+[
+"Junior Kroupi",
+1
 ]
+],
+"away": [
+[
+"James Justin",
+1
+]
+]
+}
 },
 "5795497": {
 "round": 9,
@@ -15118,7 +16633,21 @@
 "home": true,
 "time": 84
 }
+],
+"bcc": {
+"home": [
+[
+"Jaidon Anthony",
+1
 ]
+],
+"away": [
+[
+"Morgan Gibbs-White",
+1
+]
+]
+}
 },
 "5795499": {
 "round": 9,
@@ -15291,7 +16820,11 @@
 "home": true,
 "time": 83
 }
-]
+],
+"bcc": {
+"home": [],
+"away": []
+}
 },
 "5795500": {
 "round": 9,
@@ -15476,7 +17009,25 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Oli McBurnie",
+1
 ]
+],
+"away": [
+[
+"Julio Enciso",
+2
+],
+[
+"Abdoul Ouattara",
+2
+]
+]
+}
 },
 "5795502": {
 "round": 9,
@@ -15655,7 +17206,41 @@
 "home": false,
 "time": 84
 }
+],
+"bcc": {
+"home": [
+[
+"Elliot Anderson",
+2
+],
+[
+"Enzo Fernández",
+1
+],
+[
+"Nico O'Reilly",
+1
 ]
+],
+"away": [
+[
+"Georginio Rutter",
+1
+],
+[
+"Maxim De Cuyper",
+1
+],
+[
+"Yasin Ayari",
+1
+],
+[
+"Charalampos Kostoulas",
+1
+]
+]
+}
 },
 "5795504": {
 "round": 9,
@@ -15846,7 +17431,28 @@
 "home": false,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Omar Marmoush",
+1
+],
+[
+"Mohammed Kudus",
+1
+],
+[
+"Mateus Fernandes",
+1
+],
+[
+"Lucá Williams-Barnett",
+1
 ]
+],
+"away": []
+}
 },
 "5795496": {
 "round": 9,
@@ -16031,7 +17637,33 @@
 "home": true,
 "time": 87
 }
+],
+"bcc": {
+"home": [
+[
+"Emiliano Buendía",
+1
+],
+[
+"Matty Cash",
+1
+],
+[
+"Johan Manzambi",
+1
 ]
+],
+"away": [
+[
+"Timothy Castagne",
+1
+],
+[
+"Antonee Robinson",
+1
+]
+]
+}
 },
 "5795501": {
 "round": 9,
@@ -16210,7 +17842,25 @@
 "home": false,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Miloš Kerkez",
+1
 ]
+],
+"away": [
+[
+"Declan Rice",
+1
+],
+[
+"Noni Madueke",
+1
+]
+]
+}
 },
 "5795503": {
 "round": 9,
@@ -16395,7 +18045,25 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Bazoumana Touré",
+1
 ]
+],
+"away": [
+[
+"Kiernan Dewsbury-Hall",
+2
+],
+[
+"Jarrad Branthwaite",
+1
+]
+]
+}
 },
 "5795508": {
 "round": 10,
@@ -16580,7 +18248,29 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Vitaliy Mykolenko",
+1
+],
+[
+"Kiernan Dewsbury-Hall",
+1
+],
+[
+"Tyrique George",
+1
 ]
+],
+"away": [
+[
+"Jack Rudoni",
+1
+]
+]
+}
 },
 "5795511": {
 "round": 10,
@@ -16771,7 +18461,25 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Dominic Calvert-Lewin",
+2
+],
+[
+"Jayden Bogle",
+1
 ]
+],
+"away": [
+[
+"Archie Gray",
+1
+]
+]
+}
 },
 "5795505": {
 "round": 10,
@@ -16967,7 +18675,16 @@
 "home": true,
 "time": 89
 }
+],
+"bcc": {
+"home": [
+[
+"Martin Ødegaard",
+1
 ]
+],
+"away": []
+}
 },
 "5795509": {
 "round": 10,
@@ -17157,7 +18874,20 @@
 "home": false,
 "time": 85
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Jacob Murphy",
+1
+],
+[
+"William Osula",
+1
 ]
+]
+}
 },
 "5795513": {
 "round": 10,
@@ -17324,7 +19054,24 @@
 "home": true,
 "time": 87
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Marc Guéhi",
+1
+],
+[
+"Matheus Nunes",
+1
+],
+[
+"Abdukodir Khusanov",
+1
 ]
+]
+}
 },
 "5795506": {
 "round": 10,
@@ -17515,7 +19262,16 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Pascal Groß",
+1
 ]
+],
+"away": []
+}
 },
 "5795507": {
 "round": 10,
@@ -17694,7 +19450,49 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Yéremi Pino",
+1
+],
+[
+"Tyrick Mitchell",
+1
+],
+[
+"Adam Wharton",
+1
+],
+[
+"Darío Osorio",
+1
 ]
+],
+"away": [
+[
+"Dominik Szoboszlai",
+1
+],
+[
+"Florian Wirtz",
+1
+],
+[
+"Bradley Barcola",
+1
+],
+[
+"Jérémy Jacquet",
+1
+],
+[
+"Víctor Muñoz",
+1
+]
+]
+}
 },
 "5795510": {
 "round": 10,
@@ -17873,7 +19671,25 @@
 "home": false,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Abdul Fatawu",
+1
 ]
+],
+"away": [
+[
+"Amine Adli",
+1
+],
+[
+"Evanilson",
+1
+]
+]
+}
 },
 "5795514": {
 "round": 10,
@@ -18063,7 +19879,25 @@
 "home": true,
 "time": 88
 }
+],
+"bcc": {
+"home": [
+[
+"Trai Hume",
+1
+],
+[
+"Chemsdine Talbi",
+1
 ]
+],
+"away": [
+[
+"Marco Palestra",
+1
+]
+]
+}
 },
 "5795512": {
 "round": 10,
@@ -18254,7 +20088,37 @@
 "home": false,
 "time": 86
 }
+],
+"bcc": {
+"home": [
+[
+"Bruno Fernandes",
+2
+],
+[
+"Youri Tielemans",
+1
+],
+[
+"Matheus Cunha",
+1
+],
+[
+"Patrick Dorgu",
+1
 ]
+],
+"away": [
+[
+"Leon Goretzka",
+1
+],
+[
+"Nicolas Jackson",
+1
+]
+]
+}
 },
 "5795522": {
 "round": 11,
@@ -18433,7 +20297,20 @@
 "home": true,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Iliman Ndiaye",
+1
+],
+[
+"Elliot Anderson",
+1
 ]
+],
+"away": []
+}
 },
 "5795515": {
 "round": 11,
@@ -18618,7 +20495,33 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Marcus Tavernier",
+2
+],
+[
+"Justin Kluivert",
+1
+],
+[
+"James Hill",
+1
+],
+[
+"António Silva",
+1
 ]
+],
+"away": [
+[
+"Morgan Gibbs-White",
+1
+]
+]
+}
 },
 "5795516": {
 "round": 11,
@@ -18773,7 +20676,11 @@
 "home": false,
 "time": 77
 }
-]
+],
+"bcc": {
+"home": [],
+"away": []
+}
 },
 "5795518": {
 "round": 11,
@@ -18964,7 +20871,32 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [],
+"away": [
+[
+"Harry Wilson",
+1
+],
+[
+"Nico Elvedi",
+1
+],
+[
+"James Justin",
+1
+],
+[
+"Jayden Bogle",
+1
+],
+[
+"Noah Okafor",
+1
 ]
+]
+}
 },
 "5795519": {
 "round": 11,
@@ -19149,7 +21081,49 @@
 "home": false,
 "time": 89
 }
+],
+"bcc": {
+"home": [
+[
+"Victor Torp",
+1
+],
+[
+"Yann Gboho",
+1
+],
+[
+"Jack Rudoni",
+1
+],
+[
+"Bobby Thomas",
+1
 ]
+],
+"away": [
+[
+"Daichi Kamada",
+1
+],
+[
+"Jørgen Strand Larsen",
+1
+],
+[
+"Dwight McNeil",
+1
+],
+[
+"Yéremi Pino",
+1
+],
+[
+"Anan Khalaili",
+2
+]
+]
+}
 },
 "5795524": {
 "round": 11,
@@ -19345,7 +21319,24 @@
 "home": true,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Mohammed Kudus",
+1
+],
+[
+"Pedro Porro",
+1
+],
+[
+"Lucá Williams-Barnett",
+1
 ]
+],
+"away": []
+}
 },
 "5795523": {
 "round": 11,
@@ -19541,7 +21532,41 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Daniel Burn",
+1
+],
+[
+"Joseph Willock",
+1
+],
+[
+"William Osula",
+1
 ]
+],
+"away": [
+[
+"Martin Ødegaard",
+1
+],
+[
+"Declan Rice",
+1
+],
+[
+"Ezri Konsa",
+1
+],
+[
+"Kai Havertz",
+1
+]
+]
+}
 },
 "5795520": {
 "round": 11,
@@ -19738,7 +21763,41 @@
 "home": false,
 "time": 90
 }
+],
+"bcc": {
+"home": [
+[
+"Regan Slater",
+1
+],
+[
+"Lucas Gourna-Douath",
+1
+],
+[
+"Mohamed Belloumi",
+1
 ]
+],
+"away": [
+[
+"Pascal Groß",
+2
+],
+[
+"Maxim De Cuyper",
+2
+],
+[
+"Yasin Ayari",
+1
+],
+[
+"Diego Gómez",
+1
+]
+]
+}
 },
 "5795521": {
 "round": 11,
@@ -19929,7 +21988,24 @@
 "home": false,
 "time": 87
 }
+],
+"bcc": {
+"home": [
+[
+"Florian Wirtz",
+5
+],
+[
+"Bradley Barcola",
+1
+],
+[
+"Rio Ngumoha",
+1
 ]
+],
+"away": []
+}
 },
 "5795517": {
 "round": 11,
@@ -20120,6 +22196,23 @@
 "home": false,
 "time": 85
 }
+],
+"bcc": {
+"home": [
+[
+"Callum Wilson",
+1
+],
+[
+"Mathias Jensen",
+1
+],
+[
+"Mikkel Damsgaard",
+1
 ]
+],
+"away": []
+}
 }
 }
