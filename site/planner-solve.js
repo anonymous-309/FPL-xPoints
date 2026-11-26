@@ -8,12 +8,32 @@
   const MAX_FT = 5;
   const DEPTH = 3;           // transfers are planned in the first 3 gameweeks only (plus wildcard and free hit weeks)
   // Bench use, from the real picks of 1000 top managers (fplresearch.com), 2026-27 GW1-11, automatic subs and their own
-  // swaps for a starter out: sub 1 plays in 28% of gameweeks, sub 2 in 12%, sub 3 in 5%, the reserve keeper in 3%.
+  // swaps for a starter out: sub 1 plays in 28% of gameweeks, sub 2 in 12%, sub 3 in 5%, the reserve keeper in 3%;
+  // split by the bench player's position below (BENCH_POS).
   // Those points come from starters who did not play, so the starters count that much less: the keeper 97%, each of
   // the 10 outfield starters 1 - (0.28 + 0.12 + 0.05) / 10 = 95.5%.
+  // Real bench use of 1000 top managers, by bench slot and the bench player's position: a defender comes in more often
+  // (with 3 defenders starting only a defender can replace one), so DEF 36/15/6%, MID or FWD 22/4/1%, reserve keeper 3%.
+  const BENCH_POS = { DEF: [0.36, 0.15, 0.06], MID: [0.22, 0.04, 0.01], FWD: [0.22, 0.04, 0.01] };
   const BENCH_SLOTS = [0.28, 0.12, 0.05], BENCH_GK = 0.03;
-  const XI_OUT = 1 - BENCH_SLOTS.reduce((a, b) => a + b, 0) / 10, XI_GK = 1 - BENCH_GK;
-  const BENCH_W = BENCH_SLOTS.reduce((a, b) => a + b, 0) / 3; // the search does not know the bench order: the average
+  const XI_OUT = 0.955, XI_GK = 1 - BENCH_GK;
+  const benchShare = (pos, k) => (BENCH_POS[pos] || BENCH_SLOTS)[k] || 0;
+  // the search does not know the bench order: the average of the three slots for his position (DEF 19%, MID/FWD 9%)
+  // outfield bench (indexes into ps) in the order that counts most
+  function orderBench(ps, out) {
+    let best = null, bv = -1;
+    const go = (left, acc) => {
+      if (!left.length) {
+        const v = acc.reduce((a, i, k) => a + ps[i].xp * benchShare(ps[i].position, k), 0);
+        if (v > bv + 1e-9) { bv = v; best = acc; }
+        return;
+      }
+      left.forEach((i) => go(left.filter((j) => j !== i), acc.concat([i])));
+    };
+    go(out, []);
+    return best || [];
+  }
+  const BENCH_W = (pos) => (BENCH_POS[pos] || BENCH_SLOTS).reduce((a, b) => a + b, 0) / 3;
   const CHURN = 0.1;         // small cost per transfer so it does not swap players for nothing
   const SQUAD = { GK: 2, DEF: 5, MID: 5, FWD: 3 };
   const XI = { GK: [1, 1], DEF: [3, 5], MID: [2, 5], FWD: [1, 3] };
@@ -177,7 +197,7 @@
         const xp = P[i].xp[t] * w(t);
         const isGk = P[i].position === 'GK';
         const keep = bb ? 1 : isGk ? XI_GK : XI_OUT;
-        const benchW = bb ? 1 : isGk ? BENCH_GK : BENCH_W;
+        const benchW = bb ? 1 : isGk ? BENCH_GK : BENCH_W(P[i].position);
         addObj(y, xp * (keep - benchW));
         addObj(sq(i), xp * benchW);
         addObj(c, xp * keep * (tc ? 2 : 1));
@@ -360,7 +380,7 @@
   // If the captain does not play, the vice-captain's points count double (triple with Triple Captain).
   // ps: {position, xp, p1}; xi and bench (bench[0] = goalkeeper) are indexes into ps.
   // A gameweek's expected points for a starting 11 and bench: starters at 97% (keeper) and 95.5% (outfield), the bench
-  // at 28%, 12%, 5% in bench order and the reserve keeper at 3% (see BENCH_SLOTS); the captain's extra on him when he
+  // by slot and position (see BENCH_POS: DEF 36/15/6%, MID or FWD 22/4/1%) and the reserve keeper at 3%; the captain's extra on him when he
   // plays, else on the vice. Bench Boost: everyone counts in full.
   function expectedWithSubs(ps, xi, bench, cap, vice, mult, benchBoost) {
     const keep = (i) => (benchBoost ? 1 : ps[i].position === 'GK' ? XI_GK : XI_OUT);
@@ -372,7 +392,7 @@
       let k = 0;
       bench.forEach((i) => {
         if (ps[i].position === 'GK') subs += ps[i].xp * BENCH_GK;
-        else subs += ps[i].xp * (BENCH_SLOTS[k++] || 0);
+        else subs += ps[i].xp * benchShare(ps[i].position, k++);
       });
     }
     const kc = keep(cap);
@@ -581,7 +601,7 @@
     });
   }
 
-  const api = { BENCH_SLOTS, BENCH_GK, build, toLP, decode, pool, expectedWithSubs, option, sameOption, simulate, DEPTH, HIT, MAX_FT, DEFAULTS };
+  const api = { BENCH_SLOTS, BENCH_POS, benchShare, orderBench, BENCH_GK, build, toLP, decode, pool, expectedWithSubs, option, sameOption, simulate, DEPTH, HIT, MAX_FT, DEFAULTS };
   if (typeof module === 'object' && module.exports) module.exports = api;
   root.PlannerSolve = api;
 })(typeof self !== 'undefined' ? self : this);

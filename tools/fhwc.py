@@ -24,8 +24,17 @@ SQUAD = {"GK": 2, "DEF": 5, "MID": 5, "FWD": 3}
 XI_MIN = {"GK": 1, "DEF": 3, "MID": 2, "FWD": 1}
 XI_MAX = {"GK": 1, "DEF": 5, "MID": 5, "FWD": 3}
 # as the Planner counts a gameweek: starters 97% (keeper) / 95.5% (outfield), bench 28-12-5% and the reserve keeper 3%
-BENCH_SLOTS, BENCH_GK, XI_OUT, XI_GK = [0.28, 0.12, 0.05], 0.03, 0.955, 0.97
-BENCH_SEARCH = sum(BENCH_SLOTS) / 3
+# real bench use of top managers by slot and position (a defender comes in more often), reserve keeper 3%
+BENCH_POS = {"DEF": [0.36, 0.15, 0.06], "MID": [0.22, 0.04, 0.01], "FWD": [0.22, 0.04, 0.01]}
+BENCH_GK, XI_OUT, XI_GK = 0.03, 0.955, 0.97
+BENCH_SEARCH = {k: sum(v) / 3 for k, v in BENCH_POS.items()}
+
+
+def bench_value(xp, pos, out):
+    """Expected bench points of the outfield bench `out`, in the best order."""
+    from itertools import permutations
+    return max(sum(xp(i) * BENCH_POS[pos(i)][k] for k, i in enumerate(o)) for o in permutations(out)), \
+        list(max(permutations(out), key=lambda o: sum(xp(i) * BENCH_POS[pos(i)][k] for k, i in enumerate(o))))
 
 
 def get(path):
@@ -51,7 +60,7 @@ def solve(players, weeks):
         for i, p in enumerate(players):
             xp = p["xp"].get(str(g), 0.0)
             keep = XI_GK if p["pos"] == "GK" else XI_OUT
-            bench = BENCH_GK if p["pos"] == "GK" else BENCH_SEARCH
+            bench = BENCH_GK if p["pos"] == "GK" else BENCH_SEARCH[p["pos"]]
             c[X(i)] -= xp * bench
             c[Y(t, i)] -= xp * (keep - bench)
             c[C(t, i)] -= xp * keep
@@ -88,9 +97,10 @@ def solve(players, weeks):
         vice = max((i for i in xi if i != cap), key=xp)
         rest = [i for i in squad if i not in xi]
         gk = [i for i in rest if players[i]["pos"] == "GK"]
-        bench = gk + sorted((i for i in rest if players[i]["pos"] != "GK"), key=lambda i: -xp(i))
+        bv, order_out = bench_value(xp, lambda i: players[i]["pos"], [i for i in rest if players[i]["pos"] != "GK"])
+        bench = gk + order_out
         exp = sum(xp(i) * (XI_GK if players[i]["pos"] == "GK" else XI_OUT) for i in xi) + xp(cap) * XI_OUT
-        exp += sum(xp(i) * BENCH_GK for i in gk) + sum(xp(i) * w for i, w in zip(bench[1:], BENCH_SLOTS))
+        exp += sum(xp(i) * BENCH_GK for i in gk) + bv
         out.append({"gw": g, "xi": [players[i]["id"] for i in xi], "bench": [players[i]["id"] for i in bench],
                     "cap": players[cap]["id"], "vice": players[vice]["id"], "xpts": round(exp, 2),
                     "xptsXi": round(sum(xp(i) for i in xi) + xp(cap), 2), "xp": {players[i]["id"]: round(xp(i), 2) for i in squad}})
@@ -115,9 +125,10 @@ def lineup(squad, info, g):
     xi.sort(key=lambda i: (order[pos(i)], -xp(i)))
     caps = sorted(xi, key=lambda i: -xp(i))
     rest = [i for i in by if i not in xi]
-    bench = [i for i in rest if pos(i) == "GK"] + [i for i in rest if pos(i) != "GK"]
+    bv, order_out = bench_value(xp, pos, [i for i in rest if pos(i) != "GK"])
+    bench = [i for i in rest if pos(i) == "GK"] + order_out
     exp = sum(xp(i) * (XI_GK if pos(i) == "GK" else XI_OUT) for i in xi) + xp(caps[0]) * XI_OUT
-    exp += xp(bench[0]) * BENCH_GK + sum(xp(i) * w for i, w in zip(bench[1:], BENCH_SLOTS))
+    exp += xp(bench[0]) * BENCH_GK + bv
     return {"gw": g, "xi": xi, "bench": bench, "cap": caps[0], "vice": caps[1], "xpts": round(exp, 2),
             "xp": {i: round(xp(i), 2) for i in squad}}
 

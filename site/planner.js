@@ -122,7 +122,7 @@
     return best;
   }
 
-  // Bench weights are fixed (planner-solve.js BENCH_SLOTS, from real bench use of top managers)
+  // Bench weights are fixed (planner-solve.js BENCH_POS, from real bench use of top managers, by slot and position)
   function benchWeights() { return { out: [], gk: [] }; }
 
   // The gameweeks after the transfer weeks, for a squad that stays: best 11, captain, vice and bench each week.
@@ -137,7 +137,7 @@
       const byXp = xi.slice().sort((a, b) => P[b].xp[t] - P[a].xp[t]);
       const rest = squad.filter((i) => !xi.includes(i));
       const gk = rest.find((i) => P[i].position === 'GK');
-      const bench = [gk].concat(rest.filter((i) => i !== gk).sort((a, b) => P[b].xp[t] - P[a].xp[t])).filter((i) => i !== undefined);
+      const bench = [gk].concat(S.orderBench(ps, rest.filter((i) => i !== gk))).filter((i) => i !== undefined);
       const r = S.expectedWithSubs(ps, xi, bench, byXp[0], byXp[1], 2, false);
       ft = t === from ? ft : Math.min(S.MAX_FT, ft + 1);
       out.push({ t, chip: null, transfersAllowed: false, freeTransfers: ft, hits: 0, bank: null, xi, bench, cap: byXp[0], vice: byXp[1],
@@ -158,7 +158,7 @@
       const byXp = best.xi.slice().sort((a, b) => P[b].xp[t] - P[a].xp[t]);
       const rest = squad.filter((i) => !best.xi.includes(i));
       const gk = rest.find((i) => P[i].position === 'GK');
-      const bench = [gk].concat(rest.filter((i) => i !== gk).sort((a, b) => P[b].xp[t] - P[a].xp[t]));
+      const bench = [gk].concat(S.orderBench(ps, rest.filter((i) => i !== gk)));
       out[t] = S.expectedWithSubs(ps, best.xi, bench, byXp[0], byXp[1], 2, false, 2000).xpts;
     }
     return out;
@@ -173,7 +173,7 @@
     const byXp = best.xi.slice().sort((a, b) => P[b].xp[t] - P[a].xp[t]);
     const rest = squad.filter((i) => !best.xi.includes(i));
     const gk = rest.find((i) => P[i].position === 'GK');
-    const bench = [gk].concat(rest.filter((i) => i !== gk).sort((a, b) => P[b].xp[t] - P[a].xp[t]));
+    const bench = [gk].concat(S.orderBench(ps, rest.filter((i) => i !== gk)));
     return S.expectedWithSubs(ps, best.xi, bench, byXp[0], byXp[1], 2, false, 2000).xpts;
   }
 
@@ -1153,11 +1153,13 @@
     const need = { DEF: 3, MID: 2, FWD: 1 };
     Object.entries(need).forEach(([pos, n]) => out.filter((p) => p.position === pos).slice(0, n).forEach((p) => xi.push(p)));
     out.filter((p) => !xi.includes(p)).forEach((p) => { if (xi.length < 11) xi.push(p); });
-    const bench = gks.slice(1).concat(out.filter((p) => !xi.includes(p)));
+    const rest = out.filter((p) => !xi.includes(p));
+    const ps = rest.map((p) => ({ position: p.position, xp: xp.get(p.id) }));
+    const bench = gks.slice(1).concat(S.orderBench(ps, rest.map((p, k) => k)).map((k) => rest[k]));
     const caps = xi.slice().sort(by);
     return { xi, bench, cap: caps[0], vice: caps[1], xp };
   }
-  // a line-up's expected points as the plans count them (starters 97% / 95.5%, bench 28-12-5% and 3%, captain)
+  // a line-up's expected points as the plans count them (starters 97% / 95.5%, bench by slot and position, reserve keeper 3%, captain)
   function lineScore(L, part) {
     const all = L.xi.concat(L.bench);
     const ps = all.map((p) => ({ position: p.position, xp: L.xp.get(p.id) }));
