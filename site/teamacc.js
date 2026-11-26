@@ -112,7 +112,7 @@ window.TeamAcc = (function () {
         ...csCharts(rowsOf('Clean sheet chance in steps of 1%')),
         el('h3', { textContent: 'Season totals by club' }),
         p(`How close the season adds up for each club (correlation: ${corr.trim()}).`),
-        table(['Club', 'Matches', 'Expected goals', 'Real goals', 'Expected CS', 'Real CS'], clubs)));
+        table(['Club', 'Matches', 'Predicted goals', 'Real goals', 'Predicted CS', 'Real CS'], clubs)));
     }
 
     if (!tmKey) box.replaceChildren(el('p', { className: 'meta', textContent: 'No accuracy figures yet.' }));
