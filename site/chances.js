@@ -76,7 +76,7 @@
    "pDefcon": [
     "DefCon",
     "Chance of reaching the DefCon threshold: 10 actions for DEF, 12 for MID and FWD",
-    "From DefCon actions: the chance of reaching the threshold with that many expected over 90 (a Poisson count)",
+    "From DefCon actions: the chance of reaching the threshold with that many expected over 90 (a count a little more spread than Poisson, checked on 2025-26 full-90 matches)",
     "2 points × (Appearance 60+ × the chance in his minutes when he plays 60+ + the chance of a short appearance × the chance in those minutes): his DefCon actions × minutes/90 is what he is expected to make, and the chance of reaching 10 or 12 with that many falls fast with fewer minutes (not for GK)."
    ],
    "xSaves": [

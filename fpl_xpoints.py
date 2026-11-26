@@ -59,7 +59,7 @@ DC_MIN_POWER = 5.5
 # DefCon in m minutes: his chance over 90 is turned into an equal number of defensive actions over 90 (a negative
 # binomial count with this spread, size r; smaller r = more spread), that number x m/90, then the chance of reaching
 # the threshold with it. A player far above the threshold keeps more of it in fewer minutes than one near it.
-DC_SIZE = 0.0  # 0 = Poisson (the site's count rule for DefCon when minutes are edited)
+DC_SIZE = 12.0  # spread of the DefCon count (negative binomial size; 0 = Poisson): sizes 3-20 tried on 2025-26 full-90 matches, 12 best
 
 
 def _nb_sf(thr: np.ndarray, mu: np.ndarray, r: float | None) -> np.ndarray:
@@ -2093,7 +2093,7 @@ class XPointsModel:
         # with that many (a Poisson count), for a match of 60+ (m60 minutes) and a short one (m1 minutes)
         thr = pos.map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
         m1 = np.where(np.isnan(base["m1"]), float(SUB_MINUTES), np.clip(np.nan_to_num(base["m1"], nan=SUB_MINUTES), 1, 59))
-        dc_at = lambda mins: poisson.sf(thr - 1, np.clip(dc90, 1e-6, None) * mins / 90)
+        dc_at = lambda mins: _nb_sf(thr, np.clip(dc90, 1e-6, None) * mins / 90, DC_SIZE or None)
         p_def, p_def60, p_defsub = dc_at(90.0), dc_at(m60), dc_at(m1)
         dc_mu90 = dc90
         pts_def = (~gk) * (p_60 * p_def60 + p_sub * p_defsub) * DEFCON_PTS
@@ -2618,7 +2618,7 @@ def parts_at_real_minutes(pred: pd.DataFrame) -> pd.DataFrame:
     cs = on60 * np.exp(-on) * pred["position"].map(CS_PTS).to_numpy(float)
     conc = -1.0 * gkdef * on60 * (on - (1 - np.exp(-2 * on)) / 2) / 2
     thr = pred["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
-    dc = DEFCON_PTS * (m > 0) * poisson.sf(thr - 1, np.clip(g("dc90"), 1e-6, None) * np.clip(m, 0, 90) / 90) * (pred["position"] != "GK").to_numpy()
+    dc = DEFCON_PTS * (m > 0) * _nb_sf(thr, np.clip(g("dc90"), 1e-6, None) * np.clip(m, 0, 90) / 90, DC_SIZE or None) * (pred["position"] != "GK").to_numpy()
     return pd.DataFrame({
         "Appearance": (m > 0).astype(float) + on60, "Goals": (g("full_goal") - pen_goal90) * n90, "Assists": g("full_assist") * n90, "Bonus": g("full_bonus") * n90,
         "Clean sheet": cs, "Goals conceded": conc, "Saves": g("full_saves") * n90,
