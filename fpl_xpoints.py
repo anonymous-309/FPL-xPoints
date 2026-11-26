@@ -2471,6 +2471,16 @@ def chance_report(pred: pd.DataFrame) -> None:
             binary("DefCon, full 90", fd["p_defcon"], fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD), fd["position"])
         per90("Yellow card, full 90", "y90", "yellow_cards", full)
         per90("Own goal, full 90", "og90", "own_goals", full)
+        if len(fd):
+            # DefCon chance from expected actions with more spread than Poisson (negative binomial, size r)
+            thr_fd = fd["position"].map(DEFCON_THRESHOLD).to_numpy(float)
+            hit_fd = (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float)
+            for r in (3, 5, 8, 12, 20):
+                pr = _nb_sf(thr_fd, fd["dc90"].to_numpy(float), r)
+                bands = pd.cut(pr, [0, .05, .1, .15, .2, .3, .4, .5, .6, .8, 1.0], include_lowest=True)
+                gg = pd.DataFrame({"p": pr, "h": hit_fd, "b": bands}).groupby("b", observed=True)
+                print(f"DefCon size {r}: Brier {np.mean((pr - hit_fd) ** 2):.4f} (Poisson {np.mean((fd['p_defcon'].to_numpy(float) - hit_fd) ** 2):.4f}), mean {pr.mean():.1%} vs {hit_fd.mean():.1%}; "
+                      + "; ".join(f"{iv.left:.0%}-{iv.right:.0%} {x['p'].mean():.1%} vs {x['h'].mean():.1%}" for iv, x in gg if len(x)))
         # by band: predicted chance against the real share (full 90 only)
         print("\nChance 90min on full-90 matches, by predicted chance: predicted | real | matches")
         for title, prob, hit in (("Score 1+", 1 - np.exp(-full["np_g90"].to_numpy(float)), (full["np_goals"].fillna(0) >= 1).to_numpy(float)),
