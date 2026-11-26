@@ -1726,8 +1726,18 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         if rows.any():
             sh = df.loc[rows, "pid"].map(lambda q: fm_oop[q]["share"]).astype(float)
             mid = by_role[by_role["role"] == "MID"].set_index("tf")
+            # goals and assists: the attacking or the other midfield average, by his own box touches (as any midfielder)
+            if MID_SPLIT:
+                grp_mid = np.where(df.loc[rows, "role_box90"].to_numpy(float) >= MID_ATTACK_BOX, "MIDA",
+                                   np.where(df.loc[rows, "role_box90"].notna().to_numpy(), "MIDD", "MID"))
+                by_g = by_grp.set_index(["grp", "tf"])
             for c in [c for c in by_role.columns if c.startswith("p_")]:
-                df.loc[rows, c] = (1 - sh) * df.loc[rows, c] + sh * df.loc[rows, "tf"].map(mid[c]).astype(float)
+                m = df.loc[rows, "tf"].map(mid[c]).astype(float).to_numpy()
+                if MID_SPLIT and c in ("p_g", "p_a", "p_xg", "p_xa"):
+                    alt = np.array([by_g[c].get((g_, t_), np.nan) if g_ != "MID" else np.nan
+                                    for g_, t_ in zip(grp_mid, df.loc[rows, "tf"])], dtype=float)
+                    m = np.where(np.isfinite(alt) & (alt > EPS), alt, m)
+                df.loc[rows, c] = (1 - sh) * df.loc[rows, c] + sh * m
             df.loc[rows, "oop_share"] = sh
 
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
