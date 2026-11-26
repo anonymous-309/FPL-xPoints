@@ -52,9 +52,42 @@ GOAL_PTS = {"GK": 10, "DEF": 6, "MID": 5, "FWD": 4}
 CS_PTS = {"GK": 4, "DEF": 4, "MID": 1, "FWD": 0}
 DEFCON_THRESHOLD = {"DEF": 10, "MID": 12, "FWD": 12}
 SUB_MINUTES = 25  # average minutes of an appearance under 60 (a sub on, or taken off early)
-# DefCon chance in m minutes = chance over a full 90 x (m / 90) ** DC_MIN_POWER: the threshold gets much harder with
+# (old) DefCon chance in m minutes = chance over a full 90 x (m / 90) ** DC_MIN_POWER: the threshold gets much harder with
 # fewer minutes (2025-26, real DefCon by minutes played: 60-74 min about 1/5 of the 90-minute rate, 75-84 under 1/2)
 DC_MIN_POWER = 5.5
+# DefCon in m minutes: his chance over 90 is turned into an equal number of defensive actions over 90 (a negative
+# binomial count with this spread, size r; smaller r = more spread), that number x m/90, then the chance of reaching
+# the threshold with it. A player far above the threshold keeps more of it in fewer minutes than one near it.
+DC_SIZE = 8.0
+
+
+def _nb_sf(thr: np.ndarray, mu: np.ndarray, r: float | None) -> np.ndarray:
+    """Chance of thr or more actions when the expected number is mu."""
+    from scipy.stats import nbinom
+    mu = np.clip(np.asarray(mu, float), 1e-6, None)
+    if r is None:
+        return poisson.sf(np.asarray(thr) - 1, mu)
+    return nbinom.sf(np.asarray(thr) - 1, r, r / (r + mu))
+
+
+def defcon_actions90(p90: np.ndarray, thr: np.ndarray, r: float | None = None) -> np.ndarray:
+    """The expected actions over 90 that give his DefCon chance over 90."""
+    r = DC_SIZE if r is None else (None if r == 0 else r)
+    grid = np.linspace(0.01, 60, 6000)
+    out = np.zeros(len(p90))
+    for t in np.unique(thr):
+        k = thr == t
+        sf = _nb_sf(np.full(len(grid), t), grid, r)
+        out[k] = np.interp(np.clip(p90[k], sf[0], sf[-1]), sf, grid)
+    return out
+
+
+def defcon_at(p90: np.ndarray, thr: np.ndarray, minutes, r: float | None = None) -> np.ndarray:
+    """DefCon chance in the given minutes, from his chance over 90."""
+    p90, thr = np.asarray(p90, float), np.asarray(thr, float)
+    mu = defcon_actions90(p90, thr, r) * np.clip(np.asarray(minutes, float), 0, 90) / 90
+    rr = DC_SIZE if r is None else (None if r == 0 else r)
+    return np.where(np.asarray(minutes, float) > 0, _nb_sf(thr, mu, rr), 0.0) * (p90 > 0)
 DEFCON_PTS = 2
 PEN_SAVE_PTS = 5
 PEN_MISS_PTS = -2
@@ -1957,8 +1990,10 @@ class XPointsModel:
         dc90 = self.dc.predict(df[DC_FEATS]) if self.dc is not None else df["r_dc"].to_numpy(float)
         p_def = (self.dc_combine.predict_proba(self._dc_x(df, dc90))[:, 1] if self.dc_combine is not None
                  else df["defcon_rate"].to_numpy(float))
-        p_def60 = p_def * (m60 / 90) ** DC_MIN_POWER
-        p_defsub = p_def * (SUB_MINUTES / 90) ** DC_MIN_POWER
+        thr = pos.map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
+        p_def60 = defcon_at(p_def, thr, m60)
+        p_defsub = defcon_at(p_def, thr, np.full(len(df), float(SUB_MINUTES)))
+        dc_mu90 = defcon_actions90(p_def, thr)
         pts_def = (~gk) * (p_60 * p_def60 + p_sub * p_defsub) * DEFCON_PTS
         saves90 = np.zeros(len(df))
         if gk.any():
@@ -1988,7 +2023,7 @@ class XPointsModel:
         out["full_cards"] = -rate90["yellow"] - 3 * red90
         out["p_defcon"] = (~gk) * p_def  # if he plays the full 90
         out["p_defcon_60"] = (~gk) * p_def60  # in a match where he plays 60+ (his usual minutes then)
-        out["m60"], out["p_cs_on"] = m60, pcs_on
+        out["m60"], out["p_cs_on"], out["dc_mu90"] = m60, pcs_on, (~gk) * dc_mu90
         out["dc90"], out["bps90"] = (~gk) * dc90, self.bps.predict(df[BPS_FEATS])
         # Bonus: half the per-player model, half a simulation of each match, where he competes for the top 3 BPS with
         # everyone on the pitch, both teams (Accuracy page: best correlation of the versions tried).
@@ -2435,7 +2470,8 @@ def parts_at_real_minutes(pred: pd.DataFrame) -> pd.DataFrame:
     gkdef = pred["position"].isin(["GK", "DEF"]).to_numpy()
     cs = on60 * np.exp(-on) * pred["position"].map(CS_PTS).to_numpy(float)
     conc = -1.0 * gkdef * on60 * (on - (1 - np.exp(-2 * on)) / 2) / 2
-    dc = g("full_defcon") * (np.clip(m, 0, 90) / 90) ** DC_MIN_POWER
+    thr = pred["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
+    dc = DEFCON_PTS * defcon_at(g("full_defcon") / DEFCON_PTS, thr, m) * (pred["position"] != "GK").to_numpy()
     return pd.DataFrame({
         "Appearance": (m > 0).astype(float) + on60, "Goals": (g("full_goal") - pen_goal90) * n90, "Assists": g("full_assist") * n90, "Bonus": g("full_bonus") * n90,
         "Clean sheet": cs, "Goals conceded": conc, "Saves": g("full_saves") * n90,
@@ -2457,6 +2493,11 @@ def minutes_on_report(pred: pd.DataFrame) -> None:
     n90, on60 = m / 90, (m >= 60).astype(float)
     g = lambda c: d[c].fillna(0).to_numpy(float)
     straight = {"Clean sheet": g("full_cs") * on60, "Goals conceded": g("full_conceded") * on60, "DefCon and other": g("full_defcon") * n90}
+    thr = d["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
+    p90 = g("full_defcon") / DEFCON_PTS
+    alt = {"power 5.5": DEFCON_PTS * p90 * (np.clip(m, 0, 90) / 90) ** DC_MIN_POWER}
+    for r in (0, 2, 4, 8, 16):
+        alt[f"size {r or 'Poisson'}"] = DEFCON_PTS * defcon_at(p90, thr, m, r if r else 0)
     band = pd.cut(d["minutes"], [0, 59, 74, 84, 89, 90], labels=["1-59", "60-74", "75-84", "85-89", "90"])
     print("\nClean sheet, goals conceded and DefCon by real minutes: real points | minutes on the pitch (now) | straight share (before)")
     print("part | minutes | matches | real | now | before")
@@ -2468,6 +2509,14 @@ def minutes_on_report(pred: pd.DataFrame) -> None:
                 print(f"{part} | {b} | {k.sum()} | {real[part].to_numpy()[k].mean():.3f} | {at[part].to_numpy()[k].mean():.3f} | {straight[part][k].mean():.3f}")
         k = sub.to_numpy()
         print(f"{part} | all | {k.sum()} | {real[part].to_numpy()[k].mean():.3f} | {at[part].to_numpy()[k].mean():.3f} | {straight[part][k].mean():.3f}")
+    print("\nDefCon by real minutes, other ways to scale: real | " + " | ".join(alt))
+    sub = ((d["position"] != "GK") & d.get("defensive_contribution", pd.Series(np.nan, index=d.index)).notna()).to_numpy()
+    dch = d.get("dc90", pd.Series(0.0, index=d.index)).to_numpy(float)
+    for lab, extra in (("all", np.ones(len(d), bool)), ("DefCon actions 10+ per 90", dch >= 10), ("under 10", dch < 10)):
+        for b in ["1-59", "60-74", "75-84", "85-89", "90"]:
+            k = ((band == b).to_numpy() & sub & extra)
+            if k.sum():
+                print(f"{lab} | {b} | {k.sum()} | {real['DefCon and other'].to_numpy()[k].mean():.3f} | " + " | ".join(f"{v[k].mean():.3f}" for v in alt.values()))
 
 
 def real_no_pens(pred: pd.DataFrame) -> np.ndarray:
@@ -3821,6 +3870,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g.setdefault("cc", []).append(round(float(r["conc90"]), 3))
         g.setdefault("m60", []).append(round(float(r["m60"]), 1))
         g.setdefault("dp", []).append(round(float(r["p_defcon"]), 4))
+        g.setdefault("dm", []).append(round(float(r["dc_mu90"]), 3))  # the same as expected actions over 90
         if isinstance(r.get("euro_note"), str) and r["euro_note"]:
             g.setdefault("euro", []).append(r["euro_note"])  # e.g. "UCL 3d": a European match 3 days before
         for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "penmiss", "own", "defcon", "cards"):
@@ -3876,7 +3926,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             if len(g.get("byMatch", [])) < 2:
                 g.pop("byMatch", None)
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws,
-               "dcPower": DC_MIN_POWER, "players": list(players.values()),
+               "dcSize": DC_SIZE, "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])
     payload["setPiecesByGw"] = {str(g): set_piece_table(res, g) for g in payload["gws"]}  # every gameweek, for the GW picker

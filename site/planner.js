@@ -1452,7 +1452,7 @@
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((data) => {
       state.data = data;
-      XMin.setPlayers(data.players, data.penPatterns, data.dcPower);
+      XMin.setPlayers(data.players, data.penPatterns, data.dcSize);
       state.settings = loadSettings();
       $('playerNames').replaceChildren(...data.players.slice().sort((a, b) => a.name.localeCompare(b.name)).map((p) => el('option', { value: `${p.name} (${p.team} ${p.position})` })));
       settingsForm();
