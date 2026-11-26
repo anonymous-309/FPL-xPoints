@@ -4,6 +4,8 @@ window.XMin = (function () {
   'use strict';
   const STORE = 'xmin-overrides';
   const GOAL_PTS = { GK: 10, DEF: 6, MID: 5, FWD: 4 };
+  const CS_PTS = { GK: 4, DEF: 4, MID: 1, FWD: 0 };
+  let dcSlope = null;  // DefCon: how the log-odds of reaching the threshold move with log(minutes / 90)
   const PEN_TAKE_ON_PITCH = 1;  // same as the model: the listed taker takes them while he is on the pitch
   let takers = {};  // team -> players with an FPL penalty order, first taker first
   let fkTakers = {};  // team -> players on FPL's free kick or corner list
@@ -45,7 +47,8 @@ window.XMin = (function () {
 
   // Call once with all players so penalty shares can follow edited minutes of the takers above.
   let patterns = {};  // team -> [{ ids, pats: [[weight, started flags]] }]: who started together in recent matches
-  function setPlayers(players, pats) {
+  function setPlayers(players, pats, slope) {
+    if (slope !== undefined) dcSlope = slope;
     patterns = pats || {};
     takers = {};
     fkTakers = {};
@@ -182,10 +185,25 @@ window.XMin = (function () {
     const r = m.mins.reduce((a, b) => a + b, 0) / m.mins.length / 90;
     const parts = { app: m.mins.reduce((a, x) => a + (x > 0 ? 1 : 0) + (x >= 60 ? 1 : 0), 0) };
     PARTS.forEach((k) => { parts[k] = f[k] * r; });
-    // Clean sheet and goals conceded count only for matches with 60+ minutes (FPL rule).
+    // Clean sheet and goals conceded count only for matches with 60+ minutes (FPL rule), and only the goals while
+    // he is on the pitch; DefCon is much harder to reach in fewer minutes (same rules as the model).
     const full60 = m.mins.filter((x) => x >= 60).length / m.mins.length;
-    parts.cs = f.cs * full60;
-    parts.conceded = f.conceded * full60;
+    if (d.cc && d.cc.length === m.mins.length) {
+      const gkdef = p.position === 'GK' || p.position === 'DEF';
+      parts.cs = 0; parts.conceded = 0;
+      m.mins.forEach((x, j) => {
+        if (x < 60) return;
+        const on = d.cc[j] * x / 90;
+        parts.cs += Math.exp(-on) * CS_PTS[p.position];
+        if (gkdef) parts.conceded -= (on - (1 - Math.exp(-2 * on)) / 2) / 2;
+      });
+    } else {
+      parts.cs = f.cs * full60;
+      parts.conceded = f.conceded * full60;
+    }
+    if (d.dl && d.dl.length === m.mins.length && dcSlope !== null && p.position !== 'GK') {
+      parts.defcon = m.mins.reduce((a, x, j) => a + (x > 0 ? 2 / (1 + Math.exp(-(d.dl[j] + dcSlope * Math.log(Math.min(90, Math.max(1, x)) / 90)))) : 0), 0);
+    }
     return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: r * 90 * m.mins.length, mins: m.mins, xg: f.xg * r, xa: f.xa * r, edited: m.source };
   }
 

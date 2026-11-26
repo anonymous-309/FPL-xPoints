@@ -103,7 +103,7 @@
     .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
     .then((data) => {
       state.data = data;
-      XMin.setPlayers(data.players, data.penPatterns);
+      XMin.setPlayers(data.players, data.penPatterns, data.dcSlope);
       $('gw').replaceChildren(...data.gws.map((g) => el('option', { value: String(g), textContent: `GW${g}` })));
       $('team').append(...[...new Set(data.players.map((p) => p.team))].sort().map((t) => el('option', { value: t, textContent: t })));
       const when = new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });

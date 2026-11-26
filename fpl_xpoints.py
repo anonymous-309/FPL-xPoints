@@ -51,6 +51,7 @@ POSITIONS = ["GK", "DEF", "MID", "FWD"]
 GOAL_PTS = {"GK": 10, "DEF": 6, "MID": 5, "FWD": 4}
 CS_PTS = {"GK": 4, "DEF": 4, "MID": 1, "FWD": 0}
 DEFCON_THRESHOLD = {"DEF": 10, "MID": 12, "FWD": 12}
+SUB_MINUTES = 25  # average minutes of an appearance under 60 (a sub on, or taken off early)
 DEFCON_PTS = 2
 PEN_SAVE_PTS = 5
 PEN_MISS_PTS = -2
@@ -97,7 +98,7 @@ NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "wa
           "team_h_score", "team_a_score", "value"]
 NUMERIC = ["element", "fixture", "minutes", "total_points", "goals_scored", "assists", "bonus",
            "bps", "saves", "yellow_cards", "red_cards", "expected_goals", "expected_assists",
-           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box"]
+           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "goals_conceded", "clean_sheets"]
 
 
 # ---------------------------------------------------------------- data access
@@ -1871,8 +1872,9 @@ class XPointsModel:
         self.dc, self.dc_combine = None, None
         if len(outf) >= DC_MIN_ROWS:
             self.dc = _fit_rate(outf, "defensive_contribution", DC_FEATS)
-            full = outf[outf["minutes"] >= 60]
-            X = self._dc_x(full, self.dc.predict(full[DC_FEATS]))
+            # every appearance, with his real minutes: fewer minutes make the threshold much harder to reach
+            full = outf
+            X = self._dc_x(full, self.dc.predict(full[DC_FEATS]), full["minutes"].to_numpy(float))
             hit = (full["defensive_contribution"] >= full["position"].map(DEFCON_THRESHOLD)).astype(int)
             if hit.nunique() == 2:
                 self.dc_combine = LogisticRegression(C=1.0, max_iter=1000).fit(X, hit)
@@ -1881,10 +1883,12 @@ class XPointsModel:
         return self
 
     @staticmethod
-    def _dc_x(df: pd.DataFrame, dc90: np.ndarray) -> np.ndarray:
+    def _dc_x(df: pd.DataFrame, dc90: np.ndarray, mins=90.0) -> np.ndarray:
         rate = df["defcon_rate"].clip(0.01, 0.99).to_numpy(float)
         thr = df["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float)
-        return np.column_stack([np.log(rate / (1 - rate)), np.log(np.clip(dc90, 0.1, None) / thr)])
+        m = np.broadcast_to(np.clip(np.asarray(mins, float), 1, 90), (len(df),))
+        # his expected actions in those minutes against the threshold, and the minutes on their own
+        return np.column_stack([np.log(rate / (1 - rate)), np.log(np.clip(dc90, 0.1, None) / thr), np.log(m / 90)])
 
     def predict(self, df: pd.DataFrame, availability: pd.Series | None = None) -> pd.DataFrame:
         # xMin = weighted last-5 minutes, reduced by the FPL availability flag. FPL thresholds apply to that figure.
@@ -1896,6 +1900,10 @@ class XPointsModel:
         p_60 = np.clip(base["p60"] * avail, 0, 1)
         pos = df["position"]
         n90 = xmin / 90
+        # Minutes in a match where he plays 60+: his xMin less the short appearances, over the chance of 60+.
+        # Clean sheets, goals conceded and DefCon count only the minutes he is on the pitch.
+        p_sub = np.clip(p_play - p_60, 0, 1)
+        m60 = np.where(p_60 > 0.01, np.clip((xmin - p_sub * SUB_MINUTES) / np.maximum(p_60, 0.01), 60, 90), 90.0)
         rate90 = {k: self.rates[k].predict(df[f]) for k, (_, f) in GLMS.items()}
         # Penalties on top of open-play goals: his share of team penalties while on the pitch x team penalties per match.
         pen_cond = df["pen_cond"].to_numpy(float) if "pen_cond" in df else df["pen_share_hist"].fillna(0).to_numpy(float)
@@ -1915,9 +1923,12 @@ class XPointsModel:
         pts_goal = lam["goals"] * pos.map(GOAL_PTS).to_numpy()
         pts_ast = lam["assists"] * 3
         # FPL gives clean-sheet points and the goals-conceded deduction only to players with 60+ minutes.
-        pts_cs = p_60 * pcs * pos.map(CS_PTS).to_numpy()
-        full_conc = -1.0 * is_gkdef * (conc - (1 - np.exp(-2 * conc)) / 2) / 2  # E[floor(G/2)] over 90
-        pts_conc = full_conc * p_60
+        floor_half = lambda g: -1.0 * is_gkdef * (g - (1 - np.exp(-2 * g)) / 2) / 2  # -E[floor(G/2)], G ~ Poisson(g)
+        on = conc * m60 / 90  # goals conceded while he is on (60+ minutes)
+        pcs_on = np.exp(-on)
+        pts_cs = p_60 * pcs_on * pos.map(CS_PTS).to_numpy()
+        full_conc = floor_half(conc)  # over 90
+        pts_conc = floor_half(on) * p_60
         gk = (pos == "GK").to_numpy()
         full_save = np.zeros(len(df))
         if gk.any():
@@ -1925,9 +1936,16 @@ class XPointsModel:
             full_save[gk] = sum(poisson.sf(3 * j - 1, mu) for j in range(1, 11))  # E[floor(S/3)] over 90
         pts_save = full_save * n90
         dc90 = self.dc.predict(df[DC_FEATS]) if self.dc is not None else df["r_dc"].to_numpy(float)
-        p_def = (self.dc_combine.predict_proba(self._dc_x(df, dc90))[:, 1] if self.dc_combine is not None
-                 else df["defcon_rate"].to_numpy(float))
-        pts_def = (~gk) * n90 * p_def * DEFCON_PTS
+        if self.dc_combine is not None:
+            pd_at = lambda m: self.dc_combine.predict_proba(self._dc_x(df, dc90, m))[:, 1]
+            p_def, p_def60, p_defsub = pd_at(90.0), pd_at(m60), pd_at(float(SUB_MINUTES))
+            pts_def = (~gk) * (p_60 * p_def60 + p_sub * p_defsub) * DEFCON_PTS
+            self.dc_slope = float(self.dc_combine.coef_[0][-1])
+            dc_logit = np.log(np.clip(p_def, 1e-6, 1 - 1e-6) / np.clip(1 - p_def, 1e-6, None))
+        else:
+            p_def = p_def60 = df["defcon_rate"].to_numpy(float)
+            pts_def = (~gk) * n90 * p_def * DEFCON_PTS
+            self.dc_slope, dc_logit = None, np.full(len(df), np.nan)
         saves90 = np.zeros(len(df))
         if gk.any():
             saves90[gk] = mu
@@ -1954,7 +1972,10 @@ class XPointsModel:
         out["full_pensave"], out["full_penmiss"], out["full_own"] = full_pensave, full_penmiss, full_own
         out["full_defcon"] = (~gk) * p_def * DEFCON_PTS
         out["full_cards"] = -rate90["yellow"] - 3 * red90
-        out["p_defcon"] = (~gk) * p_def
+        out["p_defcon"] = (~gk) * p_def  # if he plays the full 90
+        out["p_defcon_60"] = (~gk) * p_def60  # in a match where he plays 60+ (his usual minutes then)
+        out["dc_logit"], out["m60"], out["p_cs_on"] = dc_logit, m60, pcs_on
+        out["dc_slope"] = np.nan if self.dc_slope is None else self.dc_slope
         out["dc90"], out["bps90"] = (~gk) * dc90, self.bps.predict(df[BPS_FEATS])
         # Bonus: half the per-player model, half a simulation of each match, where he competes for the top 3 BPS with
         # everyone on the pitch, both teams (Accuracy page: best correlation of the versions tried).
@@ -2268,7 +2289,7 @@ def chance_report(pred: pd.DataFrame) -> None:
     p, h = binary("Clean sheet (team)", teams["p_cs"], teams["ga"] == 0, np.zeros(len(teams))); calib["Clean sheet (team)"] = (p, h)
     dc = played[(played["minutes"] >= 60) & played["defensive_contribution"].notna() & (played["position"] != "GK")]
     if len(dc):
-        p, h = binary("DefCon (60+ min)", dc["p_defcon"], dc["defensive_contribution"] >= dc["position"].map(DEFCON_THRESHOLD), dc["position"]); calib["DefCon (60+ min)"] = (p, h)
+        p, h = binary("DefCon (60+ min)", dc["p_defcon_60"] if "p_defcon_60" in dc else dc["p_defcon"], dc["defensive_contribution"] >= dc["position"].map(DEFCON_THRESHOLD), dc["position"]); calib["DefCon (60+ min)"] = (p, h)
         binary("DefCon, own record only", dc["defcon_rate"], dc["defensive_contribution"] >= dc["position"].map(DEFCON_THRESHOLD), dc["position"])
     gks = played[played["position"] == "GK"]
     per90("Pen save (GK)", "ps90", "penalties_saved", gks)
@@ -2396,11 +2417,48 @@ def parts_at_real_minutes(pred: pd.DataFrame) -> pd.DataFrame:
     n90, on60 = m / 90, (m >= 60).astype(float)
     g = lambda c: pred[c].fillna(0).to_numpy(float) if c in pred else np.zeros(len(pred))
     pen_goal90 = (g("pen90") - g("pm90")) * pred["position"].map(GOAL_PTS).to_numpy(float)  # penalty goals, left out
+    # clean sheet, goals conceded and DefCon count only his minutes on the pitch (the same rule as the forecast)
+    on = g("conc90") * m / 90
+    gkdef = pred["position"].isin(["GK", "DEF"]).to_numpy()
+    cs = on60 * np.exp(-on) * pred["position"].map(CS_PTS).to_numpy(float)
+    conc = -1.0 * gkdef * on60 * (on - (1 - np.exp(-2 * on)) / 2) / 2
+    if "dc_logit" in pred and pred["dc_logit"].notna().any():
+        z = g("dc_logit") + g("dc_slope") * np.log(np.clip(m, 1, 90) / 90)
+        dc = (m > 0) * (pred["position"] != "GK").to_numpy() * DEFCON_PTS / (1 + np.exp(-z))
+    else:
+        dc = g("full_defcon") * n90
     return pd.DataFrame({
         "Appearance": (m > 0).astype(float) + on60, "Goals": (g("full_goal") - pen_goal90) * n90, "Assists": g("full_assist") * n90, "Bonus": g("full_bonus") * n90,
-        "Clean sheet": g("full_cs") * on60, "Goals conceded": g("full_conceded") * on60, "Saves": g("full_saves") * n90,
+        "Clean sheet": cs, "Goals conceded": conc, "Saves": g("full_saves") * n90,
         "Penalty saves": g("full_pensave") * n90, "Own goals": g("full_own") * n90, "Cards": g("full_cards") * n90,
-        "DefCon and other": g("full_defcon") * n90}, index=pred.index)
+        "DefCon and other": dc}, index=pred.index)
+
+
+def minutes_on_report(pred: pd.DataFrame) -> None:
+    """Clean sheet, goals conceded and DefCon by his real minutes: real points against the model at those minutes,
+    counting only the minutes on the pitch (now) and as a straight share of the full 90 (before)."""
+    d = pred[pred["minutes"].fillna(0) > 0]
+    if d.empty or "full_cs" not in d:
+        return
+    at = parts_at_real_minutes(d)
+    real = real_parts(d)
+    if "defensive_contribution" in d:  # DefCon itself, where FPL counts it
+        real["DefCon and other"] = DEFCON_PTS * (d["defensive_contribution"] >= d["position"].map(DEFCON_THRESHOLD)).astype(float)
+    m = d["minutes"].to_numpy(float)
+    n90, on60 = m / 90, (m >= 60).astype(float)
+    g = lambda c: d[c].fillna(0).to_numpy(float)
+    straight = {"Clean sheet": g("full_cs") * on60, "Goals conceded": g("full_conceded") * on60, "DefCon and other": g("full_defcon") * n90}
+    band = pd.cut(d["minutes"], [0, 59, 74, 84, 89, 90], labels=["1-59", "60-74", "75-84", "85-89", "90"])
+    print("\nClean sheet, goals conceded and DefCon by real minutes: real points | minutes on the pitch (now) | straight share (before)")
+    print("part | minutes | matches | real | now | before")
+    for part in ("Clean sheet", "Goals conceded", "DefCon and other"):
+        sub = d["position"].isin(["GK", "DEF"]) if part == "Goals conceded" else (d["position"] != "GK") & d.get("defensive_contribution", pd.Series(np.nan, index=d.index)).notna() if part == "DefCon and other" else d["position"] != "FWD"
+        for b in ["1-59", "60-74", "75-84", "85-89", "90"]:
+            k = ((band == b) & sub).to_numpy()
+            if k.sum():
+                print(f"{part} | {b} | {k.sum()} | {real[part].to_numpy()[k].mean():.3f} | {at[part].to_numpy()[k].mean():.3f} | {straight[part][k].mean():.3f}")
+        k = sub.to_numpy()
+        print(f"{part} | all | {k.sum()} | {real[part].to_numpy()[k].mean():.3f} | {at[part].to_numpy()[k].mean():.3f} | {straight[part][k].mean():.3f}")
 
 
 def real_no_pens(pred: pd.DataFrame) -> np.ndarray:
@@ -2411,13 +2469,14 @@ def real_no_pens(pred: pd.DataFrame) -> np.ndarray:
 
 
 def real_parts(pred: pd.DataFrame) -> pd.DataFrame:
-    """His real points per part (clean sheet and goals conceded from his team's goals against when he played 60+;
+    """His real points per part (clean sheet and goals conceded from the goals conceded while he was on, 60+ minutes;
     whatever is left of his total, mostly DefCon, under DefCon and other), without penalty goals and misses."""
     m = pred["minutes"].fillna(0).to_numpy(float)
     on60 = m >= 60
     pos = pred["position"]
     g = lambda c: pred[c].fillna(0).to_numpy(float) if c in pred else np.zeros(len(pred))
-    ga = g("ga")
+    # FPL's own goals conceded while he was on the pitch, when the data has it (else his team's goals against)
+    ga = pred["goals_conceded"].fillna(pred["ga"]).fillna(0).to_numpy(float) if "goals_conceded" in pred else g("ga")
     gkdef = pos.isin(["GK", "DEF"]).to_numpy()
     out = pd.DataFrame({
         "Appearance": (m > 0).astype(float) + on60, "Goals": g("np_goals") * pos.map(GOAL_PTS).to_numpy(float), "Assists": g("assists") * 3,
@@ -2534,7 +2593,7 @@ def core_report(pred: pd.DataFrame, gw: pd.DataFrame) -> None:
     checks.append(("Clean sheet (60+)", on["p_cs"], on["ga"].fillna(9) == 0))
     if "p_defcon" in on:
         dcm = on[on["position"] != "GK"]
-        checks.append(("DefCon (60+)", dcm["p_defcon"], real_parts(dcm)["DefCon and other"] >= 2))
+        checks.append(("DefCon (60+)", dcm["p_defcon_60"] if "p_defcon_60" in dcm else dcm["p_defcon"], real_parts(dcm)["DefCon and other"] >= 2))
     for name, prob, hit in checks:
         prob, hit = np.asarray(prob, float), np.asarray(hit, float)
         print(f"{name} | {len(hit)} | {prob.mean():.1%} | {hit.mean():.1%} | {_auc(prob, hit):.3f}")
@@ -2707,10 +2766,12 @@ def report(pred: pd.DataFrame, out_csv: Path) -> pd.DataFrame:
     known = pred[(pred["minutes"] >= 60) & pred["defensive_contribution"].notna() & (pred["position"] != "GK")]
     if len(known):
         hit = (known["defensive_contribution"] >= known["position"].map(DEFCON_THRESHOLD)).astype(float)
-        groups = pd.cut(known["p_defcon"], [-.01, .1, .2, .3, .4, .5, .6, .8, 1])
-        table = pd.DataFrame({"predicted": known["p_defcon"], "actual": hit}).groupby(groups, observed=True).agg(predicted=("predicted", "mean"), actual=("actual", "mean"), n=("actual", "size"))
+        pdc = known["p_defcon_60"] if "p_defcon_60" in known else known["p_defcon"]
+        groups = pd.cut(pdc, [-.01, .1, .2, .3, .4, .5, .6, .8, 1])
+        table = pd.DataFrame({"predicted": pdc, "actual": hit}).groupby(groups, observed=True).agg(predicted=("predicted", "mean"), actual=("actual", "mean"), n=("actual", "size"))
         print("\nDEFCON, players with 60+ minutes")
         print(table.round(3).to_string())
+    minutes_on_report(pred)
     print(f"\nMinutes MAE, regulars: {(regular['xmin'] - regular['minutes']).abs().mean():.1f}")
     print(f"Saved player-GW predictions: {out_csv}")
     return gw
@@ -3743,6 +3804,12 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g.setdefault("fx", []).append(int(r["fixture"]))
         g.setdefault("pc", []).append(round(float(r["pen_cond_used"]), 4))
         g.setdefault("tp", []).append(round(float(r["team_pens"]), 4))
+        # per match: the team's expected goals conceded and his DefCon log-odds over 90 (the site redoes clean sheet,
+        # goals conceded and DefCon for minutes the viewer sets)
+        g.setdefault("cc", []).append(round(float(r["conc90"]), 3))
+        g.setdefault("m60", []).append(round(float(r["m60"]), 1))
+        if "dc_logit" in r and pd.notna(r["dc_logit"]):
+            g.setdefault("dl", []).append(round(float(r["dc_logit"]), 3))
         if isinstance(r.get("euro_note"), str) and r["euro_note"]:
             g.setdefault("euro", []).append(r["euro_note"])  # e.g. "UCL 3d": a European match 3 days before
         for name in ("goal", "assist", "bonus", "cs", "conceded", "saves", "pensave", "penmiss", "own", "defcon", "cards"):
@@ -3786,7 +3853,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             g["xSaves"], g["xConceded"] = round(g["xSaves"], 3), round(g["xConceded"], 3)
             g["bonus"] = round(g["bonus"], 3)
             g["xDefcon"], g["xBps"] = round(g["xDefcon"], 2), round(g["xBps"], 1)
-    payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws, "players": list(players.values()),
+    payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws,
+               "dcSlope": round(float(res["dc_slope"].dropna().iloc[0]), 4) if "dc_slope" in res and res["dc_slope"].notna().any() else None, "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
     payload["setPieces"] = set_piece_table(res, payload["gws"][0])
     payload["setPiecesByGw"] = {str(g): set_piece_table(res, g) for g in payload["gws"]}  # every gameweek, for the GW picker

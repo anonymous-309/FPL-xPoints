@@ -5,7 +5,7 @@
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props || {}); n.append(...kids); return n; };
   const ROWS = [
     ['goal', 'Goals', 'm'], ['assist', 'Assists', 'm'], ['cs', 'Clean sheet', 'p60'], ['conceded', 'Goals conceded', 'p60'],
-    ['saves', 'Saves', 'm'], ['pensave', 'Penalty saves', 'm'], ['defcon', 'DefCon', 'm'], ['bonus', 'Bonus', 'm'],
+    ['saves', 'Saves', 'm'], ['pensave', 'Penalty saves', 'm'], ['defcon', 'DefCon', 'dc'], ['bonus', 'Bonus', 'm'],
     ['penmiss', 'Penalty misses', 'm'], ['own', 'Own goals', 'm'], ['cards', 'Cards', 'm'],
   ];
   const f2 = (x) => (Math.abs(x) < 0.005 ? '0.00' : x.toFixed(2));
@@ -34,7 +34,10 @@
       const full = d.full[k] || 0, pts = d.parts[k] || 0;
       if (Math.abs(full) < 0.005 && Math.abs(pts) < 0.005) return;
       // every per-minute part scales by the same xMin/90 (worked back from rounded figures it looked uneven)
-      const how = kind === 'p60' ? `P60 ${Math.round(d.pApp60 * 100)}%` : `${Math.round(d.xmin / n)}/90 min`;
+      const on = d.m60 && d.m60.length ? Math.round(d.m60.reduce((a, b) => a + b, 0) / d.m60.length) : 90;
+      const how = kind === 'p60' ? `P60 ${Math.round(d.pApp60 * 100)}%, ${on} min on`
+        : kind === 'dc' ? `P60 ${Math.round(d.pApp60 * 100)}% at ${on} min + short games`
+        : `${Math.round(d.xmin / n)}/90 min`;
       rows.push(el('tr', {}, el('th', { scope: 'row', textContent: label }), el('td', { textContent: f2(full) }), el('td', { textContent: how }), el('td', { textContent: f2(pts) })));
     });
     rows.push(el('tr', { className: 'sum' }, el('th', { scope: 'row', textContent: 'xPoints' }), el('td'), el('td'), el('td', { textContent: f2(d.xpts) })));

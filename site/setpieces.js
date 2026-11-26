@@ -77,7 +77,7 @@
       $('gw').replaceChildren(...gws.map((g) => el('option', { value: g, textContent: `GW${g}`, selected: g === pick })));
       data = all[pick];
       byId = Object.fromEntries(d.players.map((p) => [p.id, p]));
-      XMin.setPlayers(d.players, d.penPatterns);
+      XMin.setPlayers(d.players, d.penPatterns, d.dcSlope);
       const when = new Date(d.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
       $('status').textContent = `From GW${gws[0]}, updated ${when}`;
       render();

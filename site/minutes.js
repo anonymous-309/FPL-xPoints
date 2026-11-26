@@ -367,7 +367,7 @@
 
   function show(data) {
     state.data = data;
-    XMin.setPlayers(data.players, data.penPatterns);
+    XMin.setPlayers(data.players, data.penPatterns, data.dcSlope);
     $('empty').hidden = true;
     $('wrap').hidden = false;
     const when = new Date(data.updatedAt).toLocaleString('en-GB', { dateStyle: 'short', timeStyle: 'short' });
