@@ -2483,6 +2483,10 @@ def team_report(pred: pd.DataFrame) -> None:
     order = t.sort_values("conc").reset_index(drop=True)
     for k, x in order.groupby(np.arange(len(order)) * 7 // len(order)):
         print(f"{x['conc'].min():.2f}-{x['conc'].max():.2f} | {len(x)} | {x['conc'].mean():.2f} | {x['cs'].mean():.1%} | {x['clean'].mean():.1%} | {x['ga'].mean():.2f}")
+    print("\nClean sheet chance in steps of 2%")
+    print("predicted from | matches | real clean sheet share")
+    for k, x in t.groupby((t["cs"] * 50).astype(int)):
+        print(f"{k * 2}% | {len(x)} | {x['clean'].mean():.1%}")
     print("\nSeason totals by club")
     print("club | matches | expected goals | real goals | expected clean sheets | real clean sheets")
     s = t.groupby("team").agg(n=("xg", "size"), xg=("xg", "sum"), gf=("gf", "sum"), cs=("cs", "sum"), clean=("clean", "sum")).sort_values("gf", ascending=False)
