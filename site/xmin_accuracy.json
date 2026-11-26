@@ -5,13 +5,13 @@
  ],
  "removed": {
   "red": 68,
-  "ban": 80,
+  "ban": 86,
   "injured_in_match": 530
  },
  "bands": [
   {
    "band": "80–90",
-   "n": 8449,
+   "n": 8454,
    "pred": 87.8,
    "real": 81.6,
    "bias": 6.1,
@@ -22,33 +22,33 @@
    "sub": 0.055,
    "p60_89": 0.147,
    "full": 0.76,
-   "not_started": 608,
+   "not_started": 609,
    "started_mae": 3.8,
    "started_bias": 0.8
   },
   {
    "band": "70–80",
-   "n": 2606,
+   "n": 2609,
    "pred": 75.0,
-   "real": 70.2,
+   "real": 70.1,
    "bias": 4.9,
-   "mae": 21.3,
+   "mae": 21.4,
    "within10": 0.196,
-   "real60": 0.77,
+   "real60": 0.769,
    "zero": 0.059,
-   "sub": 0.171,
+   "sub": 0.172,
    "p60_89": 0.283,
-   "full": 0.487,
-   "not_started": 478,
-   "started_mae": 12.9,
+   "full": 0.486,
+   "not_started": 481,
+   "started_mae": 12.8,
    "started_bias": -7.3
   },
   {
    "band": "60–70",
-   "n": 2259,
+   "n": 2267,
    "pred": 64.7,
    "real": 59.8,
-   "bias": 4.9,
+   "bias": 4.8,
    "mae": 28.6,
    "within10": 0.163,
    "real60": 0.646,
@@ -56,14 +56,14 @@
    "sub": 0.234,
    "p60_89": 0.279,
    "full": 0.367,
-   "not_started": 703,
+   "not_started": 704,
    "started_mae": 18.5,
    "started_bias": -15.9
   },
   {
    "band": "All 60+",
-   "n": 13314,
-   "pred": 81.4,
+   "n": 13330,
+   "pred": 81.3,
    "real": 75.7,
    "bias": 5.7,
    "mae": 14.7,
@@ -73,7 +73,7 @@
    "sub": 0.108,
    "p60_89": 0.196,
    "full": 0.64,
-   "not_started": 1789,
+   "not_started": 1794,
    "started_mae": 7.5,
    "started_bias": -3.0
   }
@@ -84,8 +84,8 @@
    "not_started": 56
   },
   "DEF": {
-   "n": 3709,
-   "not_started": 285
+   "n": 3714,
+   "not_started": 286
   },
   "MID": {
    "n": 2951,
