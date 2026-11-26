@@ -102,11 +102,21 @@ K_PLAYER, K_SHORT, K_FINISH, K_TEAM, K_TEAM_GOALS, K_RED, K_PEN = 5.0, 2.0, 15.0
 # assists record is padded with: attacking (wingers, No. 10s, a midfielder playing up front) at MID_ATTACK_BOX or more,
 # and the rest (holding, central, box-to-box). Each group has its own average. FPL_MID_SPLIT=0 turns it off (testing).
 MID_ATTACK_BOX = float(os.environ.get("FPL_MID_BOX", "2.0"))  # 2.0, 2.5 and 3.0 tried on 2025-26: 2.0 slightly best
-MID_SPLIT = os.environ.get("FPL_MID_SPLIT", "1") != "0"
+MID_SPLIT = os.environ.get("FPL_MID_SPLIT", "0") != "0"
 # Defenders the same way: attacking (mostly full-backs and wing-backs) at DEF_ATTACK_BOX box touches per 90 or more.
 DEF_ATTACK_BOX = float(os.environ.get("FPL_DEF_BOX", "2.0"))  # 1.0, 1.5 and 2.0 tried on 2025-26: 2.0 best for assists
-DEF_SPLIT = os.environ.get("FPL_DEF_SPLIT", "1") != "0"
+DEF_SPLIT = os.environ.get("FPL_DEF_SPLIT", "0") != "0"
 SPLIT_GROUPS = ["MIDA", "MIDD", "DEFA", "DEFD"]
+# Shots and key passes per 90 (FPL Core, from 2024-25) as inputs to the goals and assists models, against his role's
+# average and padded with K_SK average 90s; their weight halves every HL_SK gameweeks (goals and xG: every 12).
+USE_SK = os.environ.get("FPL_SK", "1") != "0"
+HL_SK = float(os.environ.get("FPL_SK_HL", "6"))
+K_SK = 3.0
+# The average his goals and assists record is padded with, from his own shot and key-pass volume: his role's xG per 90
+# x (his shots per 90 / role's), and xA by key passes the same way (goals and assists scaled alike, so finishing is
+# unchanged). Shots and key passes settle faster than xG, and one big chance does not move them.
+USE_SK_PRIOR = os.environ.get("FPL_SK_PRIOR", "1") != "0"
+K_XGA = float(os.environ.get("FPL_K_XGA", "10"))  # average 90s his xG and xA are padded with (5, 10, 20 tried: 10 best with the inputs below)
 # Rare events need long memory and strong pull to the role average (rare-tune, log loss on 2025-26):
 # (half-life in matches, latest matches used, k). Red cards: a player's own record did not beat the role average.
 RARE_MEMORY = {"yc": (1e9, 114, 20.0), "og": (1e9, 114, 200.0), "ps": (24, 76, 400.0)}
@@ -146,7 +156,7 @@ NEEDED = ["name", "position", "team", "element", "fixture", "opponent_team", "wa
           "team_h_score", "team_a_score", "value"]
 NUMERIC = ["element", "fixture", "minutes", "total_points", "goals_scored", "assists", "bonus",
            "bps", "saves", "yellow_cards", "red_cards", "expected_goals", "expected_assists",
-           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "goals_conceded", "clean_sheets"]
+           "team_h_score", "team_a_score", "value", "starts", "defensive_contribution", "xP", "penalties_saved", "penalties_missed", "own_goals", "pen_order", "fk_order", "corner_order", "core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp", "goals_conceded", "clean_sheets"]
 
 
 # ---------------------------------------------------------------- data access
@@ -221,12 +231,12 @@ def load_core(data_dir: Path, season: str) -> pd.DataFrame:
     if not frames:
         return pd.DataFrame()
     d = pd.concat(frames, ignore_index=True)
-    for c in ["minutes_played", "xgot", "penalties_scored", "penalties_missed", "total_shots", "shots_on_target", "touches_opposition_box"]:
+    for c in ["minutes_played", "xgot", "penalties_scored", "penalties_missed", "total_shots", "shots_on_target", "touches_opposition_box", "chances_created"]:
         d[c] = pd.to_numeric(d.get(c), errors="coerce")
     d = d[d["minutes_played"].fillna(0) > 0].merge(codes, on="player_id", how="inner")
     g = d.groupby(["GW", "player_code"], as_index=False).agg(core_xgot=("xgot", "sum"), core_pen_scored=("penalties_scored", "sum"),
                                                           core_pen_missed=("penalties_missed", "sum"), core_shots=("total_shots", "sum"),
-                                                          core_box=("touches_opposition_box", "sum"))
+                                                          core_box=("touches_opposition_box", "sum"), core_kp=("chances_created", "sum"))
     return g.rename(columns={"player_code": "code"}).assign(season=season)
 
 
@@ -236,7 +246,7 @@ def add_core(df: pd.DataFrame, data_dir: Path, seasons: list[str]) -> pd.DataFra
     df = df.copy()
     df["code"] = pd.to_numeric(df["code"], errors="coerce")
     if not core:
-        for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box"]:
+        for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp"]:
             df[col] = np.nan
         df["has_core"] = False
         return df
@@ -246,8 +256,9 @@ def add_core(df: pd.DataFrame, data_dir: Path, seasons: list[str]) -> pd.DataFra
     # a double gameweek is one Core Insights row per match but one per gameweek here: split by minutes
     mins = pd.to_numeric(df["minutes"], errors="coerce").fillna(0)
     share = mins / mins.groupby([df["season"], df["GW"], df["code"]]).transform("sum").replace(0, np.nan)
-    for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box"]:
-        df[col] = df[col] * share.fillna(0)
+    for col in ["core_xgot", "core_pen_scored", "core_pen_missed", "core_shots", "core_box", "core_kp"]:
+        if col in df:
+            df[col] = df[col] * share.fillna(0)
     df["has_core"] = df["core_xgot"].notna() & (mins > 0)
     return df
 
@@ -1619,14 +1630,15 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         "xg": df["np_xg"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
         "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
         "ptk": df["pen_taken_k"], "pmk": df["pen_missed_k"],
-        "box": df["core_box"].fillna(0), "boxn90": (mins / 90).where(df["has_core"].fillna(False).astype(bool), 0),
+        "box": df["core_box"].fillna(0), "shots": df["core_shots"].fillna(0) if "core_shots" in df else 0.0,
+        "kp": df["core_kp"].fillna(0) if "core_kp" in df else 0.0, "boxn90": (mins / 90).where(df["has_core"].fillna(False).astype(bool), 0),
         "st": started.where(obs, 0), "n": obs.astype(float),
         "ban": (skipped(df) & obs).astype(float),
         "dh": (can_defcon & (dc >= thr)).astype(float), "do": can_defcon.astype(float),
         # defensive actions where FPL counts them (from 2025-26), any minutes
         "dcs": dc.where(obs & dc.notna() & (mins > 0), 0).fillna(0), "dcn": (mins / 90).where(obs & dc.notna() & (mins > 0), 0),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk", "dcs", "dcn"]
+    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "shots", "kp", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk", "dcs", "dcn"]
     roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
@@ -1655,6 +1667,8 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     p["w5_st"], p["w5_ms"], p["w5_mb"], p["ret_st"], p["ret_ms"], p["ret_mb"], p["w5_last"], p["ret_last"] = ai_starts(keys, p["mins"].to_numpy(float), p["st"].to_numpy(float), p["n"].to_numpy(float), p["rc"].to_numpy(float), p["ban"].to_numpy(float))
     for c in ["n90", "xg", "xa", "box", "boxn90"]:
         p[f"R_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_ROLE)
+    for c in ["shots", "kp", "boxn90"]:  # shots and key passes: a shorter memory than goals and xG
+        p[f"SK_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_SK)
     p = p.drop(columns=stat)
     p["min_short"] = p["X_ms"] / p["X_ns"].replace(0, np.nan)
     p["min_long"] = p["X_ml"] / p["X_nl"].replace(0, np.nan)
@@ -1752,8 +1766,19 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
                 df.loc[rows, c] = (1 - sh) * df.loc[rows, c] + sh * m
             df.loc[rows, "oop_share"] = sh
 
+    if USE_SK_PRIOR and "SK_shots" in df:
+        den = df["SK_boxn90"].fillna(0.0)
+        hist = ~df["future"] & (den >= 1)
+        for c, pair in (("shots", ("g", "xg")), ("kp", ("a", "xa"))):
+            num = df[f"SK_{c}"].fillna(0.0)
+            avg = num[hist].groupby(df.loc[hist, "role"]).sum() / den[hist].groupby(df.loc[hist, "role"]).sum()
+            ra = df["role"].map(avg).astype(float)
+            fac = (((num + K_SK * ra) / (den + K_SK)) / ra).where(ra > 0).fillna(1.0).clip(0.1, 5.0)
+            df[f"sk_factor_{c}"] = fac
+            for q in pair:
+                df[f"p_{q}"] = df[f"p_{q}"] * fac
     for c in ["g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
-        k = K_RED if c == "rc" else K_PEN if c in ("ps", "pm", "og") else K_FINISH if c in ("g", "a") else K_PLAYER
+        k = K_RED if c == "rc" else K_PEN if c in ("ps", "pm", "og") else K_FINISH if c in ("g", "a") else K_XGA if c in ("xg", "xa") else K_PLAYER
         if c == "rc":
             df["r_rc"] = df["p_rc"]
         elif c in RARE_MEMORY:
@@ -1776,6 +1801,16 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
 
     ln = lambda s: np.log(s.clip(lower=EPS))
     df["l_xg"], df["l_xa"] = ln(df["r_xg"]), ln(df["r_xa"])
+    # shots and key passes per 90 against his role's average (0 = average, or no data), shrunk by K_SK 90s
+    for c in ("shots", "kp"):
+        df[f"l_{c}"] = 0.0
+        if USE_SK and f"SK_{c}" in df:
+            num, den = df[f"SK_{c}"].fillna(0.0), df["SK_boxn90"].fillna(0.0)
+            hist = ~df["future"] & (den >= 1)
+            avg = num[hist].groupby(df.loc[hist, "role"]).sum() / den[hist].groupby(df.loc[hist, "role"]).sum()
+            ra = df["role"].map(avg).astype(float)
+            rate = (num + K_SK * ra) / (den + K_SK)
+            df[f"l_{c}"] = np.log((rate / ra).where(ra > 0).clip(0.05, 20)).fillna(0.0)
     df["form_xg"], df["form_xa"] = ln(df["f_xg"]) - ln(df["r_xg"]), ln(df["f_xa"]) - ln(df["r_xa"])
     df["finish"], df["creat"] = ln(df["r_g"]) - ln(df["r_xg"]), ln(df["r_a"]) - ln(df["r_xa"])
     # Long-run finishing over several seasons: non-penalty goals and xGOT against non-penalty xG, shrunk by xG volume.
@@ -1813,8 +1848,8 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
 PDUM = ["is_DEF", "is_MID", "is_FWD"]
 GLMS = {
     # Goals: one blend of the player's goals 50%, xG 25%, xGOT 25% (log scale, padded with 15 average xG), then form, team, opponent and venue.
-    "goals": ("np_goals", ["blend_g50", "form_xg", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
-    "assists": ("assists", ["l_xa", "form_xa", "creat", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
+    "goals": ("np_goals", ["blend_g50", "form_xg", "l_shots", "l_kp", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
+    "assists": ("assists", ["l_xa", "form_xa", "creat", "l_kp", "l_shots", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "was_home"] + PDUM),
     "bonus": ("bonus", ["l_bon", "l_bps", "form_bps", "rel_bps", "l_team_att", "gap_team_att", "l_opp_def", "gap_opp_def", "l_opp_att", "gap_opp_att", "was_home"] + PDUM),
     "yellow": ("yellow_cards", ["l_yc", "was_home"] + PDUM),
 }
