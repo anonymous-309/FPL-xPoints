@@ -1,5 +1,17 @@
 (function () {
   'use strict';
+  // Min60 and Min1: his minutes in his recent matches of 60+ and of 1-59 (same last 5 and weights as the usual minutes)
+  const minSplit = (p) => {
+    const pc = (x) => (x == null ? '–' : `${Math.round(x * 100)}%`);
+    // Appearance 1+ and 60+ of the next gameweek, as on the Chance page (his recent matches and FPL flags)
+    const g = state.data && state.data.gws.map(String).find((x) => p.byGw[x]);
+    const d = g ? p.byGw[g] : null;
+    const p60 = d ? d.pApp60 : p.p60Usual, p1 = d ? d.pApp1 : p.p1Usual;
+    const short = p1 != null && p60 != null ? Math.max(0, p1 - p60) : null;
+    return [`Appearance 60+: ${pc(p60)}, Min60 ${p.min60 != null ? Math.round(p.min60) : '–'} (minutes when he plays 60+)`,
+      `Under 60: ${pc(short)}, Min1 ${p.min1 != null ? Math.round(p.min1) : '– (25 used)'} (minutes when he plays under 60)`,
+      `Not playing: ${pc(p1 == null ? null : 1 - p1)}${g ? ` (GW${g})` : ''}`].join('\n');
+  };
   const $ = (id) => document.getElementById(id);
   const el = (tag, props, ...kids) => { const n = Object.assign(document.createElement(tag), props); n.append(...kids); return n; };
   const state = { data: null, pos: '', sort: null, dir: -1, flagged: false, overrides: XMin.load() };
@@ -158,8 +170,9 @@
     const o = state.overrides[p.id] || {};
     const adjust = el('td', { className: 'xmin keycol' }, input(o.all, String(Math.round(p.minUsual)), `Minutes per match for ${p.name} in every gameweek`, { all: '1' }));
     const usual = p.adminMin !== null && p.adminMin !== undefined
-      ? el('td', { className: 'usual keycol admin-set', textContent: Math.round(p.minUsual), title: `Set by admin (formula ${Math.round(p.minModel ?? p.minUsual)})` })
-      : el('td', { className: 'usual keycol', textContent: Math.round(p.minUsual), title: p.w5Min !== null && Math.round(p.w5Min) !== Math.round(p.minUsual) ? `${Math.round(p.w5Min)} counting his current absence` : '' });
+      ? el('td', { className: 'usual keycol admin-set', textContent: Math.round(p.minUsual), title: `Set by admin (formula ${Math.round(p.minModel ?? p.minUsual)})\n${minSplit(p)}` })
+      : el('td', { className: 'usual keycol', textContent: Math.round(p.minUsual), title: [
+        p.w5Min !== null && Math.round(p.w5Min) !== Math.round(p.minUsual) ? `${Math.round(p.w5Min)} counting his current absence` : '', minSplit(p)].filter(Boolean).join('\n') });
     const { past: pastS, fut: futS } = slotCols();
     const cups = cupBySlot(p);
     // one cell per weekend or midweek: the league gameweek in it, then the club's cup matches

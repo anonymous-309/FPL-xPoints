@@ -2034,6 +2034,8 @@ class XPointsModel:
         out["p_defcon"] = (~gk) * p_def  # if he plays the full 90
         out["p_defcon_60"] = (~gk) * p_def60  # in a match where he plays 60+ (his usual minutes then)
         out["m60"], out["p_cs_on"], out["dc_mu90"] = m60, pcs_on, (~gk) * dc_mu90
+        out["m60_raw"], out["m1_raw"] = base["m60"], base["m1"]
+        out["p60_usual"], out["p1_usual"] = base["p60"], base["p1"]
         out["dc90"], out["bps90"] = (~gk) * dc90, self.bps.predict(df[BPS_FEATS])
         # Bonus: half the per-player model, half a simulation of each match, where he competes for the top 3 BPS with
         # everyone on the pitch, both teams (Accuracy page: best correlation of the versions tried).
@@ -3859,6 +3861,11 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             "role": r["role"], "places": FM_PLACES.get(r["pid"]), "oopShare": FM_SHARE.get(r["pid"]), "box90": None if pd.isna(r["role_box90"]) else round(float(r["role_box90"]), 2),
             "xgi90": None if pd.isna(r["role_xgi90"]) else round(float(r["role_xgi90"]), 3),
             "minUsual": round(float(r["min_usual"]), 1),
+            # his minutes in his recent 60+ matches and in his recent 1-59 matches (null if none in his last 5)
+            "min60": None if pd.isna(r.get("m60_raw", np.nan)) else round(float(r["m60_raw"]), 1),
+            "min1": None if pd.isna(r.get("m1_raw", np.nan)) else round(float(r["m1_raw"]), 1),
+            "p60Usual": None if pd.isna(r.get("p60_usual", np.nan)) else round(float(r["p60_usual"]), 3),
+            "p1Usual": None if pd.isna(r.get("p1_usual", np.nan)) else round(float(r["p1_usual"]), 3),
             "minModel": round(float(r["min_model"]), 1) if "min_model" in r and pd.notna(r["min_model"]) else None,
             "adminMin": None if pd.isna(r.get("admin_min", np.nan)) else round(float(r["admin_min"])), "minNote": r["min_note"] if isinstance(r["min_note"], str) else "",
             "returnGw": None if pd.isna(r["return_gw"]) else int(r["return_gw"]), "pastMin": past.get(r["pid"], {}), "pastOpp": past_opp.get(r["pid"], {}), "pastWhy": past_why.get(r["pid"], {}), "pastNote": past_note.get(r["pid"], {}), "byGw": {},
