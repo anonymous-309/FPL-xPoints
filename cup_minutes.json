@@ -2805,5 +2805,84 @@
 "Alysson Edward": 66
 }
 }
+},
+"6106279": {
+"teams": {
+"Manchester United": {
+"Harry Maguire": 90,
+"Bruno Fernandes": 89,
+"Youri Tielemans": 90,
+"Mason Mount": 1,
+"Diogo Dalot": 26,
+"Noussair Mazraoui": 64,
+"Lisandro Martínez": 90,
+"Bryan Mbeumo": 89,
+"Joshua Zirkzee": 64,
+"Amad Diallo": 77,
+"Senne Lammens": 90,
+"Kobbie Mainoo": 90,
+"Leny Yoro": 90,
+"Andrey Santos": 1,
+"Shea Lacey": 13,
+"Patrick Dorgu": 26
+},
+"Sporting Lisbon": {
+"Luis Suárez": 86,
+"Fotis Ioannidis": 4,
+"Maxi Araújo": 90,
+"Rodrigo Zalazar": 22,
+"Geny Catamo": 68,
+"Eduardo Quaresma": 76,
+"Gonçalo Inácio": 90,
+"Sergi Altimira": 90,
+"Kaique Pereira": 90,
+"Iván Fresneda": 90,
+"Nestory Irankunda": 14,
+"Issa Doumbia": 76,
+"Silas Andersen": 90,
+"Luís Guilherme": 90,
+"Ibrahima Ba": 14
+}
+}
+},
+"6106294": {
+"teams": {
+"Club Brugge": {
+"Yann Sommer": 90,
+"Hans Vanaken": 90,
+"Brandon Mechele": 90,
+"Hugo Vetlesen": 75,
+"Romeo Vermant": 15,
+"Carlos Forbs": 90,
+"Hugo Siquet": 7,
+"Freddie Potts": 83,
+"Kyriani Sabbe": 83,
+"Jorne Spileers": 90,
+"Félix Lemaréchal": 75,
+"Matteo Dams": 1,
+"Nicolò Tresoldi": 90,
+"Mamadou Diakhon": 15,
+"Joaquin Seys": 89,
+"Cheveyo Tsawa": 7
+},
+"Liverpool": {
+"Virgil van Dijk": 17,
+"Alisson Becker": 90,
+"Alexander Isak": 86,
+"Alexis Mac Allister": 17,
+"Dominik Szoboszlai": 90,
+"Ronald Araujo": 90,
+"Jeremie Frimpong": 73,
+"Florian Wirtz": 90,
+"Miloš Kerkez": 90,
+"Luke Chambers": 4,
+"Bradley Barcola": 86,
+"Lewis Koumas": 4,
+"Trey Nyoni": 73,
+"Jérémy Jacquet": 90,
+"Víctor Muñoz": 42,
+"Rio Ngumoha": 48
+}
+}
 }
 }
