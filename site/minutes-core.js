@@ -150,6 +150,12 @@ window.XMin = (function () {
 
   // The chance he starts in gameweek g (at least one start in a double): his Start times the share of his usual
   // minutes he is expected to play.
+  function startChanceAt(overrides, p, g, j) {
+    const d = p.byGw[g];
+    if (!d || !d.fx || !p.pitch) return null;
+    const x = pitch(overrides, p, g, d.fx[j]);
+    return x ? x.start * x.there : 0;
+  }
   function startChance(overrides, p, g) {
     const d = p.byGw[g];
     if (!d || !d.fx || !p.pitch) return null;
@@ -267,5 +273,5 @@ window.XMin = (function () {
     return `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${d.xpts.toFixed(1)} points, ${join(m.mins)} minutes${d.edited ? ' (yours)' : ''}\n\nChance 90min\n${chances}\n\n${seasonText(p)}`;
   }
 
-  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, order, detailText };
+  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, startChanceAt, order, detailText };
 })();

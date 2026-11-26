@@ -34,6 +34,19 @@
     cache.set(key, out);
     return out;
   }
+  // One match of a double gameweek on its own: the same figures for that match only.
+  function matchFigures(p, g, j) {
+    const d = p.byGw[g], m = d.byMatch[j];
+    const miss = p.penMiss == null ? LEAGUE_MISS : p.penMiss;
+    const tp = d.tp ? d.tp[j] : 0;
+    const penModel = (d.pc ? d.pc[j] : 0) * tp * (1 - miss);
+    const pens = XMin.penCond(state.overrides, p, g, j) * tp;
+    const np = Math.max(0, m.xGoals - penModel), pen = pens * (1 - miss);
+    return { ...m, opp: [m.opp], pStart: XMin.startChanceAt(state.overrides, p, g, j), npxGoals: np, xPenGoals: pen,
+      pScore: 1 - Math.exp(-(np + pen)), pPenMiss: 1 - Math.exp(-pens * miss), match: j + 1, of: d.byMatch.length };
+  }
+  // the rows of a player in gameweek g: one, or one per match in a double gameweek
+  const rowsOf = (p, g) => (p.byGw[g].byMatch && p.byGw[g].byMatch.length > 1 ? p.byGw[g].byMatch.map((_, j) => matchFigures(p, g, j)) : [figures(p, g)]);
   const isChance = (fmt) => fmt === 'pct' || fmt === 'pct1';
   const notApplicable = (p, key) => ((key === 'pDefcon' || key === 'xDefcon') && p.position === 'GK') || ((key === 'xSaves' || key === 'pPenSave') && p.position !== 'GK');
 
@@ -66,7 +79,9 @@
       heat(c, v / full);
       return c;
     });
-    return el('tr', {}, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), el('td', { className: 'opp', textContent: d.opp.join(', ') }), ...cells);
+    const opp = el('td', { className: 'opp', textContent: d.opp.join(', ') });
+    if (d.match) opp.append(el('span', { className: 'dgw-tag', textContent: ` (${d.match} of ${d.of})` }));
+    return el('tr', { className: d.match > 1 ? 'dgw-next' : '' }, name, el('td', { textContent: `£${p.price.toFixed(1)}` }), opp, ...cells);
   }
 
   function render() {
@@ -75,12 +90,13 @@
     $('order').setAttribute('aria-pressed', String(state.sort === 'order'));
     const gw = $('gw').value, q = $('search').value.trim().toLowerCase(), team = $('team').value, max = parseFloat($('price').value);
     const rank = state.sort === 'order' ? XMin.order(state.data, state.overrides) : null;
-    const value = (p, d) => (rank ? rank(p) : state.sort === 'name' ? p.name.toLowerCase() : state.sort === 'price' ? p.price : state.sort === 'opp' ? d.opp.join() : figures(p, gw)[state.sort]);
+    const value = (p, d) => (rank ? rank(p) : state.sort === 'name' ? p.name.toLowerCase() : state.sort === 'price' ? p.price : state.sort === 'opp' ? d.opp.join() : d[state.sort]);
     const list = state.data.players
       .filter((p) => p.byGw[gw] && !(state.hideOut && Math.round(p.byGw[gw].pApp1 * 100) === 0 && Math.round(p.byGw[gw].pApp60 * 100) === 0) && (!state.pos || p.position === state.pos) && (!team || p.team === team) && (!(max > 0) || p.price <= max)
         && (!q || p.name.toLowerCase().includes(q) || p.fullName.toLowerCase().includes(q)))
-      .sort((a, b) => { const x = value(a, a.byGw[gw]), y = value(b, b.byGw[gw]); return (x < y ? -1 : x > y ? 1 : 0) * state.dir; });
-    $('table').tBodies[0].replaceChildren(...(list.length ? list.map((p) => row(p, figures(p, gw)))
+      .flatMap((p) => rowsOf(p, gw).map((d) => [p, d]))
+      .sort(([a, da], [b, db]) => { const x = value(a, da), y = value(b, db); return (x < y ? -1 : x > y ? 1 : 0) * state.dir || (da.match || 0) - (db.match || 0); });
+    $('table').tBodies[0].replaceChildren(...(list.length ? list.map(([p, d]) => row(p, d))
       : [el('tr', {}, el('td', { colSpan: METRICS.length + 3, className: 'none', textContent: 'No players match these filters. Widen the price, team or position.' }))]));
   }
 

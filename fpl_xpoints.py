@@ -3822,6 +3822,15 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
         g["noApp"] *= 1 - float(r["p_play"])
         g["no60"] *= 1 - float(r["p_60"])
         g["opp"].append(str(r["opp_short"]).upper() if r["was_home"] else str(r["opp_short"]).lower())
+        # each match on its own (the Chance page shows one row per match in a double gameweek)
+        e1 = lambda x: round(float(1 - np.exp(-x)), 5)
+        g.setdefault("byMatch", []).append({
+            "opp": g["opp"][-1], "pApp1": round(float(r["p_play"]), 4), "pApp60": round(float(r["p_60"]), 4),
+            "xGoals": round(float(r["g90"]), 3), "xAssists": round(float(r["a90"]), 3), "pAssist": e1(r["a90"]),
+            "pCs": round(float(r["p_cs"]), 4), "xConceded": round(float(r["conc90"]), 3), "pDefcon": round(float(r["p_defcon"]), 4),
+            "xDefcon": round(float(r["dc90"]), 2), "xSaves": round(float(r["saves90"]), 3), "pPenSave": e1(r["ps90"]),
+            "pOwnGoal": e1(r["og90"]), "pRed": e1(r["r90"]), "pYellow": e1(r["y90"]), "xBps": round(float(r["bps90"]), 1),
+            "bonus": round(float(r["bonus90"]), 3), "pPenMiss": e1(r["pm90"])})
         for col, name in PART_NAMES.items():
             g["parts"][name] = round(g["parts"].get(name, 0.0) + float(r[col]), 3)
     # Chance of at least one goal/assist/clean sheet in the gameweek if he plays every minute.
@@ -3842,6 +3851,8 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
             g["xSaves"], g["xConceded"] = round(g["xSaves"], 3), round(g["xConceded"], 3)
             g["bonus"] = round(g["bonus"], 3)
             g["xDefcon"], g["xBps"] = round(g["xDefcon"], 2), round(g["xBps"], 1)
+            if len(g.get("byMatch", [])) < 2:
+                g.pop("byMatch", None)
     payload = {"gws": sorted(int(g) for g in res["GW"].unique()), "pastGws": past_gws,
                "dcPower": DC_MIN_POWER, "players": list(players.values()),
                "updatedAt": int(time.time() * 1000), "warnings": []}
