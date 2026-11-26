@@ -1999,6 +1999,14 @@ class XPointsModel:
         # the first GWs of the data have no position priors or player history yet
         train = train[train["t"] >= train["t"].min() + BURN_IN_GWS]
         self.rates = {k: _fit_rate(train, tgt, f) for k, (tgt, f) in GLMS.items()}
+        for k in ("goals", "assists"):
+            pipe = self.rates[k]
+            try:
+                sc, glm = pipe.steps[0][1], pipe.steps[-1][1]
+                raw = glm.coef_ / sc.scale_
+                print(f"{k} model, change in log rate per unit of each input: " + ", ".join(f"{n} {c:+.3f}" for n, c in zip(GLMS[k][1], raw)))
+            except Exception:
+                pass
         gk = train[train["position"] == "GK"]
         self.saves = _fit_rate(gk, "saves", SAVE_FEATS)
         self.bps = _fit_rate(train.assign(bps_pos=train["bps"].clip(lower=0)), "bps_pos", BPS_FEATS)
