@@ -198,6 +198,22 @@
 
     // 5b. team goals and clean sheets (the Team odds page)
     const tmKey = Object.keys(S).find((k) => k.startsWith('Team goals and clean sheets'));
+    // clean sheet chance in steps of 2%: how many matches at each, and the real share against the predicted
+    const csCharts = (rows) => {
+      if (!rows.length) return [];
+      const labels = rows.map((r) => r[0]), n = rows.map((r) => +r[1]);
+      const ok = rows.filter((r) => +r[1] >= 20);
+      return [
+        el('h3', { textContent: 'How often each clean sheet chance came up' }),
+        p('Every team-match by its predicted clean sheet chance, in steps of 2% (20% means 20–21.9%).'),
+        svgChart({ labels, series: [{ name: 'Matches', values: n, color: 'var(--turf)' }], bars: true, yTitle: 'Matches', xTitle: 'Predicted clean sheet chance' }),
+        el('h3', { textContent: 'Real clean sheets at each predicted chance' }),
+        p('The real share of clean sheets in each step of 2% against the middle of the step; only steps with 20 matches or more. A clean sheet is yes or no, so with about 50 matches a step the real share moves about 6 points either way by luck alone; the 7 equal groups above are steadier.'),
+        svgChart({ labels: ok.map((r) => r[0]), yTitle: 'Clean sheet %', xTitle: 'Predicted clean sheet chance', yMin: 0, yMax: 48,
+          series: [{ name: 'Real share', values: ok.map((r) => parseFloat(r[2])), color: 'var(--turf)' },
+            { name: 'Predicted (middle of the step)', values: ok.map((r) => parseFloat(r[0]) + 1), color: '#c58a00', dash: '5 4' }] }),
+      ];
+    };
     // expected goals in steps of 0.1: how many matches at each, and the real goals against the expected
     const goalCharts = (rows) => {
       if (!rows.length) return [];
@@ -234,6 +250,7 @@
         el('h3', { textContent: 'Clean sheets' }),
         p('Predicted ', b(c['predicted share'] || '–'), ' of matches, real ', b(c['real share'] || '–'), '. A clean sheet means the opponent scores 0, so the two figures go together: the more goals the opponent is expected to score, the lower the chance. Grouped by the opponent\'s expected goals, in 7 groups with the same number of matches:'),
         table(["Opponent's expected goals", 'Matches', 'Opponent expected', 'Clean sheet predicted', 'Clean sheet real', 'Goals conceded real'], cb),
+        ...csCharts(rowsOf('Clean sheet chance in steps of 2%')),
         el('h3', { textContent: 'Season totals by club' }),
         p(`How close the season adds up for each club (correlation: ${corr.trim()}).`),
         table(['Club', 'Matches', 'Expected goals', 'Real goals', 'Expected CS', 'Real CS'], clubs)));
