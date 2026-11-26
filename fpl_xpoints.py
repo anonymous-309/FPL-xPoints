@@ -722,6 +722,7 @@ def manual_absences(target: pd.DataFrame, admin: dict) -> pd.DataFrame:
 # FotMob's match events mark a substitution made because the player going off was hurt ("injuredPlayerOut"). Each
 # finished match is read once and kept in INJURY_SUBS (in the repo; the update workflow commits it).
 INJURY_SUBS = Path("injury_subs.json")
+BIG_CREATED: dict = {}  # (pid, gameweek) -> big chances created (FotMob, this season)
 TACTICAL: dict = {}  # (pid, gameweek) -> note: taken off for a defender just after a team-mate's red card
 RED_TACTICAL_BEFORE, RED_TACTICAL_WINDOW = 70, 20  # a red card before this minute; the sub within this many minutes after it
 OOP_LAST = 5          # a defender's last league starts (FotMob places) give the share of time he plays further forward
@@ -800,7 +801,7 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
         if not (m.get("status") or {}).get("finished"):
             continue
         rnd = int(m.get("round") or 0)
-        if str(m["id"]) in store and ("subs" in store[str(m["id"])] or offline):
+        if str(m["id"]) in store and ("bcc" in store[str(m["id"])] or offline):
             got = store[str(m["id"])]
         elif offline:
             done[rnd] = False
@@ -822,6 +823,18 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
                        # every substitution: who came on, who went off, the minute
                        "subs": [{"in": (e.get("swap") or [{}])[0].get("name"), "out": e["swap"][1]["name"] if len(e.get("swap") or []) > 1 else None,
                                  "home": e.get("isHome"), "time": e.get("time")} for e in ev if e.get("type") == "Substitution"]}
+                # big chances created by each player (FotMob player stats; only players with one or more listed)
+                bcc = {"home": [], "away": []}
+                hid = (m.get("home") or {}).get("id")
+                for pst in ((d.get("content") or {}).get("playerStats") or {}).values():
+                    n_bcc = 0
+                    for grp in pst.get("stats") or []:
+                        v = ((grp.get("stats") or {}).get("Big chances created") or {}).get("stat", {}).get("value")
+                        if v:
+                            n_bcc = max(n_bcc, int(v))
+                    if n_bcc and pst.get("name"):
+                        bcc["home" if str(pst.get("teamId")) == str(hid) else "away"].append([pst["name"], n_bcc])
+                got["bcc"] = bcc
                 store[str(m["id"])] = got
                 fetched += 1
                 time.sleep(0.4)
@@ -839,6 +852,14 @@ def injury_subs(cache: Path, offline: bool, boot: dict) -> tuple[set, set]:
                 missing.append(f"{x['name']} ({team})")
     if fetched:
         INJURY_SUBS.write_text(json.dumps(store, ensure_ascii=False, indent=0), encoding="utf-8")
+    BIG_CREATED.clear()
+    for got in store.values():
+        for k, team in (("home", got.get("home")), ("away", got.get("away"))):
+            for name, n_bcc in ((got.get("bcc") or {}).get(k) or []):
+                q = find(name, team)
+                if q:
+                    key = (f"c{q['code']}", int(got.get("round") or 0))
+                    BIG_CREATED[key] = BIG_CREATED.get(key, 0) + n_bcc
     covered = {r for r, ok in done.items() if ok}
     # Team red card, tactical sub: a defensive player (keeper, defender or central midfielder) sent off before the 70th minute,
     # and the club's first change after it (within 20 minutes) takes an attacking player (winger, attacking midfielder
@@ -2433,6 +2454,18 @@ def full90_report(played: pd.DataFrame) -> None:
             for iv, x in pd.DataFrame({"p": prob, "h": hit, "b": b}).groupby("b", observed=True):
                 if len(x) >= 10:
                     bands_out.append(f"{title} | {max(iv.left, 0):.0%}-{iv.right:.0%} | {x['p'].mean():.1%} | {x['h'].mean():.1%} | {len(x)}")
+    # Saves (goalkeepers, full 90): expected saves against real saves, and the save points (1 per 3 saves)
+    if len(gk) and "saves90" in gk:
+        ps_, rs_ = gk["saves90"].to_numpy(float), gk["saves"].fillna(0).to_numpy(float)
+        mae, mae0 = np.mean(np.abs(ps_ - rs_)), np.mean(np.abs(rs_.mean() - rs_))
+        corr = float(np.corrcoef(ps_, rs_)[0, 1]) if np.std(ps_) > 0 else float("nan")
+        exp_pts = np.array([sum(poisson.sf(3 * k - 1, mu) for k in range(1, 8)) for mu in ps_])
+        print(f"Saves (expected number) | {len(gk)} | {ps_.mean():.2f} | {rs_.mean():.2f} | {1 - mae / mae0:+.3f} | corr {corr:.3f}")
+        print(f"Save points (1 per 3 saves) | {len(gk)} | {exp_pts.mean():.2f} | {np.floor(rs_ / 3).mean():.2f} | | ")
+        b_ = pd.cut(ps_, [0, 2, 2.5, 3, 3.5, 4, 5, 10], include_lowest=True)
+        for iv, x in pd.DataFrame({"p": ps_, "h": rs_, "b": b_}).groupby("b", observed=True):
+            if len(x) >= 10:
+                bands_out.append(f"Saves | {iv.left:.1f}-{iv.right:.1f} | {x['p'].mean():.2f} | {x['h'].mean():.2f} | {len(x)}")
     print("\n=== Chance 90min on full-90 matches, by predicted chance ===")
     print("figure | band | predicted | real | matches")
     print("\n".join(bands_out))
@@ -3992,12 +4025,15 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                          round(float(r.xgot), 2) if r.has_core else None, int(r.pens) if r.has_core else None, int(r.dc), int(r.bonus), int(r.bps), int(r.cs),
                          int(r.saves), int(r.pensave), int(r.yc), int(r.rc),
                          int(r.shots) if r.has_core else None, int(r.kp) if r.has_core else None,
-                         int(r.sot) if r.has_core else None, int(r.bcm) if r.has_core else None] for r in g.itertuples()]
+                         int(r.sot) if r.has_core else None, int(r.bcm) if r.has_core else None,
+                         (BIG_CREATED.get((pid, int(r.GW)), 0) if r.has_fm else None)] for r in g.itertuples()]
         return out
     # penalties out of shots and shots on target (a penalty taken is a shot; a scored or saved one is on target)
     cur["shots"] = (num("core_shots") - num("core_pen_scored") - num("core_pen_missed")).clip(lower=0)
     cur["kp"], cur["sot"] = num("core_kp"), (num("core_sot") - num("core_pen_scored") - num("core_pen_missed")).clip(lower=0)
     cur["bcm"] = (num("core_bcm") - num("core_pen_missed")).clip(lower=0)  # a missed penalty counts as a big chance missed
+    fm_rounds = {gw for (_, gw) in BIG_CREATED} if BIG_CREATED else set()
+    cur["has_fm"] = cur["GW"].isin(fm_rounds) & (cur["mins"] > 0) if fm_rounds else False
     season_rows = match_rows(played, cur)
     # last season too (same columns), for the Statistics page
     prev_season = sorted(s_ for s_ in df["season"].unique() if s_ < CURRENT_SEASON)[-1:] if "season" in df else []
@@ -4014,7 +4050,7 @@ def export_site(data_dir: Path, seasons: list[str], horizon: int, out_dir: Path,
                            "cs": nm("clean_sheets") if "clean_sheets" in pv else (nm("minutes").ge(60) & nm("ga").eq(0)).astype(float),
                            "shots": (nm("core_shots") - nm("core_pen_scored") - nm("core_pen_missed")).clip(lower=0), "kp": nm("core_kp"),
                            "sot": (nm("core_sot") - nm("core_pen_scored") - nm("core_pen_missed")).clip(lower=0),
-                           "bcm": (nm("core_bcm") - nm("core_pen_missed")).clip(lower=0)})
+                           "bcm": (nm("core_bcm") - nm("core_pen_missed")).clip(lower=0), "has_fm": False})
         pc["opp"] = [lab(o, h) for o, h in zip(pv["opp"], pv["was_home"])] if "opp" in pv else ""
         last_rows = match_rows(pv, pc)
     players: dict[str, dict] = {}

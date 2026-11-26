@@ -315,12 +315,12 @@
     if (!main.length) { $('accBox').replaceChildren(el('p', { className: 'meta', textContent: 'No accuracy figures yet.' })); return; }
     const out = [el('h2', { textContent: 'How accurate the Chance 90min figures are' }),
       el('p', { textContent: 'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Only matches where the player played the full 90 minutes are used, because that is exactly what this page shows (every column assumes 90 minutes), so no minutes guess gets in the way.' }),
-      el('p', { textContent: 'Predicted = the average chance the model gave; Real = how often it happened. Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).' }),
+      el('p', { textContent: 'Predicted = the average chance the model gave (for saves: the average number); Real = how often it happened (the real number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).' }),
       table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], main)];
     const byFig = {};
     bands.forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
     Object.entries(byFig).forEach(([fig, rows]) => {
-      out.push(el('h3', { textContent: `${fig}: by predicted chance` }), table(['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
+      out.push(el('h3', { textContent: fig === 'Saves' ? 'Saves: by expected saves' : `${fig}: by predicted chance` }), table(fig === 'Saves' ? ['Expected saves', 'Predicted', 'Real', 'Matches'] : ['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
     });
     out.push(el('p', { className: 'meta', textContent: 'Groups with few matches move a lot by luck alone: a group of 100 matches at 20% can come out anywhere from about 12% to 28%.' }));
     $('accBox').replaceChildren(el('section', { className: 'acc-card' }, ...out));
