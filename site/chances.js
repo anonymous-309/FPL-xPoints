@@ -307,23 +307,32 @@
       if (m) { cur = m[1]; sec[cur] = []; return; }
       if (cur && line.includes(' | ')) sec[cur].push(line.split(' | ').map((x) => x.trim()));
     });
-    const main = (sec['Chance 90min on full-90 matches'] || []).slice(1);
-    const bands = (sec['Chance 90min on full-90 matches, by predicted chance'] || []).slice(1);
     const table = (head, rows) => el('div', { className: 'wrap' }, el('table', { className: 'acc-table' },
       el('thead', {}, el('tr', {}, ...head.map((h, k) => el('th', { scope: 'col', className: k ? 'num' : '', textContent: h })))),
       el('tbody', {}, ...rows.map((r) => el('tr', {}, ...r.map((c, k) => el('td', { className: k ? 'num' : '', textContent: c })))))));
-    if (!main.length) { $('accBox').replaceChildren(el('p', { className: 'meta', textContent: 'No accuracy figures yet.' })); return; }
-    const out = [el('h2', { textContent: 'How accurate the Chance 90min figures are' }),
-      el('p', { textContent: 'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Only matches where the player played the full 90 minutes are used, because that is exactly what this page shows (every column assumes 90 minutes), so no minutes guess gets in the way.' }),
-      el('p', { textContent: 'Predicted = the average chance the model gave (for saves: the average number); Real = how often it happened (the real number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).' }),
-      table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], main)];
-    const byFig = {};
-    bands.forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
-    Object.entries(byFig).forEach(([fig, rows]) => {
-      out.push(el('h3', { textContent: fig === 'Saves' ? 'Saves: by expected saves' : `${fig}: by predicted chance` }), table(fig === 'Saves' ? ['Expected saves', 'Predicted', 'Real', 'Matches'] : ['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
-    });
-    out.push(el('p', { className: 'meta', textContent: 'Groups with few matches move a lot by luck alone: a group of 100 matches at 20% can come out anywhere from about 12% to 28%.' }));
-    $('accBox').replaceChildren(el('section', { className: 'acc-card' }, ...out));
+    const block = (name, title, intro) => {
+      const main = (sec[name] || []).slice(1);
+      const bands = (sec[`${name}, by predicted chance`] || []).slice(1);
+      if (!main.length) return null;
+      const out = [el('h2', { textContent: title }), ...intro.map((t) => el('p', { textContent: t })),
+        table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], main)];
+      const byFig = {};
+      bands.forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
+      Object.entries(byFig).forEach(([fig, rows]) => {
+        out.push(el('h3', { textContent: fig === 'Saves' ? 'Saves: by expected saves' : `${fig}: by predicted chance` }), table(fig === 'Saves' ? ['Expected saves', 'Predicted', 'Real', 'Matches'] : ['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
+      });
+      return el('section', { className: 'acc-card' }, ...out);
+    };
+    const explain = 'Predicted = the average chance the model gave (for saves: the average number); Real = how often it happened (the real number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).';
+    const cards = [
+      block('Chance 90min on full-90 matches', 'How accurate the Chance 90min figures are: full-90 matches', [
+        'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Only matches where the player played the full 90 minutes are used, because that is exactly what this page shows (every column assumes 90 minutes), so no minutes guess gets in the way.', explain]),
+      block('Chance 90min at real minutes', 'At the minutes he really played: every match', [
+        'Every match he played last season (1 minute or more). Each per-90 figure is scaled to the minutes he really played in that match (a 30-minute cameo gets a third of the 90-minute rate; DefCon uses his expected actions for those minutes). This tests the per-90 rates on all matches, still without any minutes guess.', explain]),
+    ].filter(Boolean);
+    if (!cards.length) { $('accBox').replaceChildren(el('p', { className: 'meta', textContent: 'No accuracy figures yet.' })); return; }
+    cards.push(el('p', { className: 'meta', textContent: 'Groups with few matches move a lot by luck alone: a group of 100 matches at 20% can come out anywhere from about 12% to 28%.' }));
+    $('accBox').replaceChildren(...cards);
   }
   document.querySelectorAll('#viewSeg button').forEach((b) => b.addEventListener('click', () => showView(b.dataset.view)));
 })();

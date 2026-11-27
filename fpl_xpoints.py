@@ -2486,21 +2486,30 @@ def minutes_chance_report(pred: pd.DataFrame) -> None:
                 print(f"{iv.left:.0f}-{iv.right:.0f} | {len(g)} | {g['p'].mean():.1f} | {g['r'].mean():.1f}")
 
 
-def full90_report(played: pd.DataFrame) -> None:
+def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
     """The Chance 90min figures on the matches where he played the full 90 (what the page shows), for the page's
-    Accuracy tab: one row per figure, then the predicted chance in bands against the real share."""
-    full = played[played["minutes"] >= 90]
+    Accuracy tab: one row per figure, then the predicted chance in bands against the real share.
+    real_minutes: every match he played, with each per-90 figure scaled to the minutes he really played."""
+    full = played[played["minutes"] > 0] if real_minutes else played[played["minutes"] >= 90]
     if full.empty:
         return
+    name = "Chance 90min at real minutes" if real_minutes else "Chance 90min on full-90 matches"
     fd = full[full["defensive_contribution"].notna() & (full["position"] != "GK")]
     gk = full[full["position"] == "GK"]
-    figs = [("Score 1+ (no pens)", 1 - np.exp(-full["np_g90"].to_numpy(float)), (full["np_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
-            ("Fantasy Assist 1+", 1 - np.exp(-full["a90"].to_numpy(float)), (full["assists"].fillna(0) >= 1).to_numpy(float), full["position"]),
-            ("DefCon", fd["p_defcon"].to_numpy(float), (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float), fd["position"]),
-            ("Yellow card", 1 - np.exp(-full["y90"].to_numpy(float)), (full["yellow_cards"].fillna(0) >= 1).to_numpy(float), full["position"]),
-            ("Own goal", 1 - np.exp(-full["og90"].to_numpy(float)), (full["own_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
-            ("Pen save (GK)", 1 - np.exp(-gk["ps90"].to_numpy(float)), (gk["penalties_saved"].fillna(0) >= 1).to_numpy(float), gk["position"])]
-    print("\n=== Chance 90min on full-90 matches ===")
+    f = (full["minutes"].clip(upper=90) / 90.0).to_numpy(float) if real_minutes else np.ones(len(full))
+    fdf = (fd["minutes"].clip(upper=90) / 90.0).to_numpy(float) if real_minutes else np.ones(len(fd))
+    fgk = (gk["minutes"].clip(upper=90) / 90.0).to_numpy(float) if real_minutes else np.ones(len(gk))
+    if real_minutes and "dc_mu90" in fd:
+        pdc = _nb_sf(fd["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float), fd["dc_mu90"].to_numpy(float) * fdf, DC_SIZE)
+    else:
+        pdc = fd["p_defcon"].to_numpy(float)
+    figs = [("Score 1+ (no pens)", 1 - np.exp(-full["np_g90"].to_numpy(float) * f), (full["np_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("Fantasy Assist 1+", 1 - np.exp(-full["a90"].to_numpy(float) * f), (full["assists"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("DefCon", pdc, (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float), fd["position"]),
+            ("Yellow card", 1 - np.exp(-full["y90"].to_numpy(float) * f), (full["yellow_cards"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("Own goal", 1 - np.exp(-full["og90"].to_numpy(float) * f), (full["own_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("Pen save (GK)", 1 - np.exp(-gk["ps90"].to_numpy(float) * fgk), (gk["penalties_saved"].fillna(0) >= 1).to_numpy(float), gk["position"])]
+    print(f"\n=== {name} ===")
     print("figure | matches | predicted | real | skill | AUC")
     bands_out = []
     for title, prob, hit, grp in figs:
@@ -2517,7 +2526,7 @@ def full90_report(played: pd.DataFrame) -> None:
                     bands_out.append(f"{title} | {max(iv.left, 0):.0%}-{iv.right:.0%} | {x['p'].mean():.1%} | {x['h'].mean():.1%} | {len(x)}")
     # Saves (goalkeepers, full 90): expected saves against real saves, and the save points (1 per 3 saves)
     if len(gk) and "saves90" in gk:
-        ps_, rs_ = gk["saves90"].to_numpy(float), gk["saves"].fillna(0).to_numpy(float)
+        ps_, rs_ = gk["saves90"].to_numpy(float) * fgk, gk["saves"].fillna(0).to_numpy(float)
         mae, mae0 = np.mean(np.abs(ps_ - rs_)), np.mean(np.abs(rs_.mean() - rs_))
         corr = float(np.corrcoef(ps_, rs_)[0, 1]) if np.std(ps_) > 0 else float("nan")
         exp_pts = np.array([sum(poisson.sf(3 * k - 1, mu) for k in range(1, 8)) for mu in ps_])
@@ -2527,7 +2536,7 @@ def full90_report(played: pd.DataFrame) -> None:
         for iv, x in pd.DataFrame({"p": ps_, "h": rs_, "b": b_}).groupby("b", observed=True):
             if len(x) >= 10:
                 bands_out.append(f"Saves | {iv.left:.1f}-{iv.right:.1f} | {x['p'].mean():.2f} | {x['h'].mean():.2f} | {len(x)}")
-    print("\n=== Chance 90min on full-90 matches, by predicted chance ===")
+    print(f"\n=== {name}, by predicted chance ===")
     print("figure | band | predicted | real | matches")
     print("\n".join(bands_out))
 
@@ -2595,6 +2604,7 @@ def chance_report(pred: pd.DataFrame) -> None:
     print(t.to_string(index=False, formatters={"predicted": "{:.2%}".format, "actual": "{:.2%}".format, "Brier skill": "{:+.3f}".format,
                                                  "log-loss skill": "{:+.3f}".format, "AUC": "{:.3f}".format, "AUC ceiling": "{:.3f}".format}))
     full90_report(played)
+    full90_report(played, real_minutes=True)
     minutes_chance_report(pred)
 
     counts = []
