@@ -2471,9 +2471,11 @@ def minutes_chance_report(pred: pd.DataFrame) -> None:
     k = m >= 60
     if "m60" in d and k.sum():
         x = pd.DataFrame({"p": d.loc[k, "m60"].to_numpy(float), "r": m[k]})
-        for iv, g in x.groupby(pd.cut(x["p"], [59, 70, 75, 80, 85, 88, 90.1]), observed=True):
-            if len(g) >= 20:
-                print(f"{iv.left:.0f}-{min(iv.right, 90):.0f} | {len(g)} | {g['p'].mean():.1f} | {g['r'].mean():.1f}")
+        edges = [0] + list(range(62, 90, 2)) + [90.1]
+        for iv, g in x.groupby(pd.cut(x["p"], edges), observed=True):
+            if len(g) >= 10:
+                lo = 60 if iv.left == 0 else iv.left
+                print(f"{lo:.0f}-{min(iv.right, 90):.0f} | {len(g)} | {g['p'].mean():.1f} | {g['r'].mean():.1f}")
     print("\n=== Min1 by predicted Min1 ===")
     print("band | matches | predicted | real")
     k = (m > 0) & (m < 60)
