@@ -325,10 +325,10 @@
     };
     const explain = 'Predicted = the average chance the model gave (for saves: the average number); Real = how often it happened (the real number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).';
     const cards = [
-      block('Chance 90min on full-90 matches', 'How accurate the Chance 90min figures are: full-90 matches', [
-        'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Only matches where the player played the full 90 minutes are used, because that is exactly what this page shows (every column assumes 90 minutes), so no minutes guess gets in the way.', explain]),
-      block('Chance 90min at real minutes', 'At the minutes he really played: every match', [
-        'Every match he played last season (1 minute or more). Each per-90 figure is scaled to the minutes he really played in that match (a 30-minute cameo gets a third of the 90-minute rate; DefCon uses his expected actions for those minutes). This tests the per-90 rates on all matches, still without any minutes guess.', explain]),
+      block('Chance 90min at real minutes', 'How accurate the Chance 90min figures are: at the minutes he really played, every match', [
+        'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Every match he played (1 minute or more) is used. Each per-90 figure is scaled to the minutes he really played in that match (a 30-minute cameo gets a third of the 90-minute rate; DefCon uses his expected actions for those minutes). This tests the per-90 rates on all matches, still without any minutes guess.', explain]),
+      block('Chance 90min on full-90 matches', 'Full-90 matches only', [
+        'Only matches where the player played the full 90 minutes are used, because that is exactly what this page shows (every column assumes 90 minutes), so no minutes guess gets in the way.', explain]),
     ].filter(Boolean);
     if (!cards.length) { $('accBox').replaceChildren(el('p', { className: 'meta', textContent: 'No accuracy figures yet.' })); return; }
     cards.push(el('p', { className: 'meta', textContent: 'Groups with few matches move a lot by luck alone: a group of 100 matches at 20% can come out anywhere from about 12% to 28%.' }));
