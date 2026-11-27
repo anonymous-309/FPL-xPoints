@@ -2546,9 +2546,10 @@ def minutes_test_export(pred: pd.DataFrame, path: str = os.environ.get("FPL_MINT
     if not out.parent.is_dir():
         return
     d = pred[pred["minutes"].notna()].copy()
-    if d.empty or "n90" not in d:
+    if d.empty or "xmin" not in d:
+        print("Minutes test page: no xMin in the predictions")
         return
-    d["xm"] = (d["n90"].astype(float) * 90).round(0)
+    d["xm"] = d["xmin"].astype(float).fillna(0).round(0)
     keep = d.groupby("pid")["xm"].transform("max").ge(5) | d.groupby("pid")["minutes"].transform("max").gt(0)
     d = d[keep].sort_values(["pid", "GW", "kickoff_time"] if "kickoff_time" in d else ["pid", "GW"])
     absent = d["hist_out"].fillna(False).astype(bool) if "hist_out" in d else pd.Series(False, index=d.index)
@@ -2644,7 +2645,7 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         corr = float(np.corrcoef(pred_n, real_n)[0, 1]) if np.std(pred_n) > 0 else float("nan")
         print(f"{title} | {len(real_n)} | {pred_n.mean():.3f} | {real_n.mean():.3f} | {skill:+.3f} | corr {corr:.3f}")
         short = title
-        edges = [round(0.05 * k, 2) for k in range(11)] + [5] if title == "Predicted NP goals" else [0, .05, .10, .15, .20, .25, .30, 5]
+        edges = [round(0.05 * k, 2) for k in range(9)] + [5] if title == "Predicted NP goals" else [0, .05, .10, .15, .20, .25, .30, 5]
         b_ = pd.cut(pred_n, edges, include_lowest=True)
         for iv, x in pd.DataFrame({"p": pred_n, "h": real_n, "b": b_}).groupby("b", observed=True):
             if len(x) >= 10:
