@@ -11,13 +11,50 @@
     el('thead', {}, el('tr', {}, ...head.map((h, k) => el('th', { scope: 'col', className: k ? 'num' : '', textContent: h })))),
     el('tbody', {}, ...rows.map((r) => el('tr', { className: opts.mark && opts.mark(r) ? 'on' : '' }, ...r.map((c, k) => el('td', { className: k ? 'num' : '', textContent: c })))))));
   let loaded = false;
-  function draw(xm) {
+  function sections(text) {
+    const sec = {};
+    let cur = null;
+    text.split('\n').forEach((line) => {
+      const m = line.match(/^=== (.+?) ===/);
+      if (m) { cur = m[1]; sec[cur] = []; return; }
+      if (cur && line.trim()) sec[cur].push(line);
+    });
+    return sec;
+  }
+  const rowsOf = (lines) => (lines || []).filter((l) => l.includes(' | ')).slice(1).map((l) => l.split(' | ').map((x) => x.trim()));
+  // the chances (Start, Appearance 1+, 60+, Under 60, Not playing) and Min60 / Min1, from backtest.txt
+  function drawChances(text) {
+    const S = sections(text);
+    const main = rowsOf(S['Minutes chances']);
+    if (!main.length) return null;
+    const intro = (S['Minutes chances'] || []).find((l) => l.startsWith('Every')) || '';
+    const out = [el('h2', { textContent: 'How accurate the minutes chances are' }),
+      p(`Tested on last season (2025-26): each chance was worked out before the match, the same way as now, and checked against what happened. ${intro}.`),
+      p(b('Predicted'), ' = the average chance; ', b('Real'), ' = how often it happened. ', b('Skill'), ': how much better than giving every match the same average chance (0 = no better, 1 = perfect). ', b('AUC'), ': how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).'),
+      table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], main)];
+    const byFig = {};
+    rowsOf(S['Minutes chances, by predicted chance']).forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
+    Object.entries(byFig).forEach(([fig, rows]) => out.push(el('h3', { textContent: `${fig}: by predicted chance` }), table(['Predicted chance', 'Predicted', 'Real', 'Matches'], rows)));
+    const mw = rowsOf(S['Minutes when he played']);
+    if (mw.length) {
+      out.push(el('h2', { textContent: 'Minutes when he played: Min60 and Min1' }),
+        p(b('Min60'), ': his minutes in the matches where he plays 60+ (his recent 60+ matches, weighted 5-4-3-2-1), against his real minutes in the matches where he did play 60+. ',
+          b('Min1'), ': the same for the matches where he played 1 to 59 minutes. Clean sheets, goals conceded and DefCon use these minutes.'),
+        table(['Figure', 'Matches', 'Predicted', 'Real', 'Bias', 'Average miss', 'Within 10 min'], mw));
+      const m60 = rowsOf(S['Min60 by predicted Min60']), m1 = rowsOf(S['Min1 by predicted Min1']);
+      if (m60.length) out.push(el('h3', { textContent: 'Min60 by predicted Min60' }), table(['Predicted Min60', 'Matches', 'Predicted', 'Real'], m60));
+      if (m1.length) out.push(el('h3', { textContent: 'Min1 by predicted Min1' }), table(['Predicted Min1', 'Matches', 'Predicted', 'Real'], m1));
+    }
+    return el('section', { className: 'acc-card' }, ...out);
+  }
+  function draw([text, xm]) {
     const box = $('accBox');
+    const first = text ? drawChances(text) : null;
     // 4b. minutes of the players worth buying (xMin 60+), from tools/xmin_backtest.py
     if (xm && xm.bands) {
       const pc = (x) => `${Math.round(x * 100)}%`, sg = (x) => `${x >= 0 ? '+' : ''}${f(x)}`;
       const top = xm.bands[0], tp = xm.top_by_pos || {};
-      box.replaceChildren(card('How accurate xMin is: players worth buying (xMin 60+)',
+      box.replaceChildren(...(first ? [first] : []), card('How accurate xMin is: players worth buying (xMin 60+)',
         p(`Every league match of ${xm.seasons.join(' and ')} where a player's xMin before the match was 60 or more, with the injuries and bans known from FotMob and Soccerway taken into account. Matches with a red card (${xm.removed.red}), a ban (${xm.removed.ban}) or an injury picked up in the match (${xm.removed.injured_in_match}) are left out: no forecast can see those coming. `,
           b('Average miss'), ' is how far xMin was from his real minutes; ', b('Bias'), ' above 0 means xMin was too high.'),
         table(['xMin', 'xMin (avg)', 'Real (avg)', 'Bias', 'Average miss', 'Within 10 min', 'Real 60+', 'Matches'],
@@ -38,7 +75,7 @@
         p(b('70–80'), ' and ', b('60–70'), ': rotation risks. They miss the starting XI in about 1 match in 6 and 1 in 3. When they do start they play more than their xMin, so the figure is right as an average (for expected points) but any one match is a gamble.')));
     }
 
-    else box.replaceChildren(el('p', { className: 'meta', textContent: 'No minutes accuracy figures yet.' }));
+    else box.replaceChildren(first || el('p', { className: 'meta', textContent: 'No minutes accuracy figures yet.' }));
   }
   function show(v) {
     document.querySelectorAll('#viewSeg button').forEach((x) => x.setAttribute('aria-pressed', String(x.dataset.view === v)));
@@ -49,7 +86,8 @@
     const ft = document.querySelector('footer'); if (ft) ft.hidden = acc;
     if (acc && !loaded) {
       loaded = true;
-      fetch('xmin_accuracy.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).then(draw)
+      Promise.all([fetch('backtest.txt', { cache: 'no-cache' }).then((r) => (r.ok ? r.text() : null)).catch(() => null),
+        fetch('xmin_accuracy.json', { cache: 'no-cache' }).then((r) => (r.ok ? r.json() : null)).catch(() => null)]).then(draw)
         .catch((e) => $('accBox').replaceChildren(el('p', { className: 'error', textContent: `Could not load the figures (${e.message}).` })));
     }
   }

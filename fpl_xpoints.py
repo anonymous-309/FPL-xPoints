@@ -2150,6 +2150,7 @@ class XPointsModel:
         out["p_defcon"] = (~gk) * p_def  # if he plays the full 90
         out["p_defcon_60"] = (~gk) * p_def60  # in a match where he plays 60+ (his usual minutes then)
         out["m60"], out["p_cs_on"], out["dc_mu90"] = m60, pcs_on, (~gk) * dc_mu90
+        out["m1"] = m1
         out["m60_raw"], out["m1_raw"] = base["m60"], base["m1"]
         out["p60_usual"], out["p1_usual"] = base["p60"], base["p1"]
         out["dc90"], out["bps90"] = (~gk) * dc90, self.bps.predict(df[BPS_FEATS])
@@ -2426,6 +2427,63 @@ def _auc_ceiling(prob: np.ndarray) -> float:
     return num / den if den > 0 else float("nan")
 
 
+def minutes_chance_report(pred: pd.DataFrame) -> None:
+    """The Minutes page's Accuracy tab: Start, Appearance 1+, Appearance 60+, Under 60 and Not playing against what
+    happened, then his minutes when he played 60+ (Min60) and under 60 (Min1) against his real minutes then."""
+    d = pred[pred["minutes"].notna() & (pred["p_play"].fillna(0) >= 0.05)].copy()
+    if d.empty:
+        return
+    m = d["minutes"].to_numpy(float)
+    try:
+        pst = pitch_profile(d)["p_start"].to_numpy(float)
+    except Exception:
+        pst = None
+    p1, p60 = d["p_play"].to_numpy(float).clip(0, 1), d["p_60"].to_numpy(float).clip(0, 1)
+    figs = []
+    if pst is not None and "starts" in d:
+        figs.append(("Start", pst, (d["starts"].fillna(0) >= 1).to_numpy(float)))
+    figs += [("Appearance 1+", p1, (m > 0).astype(float)), ("Appearance 60+", p60, (m >= 60).astype(float)),
+             ("Under 60", np.clip(p1 - p60, 0, 1), ((m > 0) & (m < 60)).astype(float)), ("Not playing", 1 - p1, (m == 0).astype(float))]
+    print("\n=== Minutes chances ===")
+    print(f"Every test-season match of a player with Appearance 1+ of 5% or more: {len(d)} matches")
+    print("figure | matches | predicted | real | skill | AUC")
+    bands = []
+    for title, prob, hit in figs:
+        prob = np.clip(prob, 1e-6, 1 - 1e-6)
+        base = np.full(len(hit), hit.mean())
+        skill = 1 - np.mean((prob - hit) ** 2) / np.mean((base - hit) ** 2)
+        print(f"{title} | {len(hit)} | {prob.mean():.1%} | {hit.mean():.1%} | {skill:+.3f} | {_auc(prob, hit):.3f}")
+        b = pd.cut(prob, [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, 1.0], include_lowest=True)
+        for iv, x in pd.DataFrame({"p": prob, "h": hit, "b": b}).groupby("b", observed=True):
+            if len(x) >= 20:
+                bands.append(f"{title} | {max(iv.left, 0):.0%}-{iv.right:.0%} | {x['p'].mean():.1%} | {x['h'].mean():.1%} | {len(x)}")
+    print("\n=== Minutes chances, by predicted chance ===")
+    print("figure | band | predicted | real | matches")
+    print("\n".join(bands))
+    print("\n=== Minutes when he played ===")
+    print("figure | matches | predicted | real | bias | average miss | within 10 min")
+    for title, col, k in (("Min60 (matches he played 60+)", "m60", m >= 60), ("Min1 (matches he played 1-59)", "m1", (m > 0) & (m < 60))):
+        if col in d and k.sum():
+            pr, rl = d.loc[k, col].to_numpy(float), m[k]
+            print(f"{title} | {k.sum()} | {pr.mean():.1f} | {rl.mean():.1f} | {pr.mean() - rl.mean():+.1f} | {np.mean(np.abs(pr - rl)):.1f} | {np.mean(np.abs(pr - rl) <= 10):.0%}")
+    print("\n=== Min60 by predicted Min60 ===")
+    print("band | matches | predicted | real")
+    k = m >= 60
+    if "m60" in d and k.sum():
+        x = pd.DataFrame({"p": d.loc[k, "m60"].to_numpy(float), "r": m[k]})
+        for iv, g in x.groupby(pd.cut(x["p"], [59, 70, 75, 80, 85, 88, 90.1]), observed=True):
+            if len(g) >= 20:
+                print(f"{iv.left:.0f}-{min(iv.right, 90):.0f} | {len(g)} | {g['p'].mean():.1f} | {g['r'].mean():.1f}")
+    print("\n=== Min1 by predicted Min1 ===")
+    print("band | matches | predicted | real")
+    k = (m > 0) & (m < 60)
+    if "m1" in d and k.sum():
+        x = pd.DataFrame({"p": d.loc[k, "m1"].to_numpy(float), "r": m[k]})
+        for iv, g in x.groupby(pd.cut(x["p"], [0, 15, 20, 25, 30, 40, 60]), observed=True):
+            if len(g) >= 20:
+                print(f"{iv.left:.0f}-{iv.right:.0f} | {len(g)} | {g['p'].mean():.1f} | {g['r'].mean():.1f}")
+
+
 def full90_report(played: pd.DataFrame) -> None:
     """The Chance 90min figures on the matches where he played the full 90 (what the page shows), for the page's
     Accuracy tab: one row per figure, then the predicted chance in bands against the real share."""
@@ -2535,6 +2593,7 @@ def chance_report(pred: pd.DataFrame) -> None:
     print(t.to_string(index=False, formatters={"predicted": "{:.2%}".format, "actual": "{:.2%}".format, "Brier skill": "{:+.3f}".format,
                                                  "log-loss skill": "{:+.3f}".format, "AUC": "{:.3f}".format, "AUC ceiling": "{:.3f}".format}))
     full90_report(played)
+    minutes_chance_report(pred)
 
     counts = []
     def count(title, rate, actual, frame, scale=True):
