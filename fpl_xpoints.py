@@ -2620,10 +2620,12 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         corr = float(np.corrcoef(pred_n, real_n)[0, 1]) if np.std(pred_n) > 0 else float("nan")
         print(f"{title} | {len(real_n)} | {pred_n.mean():.3f} | {real_n.mean():.3f} | {skill:+.3f} | corr {corr:.3f}")
         short = title
-        b_ = pd.cut(pred_n, [0, .05, .1, .2, .3, .5, .7, 5], include_lowest=True)
+        edges = [0, .05, .10, .15, .20, .30, .40, 5] if title == "Predicted NP goals" else [0, .05, .10, .15, .20, .25, .30, 5]
+        b_ = pd.cut(pred_n, edges, include_lowest=True)
         for iv, x in pd.DataFrame({"p": pred_n, "h": real_n, "b": b_}).groupby("b", observed=True):
             if len(x) >= 10:
-                bands_out.append(f"{short} | {max(iv.left, 0):.2f}-{iv.right:.2f} | {x['p'].mean():.3f} | {x['h'].mean():.3f} | {len(x)}")
+                lab = f"{iv.left:.2f}+" if iv.right >= 5 else f"{max(iv.left, 0):.2f}-{iv.right:.2f}"
+                bands_out.append(f"{short} | {lab} | {x['p'].mean():.3f} | {x['h'].mean():.3f} | {len(x)}")
     # Saves (goalkeepers, full 90): expected saves against real saves, and the save points (1 per 3 saves)
     if len(gk) and "saves90" in gk:
         ps_, rs_ = gk["saves90"].to_numpy(float) * fgk, gk["saves"].fillna(0).to_numpy(float)
