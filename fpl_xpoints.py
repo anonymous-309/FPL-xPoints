@@ -2539,6 +2539,30 @@ def _auc_ceiling(prob: np.ndarray) -> float:
     return num / den if den > 0 else float("nan")
 
 
+def minutes_test_export(pred: pd.DataFrame, path: str = os.environ.get("FPL_MINTEST_OUT", "_site/minutes_test.json")) -> None:
+    """The Minutes test page: every test-season match of every player, his xMin before it against his real minutes.
+    Written only when the site folder is there (the update run)."""
+    out = Path(path)
+    if not out.parent.is_dir():
+        return
+    d = pred[pred["minutes"].notna()].copy()
+    if d.empty or "n90" not in d:
+        return
+    d["xm"] = (d["n90"].astype(float) * 90).round(0)
+    keep = d.groupby("pid")["xm"].transform("max").ge(5) | d.groupby("pid")["minutes"].transform("max").gt(0)
+    d = d[keep].sort_values(["pid", "GW", "kickoff_time"] if "kickoff_time" in d else ["pid", "GW"])
+    absent = d["hist_out"].fillna(False).astype(bool) if "hist_out" in d else pd.Series(False, index=d.index)
+    players = []
+    for pid, g in d.groupby("pid", sort=False):
+        r = g.iloc[-1]
+        players.append({"n": str(r.get("name", pid)), "t": str(r.get("team", "")), "p": str(r.get("position", "")),
+                        "m": [[int(gw), int(xm), int(mi), int(st) if st == st else 0, int(ab), str(op)]
+                              for gw, xm, mi, st, ab, op in zip(g["GW"], g["xm"], g["minutes"].fillna(0), g["starts"] if "starts" in g else np.zeros(len(g)),
+                                                                absent.loc[g.index], g["opp"] if "opp" in g else [""] * len(g))]})
+    out.write_text(json.dumps({"season": str(d["season"].iloc[0]) if "season" in d else "", "players": players}, ensure_ascii=False, separators=(",", ":")))
+    print(f"Minutes test page: {len(players)} players, {len(d)} matches")
+
+
 def minutes_chance_report(pred: pd.DataFrame) -> None:
     """The Minutes page's Accuracy tab: Start, Appearance 1+, Appearance 60+, Under 60 and Not playing against what
     happened, then his minutes when he played 60+ (Min60) and under 60 (Min1) against his real minutes then."""
@@ -2717,6 +2741,7 @@ def chance_report(pred: pd.DataFrame) -> None:
     full90_report(played)
     full90_report(played, real_minutes=True)
     minutes_chance_report(pred)
+    minutes_test_export(pred)
 
     counts = []
     def count(title, rate, actual, frame, scale=True):

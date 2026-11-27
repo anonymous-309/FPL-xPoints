@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Minutes test FPL</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header class="pitch">
+  <div class="brand">
+    <h1>Minutes test</h1>
+    <p id="status" role="status">Loading</p>
+  </div>
+  <nav class="sitenav" aria-label="Pages"></nav>
+</header>
+<div id="error" class="error" role="alert" hidden></div>
+<form id="filters" class="filters" autocomplete="off">
+  <div class="seg" role="group" aria-label="Position">
+    <button type="button" data-pos="" aria-pressed="true">All</button>
+    <button type="button" data-pos="GK" aria-pressed="false">GK</button>
+    <button type="button" data-pos="DEF" aria-pressed="false">DEF</button>
+    <button type="button" data-pos="MID" aria-pressed="false">MID</button>
+    <button type="button" data-pos="FWD" aria-pressed="false">FWD</button>
+  </div>
+  <label>Search player <input id="search" type="search"></label>
+  <label>Team <select id="team"><option value="">All</option></select></label>
+  <label>Average xMin from <select id="minx"><option value="0">0</option><option value="30">30</option><option value="60" selected>60</option><option value="75">75</option></select></label>
+</form>
+<main>
+  <section class="card mt-sum" id="sum"></section>
+  <div class="wrap"><table id="table" class="mt-table"><thead></thead><tbody></tbody></table></div>
+</main>
+<footer>
+  <p>Last season, tested as if live: before every gameweek the model was run with only what was known then, and its <b>xMin</b> (expected minutes, chance of playing included) is set against the minutes he really played. Matches where he was known to be out (listed injured or suspended, or not in the matchday squad) count as xMin 0 and are marked <i>out</i>. <b>Diff</b>: average xMin less average minutes (above 0 = the model expected more). <b>Miss</b>: the average gap, either way. Tap a player for each match. Not affiliated with the Premier League.</p>
+</footer>
+<script src="minutetest.js"></script>
+<script src="tips.js"></script>
+<script src="nav.js"></script>
+</body>
+</html>

@@ -810,3 +810,30 @@ table.stats thead tr:nth-child(2) th:first-child { z-index: 5; }
 #filters .check { display: inline-flex; gap: .35rem; align-items: center; }
 #filters .check input { width: 16px; height: 16px; }
 .info-head { margin: 0 24px 8px 0; font-size: 1.05rem; } .info-pop[hidden] { display: none; } thead th .info-btn { margin-left: 3px; vertical-align: middle; }
+
+/* Minutes test page */
+.mt-sum h2 { margin: 0 0 4px; font-size: 1rem; }
+.mt-sum p { margin: 0; }
+.mt-table td { text-align: right; white-space: nowrap; }
+.mt-table td.player { text-align: left; }
+.mt-table th button { all: unset; cursor: pointer; padding: 8px 6px; display: block; }
+.mt-row { cursor: pointer; }
+.mt-row.on td { background: #e9f4ec; }
+.mt-hi { color: #a3341f; font-weight: 600; }
+.mt-lo { color: #1f5fa3; font-weight: 600; }
+.mt-detail td { text-align: left; padding: 6px 0 10px; }
+.mt-chart-wrap { overflow-x: auto; max-width: calc(100vw - 30px); position: sticky; left: 0; }
+.mt-chart { display: block; }
+.mt-grid { stroke: #dfe6e1; stroke-width: 1; }
+.mt-ax, .mt-gw { font-size: 9px; fill: #6b756f; }
+.mt-gw { text-anchor: middle; }
+.mt-start { fill: #1c6b45; }
+.mt-sub { fill: #9fcfb3; }
+.mt-out { fill: #b9bdbb; }
+.mt-x { fill: #e0a100; stroke: #5a4300; stroke-width: 1; }
+.mt-key { display: inline-block; width: 10px; height: 10px; margin-left: 6px; vertical-align: -1px; }
+.mt-key.mt-start { background: #1c6b45; } .mt-key.mt-sub { background: #9fcfb3; } .mt-key.mt-out { background: #b9bdbb; }
+.mt-key.mt-dot { background: #e0a100; border-radius: 50%; }
+.mt-table td.player { min-width: 104px; }
+.mt-table td.player .meta { display: block; }
+.mt-table th button { padding: 8px 4px; }
