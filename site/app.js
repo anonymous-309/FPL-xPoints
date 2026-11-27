@@ -21,7 +21,7 @@
   // The same figures as the Chance page: everything except appearances assumes a full 90 minutes.
   const CHANCES = [
     ['pStart', 'Start', 'pct'], ['pApp1', 'Appearance 1+', 'pct'], ['pApp60', 'Appearance 60+', 'pct'],
-    ['pScore', 'Score 1+', 'pct'], ['npxGoals', 'NPxGoals', 2], ['xPenGoals', 'Pen goals', 2], ['pAssist', 'Fantasy Assist 1+', 'pct'], ['xAssists', 'xAssists', 2],
+    ['pScore', 'Score 1+', 'pct'], ['npxGoals', 'Predicted NP goals', 2], ['xPenGoals', 'Predicted pen goals', 2], ['pAssist', 'Fantasy assist 1+', 'pct'], ['xAssists', 'Predicted fantasy assists', 2],
     ['pCs', 'Clean sheet', 'pct'], ['xConceded', 'Conceded', 2], ['pDefcon', 'DefCon', 'pct'], ['xDefcon', 'DefCon actions', 1], ['xSaves', 'Saves', 1],
     ['pPenSave', 'Pen save', 'pct1'], ['pPenMiss', 'Pen miss', 'pct1'], ['pOwnGoal', 'Own goal', 'pct1'],
     ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['xBps', 'BPS', 0], ['bonus', 'Bonus', 2],

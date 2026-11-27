@@ -2591,9 +2591,8 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         pdc = _nb_sf(fd["position"].map(DEFCON_THRESHOLD).fillna(12).to_numpy(float), fd["dc_mu90"].to_numpy(float) * fdf, DC_SIZE)
     else:
         pdc = fd["p_defcon"].to_numpy(float)
-    figs = [("Score 1+ (no pens)", 1 - np.exp(-full["np_g90"].to_numpy(float) * f), (full["np_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
-            ("Fantasy Assist 1+", 1 - np.exp(-full["a90"].to_numpy(float) * f), (full["assists"].fillna(0) >= 1).to_numpy(float), full["position"]),
-            ("DefCon", pdc, (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float), fd["position"]),
+    # (goals and assists are tested as expected numbers below, as the page shows them)
+    figs = [("DefCon", pdc, (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float), fd["position"]),
             ("Yellow card", 1 - np.exp(-full["y90"].to_numpy(float) * (card_minutes(full["minutes"]) / 90 if real_minutes and YC_EXTRA else f)), (full["yellow_cards"].fillna(0) >= 1).to_numpy(float), full["position"]),
             ("Own goal", 1 - np.exp(-full["og90"].to_numpy(float) * f), (full["own_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
             ("Pen save (GK)", 1 - np.exp(-gk["ps90"].to_numpy(float) * fgk), (gk["penalties_saved"].fillna(0) >= 1).to_numpy(float), gk["position"])]
@@ -2607,20 +2606,20 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         base = pd.Series(hit).groupby(np.asarray(grp)).transform("mean").clip(1e-6, 1 - 1e-6).to_numpy()
         skill = 1 - np.mean((prob - hit) ** 2) / np.mean((base - hit) ** 2) if 0 < hit.sum() < len(hit) else np.nan
         print(f"{title} | {len(hit)} | {prob.mean():.1%} | {hit.mean():.1%} | {skill:+.3f} | {_auc(prob, hit):.3f}")
-        if title in ("Score 1+ (no pens)", "Fantasy Assist 1+", "DefCon", "Yellow card"):
+        if title in ("DefCon", "Yellow card"):
             b = pd.cut(prob, [0, .05, .1, .15, .2, .3, .4, .5, .6, .8, 1.0], include_lowest=True)
             for iv, x in pd.DataFrame({"p": prob, "h": hit, "b": b}).groupby("b", observed=True):
                 if len(x) >= 10:
                     bands_out.append(f"{title} | {max(iv.left, 0):.0%}-{iv.right:.0%} | {x['p'].mean():.1%} | {x['h'].mean():.1%} | {len(x)}")
     # Expected numbers, as the page shows them: non-penalty goals (NPxGoals) and fantasy assists (xAssists) against
     # the real numbers; skill against the position average (squared error), correlation
-    for title, pred_n, real_n in (("NP goals (expected number)", full["np_g90"].to_numpy(float) * f, full["np_goals"].fillna(0).to_numpy(float)),
-                                  ("Fantasy assists (expected number)", full["a90"].to_numpy(float) * f, full["assists"].fillna(0).to_numpy(float))):
+    for title, pred_n, real_n in (("Predicted NP goals", full["np_g90"].to_numpy(float) * f, full["np_goals"].fillna(0).to_numpy(float)),
+                                  ("Predicted fantasy assists", full["a90"].to_numpy(float) * f, full["assists"].fillna(0).to_numpy(float))):
         base = pd.Series(real_n).groupby(full["position"].to_numpy()).transform("mean").to_numpy()
         skill = 1 - np.mean((pred_n - real_n) ** 2) / np.mean((base - real_n) ** 2)
         corr = float(np.corrcoef(pred_n, real_n)[0, 1]) if np.std(pred_n) > 0 else float("nan")
         print(f"{title} | {len(real_n)} | {pred_n.mean():.3f} | {real_n.mean():.3f} | {skill:+.3f} | corr {corr:.3f}")
-        short = "NP goals" if title.startswith("NP") else "Fantasy assists"
+        short = title
         b_ = pd.cut(pred_n, [0, .05, .1, .2, .3, .5, .7, 5], include_lowest=True)
         for iv, x in pd.DataFrame({"p": pred_n, "h": real_n, "b": b_}).groupby("b", observed=True):
             if len(x) >= 10:
@@ -2631,7 +2630,7 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         mae, mae0 = np.mean(np.abs(ps_ - rs_)), np.mean(np.abs(rs_.mean() - rs_))
         corr = float(np.corrcoef(ps_, rs_)[0, 1]) if np.std(ps_) > 0 else float("nan")
         exp_pts = np.array([sum(poisson.sf(3 * k - 1, mu) for k in range(1, 8)) for mu in ps_])
-        print(f"Saves (expected number) | {len(gk)} | {ps_.mean():.2f} | {rs_.mean():.2f} | {1 - mae / mae0:+.3f} | corr {corr:.3f}")
+        print(f"Predicted saves | {len(gk)} | {ps_.mean():.2f} | {rs_.mean():.2f} | {1 - mae / mae0:+.3f} | corr {corr:.3f}")
         print(f"Save points (1 per 3 saves) | {len(gk)} | {exp_pts.mean():.2f} | {np.floor(rs_ / 3).mean():.2f} | | ")
         b_ = pd.cut(ps_, [0, 2, 2.5, 3, 3.5, 4, 5, 10], include_lowest=True)
         for iv, x in pd.DataFrame({"p": ps_, "h": rs_, "b": b_}).groupby("b", observed=True):

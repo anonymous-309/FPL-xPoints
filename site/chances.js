@@ -6,7 +6,7 @@
   // key, header, value at full colour, format ('pct', 'pct1' or number of decimals)
   const METRICS = [
     ['pStart', 'Start', 1, 'pct'], ['pApp1', 'Appearance 1+', 1, 'pct'], ['pApp60', 'Appearance 60+', 1, 'pct'], ['pUnder60', 'Under 60', 1, 'pct'], ['pNotPlay', 'Not playing', 1, 'pct'],
-    ['pScore', 'Score 1+', 0.6, 'pct'], ['npxGoals', 'NPxGoals', 0.8, 2], ['xPenGoals', 'Pen goals', 0.15, 2], ['pAssist', 'Fantasy Assist 1+', 0.35, 'pct'], ['xAssists', 'xAssists', 0.45, 2],
+    ['pScore', 'Score 1+', 0.6, 'pct'], ['npxGoals', 'Predicted NP goals', 0.8, 2], ['xPenGoals', 'Predicted pen goals', 0.15, 2], ['pAssist', 'Fantasy assist 1+', 0.35, 'pct'], ['xAssists', 'Predicted fantasy assists', 0.45, 2],
     ['pCs', 'Clean sheet', 0.6, 'pct'], ['xConceded', 'Conceded', 2.4, 2], ['pDefcon', 'DefCon', 0.7, 'pct'], ['xDefcon', 'DefCon actions', 14, 1], ['xSaves', 'Saves', 4.5, 1],
     ['pPenSave', 'Pen save', 0.03, 'pct1'], ['pPenMiss', 'Pen miss', 0.03, 'pct1'], ['pOwnGoal', 'Own goal', 0.03, 'pct1'],
     ['pRed', 'Red card', 0.02, 'pct1'], ['pYellow', 'Yellow card', 0.4, 'pct'], ['xBps', 'BPS', 32, 0], ['bonus', 'Bonus', 1.5, 2],
@@ -28,31 +28,31 @@
    "pScore": [
     "Score 1+",
     "Chance he scores at least once, penalties included",
-    "1 − e<sup>−(NPxGoals + Pen goals)</sup>",
-    "For reference only; xPoints uses NPxGoals and Pen goals"
+    "1 − e<sup>−(Predicted NP goals + Predicted pen goals)</sup>",
+    "For reference only; xPoints uses Predicted NP goals and Predicted pen goals"
    ],
    "npxGoals": [
     "NPxGoals",
     "Expected open-play goals (no penalties) over 90 minutes",
     "Non-penalty xG per 90, built in steps. (1) A starting figure from his shot volume: his position's average xG per 90 × his shots per 90 against the position's (shots from FPL Core; their weight halves every 6 gameweeks). (2) His own non-penalty xG over up to 38 matches (weight halving every 12 gameweeks), padded with 10 such starting 90s, so a new player leans on his shots and an established one on his xG. (3) Finishing: his non-penalty goals (50%) and xG on target (25%) against his xG, trusted only after about 15 xG. (4) A Poisson model adds recent form, his shots and key passes, his team's attack, the opponent's defence and home or away. NPxG = FPL's xG minus 0.79 per penalty taken.",
-    "(NPxGoals + Pen goals) × xMin/90 × goal points (FWD 4, MID 5, DEF 6, GK 10)"
+    "(Predicted NP goals + Predicted pen goals) × xMin/90 × goal points (FWD 4, MID 5, DEF 6, GK 10)"
    ],
    "xPenGoals": [
     "Pen goals",
     "Expected penalty goals over 90 minutes",
     "Team penalties per match × his pen share × 0.79 (a penalty's xG: about 21% are missed or saved). His pen share: the number 1 takes every penalty while he is on the pitch; the number 2 takes those left while the number 1 is off, and so on (the chance each is on the pitch comes from his minutes). The Pen share on the <a href=\"setpieces.html\">Set pieces</a> page is this share times xMin/90. If you edit the xMin of a taker above him on the Minutes page, this follows.",
-    "Added to NPxGoals as above"
+    "Added to Predicted NP goals as above"
    ],
    "xAssists": [
     "xAssists",
     "Expected assists over 90 minutes",
-    "The same way as NPxGoals with key passes: a starting figure from his key passes per 90 (passes that led to a shot) against his position's, his own xA padded with 10 such 90s, how his assists compare with his xA, then form, his key passes and shots, his team's attack, the opponent's defence and home or away.",
+    "The same way as Predicted NP goals with key passes: a starting figure from his key passes per 90 (passes that led to a shot) against his position's, his own xA padded with 10 such 90s, how his assists compare with his xA, then form, his key passes and shots, his team's attack, the opponent's defence and home or away.",
     "xAssists × xMin/90 × 3"
    ],
    "pAssist": [
-    "Fantasy Assist 1+",
+    "Fantasy assist 1+",
     "Chance of at least one FPL assist",
-    "1 − e<sup>−xAssists</sup>",
+    "1 − e<sup>−Predicted fantasy assists</sup>",
     "For reference only"
    ],
    "pCs": [
@@ -124,14 +124,14 @@
    "bonus": [
     "Bonus",
     "Expected bonus points over 90 minutes",
-    "The average of two methods. (1) A per-player model from his past bonus and BPS. (2) Each match simulated 2,000 times: goals go to scorers by NPxGoals + Pen goals and to assisters by xAssists, clean sheets are added, plus each player's base BPS. The top 3 BPS from both teams get 3, 2 and 1.",
+    "The average of two methods. (1) A per-player model from his past bonus and BPS. (2) Each match simulated 2,000 times: goals go to scorers by Predicted NP goals + Predicted pen goals and to assisters by Predicted fantasy assists, clean sheets are added, plus each player's base BPS. The top 3 BPS from both teams get 3, 2 and 1.",
     "Bonus × xMin/90"
    ],
    "pStart": [
     "Start",
     "Chance he starts the match",
     "The share of his last 5 matches he started, weighted 5-4-3-2-1 (newest first, the same matches as his usual minutes), times the share of his usual minutes he is expected to play now (FPL flags, your edits on the Minutes page)",
-    "Not used directly; it places the penalty takers on the pitch (Pen goals)"
+    "Not used directly; it places the penalty takers on the pitch (Predicted pen goals)"
    ],
    "pUnder60": [
     "Under 60",
@@ -148,8 +148,8 @@
   };
   const LEAGUE_MISS = 0.22;
   const cache = new Map();
-  // Goals split into open play (NPxGoals) and penalties. The penalty share follows the minutes set on the Minutes
-  // page for the takers above him, so Score 1+, Pen goals and Pen miss move with them.
+  // Goals split into open play (Predicted NP goals) and penalties. The penalty share follows the minutes set on the Minutes
+  // page for the takers above him, so Score 1+, Predicted pen goals and Pen miss move with them.
   function figures(p, g) {
     if (!p.byGw[g]) return null;
     const d = XMin.withEdits(state.overrides, p, g, p.byGw[g]);
@@ -311,8 +311,8 @@
       el('thead', {}, el('tr', {}, ...head.map((h, k) => el('th', { scope: 'col', className: k ? 'num' : '', textContent: h })))),
       el('tbody', {}, ...rows.map((r) => el('tr', {}, ...r.map((c, k) => el('td', { className: k ? 'num' : '', textContent: c })))))));
     const block = (name, title, intro) => {
-      // the expected numbers (as the page's NPxGoals and xAssists columns) first
-      const first = (f) => (/^(NP goals|Fantasy assists)/.test(f) ? 0 : 1);
+      // the expected numbers (as the page's Predicted NP goals and Predicted fantasy assists columns) first
+      const first = (f) => (/^Predicted (NP goals|fantasy assists)/.test(f) ? 0 : 1);
       const main = (sec[name] || []).slice(1).sort((x, y) => first(x[0]) - first(y[0]));
       const bands = (sec[`${name}, by predicted chance`] || []).slice(1);
       if (!main.length) return null;
@@ -321,15 +321,15 @@
       const byFig = {};
       bands.forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
       Object.entries(byFig).sort((x, y) => first(x[0]) - first(y[0])).forEach(([fig, rows]) => {
-        const num = { Saves: 'saves', 'NP goals': 'non-penalty goals', 'Fantasy assists': 'fantasy assists' }[fig];
-        out.push(el('h3', { textContent: num ? `${fig}: by expected number` : `${fig}: by predicted chance` }),
-          table(num ? [`Expected ${num}`, 'Expected', 'Real', 'Matches'] : ['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
+        const num = { Saves: 'saves', 'Predicted NP goals': 'NP goals', 'Predicted fantasy assists': 'fantasy assists' }[fig];
+        out.push(el('h3', { textContent: num ? `${fig}: by predicted number` : `${fig}: by predicted chance` }),
+          table(num ? [`Predicted ${num}`, 'Predicted', 'Real', 'Matches'] : ['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
       });
       const ym = (sec[`${name}, yellow card by minutes played`] || []).slice(1);
       if (ym.length) out.push(el('h3', { textContent: 'Yellow card: by minutes he played' }), table(['Minutes', 'Predicted', 'Real', 'Matches'], ym));
       return el('section', { className: 'acc-card' }, ...out);
     };
-    const explain = 'Predicted = the average chance the model gave (for the expected numbers of goals, assists and saves: the average number); Real = how often it happened (for those: the real average number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).';
+    const explain = 'Predicted = the average chance the model gave (for the predicted numbers of NP goals, fantasy assists and saves: the average number); Real = how often it happened (for those: the real average number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).';
     const cards = [
       block('Chance 90min at real minutes', 'How accurate the Chance 90min figures are: at the minutes he really played, every match', [
         'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Every match he played (1 minute or more) is used. Each per-90 figure is scaled to the minutes he really played in that match (a 30-minute cameo gets a third of the 90-minute rate; DefCon uses his expected actions for those minutes). This tests the per-90 rates on all matches, still without any minutes guess.', explain]),
