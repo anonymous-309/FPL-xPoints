@@ -511,16 +511,23 @@ def team_pre(keys: np.ndarray, x: np.ndarray, periods: np.ndarray) -> np.ndarray
 
 def team_features(df: pd.DataFrame) -> pd.DataFrame:
     hist = df[~df["future"]]
+    hist = hist.assign(sot_np=(hist["core_sot"].fillna(0) - hist["core_pen_scored"].fillna(0) - hist["core_pen_missed"].fillna(0)).clip(lower=0)
+                       if "core_sot" in hist else 0.0, has_c=hist["has_core"].astype(float) if "has_core" in hist else 0.0)
     fx = (hist.groupby(["season", "fixture", "team", "opp", "tf"], as_index=False)
-          .agg(xg=("expected_goals", "sum"), gf=("gf", "first")))
+          .agg(xg=("expected_goals", "sum"), gf=("gf", "first"), sot=("sot_np", "sum"), ns=("has_c", "max")))
     fx["gf"] = fx["gf"].fillna(0.0)
-    against = fx[["season", "fixture", "team", "xg", "gf"]].rename(columns={"team": "opp", "xg": "xga", "gf": "ga"})
+    against = fx[["season", "fixture", "team", "xg", "gf", "sot"]].rename(columns={"team": "opp", "xg": "xga", "gf": "ga", "sot": "sota"})
     fx = fx.merge(against, on=["season", "fixture", "opp"], how="left")
-    t = fx.groupby(["team", "tf"], as_index=False).agg(n=("xg", "size"), xg=("xg", "sum"), xga=("xga", "sum"), gf=("gf", "sum"), ga=("ga", "sum"))
+    fx["sota"] = fx["sota"].fillna(0.0) * fx["ns"]
+    fx["sot"] = fx["sot"] * fx["ns"]
+    t = fx.groupby(["team", "tf"], as_index=False).agg(n=("xg", "size"), xg=("xg", "sum"), xga=("xga", "sum"), gf=("gf", "sum"), ga=("ga", "sum"),
+                                                     sot=("sot", "sum"), sota=("sota", "sum"), ns=("ns", "sum"))
     pairs = pd.concat([df[["team", "tf"]], df[["opp", "tf"]].rename(columns={"opp": "team"})]).drop_duplicates()
     t = pairs.merge(t, on=["team", "tf"], how="left").fillna(0.0).sort_values(["team", "tf"])
 
-    by_t = t.groupby("tf")[["n", "xg", "gf"]].sum().sort_index().cumsum().shift(1).fillna(0.0)
+    by_t = t.groupby("tf")[["n", "xg", "gf", "sot", "ns"]].sum().sort_index().cumsum().shift(1).fillna(0.0)
+    lg_sot = (by_t["sot"] / by_t["ns"].replace(0, np.nan)).fillna(4.0)
+    t["league_sot"] = t["tf"].map(lg_sot).replace(0, 4.0)
     lg = (by_t["xg"] / by_t["n"].replace(0, np.nan)).fillna(LEAGUE_XG_FALLBACK)
     lg_goals = (by_t["gf"] / by_t["n"].replace(0, np.nan)).fillna(LEAGUE_XG_FALLBACK)
     t["league"] = t["tf"].map(lg).replace(0, LEAGUE_XG_FALLBACK)
@@ -547,7 +554,11 @@ def team_features(df: pd.DataFrame) -> pd.DataFrame:
     t["def_g_ratio"] = ((team_pre(keys, t["ga"].to_numpy(float), periods)
                          + K_TEAM_GOALS * t["league_g"] * np.where(prom, PROMOTED_DEF, 1.0))
                         / (sn + K_TEAM_GOALS)) / t["league_g"]
-    out = t[["team", "tf", "att_ratio", "def_ratio", "att_g_ratio", "def_g_ratio", "league_g"]]
+    # shots on target (no penalties) for and against, where FPL Core Insights has the match: for the saves model
+    sns = team_pre(keys, t["ns"].to_numpy(float), periods)
+    t["sot_att"] = ((team_pre(keys, t["sot"].to_numpy(float), periods) + K_TEAM * t["league_sot"]) / (sns + K_TEAM)) / t["league_sot"]
+    t["sot_def"] = ((team_pre(keys, t["sota"].to_numpy(float), periods) + K_TEAM * t["league_sot"]) / (sns + K_TEAM)) / t["league_sot"]
+    out = t[["team", "tf", "att_ratio", "def_ratio", "att_g_ratio", "def_g_ratio", "league_g", "sot_att", "sot_def"]]
     return out, venue_ratings(df, fx, out)
 
 
@@ -1603,8 +1614,10 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
 
     ratings, venue = team_features(df)
     ratings = ratings.drop(columns="league_g")
-    df = df.merge(ratings.rename(columns={"att_ratio": "team_att", "def_ratio": "team_def", "att_g_ratio": "team_att_g", "def_g_ratio": "team_def_g"}), on=["team", "tf"], how="left")
-    df = df.merge(ratings.rename(columns={"team": "opp", "att_ratio": "opp_att", "def_ratio": "opp_def", "att_g_ratio": "opp_att_g", "def_g_ratio": "opp_def_g"}), on=["opp", "tf"], how="left")
+    df = df.merge(ratings.rename(columns={"att_ratio": "team_att", "def_ratio": "team_def", "att_g_ratio": "team_att_g", "def_g_ratio": "team_def_g",
+                                          "sot_att": "team_sot_att", "sot_def": "team_sot_def"}), on=["team", "tf"], how="left")
+    df = df.merge(ratings.rename(columns={"team": "opp", "att_ratio": "opp_att", "def_ratio": "opp_def", "att_g_ratio": "opp_att_g", "def_g_ratio": "opp_def_g",
+                                          "sot_att": "opp_sot_att", "sot_def": "opp_sot_def"}), on=["opp", "tf"], how="left")
     df["home_i"] = df["was_home"].astype(int)
     df = df.merge(venue[["team", "home", "tf", "def_gv"]].rename(columns={"home": "home_i", "def_gv": "team_def_gv"}), on=["team", "home_i", "tf"], how="left")
     df["opp_home_i"] = 1 - df["home_i"]
@@ -1853,6 +1866,8 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
             df[f"blend_{mode}"] = df["l_xg"] + w_goals * fg + w_xgot * fo
     df["l_bon"], df["l_bps"], df["form_bps"] = ln(df["r_bon"]), ln(df["r_bps"]), ln(df["f_bps"]) - ln(df["r_bps"])
     df["l_sv"], df["l_yc"] = ln(df["r_sv"]), ln(df["r_yc"])
+    for c in ("opp_sot_att", "team_sot_def"):
+        df[f"l_{c}"] = ln(df[c].fillna(1.0)) if c in df else 0.0
     for c in ["team_att", "team_def", "opp_att", "opp_def"]:
         df[f"l_{c}"] = ln(df[c].fillna(1.0))
         df[f"gap_{c}"] = ln(df[f"{c}_g"].fillna(1.0)) - df[f"l_{c}"]  # real goals relative to xG
@@ -1891,15 +1906,28 @@ BPS_FEATS = ["l_bps", "form_bps", "rel_bps", "l_team_att", "gap_team_att", "l_te
 DC_FEATS = ["l_dc", "l_opp_att", "gap_opp_att", "l_team_att", "gap_team_att", "was_home", "is_MID", "is_FWD"]
 DC_MIN_ROWS = 800  # counted matches needed before the DefCon count model is used
 SAVE_FEATS = ["l_sv", "l_opp_att", "gap_opp_att", "l_team_def", "gap_team_def", "was_home"]
+if os.environ.get("FPL_SAVE_SOT", "0") != "0":  # tried on 2025-26: slightly worse, so off. The other side's shots on target, and his own side's allowed
+    SAVE_FEATS = SAVE_FEATS + ["l_opp_sot_att", "l_team_sot_def"]
 
 
 def _glm():
     return make_pipeline(StandardScaler(), PoissonRegressor(alpha=1e-4, max_iter=2000))
 
 
-def _fit_rate(train: pd.DataFrame, target: str, feats: list[str]):
+# Yellow cards in a short match: his rate over 90 x (minutes + YC_EXTRA x (1 - minutes / 90)) / 90, so a full match
+# counts 90 and a substitute's late minutes, when cards are more common, count more each (0 = in proportion).
+# 22 from 2025-26: cards in 1-29 minutes came 2.2 times, in 30-59 minutes 1.24 times the in-proportion figure.
+YC_EXTRA = float(os.environ.get("FPL_YC_EXTRA", "22"))
+
+
+def card_minutes(m):
+    m = np.clip(np.asarray(m, float), 0, 90)
+    return np.where(m > 0, m + YC_EXTRA * (1 - m / 90), 0.0)
+
+
+def _fit_rate(train: pd.DataFrame, target: str, feats: list[str], cards: bool = False):
     d = train[train["minutes"] > 0]
-    e = d["minutes"] / 90
+    e = d["minutes"] / 90  # (cards too: fitted in proportion to minutes, the extra for short matches is added when predicting)
     return _glm().fit(d[feats], (d[target].fillna(0) / e).to_numpy(), poissonregressor__sample_weight=e.to_numpy())
 
 
@@ -2017,12 +2045,42 @@ def own_bps(df: pd.DataFrame, model_bps: np.ndarray) -> np.ndarray:
     return df["r_bps"].fillna(pd.Series(model_bps, index=df.index)).to_numpy(float) if "r_bps" in df else model_bps
 
 
+# Players' goals made to agree with their team's: in each match, the team's expected goals (the other side's expected
+# goals conceded, from the clean sheet model) over the sum of its players' expected goals (at their expected minutes),
+# against the same ratio's average over all teams; open-play goals and assists are scaled by that ratio to the power
+# TEAM_SCALE (0 = off), so the split between team-mates stays as it is.
+TEAM_SCALE = float(os.environ.get("FPL_TEAM_SCALE", "0.5"))  # 0, 0.5 and 1 tried on 2025-26: 0.5 best for points
+
+
+def team_goal_scale(df: pd.DataFrame, conc: np.ndarray, player_goals: np.ndarray) -> np.ndarray:
+    if not {"fixture", "team", "opp"} <= set(df.columns):
+        return np.ones(len(df))
+    key = (df["season"].astype(str) + "|" if "season" in df else "") + df["fixture"].astype(str)
+    tkey, okey = key + "|" + df["team"].astype(str), key + "|" + df["opp"].astype(str)
+    team_conc = pd.Series(conc, index=df.index).groupby(tkey).first()
+    team_exp = okey.map(team_conc).astype(float)  # goals this team is expected to score
+    psum = pd.Series(player_goals, index=df.index).groupby(tkey).transform("sum")
+    r = team_exp / psum
+    ok = r.notna() & np.isfinite(r) & (psum > 0.3)
+    if not ok.any():
+        return np.ones(len(df))
+    one = ~tkey.duplicated() & ok
+    rbar = float(np.exp(np.log(r[one]).mean()))
+    f = ((r / rbar) ** TEAM_SCALE).where(ok, 1.0).clip(0.5, 2.0)
+    if os.environ.get("FPL_TRACE") and "web_name" in df:
+        hit = df["web_name"].astype(str).str.contains(os.environ["FPL_TRACE"]) & df["future"]
+        for i in np.where(hit.to_numpy())[0][:2]:
+            print(f"TRACE team scale {df['web_name'].iloc[i]}: team expected {team_exp.iloc[i]:.2f}, players' sum {psum.iloc[i]:.2f}, ratio {r.iloc[i]:.2f}, average ratio {rbar:.2f}, factor {f.iloc[i]:.3f}")
+    print(f"Team goal scale: average ratio {rbar:.2f}, factor 10-90% {np.percentile(f[one], 10):.2f}-{np.percentile(f[one], 90):.2f}")
+    return f.to_numpy(float)
+
+
 class XPointsModel:
     def fit(self, train: pd.DataFrame) -> "XPointsModel":
         train = train[~train["future"] & train["minutes"].notna()]
         # the first GWs of the data have no position priors or player history yet
         train = train[train["t"] >= train["t"].min() + BURN_IN_GWS]
-        self.rates = {k: _fit_rate(train, tgt, f) for k, (tgt, f) in GLMS.items()}
+        self.rates = {k: _fit_rate(train, tgt, f, k == "yellow") for k, (tgt, f) in GLMS.items()}
         for k in ("goals", "assists"):
             pipe = self.rates[k]
             try:
@@ -2089,10 +2147,13 @@ class XPointsModel:
         pen90 = pen_cond * team_pens  # penalties he takes in a full 90
         # His own miss rate over recent seasons, pulled to the league's (a saved penalty counts as a miss).
         miss = df["pen_miss_rate"].fillna(1 - PEN_CONVERSION).to_numpy(float) if "pen_miss_rate" in df else np.full(len(df), 1 - PEN_CONVERSION)
+        conc = self.conceded.predict(df[TEAM_FEATS])
+        if TEAM_SCALE > 0:
+            f = team_goal_scale(df, conc, rate90["goals"] * n90 + pen90 * (1 - miss) * n90)
+            rate90["goals"], rate90["assists"] = rate90["goals"] * f, rate90["assists"] * f
         rate90["goals"] = rate90["goals"] + pen90 * (1 - miss)
         lam = {k: rate90[k] * n90 for k in rate90}
         red90 = df["r_rc"].to_numpy(float)
-        conc = self.conceded.predict(df[TEAM_FEATS])
         pcs = np.exp(-conc)
         is_gkdef = pos.isin(["GK", "DEF"]).to_numpy()
 
@@ -2133,6 +2194,9 @@ class XPointsModel:
         pm90, og90 = pen90 * miss, df["r_og"].to_numpy(float)
         full_penmiss, full_own = pm90 * PEN_MISS_PTS, og90 * OWN_GOAL_PTS
         pts_penmiss, pts_own = full_penmiss * n90, full_own * n90
+        if YC_EXTRA:
+            m1c = np.where(np.isnan(base["m1"]), float(SUB_MINUTES), np.clip(np.nan_to_num(base["m1"], nan=SUB_MINUTES), 1, 59))
+            lam["yellow"] = rate90["yellow"] * (p_60 * card_minutes(m60) + p_sub * card_minutes(m1c)) / 90
         pts_card = -lam["yellow"] - 3 * red90 * n90
         out = pd.DataFrame({
             "xmin": xmin, "p_play": p_play, "p_60": p_60, "xg": lam["goals"], "xa": lam["assists"],
@@ -2530,7 +2594,7 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
     figs = [("Score 1+ (no pens)", 1 - np.exp(-full["np_g90"].to_numpy(float) * f), (full["np_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
             ("Fantasy Assist 1+", 1 - np.exp(-full["a90"].to_numpy(float) * f), (full["assists"].fillna(0) >= 1).to_numpy(float), full["position"]),
             ("DefCon", pdc, (fd["defensive_contribution"] >= fd["position"].map(DEFCON_THRESHOLD)).to_numpy(float), fd["position"]),
-            ("Yellow card", 1 - np.exp(-full["y90"].to_numpy(float) * f), (full["yellow_cards"].fillna(0) >= 1).to_numpy(float), full["position"]),
+            ("Yellow card", 1 - np.exp(-full["y90"].to_numpy(float) * (card_minutes(full["minutes"]) / 90 if real_minutes and YC_EXTRA else f)), (full["yellow_cards"].fillna(0) >= 1).to_numpy(float), full["position"]),
             ("Own goal", 1 - np.exp(-full["og90"].to_numpy(float) * f), (full["own_goals"].fillna(0) >= 1).to_numpy(float), full["position"]),
             ("Pen save (GK)", 1 - np.exp(-gk["ps90"].to_numpy(float) * fgk), (gk["penalties_saved"].fillna(0) >= 1).to_numpy(float), gk["position"])]
     print(f"\n=== {name} ===")
@@ -2560,6 +2624,12 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         for iv, x in pd.DataFrame({"p": ps_, "h": rs_, "b": b_}).groupby("b", observed=True):
             if len(x) >= 10:
                 bands_out.append(f"Saves | {iv.left:.1f}-{iv.right:.1f} | {x['p'].mean():.2f} | {x['h'].mean():.2f} | {len(x)}")
+    if real_minutes:
+        yp = 1 - np.exp(-full["y90"].to_numpy(float) * (card_minutes(full["minutes"]) / 90 if real_minutes and YC_EXTRA else f))
+        yh = (full["yellow_cards"].fillna(0) >= 1).to_numpy(float)
+        mm = full["minutes"].to_numpy(float)
+        print("Yellow card by minutes played | " + "; ".join(f"{lo}-{hi}: {yp[(mm >= lo) & (mm <= hi)].mean():.1%} vs {yh[(mm >= lo) & (mm <= hi)].mean():.1%} ({int(((mm >= lo) & (mm <= hi)).sum())})"
+                                                          for lo, hi in ((1, 29), (30, 59), (60, 89), (90, 200))))
     print(f"\n=== {name}, by predicted chance ===")
     print("figure | band | predicted | real | matches")
     print("\n".join(bands_out))

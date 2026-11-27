@@ -221,6 +221,14 @@ window.XMin = (function () {
     const r = m.mins.reduce((a, b) => a + b, 0) / m.mins.length / 90;
     const parts = { app: m.mins.reduce((a, x) => a + (x > 0 ? 1 : 0) + (x >= 60 ? 1 : 0), 0) };
     PARTS.forEach((k) => { parts[k] = f[k] * r; });
+    if (f.cards && d.pYellow != null) {
+      // yellow cards: a short match counts its minutes + 22 x (1 - minutes / 90) (late minutes carry more cards; the
+      // model's CARD rule), red cards in proportion to the minutes
+      const y = -Math.log(1 - Math.min(0.99, d.pYellow)), rd = -Math.log(1 - Math.min(0.99, d.pRed || 0));
+      const ys = y + 3 * rd > 0 ? y / (y + 3 * rd) : 1;
+      const cm = m.mins.reduce((a, x) => a + (x > 0 ? Math.min(90, x) + 22 * (1 - Math.min(90, x) / 90) : 0), 0) / m.mins.length / 90;
+      parts.cards = f.cards * (ys * cm + (1 - ys) * r);
+    }
     // Clean sheet and goals conceded count only for matches with 60+ minutes (FPL rule), and only the goals while
     // he is on the pitch; DefCon is much harder to reach in fewer minutes (same rules as the model).
     const full60 = m.mins.filter((x) => x >= 60).length / m.mins.length;
