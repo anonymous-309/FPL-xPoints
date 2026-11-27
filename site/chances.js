@@ -327,10 +327,16 @@
     const cards = [
       block('Chance 90min at real minutes', 'How accurate the Chance 90min figures are: at the minutes he really played, every match', [
         'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Every match he played (1 minute or more) is used. Each per-90 figure is scaled to the minutes he really played in that match (a 30-minute cameo gets a third of the 90-minute rate; DefCon uses his expected actions for those minutes). This tests the per-90 rates on all matches, still without any minutes guess.', explain]),
-      block('Chance 90min on full-90 matches', 'Full-90 matches only', [
+      block('Chance 90min on full-90 matches', 'How accurate the Chance 90min figures are: full-90 matches only', [
         'Only matches where the player played the full 90 minutes are used, because that is exactly what this page shows (every column assumes 90 minutes), so no minutes guess gets in the way.', explain]),
     ].filter(Boolean);
     if (!cards.length) { $('accBox').replaceChildren(el('p', { className: 'meta', textContent: 'No accuracy figures yet.' })); return; }
+    if (cards.length > 1) {
+      // two tests on this tab: say so at the top, with a jump to the second
+      cards[1].id = 'acc-full90';
+      cards.unshift(el('p', { className: 'meta' }, 'Two tests below: every match at the minutes he really played, then ',
+        el('a', { href: '#acc-full90', textContent: 'full-90 matches only' }), '.'));
+    }
     cards.push(el('p', { className: 'meta', textContent: 'Groups with few matches move a lot by luck alone: a group of 100 matches at 20% can come out anywhere from about 12% to 28%.' }));
     $('accBox').replaceChildren(...cards);
   }
