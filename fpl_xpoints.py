@@ -2620,7 +2620,7 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         corr = float(np.corrcoef(pred_n, real_n)[0, 1]) if np.std(pred_n) > 0 else float("nan")
         print(f"{title} | {len(real_n)} | {pred_n.mean():.3f} | {real_n.mean():.3f} | {skill:+.3f} | corr {corr:.3f}")
         short = title
-        edges = [0, .05, .10, .15, .20, .30, .40, 5] if title == "Predicted NP goals" else [0, .05, .10, .15, .20, .25, .30, 5]
+        edges = [round(0.05 * k, 2) for k in range(11)] + [5] if title == "Predicted NP goals" else [0, .05, .10, .15, .20, .25, .30, 5]
         b_ = pd.cut(pred_n, edges, include_lowest=True)
         for iv, x in pd.DataFrame({"p": pred_n, "h": real_n, "b": b_}).groupby("b", observed=True):
             if len(x) >= 10:
