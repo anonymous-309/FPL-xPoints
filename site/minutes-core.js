@@ -75,6 +75,11 @@ window.XMin = (function () {
   function pitch(overrides, t, g, fx) {
     const m = matchMins(overrides, t, g, fx);
     if (m === null) return null;
+    if (minutes(overrides, t, g).source !== 'model') {
+      // minutes set by the viewer are what happens: 60+ = he starts and plays them, 1-59 = he comes on for them
+      const st = m >= 60 ? 1 : 0;
+      return { id: t.id, start: st, ms: st ? m : 0, mb: st ? 0 : m, there: m > 0 ? 1 : 0, edited: true };
+    }
     const u = t.pitch || { start: m >= 60 ? 1 : 0, ms: m, mb: 0 };
     const usual = t.minUsual || 0;
     const there = usual > 0 ? Math.min(1, m / usual) : 0;
@@ -149,7 +154,7 @@ window.XMin = (function () {
       const x = pitch(overrides, t, g, fx);
       if (!x) return null;
       const len = Math.min(90, (t.minUsual || 0) * (t.minUsual > 0 ? Math.max(1, matchMins(overrides, t, g, fx) / t.minUsual) : 1));
-      return { ...x, start: (t.pitch ? t.pitch.start : x.start) > 0.5 ? 1 : 0, ms: len, mb: len };
+      return { ...x, start: (x.edited || !t.pitch ? x.start : t.pitch.start) > 0.5 ? 1 : 0, ms: len, mb: len };
     }).filter(Boolean);
     const fks = (fkTakers[p.team] || []).filter((t) => t.penOrder == null).map((t) => { const m = matchMins(overrides, t, g, fx); return m ? { id: t.id, m: m / 90 } : null; }).filter(Boolean);
     if (!listed.some((x) => x.id === p.id) && !fks.some((x) => x.id === p.id)) return 0;
@@ -160,14 +165,31 @@ window.XMin = (function () {
   // minutes he is expected to play.
   function startChanceAt(overrides, p, g, j) {
     const d = p.byGw[g];
-    if (!d || !d.fx || !p.pitch) return null;
+    if (!d || !d.fx || (!p.pitch && !applied(overrides, p, g))) return null;
     const x = pitch(overrides, p, g, d.fx[j]);
     return x ? x.start * x.there : 0;
   }
   function startChance(overrides, p, g) {
     const d = p.byGw[g];
-    if (!d || !d.fx || !p.pitch) return null;
+    if (!d || !d.fx || (!p.pitch && !applied(overrides, p, g))) return null;
     return 1 - d.fx.reduce((a, fx) => { const x = pitch(overrides, p, g, fx); return a * (1 - (x ? x.start * x.there : 0)); }, 1);
+  }
+
+  // Minutes set by the viewer count as what happens: Appearance 1+ and 60+ become 100% or 0% (per match in
+  // match[j]); null when he uses the model's minutes.
+  function applied(overrides, p, g) {
+    const m = p.byGw[g] ? minutes(overrides, p, g) : null;
+    if (!m || m.source === 'model') return null;
+    const match = m.mins.map((x) => ({ pApp1: x > 0 ? 1 : 0, pApp60: x >= 60 ? 1 : 0 }));
+    const any = (k) => 1 - match.reduce((a, o) => a * (1 - o[k]), 1);
+    return { pApp1: any('pApp1'), pApp60: any('pApp60'), match };
+  }
+  // Gameweek figures (and one match of a double) with the viewer's minutes applied to the appearance chances.
+  function withEdits(overrides, p, g, d, j) {
+    const a = applied(overrides, p, g);
+    if (!a) return d;
+    const x = j == null ? a : a.match[j];
+    return { ...d, pApp1: x.pApp1, pApp60: x.pApp60 };
   }
 
   // Change in his full-90 goal, penalty miss and xG figures for match j when the penalty share moves.
@@ -219,7 +241,7 @@ window.XMin = (function () {
       // his defensive actions over 90 x minutes / 90, then the chance of reaching the threshold
       parts.defcon = m.mins.reduce((a, x, j) => a + (x > 0 ? 2 * nbAtLeast(DC_THR[p.position], d.dm[j] * Math.min(90, x) / 90, dcSize) : 0), 0);
     }
-    return { ...d, parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: r * 90 * m.mins.length, mins: m.mins, xg: f.xg * r, xa: f.xa * r, edited: m.source };
+    return { ...withEdits(overrides, p, g, d), parts, xpts: Object.values(parts).reduce((a, b) => a + b, 0), xmin: r * 90 * m.mins.length, mins: m.mins, xg: f.xg * r, xa: f.xa * r, edited: m.source };
   }
 
   const join = (mins) => mins.map((x) => Math.round(x)).join('+');
@@ -248,7 +270,7 @@ window.XMin = (function () {
     ['pRed', 'Red card', 'pct1'], ['pYellow', 'Yellow card', 'pct'], ['xBps', 'BPS', 0], ['bonus', 'Bonus', 2],
   ];
   function chanceFigures(overrides, p, g) {
-    const d = p.byGw[g];
+    const d = withEdits(overrides, p, g, p.byGw[g]);
     const miss = p.penMiss == null ? 0.22 : p.penMiss;
     let penModel = 0, pen = 0, missed = 0;
     (d.fx || []).forEach((_, j) => {
@@ -282,5 +304,5 @@ window.XMin = (function () {
     return `${p.name}, GW${g} v ${d.opp.join(', ')}\nExpected ${d.xpts.toFixed(1)} points, ${join(m.mins)} minutes${d.edited ? ' (yours)' : ''}\n\nChance 90min\n${chances}\n\n${seasonText(p)}`;
   }
 
-  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, startChanceAt, order, detailText };
+  return { load, save, parse, tidy, model, minutes, view, join, setPlayers, penCond, startChance, startChanceAt, applied, withEdits, order, detailText };
 })();

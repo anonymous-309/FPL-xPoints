@@ -151,8 +151,8 @@
   // Goals split into open play (NPxGoals) and penalties. The penalty share follows the minutes set on the Minutes
   // page for the takers above him, so Score 1+, Pen goals and Pen miss move with them.
   function figures(p, g) {
-    const d = p.byGw[g];
-    if (!d) return null;
+    if (!p.byGw[g]) return null;
+    const d = XMin.withEdits(state.overrides, p, g, p.byGw[g]);
     const key = `${p.id}|${g}`;
     if (cache.has(key)) return cache.get(key);
     const miss = p.penMiss == null ? LEAGUE_MISS : p.penMiss;
@@ -171,7 +171,7 @@
   }
   // One match of a double gameweek on its own: the same figures for that match only.
   function matchFigures(p, g, j) {
-    const d = p.byGw[g], m = d.byMatch[j];
+    const d = p.byGw[g], m = XMin.withEdits(state.overrides, p, g, d.byMatch[j], j);
     const miss = p.penMiss == null ? LEAGUE_MISS : p.penMiss;
     const tp = d.tp ? d.tp[j] : 0;
     const penModel = (d.pc ? d.pc[j] : 0) * tp * (1 - miss);

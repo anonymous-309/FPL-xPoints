@@ -5,7 +5,7 @@
     const pc = (x) => (x == null ? '–' : `${Math.round(x * 100)}%`);
     // Appearance 1+ and 60+ of the next gameweek, as on the Chance page (his recent matches and FPL flags)
     const g = state.data && state.data.gws.map(String).find((x) => p.byGw[x]);
-    const d = g ? p.byGw[g] : null;
+    const d = g ? XMin.withEdits(state.overrides, p, g, p.byGw[g]) : null;
     const p60 = d ? d.pApp60 : p.p60Usual, p1 = d ? d.pApp1 : p.p1Usual;
     const short = p1 != null && p60 != null ? Math.max(0, p1 - p60) : null;
     return [`Appearance 60+: ${pc(p60)}, Min60 ${p.min60 != null ? Math.round(p.min60) : '–'} (minutes when he plays 60+)`,

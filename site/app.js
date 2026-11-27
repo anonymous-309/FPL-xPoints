@@ -28,7 +28,7 @@
   ];
   // Goals split into open play and penalties, as on the Chance 90min page (penalty share with the Minutes page edits).
   function goalsSplit(p, g) {
-    const d = p.byGw[g];
+    const d = XMin.withEdits(state.overrides, p, g, p.byGw[g]);
     const miss = p.penMiss == null ? 0.22 : p.penMiss;
     let penModel = 0, pen = 0, missed = 0;
     (d.fx || []).forEach((_, j) => {
