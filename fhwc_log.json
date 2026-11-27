@@ -2,12 +2,12 @@
 "entries": {
 "12": {
 "gw": 12,
-"saved": "2026-11-26T23:31+00:00",
+"saved": "2026-11-27T01:53+00:00",
 "deadline": "2026-11-27T18:30:00Z",
 "fh": {
 "squad": [
 "c432720",
-"c473284",
+"c485055",
 "c465730",
 "c522047",
 "c220627",
@@ -39,18 +39,18 @@
 "c219168"
 ],
 "bench": [
-"c473284",
+"c485055",
 "c610799",
 "c226597",
 "c586309"
 ],
 "cap": "c141746",
 "vice": "c465730",
-"xpts": 60.9,
+"xpts": 60.89,
 "xptsXi": 61.06,
 "xp": {
 "c432720": 4.11,
-"c473284": 3.79,
+"c485055": 3.63,
 "c465730": 5.46,
 "c522047": 4.85,
 "c220627": 4.75,
@@ -130,7 +130,7 @@
 "c586309": 4.84
 },
 "xptsPlan": 59.73,
-"picked": "2026-11-26T23:31+00:00",
+"picked": "2026-11-27T01:53+00:00",
 "locked": false
 },
 {
@@ -1907,7 +1907,7 @@
 "c586309": 4.84
 },
 "xptsPlan": 59.85,
-"picked": "2026-11-26T23:31+00:00",
+"picked": "2026-11-27T01:53+00:00",
 "locked": false
 }
 ]
@@ -2330,7 +2330,7 @@
 "c444102": 4.55
 },
 "xptsPlan": 58.73,
-"picked": "2026-11-26T23:31+00:00",
+"picked": "2026-11-27T01:53+00:00",
 "locked": false
 },
 {
@@ -2715,7 +2715,7 @@
 "c517052": 5.38
 },
 "xptsPlan": 58.45,
-"picked": "2026-11-26T23:31+00:00",
+"picked": "2026-11-27T01:53+00:00",
 "locked": false
 },
 {
@@ -3056,7 +3056,7 @@
 "c586309": 4.84
 },
 "xptsPlan": 59.7,
-"picked": "2026-11-26T23:31+00:00",
+"picked": "2026-11-27T01:53+00:00",
 "locked": false
 },
 {
@@ -3293,7 +3293,7 @@
 "name": "Haaland",
 "team": "MCI",
 "pos": "FWD",
-"price": 15.8
+"price": 15.7
 },
 "c223340": {
 "name": "Saka",
@@ -3623,7 +3623,7 @@
 "name": "De Cuyper",
 "team": "BHA",
 "pos": "DEF",
-"price": 5.5
+"price": 5.6
 },
 "c467779": {
 "name": "Wieffer",
@@ -4445,7 +4445,7 @@
 "name": "Wirtz",
 "team": "LIV",
 "pos": "MID",
-"price": 7.4
+"price": 7.5
 },
 "c496661": {
 "name": "Dibling",
@@ -5183,7 +5183,7 @@
 "name": "George Hemmings",
 "team": "AVL",
 "pos": "MID",
-"price": 4.4
+"price": 4.3
 },
 "c614071": {
 "name": "Manzambi",
@@ -5423,7 +5423,7 @@
 "name": "Okafor",
 "team": "LEE",
 "pos": "MID",
-"price": 5.7
+"price": 5.8
 },
 "c437497": {
 "name": "Bard",
@@ -5495,7 +5495,7 @@
 "name": "Muharemović",
 "team": "LEE",
 "pos": "DEF",
-"price": 5.1
+"price": 5.2
 },
 "c539142": {
 "name": "Amenda",
@@ -5759,7 +5759,7 @@
 "name": "Thiago",
 "team": "BRE",
 "pos": "FWD",
-"price": 7.8
+"price": 7.7
 },
 "c507433": {
 "name": "Valdimarsson",
@@ -6371,7 +6371,7 @@
 "name": "Brobbey",
 "team": "SUN",
 "pos": "FWD",
-"price": 5.7
+"price": 5.6
 },
 "c445044": {
 "name": "Kulusevski",
@@ -6413,7 +6413,7 @@
 "name": "Kinsky",
 "team": "TOT",
 "pos": "GK",
-"price": 4.4
+"price": 4.5
 },
 "c487053": {
 "name": "Udogie",
@@ -6425,7 +6425,7 @@
 "name": "Hume",
 "team": "SUN",
 "pos": "DEF",
-"price": 4.2
+"price": 4.1
 },
 "c491279": {
 "name": "Van de Ven",
