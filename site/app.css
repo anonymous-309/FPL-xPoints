@@ -369,6 +369,13 @@ td.xmin-ro.edited { color: var(--ink); box-shadow: inset 0 0 0 2px var(--flag); 
 .acc-table th, .acc-table td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: left; }
 .acc-table .num { text-align: right; white-space: nowrap; }
 .acc-table tr.on td { background: #e9f4ec; font-weight: 600; }
+@media (max-width: 600px) {
+  /* phones: six columns fit the screen (smaller type, tighter cells, figure names wrap) */
+  .acc-table { font-size: 0.75rem; }
+  .acc-table th, .acc-table td { padding: 5px 3px; }
+  .acc-table th, .acc-table th.num { white-space: normal; }
+  .acc-table td:first-child { white-space: normal; min-width: 64px; }
+}
 .acc-raw pre { white-space: pre; overflow-x: auto; font-size: 11px; background: #f6f8f6; padding: 10px; border-radius: 8px; }
 
 .opt-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }

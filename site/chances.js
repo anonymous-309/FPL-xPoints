@@ -316,8 +316,14 @@
       const main = (sec[name] || []).slice(1).sort((x, y) => first(x[0]) - first(y[0]));
       const bands = (sec[`${name}, by predicted chance`] || []).slice(1);
       if (!main.length) return null;
-      const out = [el('h2', { textContent: title }), ...intro.map((t) => el('p', { textContent: t })),
-        table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], main)];
+      // predicted numbers (goals, assists, saves) in their own table, with the correlation; then the chances
+      const isNum = (r) => /^corr /.test(r[5] || '') || ['', '|', '–'].includes((r[5] || '').trim()) || /^Save points/.test(r[0]);
+      const short = { 'Predicted NP goals': 'NP goals', 'Predicted fantasy assists': 'Fantasy assists', 'Predicted saves': 'Saves', 'Save points (1 per 3 saves)': 'Save points (1 per 3 saves)' };
+      const nums = main.filter(isNum).map((r) => [short[r[0]] || r[0], r[1], r[2], r[3], r[4], (r[5] || '').replace(/^corr /, '')].map((c) => (['|', ''].includes(String(c).trim()) ? '–' : c)));
+      const chances = main.filter((r) => !isNum(r));
+      const out = [el('h2', { textContent: title }), ...intro.map((t) => el('p', { textContent: t }))];
+      if (nums.length) out.push(el('h3', { textContent: 'Predicted numbers' }), table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'Corr.'], nums));
+      if (chances.length) out.push(el('h3', { textContent: 'Chances' }), table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], chances));
       const byFig = {};
       bands.forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
       Object.entries(byFig).sort((x, y) => first(x[0]) - first(y[0])).forEach(([fig, rows]) => {
@@ -329,7 +335,7 @@
       if (ym.length) out.push(el('h3', { textContent: 'Yellow card: by minutes he played' }), table(['Minutes', 'Predicted', 'Real', 'Matches'], ym));
       return el('section', { className: 'acc-card' }, ...out);
     };
-    const explain = 'Predicted = the average chance the model gave (for the predicted numbers of NP goals, fantasy assists and saves: the average number); Real = how often it happened (for those: the real average number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).';
+    const explain = 'Predicted = the average chance the model gave (for the predicted numbers of NP goals, fantasy assists and saves: the average number); Real = how often it happened (for those: the real average number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect). Corr.: how closely the predicted numbers follow the real ones, match by match (0 = not at all, 1 = exactly).';
     const cards = [
       block('Chance 90min at real minutes', 'How accurate the Chance 90min figures are: at the minutes he really played, every match', [
         'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Every match he played (1 minute or more) is used. Each per-90 figure is scaled to the minutes he really played in that match (a 30-minute cameo gets a third of the 90-minute rate; DefCon uses his expected actions for those minutes). This tests the per-90 rates on all matches, still without any minutes guess.', explain]),

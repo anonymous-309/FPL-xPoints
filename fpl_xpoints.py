@@ -2631,7 +2631,7 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         corr = float(np.corrcoef(ps_, rs_)[0, 1]) if np.std(ps_) > 0 else float("nan")
         exp_pts = np.array([sum(poisson.sf(3 * k - 1, mu) for k in range(1, 8)) for mu in ps_])
         print(f"Predicted saves | {len(gk)} | {ps_.mean():.2f} | {rs_.mean():.2f} | {1 - mae / mae0:+.3f} | corr {corr:.3f}")
-        print(f"Save points (1 per 3 saves) | {len(gk)} | {exp_pts.mean():.2f} | {np.floor(rs_ / 3).mean():.2f} | | ")
+        print(f"Save points (1 per 3 saves) | {len(gk)} | {exp_pts.mean():.2f} | {np.floor(rs_ / 3).mean():.2f} | – | –")
         b_ = pd.cut(ps_, [0, 2, 2.5, 3, 3.5, 4, 5, 10], include_lowest=True)
         for iv, x in pd.DataFrame({"p": ps_, "h": rs_, "b": b_}).groupby("b", observed=True):
             if len(x) >= 10:
