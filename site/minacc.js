@@ -35,16 +35,6 @@
     const byFig = {};
     rowsOf(S['Minutes chances, by predicted chance']).forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
     Object.entries(byFig).forEach(([fig, rows]) => out.push(el('h3', { textContent: `${fig}: by predicted chance` }), table(['Predicted chance', 'Predicted', 'Real', 'Matches'], rows)));
-    const mw = rowsOf(S['Minutes when he played']);
-    if (mw.length) {
-      out.push(el('h2', { textContent: 'Minutes when he played: Min60 and Min1' }),
-        p(b('Min60'), ': his minutes in the matches where he plays 60+ (his recent 60+ matches, weighted 5-4-3-2-1), against his real minutes in the matches where he did play 60+. ',
-          b('Min1'), ': the same for the matches where he played 1 to 59 minutes. Clean sheets, goals conceded and DefCon use these minutes.'),
-        table(['Figure', 'Matches', 'Predicted', 'Real', 'Bias', 'Average miss', 'Within 10 min'], mw));
-      const m60 = rowsOf(S['Min60 by predicted Min60']), m1 = rowsOf(S['Min1 by predicted Min1']);
-      if (m60.length) out.push(el('h3', { textContent: 'Min60 by predicted Min60' }), table(['Predicted Min60', 'Matches', 'Predicted', 'Real'], m60));
-      if (m1.length) out.push(el('h3', { textContent: 'Min1 by predicted Min1' }), table(['Predicted Min1', 'Matches', 'Predicted', 'Real'], m1));
-    }
     return el('section', { className: 'acc-card' }, ...out);
   }
   function draw([text, xm]) {

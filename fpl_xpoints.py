@@ -2460,30 +2460,6 @@ def minutes_chance_report(pred: pd.DataFrame) -> None:
     print("\n=== Minutes chances, by predicted chance ===")
     print("figure | band | predicted | real | matches")
     print("\n".join(bands))
-    print("\n=== Minutes when he played ===")
-    print("figure | matches | predicted | real | bias | average miss | within 10 min")
-    for title, col, k in (("Min60 (matches he played 60+)", "m60", m >= 60), ("Min1 (matches he played 1-59)", "m1", (m > 0) & (m < 60))):
-        if col in d and k.sum():
-            pr, rl = d.loc[k, col].to_numpy(float), m[k]
-            print(f"{title} | {k.sum()} | {pr.mean():.1f} | {rl.mean():.1f} | {pr.mean() - rl.mean():+.1f} | {np.mean(np.abs(pr - rl)):.1f} | {np.mean(np.abs(pr - rl) <= 10):.0%}")
-    print("\n=== Min60 by predicted Min60 ===")
-    print("band | matches | predicted | real")
-    k = m >= 60
-    if "m60" in d and k.sum():
-        x = pd.DataFrame({"p": d.loc[k, "m60"].to_numpy(float), "r": m[k]})
-        edges = [0] + list(range(62, 90, 2)) + [90.1]
-        for iv, g in x.groupby(pd.cut(x["p"], edges), observed=True):
-            if len(g) >= 10:
-                lo = 60 if iv.left == 0 else iv.left
-                print(f"{lo:.0f}-{min(iv.right, 90):.0f} | {len(g)} | {g['p'].mean():.1f} | {g['r'].mean():.1f}")
-    print("\n=== Min1 by predicted Min1 ===")
-    print("band | matches | predicted | real")
-    k = (m > 0) & (m < 60)
-    if "m1" in d and k.sum():
-        x = pd.DataFrame({"p": d.loc[k, "m1"].to_numpy(float), "r": m[k]})
-        for iv, g in x.groupby(pd.cut(x["p"], [0, 15, 20, 25, 30, 40, 60]), observed=True):
-            if len(g) >= 20:
-                print(f"{iv.left:.0f}-{iv.right:.0f} | {len(g)} | {g['p'].mean():.1f} | {g['r'].mean():.1f}")
 
 
 def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
