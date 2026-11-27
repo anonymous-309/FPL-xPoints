@@ -15,6 +15,10 @@
   <nav class="sitenav" aria-label="Pages"></nav>
 </header>
 <div id="error" class="error" role="alert" hidden></div>
+<div class="seg view-seg" role="group" aria-label="View" id="viewSeg">
+  <button type="button" data-view="table" aria-pressed="true">Table</button><button type="button" data-view="accuracy" aria-pressed="false">Accuracy</button>
+</div>
+<div id="accBox" class="acc" hidden></div>
 <form id="filters" class="filters" autocomplete="off">
   <div class="seg" role="group" aria-label="Position">
     <button type="button" data-pos="" aria-pressed="true">All</button>
@@ -50,6 +54,7 @@
 <script src="backup.js"></script>
 <script src="minutes-core.js"></script>
 <script src="minutes.js"></script>
+<script src="minacc.js"></script>
 <script src="tips.js"></script>
 <script src="nav.js"></script>
 </body>

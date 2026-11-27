@@ -394,9 +394,9 @@
 
   $('filters').addEventListener('input', render);
   $('filters').addEventListener('submit', (e) => e.preventDefault());
-  document.querySelectorAll('.seg button').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('#filters .seg button').forEach((b) => b.addEventListener('click', () => {
     state.pos = b.dataset.pos;
-    document.querySelectorAll('.seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    document.querySelectorAll('#filters .seg button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
     render();
   }));
   $('order').addEventListener('click', () => { state.sort = 'order'; state.dir = 1; render(); });
