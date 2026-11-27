@@ -317,23 +317,6 @@
       el('p', { textContent: 'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Only matches where the player played the full 90 minutes are used, because that is exactly what this page shows (every column assumes 90 minutes), so no minutes guess gets in the way.' }),
       el('p', { textContent: 'Predicted = the average chance the model gave (for saves: the average number); Real = how often it happened (the real number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).' }),
       table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], main)];
-    // Score 1+ and Assist 1+ in steps of 3%: how often each chance came up, and the real share against it
-    const steps = (sec['Chance 90min on full-90 matches, steps of 3%'] || []).slice(1);
-    const chart = window.TeamAcc && window.TeamAcc.svgChart;
-    [['Score 1+ (no pens)', 'Score 1+'], ['Fantasy Assist 1+', 'Fantasy Assist 1+']].forEach(([fig, name]) => {
-      const rows = steps.filter((r) => r[0] === fig);
-      if (!rows.length || !chart) return;
-      const labels = rows.map((r) => r[1]);
-      out.push(el('h3', { textContent: `${name}: how often each chance came up` }),
-        el('p', { textContent: `Every full-90 match by its predicted ${name} chance, in steps of 3% (6% means 6–8.9%).` }),
-        chart({ labels, every: 2, bars: true, yTitle: 'Matches', xTitle: `Predicted ${name}`, series: [{ name: 'Matches', values: rows.map((r) => +r[2]), color: 'var(--turf)' }] }));
-      const ok = rows.filter((r) => +r[2] >= 30);
-      out.push(el('h3', { textContent: `${name}: real share at each predicted chance` }),
-        el('p', { textContent: 'The real share in each step of 3% against the predicted average of the step; only steps with 30 matches or more (fewer move a lot by luck alone).' }),
-        chart({ labels: ok.map((r) => r[1]), yTitle: '%', xTitle: `Predicted ${name}`, yMin: 0, yMax: Math.max(10, Math.ceil(Math.max(...ok.map((r) => Math.max(parseFloat(r[3]), parseFloat(r[4])))) / 10) * 10),
-          series: [{ name: 'Real share', values: ok.map((r) => parseFloat(r[4])), color: 'var(--turf)' },
-            { name: 'Predicted', values: ok.map((r) => parseFloat(r[3])), color: '#c58a00', dash: '5 4' }] }));
-    });
     const byFig = {};
     bands.forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
     Object.entries(byFig).forEach(([fig, rows]) => {
