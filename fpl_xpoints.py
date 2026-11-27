@@ -1659,8 +1659,13 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
     else:
         started = (mins >= 60).astype(float)
 
+    # his team's non-penalty xG and xA in the match, counted for the share of it he was on the pitch (for the share model)
+    tkeys = ["season", "fixture", "team"]
+    df["t_npxg"] = df.groupby(tkeys)["np_xg"].transform("sum")
+    df["t_xa"] = df.groupby(tkeys)["expected_assists"].transform("sum")
     roll = pd.DataFrame({
         "pid": df["pid"], "tf": df["tf"], "position": df["position"], "future": df["future"],
+        "txg": df["t_npxg"].fillna(0) * mins / 90, "txa": df["t_xa"].fillna(0) * mins / 90,
         "mins": mins, "n90": mins / 90, "g": df["np_goals"], "a": df["assists"],
         "xg": df["np_xg"], "xa": df["expected_assists"], "bon": df["bonus"], "bps": df["bps"],
         "sv": df["saves"], "yc": df["yellow_cards"], "rc": df["red_cards"], "xgot": df["np_xgot"], "xgk": df["np_xg_known"], "ps": df["penalties_saved"], "pm": df["penalties_missed"], "og": df["own_goals"], "pts": df["total_points"],
@@ -1675,12 +1680,12 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         # defensive actions where FPL counts them (from 2025-26), any minutes
         "dcs": dc.where(obs & dc.notna() & (mins > 0), 0).fillna(0), "dcn": (mins / 90).where(obs & dc.notna() & (mins > 0), 0),
     })
-    stat = ["mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "shots", "kp", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk", "dcs", "dcn"]
+    stat = ["txg", "txa", "mins", "n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "xgot", "xgk", "ps", "pm", "og", "pts", "box", "shots", "kp", "boxn90", "st", "n", "dh", "do", "ban", "ptk", "pmk", "dcs", "dcn"]
     roll[stat] = roll[stat].where(obs, 0).fillna(0.0)
     p = roll.groupby(["pid", "tf"], as_index=False, sort=True)[stat].sum()
     keys = p["pid"].to_numpy()
     n90 = p["n90"].to_numpy(float)
-    for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og"]:
+    for c in ["n90", "g", "a", "xg", "xa", "bon", "bps", "sv", "yc", "rc", "ps", "pm", "og", "txg", "txa"]:
         p[f"L_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_LONG)
         p[f"S_{c}"] = decayed_pre(keys, p[c].to_numpy(float), HL_SHORT)
     p["L_dcs"], p["L_dcn"] = decayed_pre(keys, p["dcs"].to_numpy(float), HL_LONG), decayed_pre(keys, p["dcn"].to_numpy(float), HL_LONG)
@@ -1829,6 +1834,12 @@ def build_features(df: pd.DataFrame, fm_oop: dict | None = None) -> pd.DataFrame
         else:
             df[f"r_{c}"] = (df[f"L_{c}"] + k * df[f"p_{c}"]) / (df["L_n90"] + k)
         df[f"f_{c}"] = (df[f"S_{c}"] + K_SHORT * df[f"r_{c}"]) / (df["S_n90"] + K_SHORT)
+    # Share model: his share of his team's non-penalty xG (and xA) while he is on the pitch, decayed like his xG and
+    # padded with K_XGA 90s at his prior (his prior xG/90 over a team's average xG per match)
+    seen = df[~df["future"] & (df["minutes"].fillna(0) > 0)].drop_duplicates(["season", "fixture", "team"])
+    lg_x, lg_a = float(seen["t_npxg"].mean() or 1.2), float(seen["t_xa"].mean() or 0.9)
+    df["share_xg"] = (df["L_xg"].fillna(0) + K_XGA * df["p_xg"]) / (df["L_txg"].fillna(0) + K_XGA * lg_x)
+    df["share_xa"] = (df["L_xa"].fillna(0) + K_XGA * df["p_xa"]) / (df["L_txa"].fillna(0) + K_XGA * lg_a)
     df["defcon_rate"] = (df["X_dh"] + K_PLAYER * df["p_dh"]) / (df["X_do"] + K_PLAYER)
     # Defensive actions per 90 (the DefCon count), shrunk to the role average.
     df["r_dc"] = (df["L_dcs"].fillna(0) + K_PLAYER * df["p_dc"].fillna(DC_PRIOR_DEFAULT)) / (df["L_dcn"].fillna(0) + K_PLAYER)
@@ -2075,12 +2086,39 @@ def team_goal_scale(df: pd.DataFrame, conc: np.ndarray, player_goals: np.ndarray
     return f.to_numpy(float)
 
 
+# Share model weight: goals and assists per 90 = the team's expected goals in the match x his share of its xG (xA) on
+# the pitch, the shares of the players expected to play scaled to fill the team's minutes; mixed with the
+# player-by-player figure: 0 = player model only, 1 = share model only.
+SHARE_W = float(os.environ.get("FPL_SHARE", "0"))
+
+
+def share_rates(df: pd.DataFrame, conc: np.ndarray, n90: np.ndarray, np_per_goal: float, a_per_goal: float):
+    key = (df["season"].astype(str) + "|" if "season" in df else "") + df["fixture"].astype(str)
+    tkey, okey = key + "|" + df["team"].astype(str), key + "|" + df["opp"].astype(str)
+    team_conc = pd.Series(conc, index=df.index).groupby(tkey).first()
+    team_exp = okey.map(team_conc).astype(float).fillna(float(np.nanmean(conc)))
+    out = []
+    for col, per_goal in (("share_xg", np_per_goal), ("share_xa", a_per_goal)):
+        sh = df[col].astype(float).fillna(0).clip(lower=0)
+        filled = (sh * n90).groupby(tkey).transform("sum").replace(0, np.nan)  # about 1 when 11 play 90
+        out.append((team_exp * per_goal * sh / filled).fillna(0).to_numpy(float))
+    if os.environ.get("FPL_TRACE") and "web_name" in df:
+        hit = np.where((df["web_name"].astype(str).str.contains(os.environ["FPL_TRACE"]) & df["future"]).to_numpy())[0][:2]
+        for i in hit:
+            print(f"TRACE share {df['web_name'].iloc[i]}: team expected {team_exp.iloc[i]:.2f}, share xG {df['share_xg'].iloc[i]:.3f}, share xA {df['share_xa'].iloc[i]:.3f}, goals/90 {out[0][i]:.3f}, assists/90 {out[1][i]:.3f}")
+    return out[0], out[1]
+
+
 class XPointsModel:
     def fit(self, train: pd.DataFrame) -> "XPointsModel":
         train = train[~train["future"] & train["minutes"].notna()]
         # the first GWs of the data have no position priors or player history yet
         train = train[train["t"] >= train["t"].min() + BURN_IN_GWS]
         self.rates = {k: _fit_rate(train, tgt, f, k == "yellow") for k, (tgt, f) in GLMS.items()}
+        # non-penalty goals and fantasy assists per team goal in the training matches (for the share model)
+        tg = train.dropna(subset=["gf"]).groupby(["season", "fixture", "team"])["gf"].first().sum() if "gf" in train else 0
+        self.np_per_goal = float(train["np_goals"].fillna(0).sum() / tg) if tg else None
+        self.assists_per_goal = float(train["assists"].fillna(0).sum() / tg) if tg else None
         for k in ("goals", "assists"):
             pipe = self.rates[k]
             try:
@@ -2151,6 +2189,10 @@ class XPointsModel:
         if TEAM_SCALE > 0:
             f = team_goal_scale(df, conc, rate90["goals"] * n90 + pen90 * (1 - miss) * n90)
             rate90["goals"], rate90["assists"] = rate90["goals"] * f, rate90["assists"] * f
+        if SHARE_W > 0 and "share_xg" in df and getattr(self, "np_per_goal", None):
+            sg, sa = share_rates(df, conc, n90, self.np_per_goal, self.assists_per_goal)
+            rate90["goals"] = (1 - SHARE_W) * rate90["goals"] + SHARE_W * sg
+            rate90["assists"] = (1 - SHARE_W) * rate90["assists"] + SHARE_W * sa
         rate90["goals"] = rate90["goals"] + pen90 * (1 - miss)
         lam = {k: rate90[k] * n90 for k in rate90}
         red90 = df["r_rc"].to_numpy(float)
