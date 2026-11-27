@@ -1,6 +1,7 @@
 """Keep FotMob's per-player match stats for every Premier League match of a season, in case FotMob stops being
-readable: archive/fotmob/<season>.json.gz = {match id: {"round", "home", "away", "players": [[name, team id, {stat key: value}]]}}.
-Only new finished matches are read (the file is kept between runs). Usage: python tools/fotmob_archive.py 2025-26 [2026-27 ...]"""
+readable: archive/fotmob/<season>.json.gz = {match id: {"round", "home", "away", "players": [[name, team id, {stat key: value}]],
+"unavailable": {"home": [[FotMob id, name, type, expected return]], "away": [...]}}} (who FotMob listed as missing).
+Only new finished matches are read (the file is kept between runs), and older ones without the missing players once. Usage: python tools/fotmob_archive.py 2025-26 [2026-27 ...]"""
 import gzip, json, sys, time
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -42,6 +43,13 @@ def player_rows(d: dict) -> list:
     return rows
 
 
+def unavailable(d: dict) -> dict:
+    lu = (d.get("content") or {}).get("lineup") or {}
+    side = lambda t: [[u.get("id"), u.get("name"), (u.get("unavailability") or {}).get("type") or "", (u.get("unavailability") or {}).get("expectedReturn") or ""]
+                      for u in (lu.get(t) or {}).get("unavailable") or []]
+    return {"home": side("homeTeam"), "away": side("awayTeam")}
+
+
 def run(season: str) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
     path = OUT / f"{season}.json.gz"
@@ -50,15 +58,18 @@ def run(season: str) -> None:
     new = 0
     for m in matches:
         mid = str(m["id"])
-        if mid in store:
+        if mid in store and "unavailable" in store[mid]:
             continue
         try:
             d = F._fotmob_get("matchDetails", {"matchId": mid})
         except Exception as e:
             print(f"{season} match {mid} not read ({e})")
             continue
-        store[mid] = {"round": int(m.get("round") or 0), "home": (m.get("home") or {}).get("name"), "away": (m.get("away") or {}).get("name"),
-                      "homeId": (m.get("home") or {}).get("id"), "players": player_rows(d)}
+        if mid in store:  # kept before the missing players were added: add them, leave the stats as kept
+            store[mid]["unavailable"] = unavailable(d)
+        else:
+            store[mid] = {"round": int(m.get("round") or 0), "home": (m.get("home") or {}).get("name"), "away": (m.get("away") or {}).get("name"),
+                          "homeId": (m.get("home") or {}).get("id"), "players": player_rows(d), "unavailable": unavailable(d)}
         new += 1
         time.sleep(0.4)
     if new:

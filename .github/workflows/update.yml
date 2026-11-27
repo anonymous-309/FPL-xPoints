@@ -87,7 +87,7 @@ jobs:
         run: python fpl_xpoints.py download
       - name: Keep FotMob player stats of every match (archive/fotmob, in case FotMob stops being readable)
         continue-on-error: true
-        run: python tools/fotmob_archive.py
+        run: python tools/fotmob_archive.py 2025-26 2026-27
       - name: Build the points table
         run: python fpl_xpoints.py site --out _site
       - name: Free Hit and Wildcard log (the final teams are kept by the run before the deadline)
