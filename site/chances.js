@@ -311,21 +311,25 @@
       el('thead', {}, el('tr', {}, ...head.map((h, k) => el('th', { scope: 'col', className: k ? 'num' : '', textContent: h })))),
       el('tbody', {}, ...rows.map((r) => el('tr', {}, ...r.map((c, k) => el('td', { className: k ? 'num' : '', textContent: c })))))));
     const block = (name, title, intro) => {
-      const main = (sec[name] || []).slice(1);
+      // the expected numbers (as the page's NPxGoals and xAssists columns) first
+      const first = (f) => (/^(NP goals|Fantasy assists)/.test(f) ? 0 : 1);
+      const main = (sec[name] || []).slice(1).sort((x, y) => first(x[0]) - first(y[0]));
       const bands = (sec[`${name}, by predicted chance`] || []).slice(1);
       if (!main.length) return null;
       const out = [el('h2', { textContent: title }), ...intro.map((t) => el('p', { textContent: t })),
         table(['Figure', 'Matches', 'Predicted', 'Real', 'Skill', 'AUC'], main)];
       const byFig = {};
       bands.forEach((r) => { (byFig[r[0]] = byFig[r[0]] || []).push(r.slice(1)); });
-      Object.entries(byFig).forEach(([fig, rows]) => {
-        out.push(el('h3', { textContent: fig === 'Saves' ? 'Saves: by expected saves' : `${fig}: by predicted chance` }), table(fig === 'Saves' ? ['Expected saves', 'Predicted', 'Real', 'Matches'] : ['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
+      Object.entries(byFig).sort((x, y) => first(x[0]) - first(y[0])).forEach(([fig, rows]) => {
+        const num = { Saves: 'saves', 'NP goals': 'non-penalty goals', 'Fantasy assists': 'fantasy assists' }[fig];
+        out.push(el('h3', { textContent: num ? `${fig}: by expected number` : `${fig}: by predicted chance` }),
+          table(num ? [`Expected ${num}`, 'Expected', 'Real', 'Matches'] : ['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
       });
       const ym = (sec[`${name}, yellow card by minutes played`] || []).slice(1);
       if (ym.length) out.push(el('h3', { textContent: 'Yellow card: by minutes he played' }), table(['Minutes', 'Predicted', 'Real', 'Matches'], ym));
       return el('section', { className: 'acc-card' }, ...out);
     };
-    const explain = 'Predicted = the average chance the model gave (for saves: the average number); Real = how often it happened (the real number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).';
+    const explain = 'Predicted = the average chance the model gave (for the expected numbers of goals, assists and saves: the average number); Real = how often it happened (for those: the real average number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).';
     const cards = [
       block('Chance 90min at real minutes', 'How accurate the Chance 90min figures are: at the minutes he really played, every match', [
         'Tested on last season (2025-26): every figure was worked out before each match, the same way as now, and checked against what happened. Every match he played (1 minute or more) is used. Each per-90 figure is scaled to the minutes he really played in that match (a 30-minute cameo gets a third of the 90-minute rate; DefCon uses his expected actions for those minutes). This tests the per-90 rates on all matches, still without any minutes guess.', explain]),

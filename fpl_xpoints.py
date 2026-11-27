@@ -2612,6 +2612,19 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
             for iv, x in pd.DataFrame({"p": prob, "h": hit, "b": b}).groupby("b", observed=True):
                 if len(x) >= 10:
                     bands_out.append(f"{title} | {max(iv.left, 0):.0%}-{iv.right:.0%} | {x['p'].mean():.1%} | {x['h'].mean():.1%} | {len(x)}")
+    # Expected numbers, as the page shows them: non-penalty goals (NPxGoals) and fantasy assists (xAssists) against
+    # the real numbers; skill against the position average (squared error), correlation
+    for title, pred_n, real_n in (("NP goals (expected number)", full["np_g90"].to_numpy(float) * f, full["np_goals"].fillna(0).to_numpy(float)),
+                                  ("Fantasy assists (expected number)", full["a90"].to_numpy(float) * f, full["assists"].fillna(0).to_numpy(float))):
+        base = pd.Series(real_n).groupby(full["position"].to_numpy()).transform("mean").to_numpy()
+        skill = 1 - np.mean((pred_n - real_n) ** 2) / np.mean((base - real_n) ** 2)
+        corr = float(np.corrcoef(pred_n, real_n)[0, 1]) if np.std(pred_n) > 0 else float("nan")
+        print(f"{title} | {len(real_n)} | {pred_n.mean():.3f} | {real_n.mean():.3f} | {skill:+.3f} | corr {corr:.3f}")
+        short = "NP goals" if title.startswith("NP") else "Fantasy assists"
+        b_ = pd.cut(pred_n, [0, .05, .1, .2, .3, .5, .7, 5], include_lowest=True)
+        for iv, x in pd.DataFrame({"p": pred_n, "h": real_n, "b": b_}).groupby("b", observed=True):
+            if len(x) >= 10:
+                bands_out.append(f"{short} | {max(iv.left, 0):.2f}-{iv.right:.2f} | {x['p'].mean():.3f} | {x['h'].mean():.3f} | {len(x)}")
     # Saves (goalkeepers, full 90): expected saves against real saves, and the save points (1 per 3 saves)
     if len(gk) and "saves90" in gk:
         ps_, rs_ = gk["saves90"].to_numpy(float) * fgk, gk["saves"].fillna(0).to_numpy(float)
