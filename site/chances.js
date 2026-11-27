@@ -321,6 +321,8 @@
       Object.entries(byFig).forEach(([fig, rows]) => {
         out.push(el('h3', { textContent: fig === 'Saves' ? 'Saves: by expected saves' : `${fig}: by predicted chance` }), table(fig === 'Saves' ? ['Expected saves', 'Predicted', 'Real', 'Matches'] : ['Predicted chance', 'Predicted', 'Real', 'Matches'], rows));
       });
+      const ym = (sec[`${name}, yellow card by minutes played`] || []).slice(1);
+      if (ym.length) out.push(el('h3', { textContent: 'Yellow card: by minutes he played' }), table(['Minutes', 'Predicted', 'Real', 'Matches'], ym));
       return el('section', { className: 'acc-card' }, ...out);
     };
     const explain = 'Predicted = the average chance the model gave (for saves: the average number); Real = how often it happened (the real number). Skill: how much better than giving every player his position\'s average (0 = no better, 1 = perfect). AUC: how well it puts the matches where it happened above those where it did not (0.5 = a coin flip, 1 = perfect).';

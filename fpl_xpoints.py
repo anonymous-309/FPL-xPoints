@@ -2628,8 +2628,11 @@ def full90_report(played: pd.DataFrame, real_minutes: bool = False) -> None:
         yp = 1 - np.exp(-full["y90"].to_numpy(float) * (card_minutes(full["minutes"]) / 90 if real_minutes and YC_EXTRA else f))
         yh = (full["yellow_cards"].fillna(0) >= 1).to_numpy(float)
         mm = full["minutes"].to_numpy(float)
-        print("Yellow card by minutes played | " + "; ".join(f"{lo}-{hi}: {yp[(mm >= lo) & (mm <= hi)].mean():.1%} vs {yh[(mm >= lo) & (mm <= hi)].mean():.1%} ({int(((mm >= lo) & (mm <= hi)).sum())})"
-                                                          for lo, hi in ((1, 29), (30, 59), (60, 89), (90, 200))))
+        print(f"\n=== {name}, yellow card by minutes played ===")
+        print("minutes | predicted | real | matches")
+        for lo, hi in ((1, 29), (30, 59), (60, 89), (90, 200)):
+            k = (mm >= lo) & (mm <= hi)
+            print(f"{lo}-{min(hi, 90)} | {yp[k].mean():.1%} | {yh[k].mean():.1%} | {int(k.sum())}")
     print(f"\n=== {name}, by predicted chance ===")
     print("figure | band | predicted | real | matches")
     print("\n".join(bands_out))
