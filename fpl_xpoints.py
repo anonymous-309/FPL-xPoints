@@ -2223,6 +2223,53 @@ def _one(name: str, pool: list) -> int | None:
     return None
 
 
+# Past seasons whose matchday squads (FotMob line-ups, archive/fotmob) mark who was absent: a player of the club who
+# was in one of its squads earlier and in one later that season, but in neither the starters nor the substitutes of
+# this match, counts as out for it (reason not known: not an injury). Not used for the current season.
+SQUAD_ABSENT_SEASONS = tuple(x for x in os.environ.get("FPL_SQUAD_ABSENT", "2025-26").split(",") if x)
+
+
+def squad_absent(df: pd.DataFrame) -> None:
+    n = 0
+    for season in SQUAD_ABSENT_SEASONS:
+        path = Path("archive/fotmob") / f"{season}.json.gz"
+        s = df[(df["season"] == season) & ~df["future"]]
+        if season == CURRENT_SEASON or s.empty or not path.exists():
+            continue
+        sides = s.groupby(["fixture", "was_home"])["team"].first().unstack()
+        if 0 not in sides or 1 not in sides:
+            continue
+        fx = {(_club(h), _club(a)): f for f, h, a in zip(sides.index, sides[1], sides[0])}
+        in_squad = pd.Series(False, index=s.index)
+        covered = pd.Series(False, index=s.index)  # rows of matches with a line-up
+        for m in json.loads(gzip.decompress(path.read_bytes())).values():
+            lu = m.get("lineup")
+            f = fx.get((_club(m.get("home")), _club(m.get("away"))))
+            if not lu or f is None:
+                continue
+            for side, home in (("home", 1), ("away", 0)):
+                rows = s[(s["fixture"] == f) & (s["was_home"] == home)]
+                covered.loc[rows.index] = True
+                pool = list(zip(rows.index, rows["name"]))
+                for p in lu[side]["starters"] + lu[side]["subs"]:
+                    i = _one(p[1], pool)
+                    if i is not None:
+                        in_squad.at[i] = True
+        in_squad |= s["minutes"].fillna(0) > 0
+        o = s.sort_values("kickoff_time")
+        for pid, g in o.groupby("pid"):
+            sq = in_squad.loc[g.index].to_numpy()
+            if not sq.any():
+                continue
+            first, last = np.argmax(sq), len(sq) - 1 - np.argmax(sq[::-1])
+            gone = [i for k, i in enumerate(g.index) if first < k < last and not sq[k] and covered.at[i]]
+            if gone:
+                df.loc[gone, "hist_out"] = True
+                n += len(gone)
+    if SQUAD_ABSENT_SEASONS:
+        print(f"Out of the matchday squad (FotMob line-ups, {', '.join(SQUAD_ABSENT_SEASONS)}): {n} player-matches")
+
+
 def historic_absences(df: pd.DataFrame, folder: Path = INJURY_ARCHIVE) -> pd.DataFrame:
     """Injuries and absences of past seasons, from archive/injuries (tools/history_injuries.py for FotMob's lists of
     unavailable players per league match, tools/history_soccerway.py for Soccerway's injury spells), so past
@@ -2261,6 +2308,7 @@ def historic_absences(df: pd.DataFrame, folder: Path = INJURY_ARCHIVE) -> pd.Dat
                     if i is not None:
                         df.at[i, "hist_out"] = True
                         inj.at[i] = inj.at[i] or ((u.get("unavailability") or {}).get("type") == "injury")
+    squad_absent(df)
     sw_path = folder / "soccerway_players.json.gz"
     hurt = pd.Series(False, index=df.index)
     if sw_path.exists():

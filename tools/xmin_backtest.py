@@ -118,6 +118,11 @@ def main():
     new = df["sw_out"] & ~df["absent"]
     print(f"Matches out on Soccerway: {int(sw_out.sum())}, of them not listed by FotMob: {int(new.sum())}; injuries picked up in a match: {int(df['sw_inmatch'].sum())}")
     df.loc[new, ["absent", "absent_type"]] = [True, "injury"]
+    # Left out of the matchday squad (FotMob line-ups, the seasons in F.SQUAD_ABSENT_SEASONS): absent, reason not known
+    if "hist_out" in df:
+        sq = df["hist_out"].fillna(False).astype(bool) & ~df["absent"]
+        df.loc[sq, ["absent", "absent_type"]] = [True, "absent"]
+        print(f"Out of the matchday squad, not listed by FotMob or Soccerway: {int(sq.sum())}")
 
     # Usual minutes before each match, the formula's way
     df = df.sort_values(["pid", "kickoff_time", "fixture"])
