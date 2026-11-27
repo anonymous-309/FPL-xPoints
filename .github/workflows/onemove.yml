@@ -1,28 +1,9 @@
-name: Share model
+name: Data check
 on: { push: { branches: [analysis-41] } }
 permissions: { contents: read }
 jobs:
   t:
     runs-on: ubuntu-latest
-    timeout-minutes: 120
-    strategy:
-      matrix: { cfg: ["0", "0.5", "1"] }
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: { python-version: "3.13", cache: pip }
-      - run: pip install -r requirements.txt
-      - uses: actions/cache@v4
-        with:
-          path: fpl_data/20*
-          key: fpl-history-v1
-      - run: python fpl_xpoints.py download
-      - run: FPL_SHARE=${{ matrix.cfg }} PYTHONWARNINGS=ignore python fpl_xpoints.py backtest > bt.txt 2>&1 || true
-      - run: |
-          echo "=== share ${{ matrix.cfg }} ==="
-          grep -E "Traceback|Error" bt.txt | head -5
-          sed -n '/=== Chance 90min at real minutes ===/,/=== Chance 90min at real minutes, yellow/p' bt.txt | grep -E "^Predicted (NP|fantasy)"
-          sed -n '/=== Chance 90min at real minutes, by predicted chance ===/,/^$/p' bt.txt | grep -E "^Predicted (NP|fantasy)"
-          sed -n '/=== Prediction accuracy ===/,/=== Regulars, by position/p' bt.txt | grep Model
-          sed -n '/=== Regulars, by position/,/^$/p' bt.txt | head -7
-          sed -n '/=== Finding the best players/,/=== Decisions/p' bt.txt | grep "| Model"
+      - run: python tools/role_dump.py
