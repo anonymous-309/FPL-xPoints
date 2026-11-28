@@ -64,7 +64,44 @@
 "c517052": 5.52,
 "c177815": 5.21,
 "c219168": 5.0
-}
+},
+"actual": 13,
+"playerPts": {
+"c432720": 0,
+"c465730": 0,
+"c522047": 0,
+"c610799": 0,
+"c222531": 13,
+"c446008": 0,
+"c540324": 0,
+"c60307": 0,
+"c517052": 0,
+"c177815": 0,
+"c219168": 0,
+"c473284": 0,
+"c226597": 0,
+"c469142": 0,
+"c494595": 0
+},
+"playerMins": {
+"c432720": 0,
+"c465730": 0,
+"c522047": 0,
+"c610799": 0,
+"c222531": 90,
+"c446008": 0,
+"c540324": 0,
+"c60307": 0,
+"c517052": 0,
+"c177815": 0,
+"c219168": 0,
+"c473284": 0,
+"c226597": 0,
+"c469142": 0,
+"c494595": 0
+},
+"subs": [],
+"final": false
 }
 },
 "wc": {
@@ -131,7 +168,44 @@
 },
 "xptsPlan": 59.53,
 "picked": "2026-11-27T17:53+00:00",
-"locked": true
+"locked": true,
+"actual": 0,
+"playerPts": {
+"c432720": 0,
+"c465730": 0,
+"c220627": 0,
+"c610799": 0,
+"c60307": 0,
+"c494595": 0,
+"c424876": 0,
+"c201658": 0,
+"c517052": 0,
+"c586309": 0,
+"c223094": 0,
+"c473284": 0,
+"c226597": 0,
+"c463981": 0,
+"c480457": 0
+},
+"playerMins": {
+"c432720": 0,
+"c465730": 0,
+"c220627": 0,
+"c610799": 0,
+"c60307": 0,
+"c494595": 0,
+"c424876": 0,
+"c201658": 0,
+"c517052": 0,
+"c586309": 0,
+"c223094": 0,
+"c473284": 0,
+"c226597": 0,
+"c463981": 0,
+"c480457": 0
+},
+"subs": [],
+"final": false
 },
 {
 "gw": 13,
@@ -156,25 +230,28 @@
 ],
 "cap": "c223094",
 "vice": "c480457",
-"xpts": 59.86,
+"xpts": 60.2,
 "xptsXi": 60.54,
 "xp": {
-"c432720": 3.3,
-"c473284": 3.9,
-"c465730": 4.06,
-"c226597": 4.53,
-"c463981": 4.27,
+"c432720": 3.29,
+"c473284": 3.85,
+"c465730": 4.09,
+"c226597": 4.55,
+"c463981": 4.26,
 "c610799": 3.73,
 "c220627": 3.34,
-"c201658": 4.95,
-"c494595": 5.3,
-"c424876": 5.21,
-"c60307": 4.17,
-"c480457": 5.69,
-"c223094": 6.18,
-"c517052": 5.28,
-"c586309": 4.98
-}
+"c201658": 5.02,
+"c494595": 5.38,
+"c424876": 5.28,
+"c60307": 4.18,
+"c480457": 5.79,
+"c223094": 6.21,
+"c517052": 5.29,
+"c586309": 4.97
+},
+"xptsPlan": 59.86,
+"picked": "2026-11-28T01:53+00:00",
+"locked": false
 },
 {
 "gw": 14,
@@ -1908,7 +1985,44 @@
 },
 "xptsPlan": 59.85,
 "picked": "2026-11-27T17:53+00:00",
-"locked": true
+"locked": true,
+"actual": 26,
+"playerPts": {
+"c432720": 0,
+"c465730": 0,
+"c522047": 0,
+"c610799": 0,
+"c469142": 0,
+"c222531": 13,
+"c446008": 0,
+"c514254": 0,
+"c480457": 0,
+"c586309": 0,
+"c223094": 0,
+"c154561": 0,
+"c461102": 0,
+"c223340": 0,
+"c475168": 0
+},
+"playerMins": {
+"c432720": 0,
+"c465730": 0,
+"c522047": 0,
+"c610799": 0,
+"c469142": 0,
+"c222531": 90,
+"c446008": 0,
+"c514254": 0,
+"c480457": 0,
+"c586309": 0,
+"c223094": 0,
+"c154561": 0,
+"c461102": 0,
+"c223340": 0,
+"c475168": 0
+},
+"subs": [],
+"final": false
 }
 ]
 }
@@ -2331,18 +2445,55 @@
 },
 "xptsPlan": 58.73,
 "picked": "2026-11-27T17:53+00:00",
-"locked": true
+"locked": true,
+"actual": 26,
+"playerPts": {
+"c432720": 0,
+"c465730": 0,
+"c522047": 0,
+"c226597": 0,
+"c469142": 0,
+"c222531": 13,
+"c446008": 0,
+"c201658": 0,
+"c184029": 0,
+"c586309": 0,
+"c223094": 0,
+"c433969": 0,
+"c444102": 0,
+"c461102": 0,
+"c532529": 0
+},
+"playerMins": {
+"c432720": 0,
+"c465730": 0,
+"c522047": 0,
+"c226597": 0,
+"c469142": 0,
+"c222531": 90,
+"c446008": 0,
+"c201658": 0,
+"c184029": 0,
+"c586309": 0,
+"c223094": 0,
+"c433969": 0,
+"c444102": 0,
+"c461102": 0,
+"c532529": 0
+},
+"subs": [],
+"final": false
 },
 {
 "gw": 13,
 "xi": [
 "c433969",
-"c226597",
-"c469142",
 "c461102",
+"c469142",
+"c226597",
 "c222531",
-"c446008",
 "c201658",
+"c446008",
 "c184029",
 "c223094",
 "c586309",
@@ -2351,30 +2502,33 @@
 "bench": [
 "c432720",
 "c465730",
-"c532529",
-"c522047"
+"c522047",
+"c532529"
 ],
 "cap": "c223094",
 "vice": "c222531",
-"xpts": 58.08,
+"xpts": 58.82,
 "xptsXi": 58.72,
 "xp": {
-"c432720": 3.18,
-"c433969": 3.73,
-"c226597": 4.85,
-"c465730": 4.22,
-"c469142": 4.33,
-"c522047": 3.41,
-"c461102": 4.31,
-"c446008": 5.08,
-"c222531": 5.1,
-"c201658": 4.65,
-"c184029": 4.31,
-"c532529": 4.17,
-"c223094": 6.7,
-"c586309": 4.51,
-"c444102": 4.45
-}
+"c432720": 3.29,
+"c433969": 3.59,
+"c226597": 4.55,
+"c465730": 4.09,
+"c469142": 4.75,
+"c522047": 3.54,
+"c461102": 4.81,
+"c446008": 4.92,
+"c222531": 5.06,
+"c201658": 5.02,
+"c184029": 4.53,
+"c532529": 2.32,
+"c223094": 6.21,
+"c586309": 4.97,
+"c444102": 4.7
+},
+"xptsPlan": 58.08,
+"picked": "2026-11-28T01:53+00:00",
+"locked": false
 }
 ]
 }
@@ -2716,50 +2870,90 @@
 },
 "xptsPlan": 58.45,
 "picked": "2026-11-27T17:53+00:00",
-"locked": true
+"locked": true,
+"actual": 13,
+"playerPts": {
+"c432720": 0,
+"c465730": 0,
+"c522047": 0,
+"c610799": 0,
+"c226597": 0,
+"c222531": 13,
+"c446008": 0,
+"c201658": 0,
+"c517052": 0,
+"c586309": 0,
+"c223094": 0,
+"c489639": 0,
+"c469142": 0,
+"c480457": 0,
+"c503139": 0
+},
+"playerMins": {
+"c432720": 0,
+"c465730": 0,
+"c522047": 0,
+"c610799": 0,
+"c226597": 0,
+"c222531": 90,
+"c446008": 0,
+"c201658": 0,
+"c517052": 0,
+"c586309": 0,
+"c223094": 0,
+"c489639": 0,
+"c469142": 0,
+"c480457": 0,
+"c503139": 0
+},
+"subs": [],
+"final": false
 },
 {
 "gw": 13,
 "xi": [
 "c489639",
-"c226597",
 "c469142",
+"c226597",
 "c465730",
-"c446008",
+"c480457",
 "c222531",
 "c201658",
-"c480457",
+"c446008",
 "c223094",
-"c586309",
-"c517052"
+"c517052",
+"c586309"
 ],
 "bench": [
 "c432720",
-"c503139",
 "c610799",
-"c522047"
+"c522047",
+"c503139"
 ],
 "cap": "c223094",
-"vice": "c446008",
-"xpts": 58.35,
+"vice": "c480457",
+"xpts": 59.61,
 "xptsXi": 58.94,
 "xp": {
-"c489639": 3.48,
-"c432720": 3.17,
-"c226597": 4.82,
-"c465730": 4.12,
-"c610799": 3.92,
-"c469142": 4.58,
-"c522047": 3.46,
-"c446008": 4.97,
-"c201658": 4.67,
-"c222531": 4.96,
-"c503139": 4.57,
-"c480457": 4.66,
-"c223094": 6.61,
-"c586309": 4.76,
-"c517052": 4.69
-}
+"c489639": 3.41,
+"c432720": 3.29,
+"c226597": 4.55,
+"c465730": 4.09,
+"c610799": 3.73,
+"c469142": 4.75,
+"c522047": 3.54,
+"c446008": 4.92,
+"c201658": 5.02,
+"c222531": 5.06,
+"c503139": 3.11,
+"c480457": 5.79,
+"c223094": 6.21,
+"c586309": 4.97,
+"c517052": 5.29
+},
+"xptsPlan": 58.35,
+"picked": "2026-11-28T01:53+00:00",
+"locked": false
 },
 {
 "gw": 14,
@@ -3057,50 +3251,90 @@
 },
 "xptsPlan": 59.7,
 "picked": "2026-11-27T17:53+00:00",
-"locked": true
+"locked": true,
+"actual": 13,
+"playerPts": {
+"c489639": 0,
+"c465730": 0,
+"c522047": 0,
+"c610799": 0,
+"c226597": 0,
+"c222531": 13,
+"c446008": 0,
+"c201658": 0,
+"c517052": 0,
+"c586309": 0,
+"c223094": 0,
+"c485055": 0,
+"c469142": 0,
+"c480457": 0,
+"c503139": 0
+},
+"playerMins": {
+"c489639": 0,
+"c465730": 0,
+"c522047": 0,
+"c610799": 0,
+"c226597": 0,
+"c222531": 90,
+"c446008": 0,
+"c201658": 0,
+"c517052": 0,
+"c586309": 0,
+"c223094": 0,
+"c485055": 0,
+"c469142": 0,
+"c480457": 0,
+"c503139": 0
+},
+"subs": [],
+"final": false
 },
 {
 "gw": 13,
 "xi": [
 "c485055",
-"c226597",
 "c469142",
+"c226597",
 "c465730",
-"c222531",
-"c446008",
-"c201658",
 "c480457",
+"c222531",
+"c201658",
+"c446008",
 "c223094",
-"c586309",
-"c517052"
+"c517052",
+"c586309"
 ],
 "bench": [
 "c489639",
-"c503139",
 "c610799",
-"c522047"
+"c522047",
+"c503139"
 ],
 "cap": "c223094",
-"vice": "c586309",
-"xpts": 59.17,
+"vice": "c480457",
+"xpts": 59.97,
 "xptsXi": 59.79,
 "xp": {
-"c489639": 3.52,
-"c485055": 3.65,
-"c465730": 4.26,
-"c226597": 4.97,
-"c610799": 3.95,
-"c469142": 4.62,
-"c522047": 3.67,
-"c446008": 4.78,
-"c222531": 4.88,
-"c201658": 4.75,
-"c503139": 4.5,
-"c480457": 4.71,
-"c223094": 6.38,
-"c517052": 5.13,
-"c586309": 5.26
-}
+"c489639": 3.41,
+"c485055": 3.78,
+"c465730": 4.09,
+"c226597": 4.55,
+"c610799": 3.73,
+"c469142": 4.75,
+"c522047": 3.54,
+"c446008": 4.92,
+"c222531": 5.06,
+"c201658": 5.02,
+"c503139": 3.11,
+"c480457": 5.79,
+"c223094": 6.21,
+"c517052": 5.29,
+"c586309": 4.97
+},
+"xptsPlan": 59.17,
+"picked": "2026-11-28T01:53+00:00",
+"locked": false
 },
 {
 "gw": 14,
@@ -3190,1059 +3424,318 @@
 }
 ]
 }
+},
+"13": {
+"gw": 13,
+"saved": "2026-11-28T01:53+00:00",
+"deadline": "2026-12-01T18:30:00Z",
+"fh": {
+"squad": [
+"c473284",
+"c485055",
+"c461102",
+"c97032",
+"c469142",
+"c606930",
+"c483067",
+"c480457",
+"c244850",
+"c494595",
+"c244851",
+"c424876",
+"c223094",
+"c517052",
+"c586309"
+],
+"cost": 100.0,
+"week": {
+"gw": 13,
+"xi": [
+"c473284",
+"c461102",
+"c97032",
+"c469142",
+"c480457",
+"c244850",
+"c494595",
+"c244851",
+"c424876",
+"c223094",
+"c517052"
+],
+"bench": [
+"c485055",
+"c606930",
+"c483067",
+"c586309"
+],
+"cap": "c223094",
+"vice": "c480457",
+"xpts": 62.72,
+"xptsXi": 63.23,
+"xp": {
+"c473284": 3.85,
+"c485055": 3.78,
+"c461102": 4.81,
+"c97032": 4.78,
+"c469142": 4.75,
+"c606930": 4.19,
+"c483067": 4.1,
+"c480457": 5.79,
+"c244850": 5.53,
+"c494595": 5.38,
+"c244851": 5.37,
+"c424876": 5.28,
+"c223094": 6.21,
+"c517052": 5.29,
+"c586309": 4.97
+}
+}
+},
+"wc": {
+"squad": [
+"c432720",
+"c473284",
+"c465730",
+"c226597",
+"c463981",
+"c610799",
+"c461102",
+"c222531",
+"c201658",
+"c424876",
+"c480457",
+"c248857",
+"c223094",
+"c517052",
+"c586309"
+],
+"cost": 99.8,
+"weeks": [
+{
+"gw": 13,
+"xi": [
+"c473284",
+"c461102",
+"c226597",
+"c463981",
+"c480457",
+"c424876",
+"c222531",
+"c201658",
+"c223094",
+"c517052",
+"c586309"
+],
+"bench": [
+"c432720",
+"c465730",
+"c610799",
+"c248857"
+],
+"cap": "c223094",
+"vice": "c480457",
+"xpts": 60.77,
+"xptsXi": 61.29,
+"xp": {
+"c432720": 3.29,
+"c473284": 3.85,
+"c465730": 4.09,
+"c226597": 4.55,
+"c463981": 4.26,
+"c610799": 3.73,
+"c461102": 4.81,
+"c222531": 5.06,
+"c201658": 5.02,
+"c424876": 5.28,
+"c480457": 5.79,
+"c248857": 4.35,
+"c223094": 6.21,
+"c517052": 5.29,
+"c586309": 4.97
+},
+"xptsPlan": 60.77,
+"picked": "2026-11-28T01:53+00:00",
+"locked": false
+},
+{
+"gw": 14,
+"xi": [
+"c432720",
+"c463981",
+"c226597",
+"c465730",
+"c201658",
+"c222531",
+"c424876",
+"c480457",
+"c517052",
+"c223094",
+"c586309"
+],
+"bench": [
+"c473284",
+"c610799",
+"c461102",
+"c248857"
+],
+"cap": "c517052",
+"vice": "c223094",
+"xpts": 61.14,
+"xptsXi": 61.69,
+"xp": {
+"c432720": 4.18,
+"c473284": 3.38,
+"c465730": 4.5,
+"c226597": 4.78,
+"c463981": 5.08,
+"c610799": 4.09,
+"c461102": 3.63,
+"c222531": 4.93,
+"c201658": 5.63,
+"c424876": 4.88,
+"c480457": 4.73,
+"c248857": 4.2,
+"c223094": 5.75,
+"c517052": 6.05,
+"c586309": 5.13
+}
+},
+{
+"gw": 15,
+"xi": [
+"c473284",
+"c465730",
+"c226597",
+"c610799",
+"c222531",
+"c424876",
+"c480457",
+"c248857",
+"c223094",
+"c517052",
+"c586309"
+],
+"bench": [
+"c432720",
+"c461102",
+"c463981",
+"c201658"
+],
+"cap": "c223094",
+"vice": "c465730",
+"xpts": 61.35,
+"xptsXi": 61.89,
+"xp": {
+"c432720": 3.43,
+"c473284": 3.94,
+"c465730": 5.49,
+"c226597": 4.85,
+"c463981": 3.78,
+"c610799": 4.75,
+"c461102": 4.1,
+"c222531": 5.02,
+"c201658": 4.03,
+"c424876": 4.86,
+"c480457": 4.85,
+"c248857": 4.69,
+"c223094": 6.99,
+"c517052": 5.05,
+"c586309": 4.41
+}
+},
+{
+"gw": 16,
+"xi": [
+"c432720",
+"c465730",
+"c226597",
+"c610799",
+"c201658",
+"c222531",
+"c248857",
+"c424876",
+"c223094",
+"c517052",
+"c586309"
+],
+"bench": [
+"c473284",
+"c463981",
+"c461102",
+"c480457"
+],
+"cap": "c223094",
+"vice": "c465730",
+"xpts": 64.85,
+"xptsXi": 65.28,
+"xp": {
+"c432720": 4.11,
+"c473284": 3.2,
+"c465730": 6.14,
+"c226597": 5.15,
+"c463981": 5.06,
+"c610799": 5.09,
+"c461102": 3.26,
+"c222531": 5.55,
+"c201658": 5.95,
+"c424876": 4.82,
+"c480457": 4.09,
+"c248857": 5.29,
+"c223094": 6.82,
+"c517052": 4.85,
+"c586309": 4.7
+}
+},
+{
+"gw": 17,
+"xi": [
+"c432720",
+"c226597",
+"c465730",
+"c463981",
+"c222531",
+"c248857",
+"c480457",
+"c424876",
+"c223094",
+"c586309",
+"c517052"
+],
+"bench": [
+"c473284",
+"c610799",
+"c461102",
+"c201658"
+],
+"cap": "c223094",
+"vice": "c586309",
+"xpts": 59.74,
+"xptsXi": 60.1,
+"xp": {
+"c432720": 3.62,
+"c473284": 3.54,
+"c465730": 4.6,
+"c226597": 5.1,
+"c463981": 4.35,
+"c610799": 4.22,
+"c461102": 4.11,
+"c222531": 5.17,
+"c201658": 4.57,
+"c424876": 4.83,
+"c480457": 4.84,
+"c248857": 4.98,
+"c223094": 6.18,
+"c517052": 4.82,
+"c586309": 5.41
+}
+}
+]
+},
+"locked": false
 }
 },
 "names": {
-"c106921": {
-"name": "Rulli",
-"team": "MCI",
-"pos": "GK",
-"price": 4.9
-},
-"c109745": {
-"name": "Arrizabalaga",
-"team": "ARS",
-"pos": "GK",
-"price": 4.9
-},
-"c122074": {
-"name": "Bettinelli",
-"team": "MCI",
-"pos": "GK",
-"price": 4.4
-},
-"c154561": {
-"name": "Raya",
-"team": "ARS",
-"pos": "GK",
-"price": 6.2
-},
-"c171314": {
-"name": "Rúben",
-"team": "MCI",
-"pos": "DEF",
-"price": 5.5
-},
-"c184029": {
-"name": "Ødegaard",
-"team": "ARS",
-"pos": "MID",
-"price": 6.7
-},
-"c195384": {
-"name": "Merino",
-"team": "ARS",
-"pos": "MID",
-"price": 5.6
-},
-"c198869": {
-"name": "White",
-"team": "ARS",
-"pos": "DEF",
-"price": 5.3
-},
-"c199798": {
-"name": "Konsa",
-"team": "ARS",
-"pos": "DEF",
-"price": 4.9
-},
-"c204480": {
-"name": "Rice",
-"team": "ARS",
-"pos": "MID",
-"price": 7.5
-},
-"c204936": {
-"name": "Donnarumma",
-"team": "MCI",
-"pos": "GK",
-"price": 5.4
-},
-"c208706": {
-"name": "Bruno G.",
-"team": "ARS",
-"pos": "MID",
-"price": 6.7
-},
-"c209036": {
-"name": "Guéhi",
-"team": "MCI",
-"pos": "DEF",
-"price": 5.9
-},
-"c209244": {
-"name": "Foden",
-"team": "MCI",
-"pos": "MID",
-"price": 6.8
-},
-"c215379": {
-"name": "Anderson",
-"team": "MCI",
-"pos": "MID",
-"price": 6.2
-},
-"c219847": {
-"name": "Havertz",
-"team": "ARS",
-"pos": "FWD",
-"price": 7.4
-},
-"c223094": {
-"name": "Haaland",
-"team": "MCI",
-"pos": "FWD",
-"price": 15.7
-},
-"c223340": {
-"name": "Saka",
-"team": "ARS",
-"pos": "MID",
-"price": 9.4
-},
-"c224117": {
-"name": "Gyökeres",
-"team": "ARS",
-"pos": "FWD",
-"price": 7.0
-},
-"c226597": {
-"name": "Gabriel",
-"team": "ARS",
-"pos": "DEF",
-"price": 8.1
-},
-"c232413": {
-"name": "Eze",
-"team": "ARS",
-"pos": "MID",
-"price": 6.2
-},
-"c248857": {
-"name": "Madueke",
-"team": "ARS",
-"pos": "MID",
-"price": 6.2
-},
-"c248875": {
-"name": "Doku",
-"team": "MCI",
-"pos": "MID",
-"price": 7.5
-},
-"c437495": {
-"name": "Meslier",
-"team": "ARS",
-"pos": "GK",
-"price": 4.9
-},
-"c437730": {
-"name": "Semenyo",
-"team": "MCI",
-"pos": "MID",
-"price": 8.1
-},
-"c439509": {
-"name": "Tzolis",
-"team": "ARS",
-"pos": "MID",
-"price": 6.1
-},
-"c440993": {
-"name": "Ndiaye",
-"team": "MCI",
-"pos": "MID",
-"price": 5.7
-},
-"c445122": {
-"name": "J.Timber",
-"team": "ARS",
-"pos": "DEF",
-"price": 6.5
-},
-"c448047": {
-"name": "Enzo",
-"team": "MCI",
-"pos": "MID",
-"price": 6.9
-},
-"c448104": {
-"name": "Hincapie",
-"team": "ARS",
-"pos": "DEF",
-"price": 5.2
-},
-"c448514": {
-"name": "Aït-Nouri",
-"team": "MCI",
-"pos": "DEF",
-"price": 5.1
-},
-"c462424": {
-"name": "Saliba",
-"team": "ARS",
-"pos": "DEF",
-"price": 5.9
-},
-"c465351": {
-"name": "Matheus N.",
-"team": "MCI",
-"pos": "DEF",
-"price": 5.9
-},
-"c466052": {
-"name": "Cherki",
-"team": "MCI",
-"pos": "MID",
-"price": 7.8
-},
-"c466075": {
-"name": "Calafiori",
-"team": "ARS",
-"pos": "DEF",
-"price": 5.9
-},
-"c472769": {
-"name": "O'Reilly",
-"team": "MCI",
-"pos": "DEF",
-"price": 6.2
-},
-"c477064": {
-"name": "Lewis",
-"team": "MCI",
-"pos": "DEF",
-"price": 4.3
-},
-"c477424": {
-"name": "Gvardiol",
-"team": "MCI",
-"pos": "DEF",
-"price": 5.5
-},
-"c481655": {
-"name": "Zubimendi",
-"team": "ARS",
-"pos": "MID",
-"price": 5.2
-},
-"c499169": {
-"name": "Lewis-Skelly",
-"team": "ARS",
-"pos": "MID",
-"price": 5.3
-},
-"c500040": {
-"name": "Mosquera",
-"team": "ARS",
-"pos": "DEF",
-"price": 5.1
-},
-"c554054": {
-"name": "Braithwaite",
-"team": "MCI",
-"pos": "DEF",
-"price": 3.9
-},
-"c578153": {
-"name": "Khusanov",
-"team": "MCI",
-"pos": "DEF",
-"price": 5.3
-},
-"c595480": {
-"name": "Samba",
-"team": "MCI",
-"pos": "MID",
-"price": 4.4
-},
-"c616077": {
-"name": "Dowman",
-"team": "ARS",
-"pos": "MID",
-"price": 5.2
-},
-"c616222": {
-"name": "Vitor Reis",
-"team": "MCI",
-"pos": "DEF",
-"price": 4.4
-},
-"c616288": {
-"name": "McAidoo",
-"team": "MCI",
-"pos": "MID",
-"price": 4.4
-},
-"c624777": {
-"name": "Allan",
-"team": "MCI",
-"pos": "MID",
-"price": 6.0
-},
-"c637238": {
-"name": "Bouaddi",
-"team": "MCI",
-"pos": "MID",
-"price": 5.5
-},
-"c91651": {
-"name": "Kovačić",
-"team": "MCI",
-"pos": "MID",
-"price": 5.3
-},
-"c114243": {
-"name": "J.Murphy",
-"team": "NEW",
-"pos": "MID",
-"price": 5.9
-},
-"c119471": {
-"name": "Schär",
-"team": "NEW",
-"pos": "DEF",
-"price": 4.9
-},
-"c180974": {
-"name": "Joelinton",
-"team": "NEW",
-"pos": "MID",
-"price": 5.4
-},
-"c200089": {
-"name": "Willock",
-"team": "NEW",
-"pos": "MID",
-"price": 5.0
-},
-"c201666": {
-"name": "Barnes",
-"team": "NEW",
-"pos": "MID",
-"price": 6.0
-},
-"c204120": {
-"name": "Boscagli",
-"team": "BHA",
-"pos": "DEF",
-"price": 4.5
-},
-"c216646": {
-"name": "Wissa",
-"team": "NEW",
-"pos": "FWD",
-"price": 5.9
-},
-"c219249": {
-"name": "O'Riley",
-"team": "BHA",
-"pos": "MID",
-"price": 5.4
-},
-"c220237": {
-"name": "Botman",
-"team": "NEW",
-"pos": "DEF",
-"price": 5.0
-},
-"c222694": {
-"name": "Struijk",
-"team": "BHA",
-"pos": "DEF",
-"price": 4.9
-},
-"c231416": {
-"name": "F.Kadıoğlu",
-"team": "BHA",
-"pos": "DEF",
-"price": 4.3
-},
-"c232653": {
-"name": "J.Ramsey",
-"team": "NEW",
-"pos": "MID",
-"price": 4.8
-},
-"c441191": {
-"name": "Livramento",
-"team": "NEW",
-"pos": "DEF",
-"price": 4.8
-},
-"c449434": {
-"name": "Elanga",
-"team": "NEW",
-"pos": "MID",
-"price": 6.0
-},
-"c451340": {
-"name": "Mitoma",
-"team": "BHA",
-"pos": "MID",
-"price": 5.9
-},
-"c451490": {
-"name": "Costinha",
-"team": "BHA",
-"pos": "DEF",
-"price": 4.5
-},
-"c454490": {
-"name": "Svoboda",
-"team": "BHA",
-"pos": "DEF",
-"price": 5.0
-},
-"c463067": {
-"name": "Georginio",
-"team": "BHA",
-"pos": "FWD",
-"price": 5.2
-},
-"c463726": {
-"name": "Dedić",
-"team": "NEW",
-"pos": "DEF",
-"price": 4.4
-},
-"c465642": {
-"name": "Thiaw",
-"team": "NEW",
-"pos": "DEF",
-"price": 4.9
-},
-"c465694": {
-"name": "N.Gonzalez",
-"team": "NEW",
-"pos": "MID",
-"price": 5.5
-},
-"c465730": {
-"name": "De Cuyper",
-"team": "BHA",
-"pos": "DEF",
-"price": 5.6
-},
-"c467779": {
-"name": "Wieffer",
-"team": "BHA",
-"pos": "DEF",
-"price": 4.8
-},
-"c470551": {
-"name": "Horníček",
-"team": "NEW",
-"pos": "GK",
-"price": 5.0
-},
-"c471551": {
-"name": "Azeez",
-"team": "BHA",
-"pos": "MID",
-"price": 5.5
-},
-"c487117": {
-"name": "Ferguson",
-"team": "BHA",
-"pos": "FWD",
-"price": 4.9
-},
-"c487838": {
-"name": "Hall",
-"team": "NEW",
-"pos": "DEF",
-"price": 5.2
-},
-"c489639": {
-"name": "Verbruggen",
-"team": "BHA",
-"pos": "GK",
-"price": 4.7
-},
-"c49262": {
-"name": "Steele",
-"team": "BHA",
-"pos": "GK",
-"price": 3.9
-},
-"c509416": {
-"name": "Ayari",
-"team": "BHA",
-"pos": "MID",
-"price": 5.5
-},
-"c512123": {
-"name": "Hadjam",
-"team": "BHA",
-"pos": "DEF",
-"price": 4.5
-},
-"c514254": {
-"name": "Gomez",
-"team": "BHA",
-"pos": "MID",
-"price": 5.1
-},
-"c532529": {
-"name": "Hinshelwood",
-"team": "BHA",
-"pos": "MID",
-"price": 5.9
-},
-"c538007": {
-"name": "David",
-"team": "BHA",
-"pos": "FWD",
-"price": 5.9
-},
-"c538207": {
-"name": "Osula",
-"team": "NEW",
-"pos": "FWD",
-"price": 5.8
-},
-"c547719": {
-"name": "L.Miley",
-"team": "NEW",
-"pos": "MID",
-"price": 5.5
-},
-"c550090": {
-"name": "Coppola",
-"team": "BHA",
-"pos": "DEF",
-"price": 4.5
-},
-"c554578": {
-"name": "Jaouen",
-"team": "NEW",
-"pos": "GK",
-"price": 4.4
-},
-"c556637": {
-"name": "Oriola",
-"team": "BHA",
-"pos": "MID",
-"price": 4.3
-},
-"c578512": {
-"name": "Pivas",
-"team": "NEW",
-"pos": "DEF",
-"price": 4.0
-},
-"c592031": {
-"name": "Minteh",
-"team": "BHA",
-"pos": "MID",
-"price": 5.8
-},
-"c592984": {
-"name": "Andrés",
-"team": "BHA",
-"pos": "MID",
-"price": 5.5
-},
-"c601767": {
-"name": "Salia",
-"team": "NEW",
-"pos": "FWD",
-"price": 4.5
-},
-"c60307": {
-"name": "Groß",
-"team": "BHA",
-"pos": "MID",
-"price": 6.3
-},
-"c608181": {
-"name": "Tzimas",
-"team": "BHA",
-"pos": "FWD",
-"price": 5.4
-},
-"c610799": {
-"name": "Vuskovic",
-"team": "BHA",
-"pos": "DEF",
-"price": 5.3
-},
-"c611665": {
-"name": "Touré",
-"team": "NEW",
-"pos": "MID",
-"price": 5.7
-},
-"c611695": {
-"name": "Yalcouyé",
-"team": "BHA",
-"pos": "MID",
-"price": 4.4
-},
-"c612855": {
-"name": "Osman",
-"team": "BHA",
-"pos": "MID",
-"price": 4.9
-},
-"c613221": {
-"name": "Fernandez-Pardo",
-"team": "NEW",
-"pos": "FWD",
-"price": 5.8
-},
-"c632794": {
-"name": "Bamba",
-"team": "NEW",
-"pos": "MID",
-"price": 4.8
-},
-"c636852": {
-"name": "Steur",
-"team": "NEW",
-"pos": "MID",
-"price": 4.7
-},
-"c647850": {
-"name": "Kostoulas",
-"team": "BHA",
-"pos": "FWD",
-"price": 5.7
-},
-"c655585": {
-"name": "Mills",
-"team": "NEW",
-"pos": "MID",
-"price": 4.5
-},
-"c661016": {
-"name": "Ibrahim",
-"team": "BHA",
-"pos": "MID",
-"price": 4.5
-},
-"c665243": {
-"name": "Miley",
-"team": "NEW",
-"pos": "MID",
-"price": 4.5
-},
-"c671875": {
-"name": "Thompson",
-"team": "NEW",
-"pos": "MID",
-"price": 4.5
-},
-"c700308": {
-"name": "Yohanna",
-"team": "BHA",
-"pos": "MID",
-"price": 4.7
-},
-"c78916": {
-"name": "Burn",
-"team": "NEW",
-"pos": "DEF",
-"price": 4.8
-},
-"c81441": {
-"name": "Gillespie",
-"team": "NEW",
-"pos": "GK",
-"price": 4.5
-},
-"c83299": {
-"name": "Dunk",
-"team": "BHA",
-"pos": "DEF",
-"price": 4.5
-},
-"c98747": {
-"name": "Pope",
-"team": "NEW",
-"pos": "GK",
-"price": 4.8
-},
-"c101282": {
-"name": "Crooks",
-"team": "HUL",
-"pos": "MID",
-"price": 4.4
-},
-"c105666": {
-"name": "Butland",
-"team": "HUL",
-"pos": "GK",
-"price": 4.4
-},
-"c108413": {
-"name": "Hughes",
-"team": "CRY",
-"pos": "MID",
-"price": 4.3
-},
-"c108416": {
-"name": "Egan",
-"team": "HUL",
-"pos": "DEF",
-"price": 4.0
-},
-"c121709": {
-"name": "Benitez",
-"team": "CRY",
-"pos": "GK",
-"price": 4.5
-},
-"c146426": {
-"name": "Ajayi",
-"team": "HUL",
-"pos": "DEF",
-"price": 4.2
-},
-"c152551": {
-"name": "Lerma",
-"team": "CRY",
-"pos": "MID",
-"price": 4.8
-},
-"c160817": {
-"name": "McNair",
-"team": "HUL",
-"pos": "DEF",
-"price": 3.9
-},
-"c167825": {
-"name": "Phillips",
-"team": "HUL",
-"pos": "GK",
-"price": 3.9
-},
-"c169359": {
-"name": "Targett",
-"team": "HUL",
-"pos": "DEF",
-"price": 3.9
-},
-"c169432": {
-"name": "McBurnie",
-"team": "HUL",
-"pos": "FWD",
-"price": 5.5
-},
-"c169593": {
-"name": "Matthews",
-"team": "CRY",
-"pos": "GK",
-"price": 4.0
-},
-"c171270": {
-"name": "Dowell",
-"team": "HUL",
-"pos": "MID",
-"price": 4.3
-},
-"c172649": {
-"name": "Henderson",
-"team": "CRY",
-"pos": "GK",
-"price": 4.9
-},
-"c172850": {
-"name": "Chilwell",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.3
-},
-"c193278": {
-"name": "Coyle",
-"team": "HUL",
-"pos": "DEF",
-"price": 4.0
-},
-"c205533": {
-"name": "Nketiah",
-"team": "CRY",
-"pos": "FWD",
-"price": 5.4
-},
-"c208481": {
-"name": "Ömür",
-"team": "HUL",
-"pos": "MID",
-"price": 4.8
-},
-"c209400": {
-"name": "Kamada",
-"team": "CRY",
-"pos": "MID",
-"price": 5.0
-},
-"c220362": {
-"name": "Disasi",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.4
-},
-"c223723": {
-"name": "Tomiyasu",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.3
-},
-"c231747": {
-"name": "Mateta",
-"team": "CRY",
-"pos": "FWD",
-"price": 6.3
-},
-"c232185": {
-"name": "Sarr",
-"team": "CRY",
-"pos": "MID",
-"price": 6.2
-},
-"c232351": {
-"name": "Giles",
-"team": "HUL",
-"pos": "DEF",
-"price": 4.0
-},
-"c242313": {
-"name": "Mingueza",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.2
-},
-"c243413": {
-"name": "Slater",
-"team": "HUL",
-"pos": "MID",
-"price": 4.5
-},
-"c243951": {
-"name": "Thomas",
-"team": "HUL",
-"pos": "MID",
-"price": 5.5
-},
-"c244723": {
-"name": "Mitchell",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.4
-},
-"c247412": {
-"name": "Strand Larsen",
-"team": "CRY",
-"pos": "FWD",
-"price": 5.9
-},
-"c427623": {
-"name": "Richards",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.9
-},
-"c433154": {
-"name": "McNeil",
-"team": "CRY",
-"pos": "MID",
-"price": 5.2
-},
-"c438464": {
-"name": "Doucouré",
-"team": "CRY",
-"pos": "MID",
-"price": 4.7
-},
-"c445028": {
-"name": "Morita",
-"team": "HUL",
-"pos": "MID",
-"price": 4.9
-},
-"c450063": {
-"name": "Timber",
-"team": "CRY",
-"pos": "MID",
-"price": 5.0
-},
-"c462635": {
-"name": "Gelhardt",
-"team": "HUL",
-"pos": "MID",
-"price": 5.0
-},
-"c465525": {
-"name": "Matazo",
-"team": "HUL",
-"pos": "MID",
-"price": 4.5
-},
-"c469266": {
-"name": "Gourna-Douath",
-"team": "HUL",
-"pos": "MID",
-"price": 4.9
-},
-"c470294": {
-"name": "Gyabi",
-"team": "HUL",
-"pos": "MID",
-"price": 4.4
-},
-"c473284": {
-"name": "Tzolakis",
-"team": "HUL",
-"pos": "GK",
-"price": 4.7
-},
-"c485337": {
-"name": "Guessand",
-"team": "CRY",
-"pos": "MID",
-"price": 5.3
-},
-"c488024": {
-"name": "Yeremy",
-"team": "CRY",
-"pos": "MID",
-"price": 5.5
-},
-"c490094": {
-"name": "Iroegbunam",
-"team": "HUL",
-"pos": "MID",
-"price": 5.0
-},
-"c490884": {
-"name": "Cho",
-"team": "HUL",
-"pos": "MID",
-"price": 5.0
-},
-"c496181": {
-"name": "Norton-Cuffy",
-"team": "HUL",
-"pos": "DEF",
-"price": 3.9
-},
-"c496221": {
-"name": "Wharton",
-"team": "CRY",
-"pos": "MID",
-"price": 5.3
-},
-"c501902": {
-"name": "Hughes",
-"team": "HUL",
-"pos": "DEF",
-"price": 3.9
-},
-"c515621": {
-"name": "Chadi Riad",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.3
-},
-"c533646": {
-"name": "Osorio",
-"team": "CRY",
-"pos": "MID",
-"price": 5.4
-},
-"c540324": {
-"name": "Belloumi",
-"team": "HUL",
-"pos": "MID",
-"price": 5.2
-},
-"c552946": {
-"name": "Hjertø-Dahl",
-"team": "HUL",
-"pos": "MID",
-"price": 4.7
-},
-"c553783": {
-"name": "Zambrano",
-"team": "HUL",
-"pos": "MID",
-"price": 4.4
-},
-"c559152": {
-"name": "Gozo",
-"team": "CRY",
-"pos": "MID",
-"price": 4.8
-},
-"c570794": {
-"name": "Khalaili",
-"team": "CRY",
-"pos": "DEF",
-"price": 5.0
-},
-"c597462": {
-"name": "Herrington",
-"team": "HUL",
-"pos": "DEF",
-"price": 3.9
-},
-"c605972": {
-"name": "Ahanor",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.5
-},
-"c606930": {
-"name": "Mendy",
-"team": "HUL",
-"pos": "DEF",
-"price": 4.1
-},
-"c608227": {
-"name": "Stroud",
-"team": "HUL",
-"pos": "MID",
-"price": 4.9
-},
-"c626751": {
-"name": "Ansah",
-"team": "HUL",
-"pos": "FWD",
-"price": 4.9
-},
-"c631000": {
-"name": "Vaz",
-"team": "HUL",
-"pos": "FWD",
-"price": 5.0
-},
-"c647839": {
-"name": "Mouzakitis",
-"team": "HUL",
-"pos": "MID",
-"price": 5.0
-},
-"c651426": {
-"name": "Canvot",
-"team": "CRY",
-"pos": "DEF",
-"price": 4.7
-},
-"c661800": {
-"name": "McCarthy",
-"team": "HUL",
-"pos": "DEF",
-"price": 4.0
-},
-"c672492": {
-"name": "Drakes-Thomas",
-"team": "CRY",
-"pos": "MID",
-"price": 4.3
-},
 "c106611": {
 "name": "Keane",
 "team": "EVE",
@@ -4261,10 +3754,16 @@
 "pos": "MID",
 "price": 6.5
 },
-"c116535": {
-"name": "A.Becker",
-"team": "LIV",
-"pos": "GK",
+"c119090": {
+"name": "Goretzka",
+"team": "AVL",
+"pos": "MID",
+"price": 5.9
+},
+"c122806": {
+"name": "McGinn",
+"team": "AVL",
+"pos": "MID",
 "price": 5.5
 },
 "c128295": {
@@ -4279,645 +3778,15 @@
 "pos": "GK",
 "price": 4.5
 },
-"c154043": {
-"name": "Maitland-Niles",
-"team": "EVE",
-"pos": "DEF",
-"price": 4.5
-},
-"c155503": {
-"name": "Woodman",
-"team": "LIV",
-"pos": "GK",
-"price": 3.9
-},
-"c158983": {
-"name": "Endo",
-"team": "LIV",
-"pos": "MID",
-"price": 4.8
-},
-"c171287": {
-"name": "Gomez",
-"team": "LIV",
-"pos": "DEF",
-"price": 4.9
-},
-"c17761": {
-"name": "Tarkowski",
-"team": "EVE",
-"pos": "DEF",
-"price": 6.2
-},
-"c214285": {
-"name": "Tsimikas",
-"team": "LIV",
-"pos": "DEF",
-"price": 4.8
-},
-"c215413": {
-"name": "Dewsbury-Hall",
-"team": "EVE",
-"pos": "MID",
-"price": 6.7
-},
-"c216094": {
-"name": "Frimpong",
-"team": "LIV",
-"pos": "DEF",
-"price": 5.1
-},
-"c219168": {
-"name": "Isak",
-"team": "LIV",
-"pos": "FWD",
-"price": 9.4
-},
-"c223541": {
-"name": "Chiesa",
-"team": "LIV",
-"pos": "MID",
-"price": 5.3
-},
-"c224967": {
-"name": "Mykolenko",
-"team": "EVE",
-"pos": "DEF",
-"price": 4.6
-},
-"c229600": {
-"name": "Travers",
-"team": "EVE",
-"pos": "GK",
-"price": 5.0
-},
-"c232928": {
-"name": "Garner",
-"team": "EVE",
-"pos": "MID",
-"price": 6.0
-},
-"c242898": {
-"name": "Johnson",
-"team": "EVE",
-"pos": "MID",
-"price": 5.8
-},
-"c243016": {
-"name": "Mac Allister",
-"team": "LIV",
-"pos": "MID",
-"price": 5.4
-},
-"c243298": {
-"name": "Gakpo",
-"team": "LIV",
-"pos": "MID",
-"price": 7.1
-},
-"c244860": {
-"name": "Hackney",
-"team": "EVE",
-"pos": "MID",
-"price": 5.3
-},
-"c424876": {
-"name": "Szoboszlai",
-"team": "LIV",
-"pos": "MID",
-"price": 6.7
-},
-"c432987": {
-"name": "Jaros",
-"team": "LIV",
-"pos": "GK",
-"price": 4.0
-},
-"c441266": {
-"name": "Gravenberch",
-"team": "LIV",
-"pos": "MID",
-"price": 5.8
-},
-"c445087": {
-"name": "Araujo",
-"team": "LIV",
-"pos": "DEF",
-"price": 5.5
-},
-"c449027": {
-"name": "Mamardashvili",
-"team": "LIV",
-"pos": "GK",
-"price": 4.8
-},
-"c464353": {
-"name": "Davies",
-"team": "LIV",
-"pos": "GK",
-"price": 4.0
-},
-"c480455": {
-"name": "Branthwaite",
-"team": "EVE",
-"pos": "DEF",
-"price": 5.5
-},
-"c482616": {
-"name": "Barcola",
-"team": "LIV",
-"pos": "MID",
-"price": 8.1
-},
-"c491501": {
-"name": "McConnell",
-"team": "LIV",
-"pos": "MID",
-"price": 4.3
-},
-"c492777": {
-"name": "Bradley",
-"team": "LIV",
-"pos": "DEF",
-"price": 4.9
-},
-"c494595": {
-"name": "Wirtz",
-"team": "LIV",
-"pos": "MID",
-"price": 7.5
-},
-"c496661": {
-"name": "Dibling",
-"team": "EVE",
-"pos": "MID",
-"price": 5.3
-},
-"c500058": {
-"name": "Danns",
-"team": "LIV",
-"pos": "FWD",
-"price": 4.5
-},
-"c502697": {
-"name": "Alcaraz",
-"team": "EVE",
-"pos": "MID",
-"price": 4.8
-},
-"c510663": {
-"name": "Ekitiké",
-"team": "LIV",
-"pos": "FWD",
-"price": 7.4
-},
-"c512462": {
-"name": "O'Brien",
-"team": "EVE",
-"pos": "DEF",
-"price": 4.8
-},
-"c513466": {
-"name": "Röhl",
-"team": "EVE",
-"pos": "MID",
-"price": 4.9
-},
-"c514514": {
-"name": "Koumas",
-"team": "LIV",
-"pos": "MID",
-"price": 5.0
-},
-"c519440": {
-"name": "Lucky",
-"team": "LIV",
-"pos": "DEF",
-"price": 3.9
-},
-"c544877": {
-"name": "Kerkez",
-"team": "LIV",
-"pos": "DEF",
-"price": 5.2
-},
-"c550615": {
-"name": "George",
-"team": "EVE",
-"pos": "MID",
-"price": 5.5
-},
-"c551499": {
-"name": "Munoz",
-"team": "LIV",
-"pos": "MID",
-"price": 6.5
-},
-"c586309": {
-"name": "Barry",
-"team": "EVE",
-"pos": "FWD",
-"price": 5.7
-},
-"c591386": {
-"name": "Nyoni",
-"team": "LIV",
-"pos": "MID",
-"price": 4.8
-},
-"c606702": {
-"name": "Jacquet",
-"team": "LIV",
-"pos": "DEF",
-"price": 5.1
-},
-"c609873": {
-"name": "Armstrong",
-"team": "EVE",
-"pos": "MID",
-"price": 5.0
-},
-"c611922": {
-"name": "Ngumoha",
-"team": "LIV",
-"pos": "MID",
-"price": 5.7
-},
-"c629068": {
-"name": "Graham",
-"team": "EVE",
-"pos": "MID",
-"price": 4.4
-},
-"c647681": {
-"name": "Leoni",
-"team": "LIV",
-"pos": "DEF",
-"price": 3.9
-},
-"c97032": {
-"name": "Virgil",
-"team": "LIV",
-"pos": "DEF",
-"price": 6.4
-},
-"c111317": {
-"name": "Brooks",
-"team": "BOU",
-"pos": "MID",
-"price": 4.9
-},
-"c153133": {
-"name": "Iwobi",
-"team": "FUL",
-"pos": "MID",
-"price": 5.4
-},
-"c153366": {
-"name": "Reed",
-"team": "FUL",
-"pos": "MID",
-"price": 4.3
-},
-"c155408": {
-"name": "Cook",
-"team": "BOU",
-"pos": "MID",
-"price": 4.9
-},
-"c158499": {
-"name": "Christie",
-"team": "BOU",
-"pos": "MID",
-"price": 5.0
-},
-"c166477": {
-"name": "Castagne",
-"team": "FUL",
-"pos": "DEF",
-"price": 4.5
-},
-"c167074": {
-"name": "Tete",
-"team": "FUL",
-"pos": "DEF",
-"price": 4.4
-},
-"c169528": {
-"name": "Robinson",
-"team": "FUL",
-"pos": "DEF",
-"price": 4.4
-},
-"c174874": {
-"name": "Andersen",
-"team": "FUL",
-"pos": "DEF",
-"price": 5.0
-},
-"c184349": {
-"name": "Sessegnon",
-"team": "FUL",
-"pos": "DEF",
-"price": 4.3
-},
-"c200785": {
-"name": "Adams",
-"team": "BOU",
-"pos": "MID",
-"price": 5.0
-},
-"c201658": {
-"name": "Tavernier",
-"team": "BOU",
-"pos": "MID",
-"price": 6.8
-},
-"c207189": {
-"name": "Berge",
-"team": "FUL",
-"pos": "MID",
-"price": 4.8
-},
-"c209289": {
-"name": "Smith Rowe",
-"team": "FUL",
-"pos": "MID",
-"price": 5.2
-},
-"c222683": {
-"name": "Kluivert",
-"team": "BOU",
-"pos": "MID",
-"price": 5.9
-},
-"c230650": {
-"name": "Di Gregorio",
-"team": "BOU",
-"pos": "GK",
-"price": 4.5
-},
-"c232892": {
-"name": "Bassey",
-"team": "FUL",
-"pos": "DEF",
-"price": 4.5
-},
-"c242882": {
-"name": "Diakité",
-"team": "BOU",
-"pos": "DEF",
-"price": 4.9
-},
-"c244042": {
-"name": "Muniz",
-"team": "FUL",
-"pos": "FWD",
-"price": 5.3
-},
-"c246301": {
-"name": "J.Cuenca",
-"team": "FUL",
-"pos": "DEF",
-"price": 4.4
-},
-"c40383": {
-"name": "Forster",
-"team": "BOU",
-"pos": "GK",
-"price": 4.0
-},
-"c436893": {
-"name": "J.Araujo",
-"team": "BOU",
-"pos": "DEF",
-"price": 4.4
-},
-"c442299": {
-"name": "Affengruber",
-"team": "FUL",
-"pos": "DEF",
-"price": 4.5
-},
-"c444102": {
-"name": "Evanilson",
-"team": "BOU",
-"pos": "FWD",
-"price": 6.6
-},
-"c457569": {
-"name": "Petrović",
-"team": "BOU",
-"pos": "GK",
-"price": 4.5
-},
-"c463210": {
-"name": "Charles",
-"team": "FUL",
-"pos": "MID",
-"price": 5.0
-},
-"c463981": {
-"name": "Hill",
-"team": "BOU",
-"pos": "DEF",
-"price": 5.7
-},
-"c477555": {
-"name": "Bobb",
-"team": "FUL",
-"pos": "MID",
-"price": 5.5
-},
-"c483067": {
-"name": "Silva",
-"team": "BOU",
-"pos": "DEF",
-"price": 5.1
-},
-"c489888": {
-"name": "Adli",
-"team": "BOU",
-"pos": "MID",
-"price": 4.8
-},
-"c494521": {
-"name": "Truffert",
-"team": "BOU",
-"pos": "DEF",
-"price": 5.4
-},
-"c494928": {
-"name": "Sanchez",
-"team": "BOU",
-"pos": "DEF",
-"price": 4.4
-},
-"c496208": {
-"name": "Gannon-Doak",
-"team": "BOU",
-"pos": "MID",
-"price": 4.8
-},
-"c499604": {
-"name": "Rayan",
-"team": "BOU",
-"pos": "MID",
-"price": 6.3
-},
-"c500033": {
-"name": "Ángel",
-"team": "FUL",
-"pos": "MID",
-"price": 5.0
-},
-"c503139": {
-"name": "Scott",
-"team": "BOU",
-"pos": "MID",
-"price": 5.9
-},
-"c523700": {
-"name": "Jebbison",
-"team": "BOU",
-"pos": "FWD",
-"price": 5.0
-},
-"c54469": {
-"name": "Smith",
-"team": "BOU",
-"pos": "DEF",
-"price": 4.5
-},
-"c551050": {
-"name": "Larsson",
-"team": "FUL",
-"pos": "MID",
-"price": 5.0
-},
-"c551466": {
-"name": "Gonzalo",
-"team": "FUL",
-"pos": "FWD",
-"price": 5.8
-},
-"c560262": {
-"name": "Kroupi.Jr",
-"team": "BOU",
-"pos": "MID",
-"price": 7.3
-},
-"c560552": {
-"name": "Kevin",
-"team": "FUL",
-"pos": "MID",
-"price": 5.2
-},
-"c561245": {
-"name": "Rodríguez",
-"team": "BOU",
-"pos": "FWD",
-"price": 6.0
-},
-"c571779": {
-"name": "Palacios",
-"team": "FUL",
-"pos": "MID",
-"price": 5.2
-},
-"c575901": {
-"name": "Soler",
-"team": "BOU",
-"pos": "DEF",
-"price": 4.0
-},
-"c577725": {
-"name": "King",
-"team": "FUL",
-"pos": "MID",
-"price": 5.4
-},
-"c605845": {
-"name": "Kaiser",
-"team": "FUL",
-"pos": "GK",
-"price": 4.0
-},
-"c614574": {
-"name": "Tóth.A",
-"team": "BOU",
-"pos": "MID",
-"price": 4.9
-},
-"c616069": {
-"name": "Zepa",
-"team": "FUL",
-"pos": "MID",
-"price": 4.4
-},
-"c620487": {
-"name": "Milosavljević",
-"team": "BOU",
-"pos": "DEF",
-"price": 4.9
-},
-"c631786": {
-"name": "Kusi-Asare",
-"team": "FUL",
-"pos": "FWD",
-"price": 4.3
-},
-"c76357": {
-"name": "Cairney",
-"team": "FUL",
-"pos": "MID",
-"price": 4.9
-},
-"c80201": {
-"name": "Leno",
-"team": "FUL",
-"pos": "GK",
-"price": 4.5
-},
-"c86873": {
-"name": "Lecomte",
-"team": "FUL",
-"pos": "GK",
-"price": 4.0
-},
-"c108813": {
-"name": "Walton",
-"team": "IPS",
-"pos": "GK",
-"price": 4.4
-},
-"c112520": {
-"name": "Palmer",
-"team": "IPS",
-"pos": "GK",
-"price": 3.9
-},
-"c119090": {
-"name": "Goretzka",
-"team": "AVL",
-"pos": "MID",
-"price": 5.9
-},
-"c122806": {
-"name": "McGinn",
-"team": "AVL",
-"pos": "MID",
-"price": 5.5
-},
-"c147675": {
-"name": "Akpom",
-"team": "IPS",
-"pos": "FWD",
-"price": 5.0
-},
 "c149484": {
 "name": "Mings",
 "team": "AVL",
+"pos": "DEF",
+"price": 4.5
+},
+"c154043": {
+"name": "Maitland-Niles",
+"team": "EVE",
 "pos": "DEF",
 "price": 4.5
 },
@@ -4927,17 +3796,11 @@
 "pos": "FWD",
 "price": 5.5
 },
-"c176420": {
-"name": "Furlong",
-"team": "IPS",
+"c17761": {
+"name": "Tarkowski",
+"team": "EVE",
 "pos": "DEF",
-"price": 3.9
-},
-"c183015": {
-"name": "Kipré",
-"team": "IPS",
-"pos": "DEF",
-"price": 3.9
+"price": 6.2
 },
 "c184667": {
 "name": "Lindelöf",
@@ -4957,41 +3820,23 @@
 "pos": "DEF",
 "price": 4.3
 },
-"c212314": {
-"name": "Lukić",
-"team": "IPS",
-"pos": "MID",
-"price": 4.9
-},
 "c214590": {
 "name": "Wan-Bissaka",
 "team": "AVL",
 "pos": "DEF",
 "price": 4.5
 },
-"c216055": {
-"name": "Florentino",
-"team": "IPS",
+"c215413": {
+"name": "Dewsbury-Hall",
+"team": "EVE",
 "pos": "MID",
-"price": 4.8
+"price": 6.7
 },
-"c216616": {
-"name": "O'Shea",
-"team": "IPS",
+"c224967": {
+"name": "Mykolenko",
+"team": "EVE",
 "pos": "DEF",
-"price": 4.0
-},
-"c218543": {
-"name": "Palacios",
-"team": "IPS",
-"pos": "MID",
-"price": 5.0
-},
-"c219924": {
-"name": "Diop",
-"team": "IPS",
-"pos": "DEF",
-"price": 3.9
+"price": 4.6
 },
 "c226944": {
 "name": "Kamara",
@@ -4999,29 +3844,29 @@
 "pos": "MID",
 "price": 5.0
 },
-"c231899": {
-"name": "Taylor",
-"team": "IPS",
-"pos": "MID",
-"price": 4.4
-},
-"c232457": {
-"name": "Mehmeti",
-"team": "IPS",
-"pos": "MID",
-"price": 4.7
-},
-"c240514": {
-"name": "Scherpen",
-"team": "IPS",
+"c229600": {
+"name": "Travers",
+"team": "EVE",
 "pos": "GK",
-"price": 4.4
+"price": 5.0
 },
-"c241117": {
-"name": "Matusiwa",
-"team": "IPS",
+"c232928": {
+"name": "Garner",
+"team": "EVE",
 "pos": "MID",
-"price": 4.9
+"price": 6.0
+},
+"c242898": {
+"name": "Johnson",
+"team": "EVE",
+"pos": "MID",
+"price": 5.8
+},
+"c244860": {
+"name": "Hackney",
+"team": "EVE",
+"pos": "MID",
+"price": 5.3
 },
 "c244954": {
 "name": "Pau",
@@ -5035,12 +3880,6 @@
 "pos": "DEF",
 "price": 4.5
 },
-"c431639": {
-"name": "Flemming",
-"team": "IPS",
-"pos": "FWD",
-"price": 5.5
-},
 "c433969": {
 "name": "Suzuki",
 "team": "AVL",
@@ -5053,29 +3892,11 @@
 "pos": "DEF",
 "price": 4.4
 },
-"c442967": {
-"name": "Maeda",
-"team": "IPS",
-"pos": "MID",
-"price": 5.2
-},
-"c443261": {
-"name": "Clarke",
-"team": "IPS",
-"pos": "MID",
-"price": 5.2
-},
 "c448089": {
 "name": "Gomes",
 "team": "AVL",
 "pos": "MID",
 "price": 5.5
-},
-"c449429": {
-"name": "Greaves",
-"team": "IPS",
-"pos": "DEF",
-"price": 3.8
 },
 "c449871": {
 "name": "Onana",
@@ -5083,22 +3904,10 @@
 "pos": "MID",
 "price": 4.9
 },
-"c455084": {
-"name": "Davis",
-"team": "IPS",
+"c480455": {
+"name": "Branthwaite",
+"team": "EVE",
 "pos": "DEF",
-"price": 4.0
-},
-"c461587": {
-"name": "McAteer",
-"team": "IPS",
-"pos": "MID",
-"price": 4.3
-},
-"c474120": {
-"name": "Enciso",
-"team": "IPS",
-"pos": "MID",
 "price": 5.5
 },
 "c481283": {
@@ -5106,12 +3915,6 @@
 "team": "AVL",
 "pos": "GK",
 "price": 4.0
-},
-"c481624": {
-"name": "Philogene",
-"team": "IPS",
-"pos": "MID",
-"price": 5.4
 },
 "c487992": {
 "name": "Ruggeri",
@@ -5123,25 +3926,37 @@
 "name": "Garnacho",
 "team": "AVL",
 "pos": "MID",
-"price": 5.7
+"price": 5.6
 },
-"c50093": {
-"name": "Button",
-"team": "IPS",
-"pos": "GK",
-"price": 4.0
-},
-"c501390": {
-"name": "Núñez",
-"team": "IPS",
+"c496661": {
+"name": "Dibling",
+"team": "EVE",
 "pos": "MID",
-"price": 4.7
+"price": 5.3
+},
+"c502697": {
+"name": "Alcaraz",
+"team": "EVE",
+"pos": "MID",
+"price": 4.8
+},
+"c512462": {
+"name": "O'Brien",
+"team": "EVE",
+"pos": "DEF",
+"price": 4.8
+},
+"c513466": {
+"name": "Röhl",
+"team": "EVE",
+"pos": "MID",
+"price": 4.9
 },
 "c515597": {
 "name": "Bogarde",
 "team": "AVL",
 "pos": "MID",
-"price": 4.9
+"price": 4.8
 },
 "c517052": {
 "name": "N.Jackson",
@@ -5149,33 +3964,15 @@
 "pos": "FWD",
 "price": 7.3
 },
-"c531442": {
-"name": "Fatawu",
-"team": "IPS",
+"c550615": {
+"name": "George",
+"team": "EVE",
 "pos": "MID",
-"price": 5.4
-},
-"c543968": {
-"name": "Emersonn",
-"team": "IPS",
-"pos": "FWD",
-"price": 5.4
-},
-"c557012": {
-"name": "Walle Egeli",
-"team": "IPS",
-"pos": "FWD",
-"price": 4.4
+"price": 5.5
 },
 "c569577": {
 "name": "Rowe",
 "team": "AVL",
-"pos": "DEF",
-"price": 4.0
-},
-"c572584": {
-"name": "Ouattara",
-"team": "IPS",
 "pos": "DEF",
 "price": 4.0
 },
@@ -5185,11 +3982,29 @@
 "pos": "MID",
 "price": 4.3
 },
+"c586309": {
+"name": "Barry",
+"team": "EVE",
+"pos": "FWD",
+"price": 5.7
+},
+"c609873": {
+"name": "Armstrong",
+"team": "EVE",
+"pos": "MID",
+"price": 5.0
+},
 "c614071": {
 "name": "Manzambi",
 "team": "AVL",
 "pos": "MID",
 "price": 6.2
+},
+"c629068": {
+"name": "Graham",
+"team": "EVE",
+"pos": "MID",
+"price": 4.4
 },
 "c638987": {
 "name": "Mbaye",
@@ -5201,7 +4016,7 @@
 "name": "Burrowes",
 "team": "AVL",
 "pos": "MID",
-"price": 4.4
+"price": 4.3
 },
 "c653481": {
 "name": "Alysson",
@@ -5233,365 +4048,371 @@
 "pos": "MID",
 "price": 4.9
 },
-"c110690": {
-"name": "Wilson",
-"team": "COV",
-"pos": "GK",
-"price": 4.4
-},
-"c153682": {
-"name": "Wilson",
-"team": "LEE",
-"pos": "MID",
-"price": 6.1
-},
-"c155465": {
-"name": "Zetterer",
-"team": "LEE",
-"pos": "GK",
-"price": 4.0
-},
-"c168144": {
-"name": "Grimes",
-"team": "COV",
-"pos": "MID",
-"price": 4.7
-},
-"c173774": {
-"name": "Elvedi",
-"team": "LEE",
-"pos": "DEF",
-"price": 4.5
-},
-"c173878": {
-"name": "Dasilva",
-"team": "COV",
-"pos": "DEF",
-"price": 4.0
-},
-"c174594": {
-"name": "Nmecha",
-"team": "LEE",
-"pos": "FWD",
-"price": 5.2
-},
-"c176412": {
-"name": "Wright",
-"team": "COV",
-"pos": "FWD",
-"price": 5.3
-},
-"c177815": {
-"name": "Calvert-Lewin",
-"team": "LEE",
-"pos": "FWD",
-"price": 6.0
-},
-"c180135": {
-"name": "Longstaff",
-"team": "LEE",
-"pos": "MID",
-"price": 4.8
-},
-"c196100": {
-"name": "Hamer",
-"team": "COV",
-"pos": "MID",
-"price": 5.2
-},
-"c199598": {
-"name": "Ampadu",
-"team": "LEE",
-"pos": "MID",
-"price": 5.3
-},
-"c200617": {
-"name": "James",
-"team": "LEE",
+"c111317": {
+"name": "Brooks",
+"team": "BOU",
 "pos": "MID",
 "price": 4.9
 },
-"c204813": {
-"name": "Latibeaudiere",
-"team": "COV",
-"pos": "DEF",
-"price": 3.9
-},
-"c210156": {
-"name": "Awoniyi",
-"team": "COV",
-"pos": "FWD",
-"price": 5.4
-},
-"c214225": {
-"name": "Rodon",
-"team": "LEE",
-"pos": "DEF",
-"price": 4.2
-},
-"c218997": {
-"name": "Simms",
-"team": "COV",
-"pos": "FWD",
-"price": 4.8
-},
-"c220583": {
-"name": "Woolfenden",
-"team": "COV",
-"pos": "DEF",
-"price": 3.9
-},
-"c220627": {
-"name": "Justin",
-"team": "LEE",
-"pos": "DEF",
-"price": 4.5
-},
-"c226182": {
-"name": "Bogle",
-"team": "LEE",
-"pos": "DEF",
-"price": 4.8
-},
-"c226965": {
-"name": "Torp",
-"team": "COV",
+"c155408": {
+"name": "Cook",
+"team": "BOU",
 "pos": "MID",
-"price": 5.3
+"price": 4.9
 },
-"c230730": {
-"name": "Thomas-Asante",
-"team": "COV",
-"pos": "FWD",
+"c158499": {
+"name": "Christie",
+"team": "BOU",
+"pos": "MID",
 "price": 5.0
 },
-"c231065": {
-"name": "Pinnock",
-"team": "COV",
+"c200785": {
+"name": "Adams",
+"team": "BOU",
+"pos": "MID",
+"price": 5.0
+},
+"c201658": {
+"name": "Tavernier",
+"team": "BOU",
+"pos": "MID",
+"price": 6.8
+},
+"c204120": {
+"name": "Boscagli",
+"team": "BHA",
 "pos": "DEF",
 "price": 4.5
 },
-"c241293": {
-"name": "Mason-Clark",
-"team": "COV",
+"c219249": {
+"name": "O'Riley",
+"team": "BHA",
 "pos": "MID",
-"price": 5.3
+"price": 5.4
 },
-"c242893": {
-"name": "Gboho",
-"team": "COV",
+"c222683": {
+"name": "Kluivert",
+"team": "BOU",
+"pos": "MID",
+"price": 5.9
+},
+"c222694": {
+"name": "Struijk",
+"team": "BHA",
+"pos": "DEF",
+"price": 4.9
+},
+"c230650": {
+"name": "Di Gregorio",
+"team": "BOU",
+"pos": "GK",
+"price": 4.5
+},
+"c231416": {
+"name": "F.Kadıoğlu",
+"team": "BHA",
+"pos": "DEF",
+"price": 4.3
+},
+"c242882": {
+"name": "Diakité",
+"team": "BOU",
+"pos": "DEF",
+"price": 4.9
+},
+"c40383": {
+"name": "Forster",
+"team": "BOU",
+"pos": "GK",
+"price": 4.0
+},
+"c436893": {
+"name": "J.Araujo",
+"team": "BOU",
+"pos": "DEF",
+"price": 4.4
+},
+"c444102": {
+"name": "Evanilson",
+"team": "BOU",
+"pos": "FWD",
+"price": 6.6
+},
+"c451340": {
+"name": "Mitoma",
+"team": "BHA",
+"pos": "MID",
+"price": 5.9
+},
+"c451490": {
+"name": "Costinha",
+"team": "BHA",
+"pos": "DEF",
+"price": 4.5
+},
+"c454490": {
+"name": "Svoboda",
+"team": "BHA",
+"pos": "DEF",
+"price": 5.0
+},
+"c457569": {
+"name": "Petrović",
+"team": "BOU",
+"pos": "GK",
+"price": 4.5
+},
+"c463067": {
+"name": "Georginio",
+"team": "BHA",
+"pos": "FWD",
+"price": 5.2
+},
+"c463981": {
+"name": "Hill",
+"team": "BOU",
+"pos": "DEF",
+"price": 5.7
+},
+"c465730": {
+"name": "De Cuyper",
+"team": "BHA",
+"pos": "DEF",
+"price": 5.6
+},
+"c467779": {
+"name": "Wieffer",
+"team": "BHA",
+"pos": "DEF",
+"price": 4.8
+},
+"c471551": {
+"name": "Azeez",
+"team": "BHA",
 "pos": "MID",
 "price": 5.5
 },
-"c243526": {
-"name": "Gudmundsson",
-"team": "LEE",
+"c483067": {
+"name": "Silva",
+"team": "BOU",
 "pos": "DEF",
-"price": 4.5
-},
-"c248056": {
-"name": "Tanaka",
-"team": "LEE",
-"pos": "MID",
-"price": 4.9
-},
-"c427637": {
-"name": "Aaronson",
-"team": "LEE",
-"pos": "MID",
-"price": 5.2
-},
-"c428580": {
-"name": "Onyeka",
-"team": "COV",
-"pos": "MID",
-"price": 4.8
-},
-"c432720": {
-"name": "Trafford",
-"team": "LEE",
-"pos": "GK",
 "price": 5.1
 },
-"c434752": {
-"name": "Bijol",
-"team": "LEE",
-"pos": "DEF",
-"price": 5.0
-},
-"c435997": {
-"name": "Okafor",
-"team": "LEE",
-"pos": "MID",
-"price": 5.8
-},
-"c437497": {
-"name": "Bard",
-"team": "LEE",
-"pos": "DEF",
-"price": 4.5
-},
-"c439668": {
-"name": "Eccles",
-"team": "COV",
-"pos": "MID",
-"price": 4.8
-},
-"c451284": {
-"name": "van Ewijk",
-"team": "COV",
-"pos": "DEF",
-"price": 3.9
-},
-"c461102": {
-"name": "Thomas",
-"team": "COV",
-"pos": "DEF",
-"price": 4.0
-},
-"c465390": {
-"name": "Kesler-Hayden",
-"team": "COV",
-"pos": "DEF",
-"price": 3.9
-},
-"c466525": {
-"name": "Stach",
-"team": "LEE",
-"pos": "MID",
-"price": 6.0
-},
-"c469272": {
-"name": "Tchaouna",
-"team": "COV",
-"pos": "MID",
-"price": 5.2
-},
-"c472739": {
-"name": "Rushworth",
-"team": "COV",
-"pos": "GK",
-"price": 4.5
-},
-"c480457": {
-"name": "Rudoni",
-"team": "COV",
-"pos": "MID",
-"price": 5.0
-},
-"c486520": {
-"name": "Gruev",
-"team": "LEE",
-"pos": "MID",
-"price": 5.0
-},
-"c501459": {
-"name": "Sakamoto",
-"team": "COV",
-"pos": "MID",
-"price": 4.8
-},
-"c522047": {
-"name": "Muharemović",
-"team": "LEE",
-"pos": "DEF",
-"price": 5.2
-},
-"c539142": {
-"name": "Amenda",
-"team": "COV",
-"pos": "DEF",
-"price": 3.9
-},
-"c565297": {
-"name": "Mateo Joseph",
-"team": "LEE",
+"c487117": {
+"name": "Ferguson",
+"team": "BHA",
 "pos": "FWD",
+"price": 4.9
+},
+"c489639": {
+"name": "Verbruggen",
+"team": "BHA",
+"pos": "GK",
+"price": 4.8
+},
+"c489888": {
+"name": "Adli",
+"team": "BOU",
+"pos": "MID",
+"price": 4.8
+},
+"c49262": {
+"name": "Steele",
+"team": "BHA",
+"pos": "GK",
+"price": 3.9
+},
+"c494521": {
+"name": "Truffert",
+"team": "BOU",
+"pos": "DEF",
+"price": 5.4
+},
+"c494928": {
+"name": "Sanchez",
+"team": "BOU",
+"pos": "DEF",
 "price": 4.4
 },
-"c566213": {
-"name": "Mfuni",
-"team": "COV",
-"pos": "DEF",
-"price": 4.0
-},
-"c587982": {
-"name": "Bahoya",
-"team": "LEE",
+"c496208": {
+"name": "Gannon-Doak",
+"team": "BOU",
 "pos": "MID",
 "price": 4.8
 },
-"c592740": {
-"name": "Cresswell",
-"team": "LEE",
+"c499604": {
+"name": "Rayan",
+"team": "BOU",
 "pos": "MID",
+"price": 6.3
+},
+"c503139": {
+"name": "Scott",
+"team": "BOU",
+"pos": "MID",
+"price": 5.9
+},
+"c509416": {
+"name": "Ayari",
+"team": "BHA",
+"pos": "MID",
+"price": 5.5
+},
+"c512123": {
+"name": "Hadjam",
+"team": "BHA",
+"pos": "DEF",
 "price": 4.5
 },
-"c627221": {
-"name": "Cherif",
-"team": "COV",
+"c514254": {
+"name": "Gomez",
+"team": "BHA",
+"pos": "MID",
+"price": 5.1
+},
+"c523700": {
+"name": "Jebbison",
+"team": "BOU",
 "pos": "FWD",
 "price": 5.0
 },
-"c643970": {
-"name": "Lienou",
-"team": "LEE",
-"pos": "DEF",
-"price": 4.0
-},
-"c661888": {
-"name": "Yirenkyi",
-"team": "COV",
+"c532529": {
+"name": "Hinshelwood",
+"team": "BHA",
 "pos": "MID",
-"price": 4.8
+"price": 5.9
 },
-"c684268": {
-"name": "Shepherd",
-"team": "COV",
+"c538007": {
+"name": "David",
+"team": "BHA",
+"pos": "FWD",
+"price": 5.9
+},
+"c54469": {
+"name": "Smith",
+"team": "BOU",
+"pos": "DEF",
+"price": 4.5
+},
+"c550090": {
+"name": "Coppola",
+"team": "BHA",
+"pos": "DEF",
+"price": 4.5
+},
+"c556637": {
+"name": "Oriola",
+"team": "BHA",
 "pos": "MID",
 "price": 4.3
 },
-"c79602": {
-"name": "Bentley",
-"team": "COV",
-"pos": "GK",
-"price": 4.0
+"c560262": {
+"name": "Kroupi.Jr",
+"team": "BOU",
+"pos": "MID",
+"price": 7.3
 },
-"c80178": {
-"name": "Bidwell",
-"team": "COV",
+"c561245": {
+"name": "Rodríguez",
+"team": "BOU",
+"pos": "FWD",
+"price": 6.0
+},
+"c575901": {
+"name": "Soler",
+"team": "BOU",
 "pos": "DEF",
 "price": 4.0
 },
-"c97846": {
-"name": "Cairns",
-"team": "LEE",
-"pos": "GK",
-"price": 4.0
+"c592031": {
+"name": "Minteh",
+"team": "BHA",
+"pos": "MID",
+"price": 5.8
 },
-"c106760": {
-"name": "Shaw",
-"team": "MUN",
+"c592984": {
+"name": "Andrés",
+"team": "BHA",
+"pos": "MID",
+"price": 5.5
+},
+"c60307": {
+"name": "Groß",
+"team": "BHA",
+"pos": "MID",
+"price": 6.4
+},
+"c608181": {
+"name": "Tzimas",
+"team": "BHA",
+"pos": "FWD",
+"price": 5.4
+},
+"c610799": {
+"name": "Vuskovic",
+"team": "BHA",
 "pos": "DEF",
-"price": 4.2
+"price": 5.4
 },
-"c141746": {
-"name": "B.Fernandes",
-"team": "MUN",
+"c611695": {
+"name": "Yalcouyé",
+"team": "BHA",
 "pos": "MID",
-"price": 11.6
+"price": 4.4
 },
-"c166989": {
-"name": "Tielemans",
-"team": "MUN",
+"c612855": {
+"name": "Osman",
+"team": "BHA",
 "pos": "MID",
-"price": 5.6
+"price": 4.9
 },
-"c176297": {
-"name": "Rashford",
-"team": "MUN",
+"c614574": {
+"name": "Tóth.A",
+"team": "BOU",
 "pos": "MID",
-"price": 6.8
+"price": 4.9
+},
+"c620487": {
+"name": "Milosavljević",
+"team": "BOU",
+"pos": "DEF",
+"price": 4.9
+},
+"c647850": {
+"name": "Kostoulas",
+"team": "BHA",
+"pos": "FWD",
+"price": 5.7
+},
+"c661016": {
+"name": "Ibrahim",
+"team": "BHA",
+"pos": "MID",
+"price": 4.5
+},
+"c700308": {
+"name": "Yohanna",
+"team": "BHA",
+"pos": "MID",
+"price": 4.7
+},
+"c83299": {
+"name": "Dunk",
+"team": "BHA",
+"pos": "DEF",
+"price": 4.5
+},
+"c109745": {
+"name": "Arrizabalaga",
+"team": "ARS",
+"pos": "GK",
+"price": 4.9
+},
+"c154561": {
+"name": "Raya",
+"team": "ARS",
+"pos": "GK",
+"price": 6.2
 },
 "c183656": {
 "name": "Dasilva",
@@ -5599,11 +4420,11 @@
 "pos": "MID",
 "price": 4.8
 },
-"c184341": {
-"name": "Mount",
-"team": "MUN",
+"c184029": {
+"name": "Ødegaard",
+"team": "ARS",
 "pos": "MID",
-"price": 5.4
+"price": 6.7
 },
 "c191866": {
 "name": "Ajer",
@@ -5617,11 +4438,35 @@
 "pos": "DEF",
 "price": 4.3
 },
+"c195384": {
+"name": "Merino",
+"team": "ARS",
+"pos": "MID",
+"price": 5.6
+},
+"c198869": {
+"name": "White",
+"team": "ARS",
+"pos": "DEF",
+"price": 5.3
+},
+"c199798": {
+"name": "Konsa",
+"team": "ARS",
+"pos": "DEF",
+"price": 4.9
+},
 "c200720": {
 "name": "Kelleher",
 "team": "BRE",
 "pos": "GK",
 "price": 5.0
+},
+"c204480": {
+"name": "Rice",
+"team": "ARS",
+"pos": "MID",
+"price": 7.5
 },
 "c204580": {
 "name": "Janelt",
@@ -5635,41 +4480,41 @@
 "pos": "MID",
 "price": 5.4
 },
-"c209365": {
-"name": "De Ligt",
-"team": "MUN",
-"pos": "DEF",
-"price": 4.9
-},
-"c21205": {
-"name": "Heaton",
-"team": "MUN",
-"pos": "GK",
-"price": 4.0
-},
-"c216051": {
-"name": "Dalot",
-"team": "MUN",
-"pos": "DEF",
-"price": 4.7
-},
-"c221820": {
-"name": "Martinez",
-"team": "MUN",
-"pos": "DEF",
-"price": 4.8
-},
-"c230001": {
-"name": "Mazraoui",
-"team": "MUN",
-"pos": "DEF",
-"price": 4.3
-},
-"c232112": {
-"name": "Ugarte",
-"team": "MUN",
+"c208706": {
+"name": "Bruno G.",
+"team": "ARS",
 "pos": "MID",
-"price": 5.0
+"price": 6.7
+},
+"c219847": {
+"name": "Havertz",
+"team": "ARS",
+"pos": "FWD",
+"price": 7.4
+},
+"c223340": {
+"name": "Saka",
+"team": "ARS",
+"pos": "MID",
+"price": 9.4
+},
+"c224117": {
+"name": "Gyökeres",
+"team": "ARS",
+"pos": "FWD",
+"price": 7.0
+},
+"c226597": {
+"name": "Gabriel",
+"team": "ARS",
+"pos": "DEF",
+"price": 8.1
+},
+"c232413": {
+"name": "Eze",
+"team": "ARS",
+"pos": "MID",
+"price": 6.2
 },
 "c235448": {
 "name": "Balcombe",
@@ -5683,23 +4528,35 @@
 "pos": "MID",
 "price": 5.0
 },
+"c248857": {
+"name": "Madueke",
+"team": "ARS",
+"pos": "MID",
+"price": 6.2
+},
 "c249231": {
 "name": "Lewis-Potter",
 "team": "BRE",
 "pos": "MID",
 "price": 5.5
 },
-"c430871": {
-"name": "Cunha",
-"team": "MUN",
-"pos": "MID",
-"price": 7.8
-},
 "c432830": {
 "name": "Collins",
 "team": "BRE",
 "pos": "DEF",
 "price": 5.4
+},
+"c437495": {
+"name": "Meslier",
+"team": "ARS",
+"pos": "GK",
+"price": 4.9
+},
+"c439509": {
+"name": "Tzolis",
+"team": "ARS",
+"pos": "MID",
+"price": 6.1
 },
 "c440089": {
 "name": "Damsgaard",
@@ -5719,23 +4576,29 @@
 "pos": "DEF",
 "price": 4.9
 },
-"c446008": {
-"name": "Mbeumo",
-"team": "MUN",
-"pos": "MID",
-"price": 7.8
+"c445122": {
+"name": "J.Timber",
+"team": "ARS",
+"pos": "DEF",
+"price": 6.5
 },
-"c458249": {
-"name": "Zirkzee",
-"team": "MUN",
-"pos": "FWD",
-"price": 5.3
+"c448104": {
+"name": "Hincapie",
+"team": "ARS",
+"pos": "DEF",
+"price": 5.2
 },
-"c465247": {
-"name": "Lammens",
-"team": "MUN",
-"pos": "GK",
-"price": 4.8
+"c462424": {
+"name": "Saliba",
+"team": "ARS",
+"pos": "DEF",
+"price": 5.9
+},
+"c466075": {
+"name": "Calafiori",
+"team": "ARS",
+"pos": "DEF",
+"price": 5.9
 },
 "c472713": {
 "name": "Hickey",
@@ -5743,17 +4606,23 @@
 "pos": "DEF",
 "price": 4.5
 },
-"c485711": {
-"name": "Šeško",
-"team": "MUN",
-"pos": "FWD",
-"price": 6.9
-},
-"c493250": {
-"name": "Amad",
-"team": "MUN",
+"c481655": {
+"name": "Zubimendi",
+"team": "ARS",
 "pos": "MID",
-"price": 5.7
+"price": 5.2
+},
+"c499169": {
+"name": "Lewis-Skelly",
+"team": "ARS",
+"pos": "MID",
+"price": 5.3
+},
+"c500040": {
+"name": "Mosquera",
+"team": "ARS",
+"pos": "DEF",
+"price": 5.1
 },
 "c502500": {
 "name": "Thiago",
@@ -5783,7 +4652,7 @@
 "name": "Schade",
 "team": "BRE",
 "pos": "MID",
-"price": 6.1
+"price": 6.0
 },
 "c513545": {
 "name": "M.Sangaré",
@@ -5791,35 +4660,11 @@
 "pos": "MID",
 "price": 5.3
 },
-"c516895": {
-"name": "Mainoo",
-"team": "MUN",
-"pos": "MID",
-"price": 5.5
-},
-"c519913": {
-"name": "Fletcher",
-"team": "MUN",
-"pos": "MID",
-"price": 4.3
-},
-"c532605": {
-"name": "Andrey Santos",
-"team": "MUN",
-"pos": "MID",
-"price": 4.6
-},
 "c533463": {
 "name": "O.Dango",
 "team": "BRE",
 "pos": "MID",
 "price": 6.2
-},
-"c535301": {
-"name": "Baleba",
-"team": "MUN",
-"pos": "MID",
-"price": 4.9
 },
 "c543295": {
 "name": "Milambo",
@@ -5827,65 +4672,17 @@
 "pos": "MID",
 "price": 5.0
 },
-"c547037": {
-"name": "J.Fletcher",
-"team": "MUN",
-"pos": "MID",
-"price": 4.8
-},
-"c550864": {
-"name": "Yoro",
-"team": "MUN",
-"pos": "DEF",
-"price": 4.8
-},
 "c570241": {
 "name": "Ji-soo",
 "team": "BRE",
 "pos": "DEF",
 "price": 4.4
 },
-"c576620": {
-"name": "Bendito Mantato",
-"team": "MUN",
-"pos": "MID",
-"price": 4.4
-},
-"c576628": {
-"name": "Lacey",
-"team": "MUN",
-"pos": "MID",
-"price": 4.9
-},
-"c577974": {
-"name": "Amass",
-"team": "MUN",
-"pos": "DEF",
-"price": 3.9
-},
 "c593174": {
 "name": "Furo",
 "team": "BRE",
 "pos": "FWD",
 "price": 4.4
-},
-"c596777": {
-"name": "Dorgu",
-"team": "MUN",
-"pos": "MID",
-"price": 5.7
-},
-"c59735": {
-"name": "Darlow",
-"team": "MUN",
-"pos": "GK",
-"price": 4.4
-},
-"c606745": {
-"name": "Heaven",
-"team": "MUN",
-"pos": "DEF",
-"price": 4.2
 },
 "c607464": {
 "name": "Kayode",
@@ -5905,6 +4702,12 @@
 "pos": "DEF",
 "price": 4.4
 },
+"c616077": {
+"name": "Dowman",
+"team": "ARS",
+"pos": "MID",
+"price": 5.2
+},
 "c626464": {
 "name": "Nunes",
 "team": "BRE",
@@ -5917,65 +4720,65 @@
 "pos": "FWD",
 "price": 5.3
 },
-"c95658": {
-"name": "Maguire",
-"team": "MUN",
-"pos": "DEF",
+"c108413": {
+"name": "Hughes",
+"team": "CRY",
+"pos": "MID",
+"price": 4.3
+},
+"c121709": {
+"name": "Benitez",
+"team": "CRY",
+"pos": "GK",
 "price": 4.5
 },
-"c159506": {
-"name": "Aina",
-"team": "NFO",
-"pos": "DEF",
-"price": 4.2
-},
-"c204561": {
-"name": "Schlager",
-"team": "NFO",
+"c152551": {
+"name": "Lerma",
+"team": "CRY",
 "pos": "MID",
-"price": 4.9
-},
-"c204822": {
-"name": "O.Richards",
-"team": "NFO",
-"pos": "DEF",
-"price": 3.9
-},
-"c204968": {
-"name": "Yates",
-"team": "NFO",
-"pos": "MID",
-"price": 4.4
-},
-"c209046": {
-"name": "Hudson-Odoi",
-"team": "NFO",
-"pos": "MID",
-"price": 5.7
-},
-"c210462": {
-"name": "I.Sangaré",
-"team": "NFO",
-"pos": "MID",
-"price": 4.7
-},
-"c215136": {
-"name": "N.Williams",
-"team": "NFO",
-"pos": "DEF",
 "price": 4.8
 },
-"c221389": {
-"name": "John",
-"team": "NFO",
+"c169593": {
+"name": "Matthews",
+"team": "CRY",
 "pos": "GK",
+"price": 4.0
+},
+"c172649": {
+"name": "Henderson",
+"team": "CRY",
+"pos": "GK",
+"price": 4.9
+},
+"c172850": {
+"name": "Chilwell",
+"team": "CRY",
+"pos": "DEF",
+"price": 4.3
+},
+"c205533": {
+"name": "Nketiah",
+"team": "CRY",
+"pos": "FWD",
+"price": 5.3
+},
+"c209400": {
+"name": "Kamada",
+"team": "CRY",
+"pos": "MID",
+"price": 5.0
+},
+"c220362": {
+"name": "Disasi",
+"team": "CRY",
+"pos": "DEF",
 "price": 4.4
 },
-"c222531": {
-"name": "Gibbs-White",
-"team": "NFO",
-"pos": "MID",
-"price": 7.8
+"c223723": {
+"name": "Tomiyasu",
+"team": "CRY",
+"pos": "DEF",
+"price": 4.3
 },
 "c225796": {
 "name": "James",
@@ -5983,11 +4786,29 @@
 "pos": "DEF",
 "price": 5.2
 },
-"c227444": {
-"name": "Milenković",
-"team": "NFO",
+"c231747": {
+"name": "Mateta",
+"team": "CRY",
+"pos": "FWD",
+"price": 6.3
+},
+"c232185": {
+"name": "Sarr",
+"team": "CRY",
+"pos": "MID",
+"price": 6.2
+},
+"c242313": {
+"name": "Mingueza",
+"team": "CRY",
 "pos": "DEF",
-"price": 5.4
+"price": 4.2
+},
+"c244723": {
+"name": "Mitchell",
+"team": "CRY",
+"pos": "DEF",
+"price": 4.4
 },
 "c244850": {
 "name": "Rogers",
@@ -5999,13 +4820,13 @@
 "name": "Palmer",
 "team": "CHE",
 "pos": "MID",
-"price": 9.8
+"price": 9.7
 },
-"c247348": {
-"name": "Muñoz",
-"team": "NFO",
-"pos": "DEF",
-"price": 5.2
+"c247412": {
+"name": "Strand Larsen",
+"team": "CRY",
+"pos": "FWD",
+"price": 5.9
 },
 "c247632": {
 "name": "Neto",
@@ -6013,23 +4834,17 @@
 "pos": "MID",
 "price": 6.6
 },
-"c250199": {
-"name": "Dominguez",
-"team": "NFO",
-"pos": "MID",
-"price": 4.8
+"c427623": {
+"name": "Richards",
+"team": "CRY",
+"pos": "DEF",
+"price": 4.9
 },
-"c428971": {
-"name": "Benda",
-"team": "NFO",
-"pos": "GK",
-"price": 4.5
-},
-"c432714": {
-"name": "McAtee",
-"team": "NFO",
+"c433154": {
+"name": "McNeil",
+"team": "CRY",
 "pos": "MID",
-"price": 5.5
+"price": 5.2
 },
 "c437499": {
 "name": "Lacroix",
@@ -6037,17 +4852,23 @@
 "pos": "DEF",
 "price": 5.8
 },
+"c438464": {
+"name": "Doucouré",
+"team": "CRY",
+"pos": "MID",
+"price": 4.7
+},
 "c444463": {
 "name": "Fofana",
 "team": "CHE",
 "pos": "DEF",
 "price": 5.0
 },
-"c456512": {
-"name": "Ndoye",
-"team": "NFO",
+"c450063": {
+"name": "Timber",
+"team": "CRY",
 "pos": "MID",
-"price": 5.5
+"price": 5.0
 },
 "c460028": {
 "name": "Colwill",
@@ -6055,35 +4876,17 @@
 "pos": "DEF",
 "price": 4.8
 },
-"c463034": {
-"name": "Delap",
-"team": "NFO",
-"pos": "FWD",
-"price": 5.3
-},
 "c463936": {
 "name": "Gittens",
 "team": "CHE",
 "pos": "MID",
 "price": 5.8
 },
-"c465680": {
-"name": "Kalimuendo",
-"team": "NFO",
-"pos": "FWD",
-"price": 5.4
-},
-"c470315": {
-"name": "Netz",
-"team": "NFO",
-"pos": "DEF",
-"price": 4.4
-},
 "c475168": {
 "name": "João Pedro",
 "team": "CHE",
 "pos": "FWD",
-"price": 7.6
+"price": 7.5
 },
 "c482609": {
 "name": "Gusto",
@@ -6091,15 +4894,27 @@
 "pos": "DEF",
 "price": 4.8
 },
-"c482973": {
-"name": "Igor Jesus",
-"team": "NFO",
-"pos": "FWD",
-"price": 5.6
+"c485337": {
+"name": "Guessand",
+"team": "CRY",
+"pos": "MID",
+"price": 5.3
 },
 "c486672": {
 "name": "Caicedo",
 "team": "CHE",
+"pos": "MID",
+"price": 5.3
+},
+"c488024": {
+"name": "Yeremy",
+"team": "CRY",
+"pos": "MID",
+"price": 5.5
+},
+"c496221": {
+"name": "Wharton",
+"team": "CRY",
 "pos": "MID",
 "price": 5.3
 },
@@ -6114,12 +4929,6 @@
 "team": "CHE",
 "pos": "GK",
 "price": 4.0
-},
-"c500151": {
-"name": "Savona",
-"team": "NFO",
-"pos": "DEF",
-"price": 4.5
 },
 "c50175": {
 "name": "Welbeck",
@@ -6139,6 +4948,18 @@
 "pos": "MID",
 "price": 5.0
 },
+"c515621": {
+"name": "Chadi Riad",
+"team": "CRY",
+"pos": "DEF",
+"price": 4.3
+},
+"c533646": {
+"name": "Osorio",
+"team": "CRY",
+"pos": "MID",
+"price": 5.4
+},
 "c543158": {
 "name": "Barco",
 "team": "CHE",
@@ -6157,17 +4978,17 @@
 "pos": "DEF",
 "price": 4.4
 },
+"c559152": {
+"name": "Gozo",
+"team": "CRY",
+"pos": "MID",
+"price": 4.8
+},
 "c567119": {
 "name": "Mheuka",
 "team": "CHE",
 "pos": "FWD",
 "price": 4.5
-},
-"c568420": {
-"name": "Diomande",
-"team": "NFO",
-"pos": "DEF",
-"price": 5.3
 },
 "c56979": {
 "name": "Henderson",
@@ -6175,17 +4996,11 @@
 "pos": "MID",
 "price": 4.9
 },
-"c575458": {
-"name": "Jair Cunha",
-"team": "NFO",
+"c570794": {
+"name": "Khalaili",
+"team": "CRY",
 "pos": "DEF",
-"price": 4.4
-},
-"c575476": {
-"name": "Murillo",
-"team": "NFO",
-"pos": "DEF",
-"price": 5.5
+"price": 5.0
 },
 "c577016": {
 "name": "Acheampong",
@@ -6199,11 +5014,11 @@
 "pos": "MID",
 "price": 5.2
 },
-"c60689": {
-"name": "Wood",
-"team": "NFO",
-"pos": "FWD",
-"price": 5.6
+"c605972": {
+"name": "Ahanor",
+"team": "CRY",
+"pos": "DEF",
+"price": 4.5
 },
 "c616109": {
 "name": "Subuloye",
@@ -6235,11 +5050,17 @@
 "pos": "MID",
 "price": 4.5
 },
-"c85633": {
-"name": "Sels",
-"team": "NFO",
-"pos": "GK",
-"price": 5.0
+"c651426": {
+"name": "Canvot",
+"team": "CRY",
+"pos": "DEF",
+"price": 4.7
+},
+"c672492": {
+"name": "Drakes-Thomas",
+"team": "CRY",
+"pos": "MID",
+"price": 4.3
 },
 "c98980": {
 "name": "Martinez",
@@ -6247,23 +5068,713 @@
 "pos": "GK",
 "price": 4.9
 },
-"c109646": {
-"name": "Tosin",
-"team": "TOT",
-"pos": "DEF",
-"price": 4.3
+"c108813": {
+"name": "Walton",
+"team": "IPS",
+"pos": "GK",
+"price": 4.4
 },
-"c115556": {
-"name": "Davies",
-"team": "TOT",
+"c110690": {
+"name": "Wilson",
+"team": "COV",
+"pos": "GK",
+"price": 4.4
+},
+"c112520": {
+"name": "Palmer",
+"team": "IPS",
+"pos": "GK",
+"price": 3.9
+},
+"c147675": {
+"name": "Akpom",
+"team": "IPS",
+"pos": "FWD",
+"price": 5.0
+},
+"c168144": {
+"name": "Grimes",
+"team": "COV",
+"pos": "MID",
+"price": 4.7
+},
+"c173878": {
+"name": "Dasilva",
+"team": "COV",
+"pos": "DEF",
+"price": 4.0
+},
+"c176412": {
+"name": "Wright",
+"team": "COV",
+"pos": "FWD",
+"price": 5.3
+},
+"c176420": {
+"name": "Furlong",
+"team": "IPS",
 "pos": "DEF",
 "price": 3.9
 },
-"c122798": {
-"name": "Robertson",
-"team": "TOT",
+"c183015": {
+"name": "Kipré",
+"team": "IPS",
 "pos": "DEF",
+"price": 3.9
+},
+"c196100": {
+"name": "Hamer",
+"team": "COV",
+"pos": "MID",
+"price": 5.2
+},
+"c204813": {
+"name": "Latibeaudiere",
+"team": "COV",
+"pos": "DEF",
+"price": 3.9
+},
+"c210156": {
+"name": "Awoniyi",
+"team": "COV",
+"pos": "FWD",
+"price": 5.4
+},
+"c212314": {
+"name": "Lukić",
+"team": "IPS",
+"pos": "MID",
+"price": 4.9
+},
+"c216055": {
+"name": "Florentino",
+"team": "IPS",
+"pos": "MID",
+"price": 4.8
+},
+"c216616": {
+"name": "O'Shea",
+"team": "IPS",
+"pos": "DEF",
+"price": 4.0
+},
+"c218543": {
+"name": "Palacios",
+"team": "IPS",
+"pos": "MID",
+"price": 5.0
+},
+"c218997": {
+"name": "Simms",
+"team": "COV",
+"pos": "FWD",
+"price": 4.8
+},
+"c219924": {
+"name": "Diop",
+"team": "IPS",
+"pos": "DEF",
+"price": 3.9
+},
+"c220583": {
+"name": "Woolfenden",
+"team": "COV",
+"pos": "DEF",
+"price": 3.9
+},
+"c226965": {
+"name": "Torp",
+"team": "COV",
+"pos": "MID",
+"price": 5.3
+},
+"c230730": {
+"name": "Thomas-Asante",
+"team": "COV",
+"pos": "FWD",
+"price": 5.0
+},
+"c231065": {
+"name": "Pinnock",
+"team": "COV",
+"pos": "DEF",
+"price": 4.5
+},
+"c231899": {
+"name": "Taylor",
+"team": "IPS",
+"pos": "MID",
+"price": 4.4
+},
+"c232457": {
+"name": "Mehmeti",
+"team": "IPS",
+"pos": "MID",
+"price": 4.7
+},
+"c240514": {
+"name": "Scherpen",
+"team": "IPS",
+"pos": "GK",
+"price": 4.4
+},
+"c241117": {
+"name": "Matusiwa",
+"team": "IPS",
+"pos": "MID",
+"price": 4.9
+},
+"c241293": {
+"name": "Mason-Clark",
+"team": "COV",
+"pos": "MID",
+"price": 5.3
+},
+"c242893": {
+"name": "Gboho",
+"team": "COV",
+"pos": "MID",
+"price": 5.5
+},
+"c428580": {
+"name": "Onyeka",
+"team": "COV",
+"pos": "MID",
+"price": 4.8
+},
+"c431639": {
+"name": "Flemming",
+"team": "IPS",
+"pos": "FWD",
+"price": 5.5
+},
+"c439668": {
+"name": "Eccles",
+"team": "COV",
+"pos": "MID",
+"price": 4.8
+},
+"c442967": {
+"name": "Maeda",
+"team": "IPS",
+"pos": "MID",
+"price": 5.2
+},
+"c443261": {
+"name": "Clarke",
+"team": "IPS",
+"pos": "MID",
+"price": 5.2
+},
+"c449429": {
+"name": "Greaves",
+"team": "IPS",
+"pos": "DEF",
+"price": 3.8
+},
+"c451284": {
+"name": "van Ewijk",
+"team": "COV",
+"pos": "DEF",
+"price": 3.9
+},
+"c455084": {
+"name": "Davis",
+"team": "IPS",
+"pos": "DEF",
+"price": 4.0
+},
+"c461102": {
+"name": "Thomas",
+"team": "COV",
+"pos": "DEF",
+"price": 4.0
+},
+"c461587": {
+"name": "McAteer",
+"team": "IPS",
+"pos": "MID",
 "price": 4.3
+},
+"c465390": {
+"name": "Kesler-Hayden",
+"team": "COV",
+"pos": "DEF",
+"price": 3.9
+},
+"c469272": {
+"name": "Tchaouna",
+"team": "COV",
+"pos": "MID",
+"price": 5.2
+},
+"c472739": {
+"name": "Rushworth",
+"team": "COV",
+"pos": "GK",
+"price": 4.5
+},
+"c474120": {
+"name": "Enciso",
+"team": "IPS",
+"pos": "MID",
+"price": 5.5
+},
+"c480457": {
+"name": "Rudoni",
+"team": "COV",
+"pos": "MID",
+"price": 5.0
+},
+"c481624": {
+"name": "Philogene",
+"team": "IPS",
+"pos": "MID",
+"price": 5.4
+},
+"c50093": {
+"name": "Button",
+"team": "IPS",
+"pos": "GK",
+"price": 4.0
+},
+"c501390": {
+"name": "Núñez",
+"team": "IPS",
+"pos": "MID",
+"price": 4.7
+},
+"c501459": {
+"name": "Sakamoto",
+"team": "COV",
+"pos": "MID",
+"price": 4.8
+},
+"c531442": {
+"name": "Fatawu",
+"team": "IPS",
+"pos": "MID",
+"price": 5.4
+},
+"c539142": {
+"name": "Amenda",
+"team": "COV",
+"pos": "DEF",
+"price": 3.9
+},
+"c543968": {
+"name": "Emersonn",
+"team": "IPS",
+"pos": "FWD",
+"price": 5.4
+},
+"c557012": {
+"name": "Walle Egeli",
+"team": "IPS",
+"pos": "FWD",
+"price": 4.4
+},
+"c566213": {
+"name": "Mfuni",
+"team": "COV",
+"pos": "DEF",
+"price": 4.0
+},
+"c572584": {
+"name": "Ouattara",
+"team": "IPS",
+"pos": "DEF",
+"price": 4.0
+},
+"c627221": {
+"name": "Cherif",
+"team": "COV",
+"pos": "FWD",
+"price": 5.0
+},
+"c661888": {
+"name": "Yirenkyi",
+"team": "COV",
+"pos": "MID",
+"price": 4.7
+},
+"c684268": {
+"name": "Shepherd",
+"team": "COV",
+"pos": "MID",
+"price": 4.3
+},
+"c79602": {
+"name": "Bentley",
+"team": "COV",
+"pos": "GK",
+"price": 3.9
+},
+"c80178": {
+"name": "Bidwell",
+"team": "COV",
+"pos": "DEF",
+"price": 4.0
+},
+"c101282": {
+"name": "Crooks",
+"team": "HUL",
+"pos": "MID",
+"price": 4.4
+},
+"c105666": {
+"name": "Butland",
+"team": "HUL",
+"pos": "GK",
+"price": 4.4
+},
+"c108416": {
+"name": "Egan",
+"team": "HUL",
+"pos": "DEF",
+"price": 4.0
+},
+"c146426": {
+"name": "Ajayi",
+"team": "HUL",
+"pos": "DEF",
+"price": 4.2
+},
+"c159506": {
+"name": "Aina",
+"team": "NFO",
+"pos": "DEF",
+"price": 4.2
+},
+"c160817": {
+"name": "McNair",
+"team": "HUL",
+"pos": "DEF",
+"price": 3.9
+},
+"c167825": {
+"name": "Phillips",
+"team": "HUL",
+"pos": "GK",
+"price": 3.9
+},
+"c169359": {
+"name": "Targett",
+"team": "HUL",
+"pos": "DEF",
+"price": 3.9
+},
+"c169432": {
+"name": "McBurnie",
+"team": "HUL",
+"pos": "FWD",
+"price": 5.5
+},
+"c171270": {
+"name": "Dowell",
+"team": "HUL",
+"pos": "MID",
+"price": 4.3
+},
+"c193278": {
+"name": "Coyle",
+"team": "HUL",
+"pos": "DEF",
+"price": 4.0
+},
+"c204561": {
+"name": "Schlager",
+"team": "NFO",
+"pos": "MID",
+"price": 4.9
+},
+"c204822": {
+"name": "O.Richards",
+"team": "NFO",
+"pos": "DEF",
+"price": 3.9
+},
+"c204968": {
+"name": "Yates",
+"team": "NFO",
+"pos": "MID",
+"price": 4.3
+},
+"c208481": {
+"name": "Ömür",
+"team": "HUL",
+"pos": "MID",
+"price": 4.8
+},
+"c209046": {
+"name": "Hudson-Odoi",
+"team": "NFO",
+"pos": "MID",
+"price": 5.7
+},
+"c210462": {
+"name": "I.Sangaré",
+"team": "NFO",
+"pos": "MID",
+"price": 4.6
+},
+"c215136": {
+"name": "N.Williams",
+"team": "NFO",
+"pos": "DEF",
+"price": 4.8
+},
+"c221389": {
+"name": "John",
+"team": "NFO",
+"pos": "GK",
+"price": 4.4
+},
+"c222531": {
+"name": "Gibbs-White",
+"team": "NFO",
+"pos": "MID",
+"price": 7.8
+},
+"c227444": {
+"name": "Milenković",
+"team": "NFO",
+"pos": "DEF",
+"price": 5.4
+},
+"c232351": {
+"name": "Giles",
+"team": "HUL",
+"pos": "DEF",
+"price": 4.0
+},
+"c243413": {
+"name": "Slater",
+"team": "HUL",
+"pos": "MID",
+"price": 4.5
+},
+"c243951": {
+"name": "Thomas",
+"team": "HUL",
+"pos": "MID",
+"price": 5.5
+},
+"c247348": {
+"name": "Muñoz",
+"team": "NFO",
+"pos": "DEF",
+"price": 5.2
+},
+"c250199": {
+"name": "Dominguez",
+"team": "NFO",
+"pos": "MID",
+"price": 4.8
+},
+"c428971": {
+"name": "Benda",
+"team": "NFO",
+"pos": "GK",
+"price": 4.5
+},
+"c432714": {
+"name": "McAtee",
+"team": "NFO",
+"pos": "MID",
+"price": 5.5
+},
+"c445028": {
+"name": "Morita",
+"team": "HUL",
+"pos": "MID",
+"price": 4.9
+},
+"c456512": {
+"name": "Ndoye",
+"team": "NFO",
+"pos": "MID",
+"price": 5.5
+},
+"c462635": {
+"name": "Gelhardt",
+"team": "HUL",
+"pos": "MID",
+"price": 5.0
+},
+"c463034": {
+"name": "Delap",
+"team": "NFO",
+"pos": "FWD",
+"price": 5.3
+},
+"c465525": {
+"name": "Matazo",
+"team": "HUL",
+"pos": "MID",
+"price": 4.5
+},
+"c465680": {
+"name": "Kalimuendo",
+"team": "NFO",
+"pos": "FWD",
+"price": 5.4
+},
+"c469266": {
+"name": "Gourna-Douath",
+"team": "HUL",
+"pos": "MID",
+"price": 4.9
+},
+"c470294": {
+"name": "Gyabi",
+"team": "HUL",
+"pos": "MID",
+"price": 4.4
+},
+"c470315": {
+"name": "Netz",
+"team": "NFO",
+"pos": "DEF",
+"price": 4.4
+},
+"c473284": {
+"name": "Tzolakis",
+"team": "HUL",
+"pos": "GK",
+"price": 4.7
+},
+"c482973": {
+"name": "Igor Jesus",
+"team": "NFO",
+"pos": "FWD",
+"price": 5.6
+},
+"c490094": {
+"name": "Iroegbunam",
+"team": "HUL",
+"pos": "MID",
+"price": 5.0
+},
+"c490884": {
+"name": "Cho",
+"team": "HUL",
+"pos": "MID",
+"price": 5.0
+},
+"c496181": {
+"name": "Norton-Cuffy",
+"team": "HUL",
+"pos": "DEF",
+"price": 3.9
+},
+"c500151": {
+"name": "Savona",
+"team": "NFO",
+"pos": "DEF",
+"price": 4.5
+},
+"c501902": {
+"name": "Hughes",
+"team": "HUL",
+"pos": "DEF",
+"price": 3.9
+},
+"c540324": {
+"name": "Belloumi",
+"team": "HUL",
+"pos": "MID",
+"price": 5.2
+},
+"c552946": {
+"name": "Hjertø-Dahl",
+"team": "HUL",
+"pos": "MID",
+"price": 4.7
+},
+"c553783": {
+"name": "Zambrano",
+"team": "HUL",
+"pos": "MID",
+"price": 4.4
+},
+"c568420": {
+"name": "Diomande",
+"team": "NFO",
+"pos": "DEF",
+"price": 5.3
+},
+"c575458": {
+"name": "Jair Cunha",
+"team": "NFO",
+"pos": "DEF",
+"price": 4.4
+},
+"c575476": {
+"name": "Murillo",
+"team": "NFO",
+"pos": "DEF",
+"price": 5.5
+},
+"c597462": {
+"name": "Herrington",
+"team": "HUL",
+"pos": "DEF",
+"price": 3.9
+},
+"c60689": {
+"name": "Wood",
+"team": "NFO",
+"pos": "FWD",
+"price": 5.6
+},
+"c606930": {
+"name": "Mendy",
+"team": "HUL",
+"pos": "DEF",
+"price": 4.1
+},
+"c608227": {
+"name": "Stroud",
+"team": "HUL",
+"pos": "MID",
+"price": 4.9
+},
+"c626751": {
+"name": "Ansah",
+"team": "HUL",
+"pos": "FWD",
+"price": 4.9
+},
+"c631000": {
+"name": "Vaz",
+"team": "HUL",
+"pos": "FWD",
+"price": 5.0
+},
+"c647839": {
+"name": "Mouzakitis",
+"team": "HUL",
+"pos": "MID",
+"price": 5.0
+},
+"c661800": {
+"name": "McCarthy",
+"team": "HUL",
+"pos": "DEF",
+"price": 4.0
+},
+"c85633": {
+"name": "Sels",
+"team": "NFO",
+"pos": "GK",
+"price": 5.0
+},
+"c116535": {
+"name": "A.Becker",
+"team": "LIV",
+"pos": "GK",
+"price": 5.5
 },
 "c135720": {
 "name": "Danso",
@@ -6271,11 +5782,17 @@
 "pos": "DEF",
 "price": 5.0
 },
-"c154566": {
-"name": "Solanke",
-"team": "TOT",
-"pos": "FWD",
-"price": 5.8
+"c155503": {
+"name": "Woodman",
+"team": "LIV",
+"pos": "GK",
+"price": 3.9
+},
+"c158983": {
+"name": "Endo",
+"team": "LIV",
+"pos": "MID",
+"price": 4.8
 },
 "c167512": {
 "name": "O'Nien",
@@ -6283,17 +5800,17 @@
 "pos": "DEF",
 "price": 3.9
 },
+"c171287": {
+"name": "Gomez",
+"team": "LIV",
+"pos": "DEF",
+"price": 4.9
+},
 "c171422": {
 "name": "Browne",
 "team": "SUN",
 "pos": "MID",
 "price": 4.5
-},
-"c172780": {
-"name": "Maddison",
-"team": "TOT",
-"pos": "MID",
-"price": 6.2
 },
 "c200834": {
 "name": "Mukiele",
@@ -6307,23 +5824,29 @@
 "pos": "DEF",
 "price": 4.8
 },
-"c202993": {
-"name": "Bentancur",
-"team": "TOT",
-"pos": "MID",
-"price": 5.4
-},
-"c214572": {
-"name": "Austin",
-"team": "TOT",
-"pos": "GK",
-"price": 4.0
-},
-"c221466": {
-"name": "Senesi",
-"team": "TOT",
+"c214285": {
+"name": "Tsimikas",
+"team": "LIV",
 "pos": "DEF",
-"price": 5.7
+"price": 4.8
+},
+"c216094": {
+"name": "Frimpong",
+"team": "LIV",
+"pos": "DEF",
+"price": 5.1
+},
+"c219168": {
+"name": "Isak",
+"team": "LIV",
+"pos": "FWD",
+"price": 9.4
+},
+"c223541": {
+"name": "Chiesa",
+"team": "LIV",
+"pos": "MID",
+"price": 5.3
 },
 "c223827": {
 "name": "Ballard",
@@ -6331,17 +5854,29 @@
 "pos": "DEF",
 "price": 4.7
 },
-"c232787": {
-"name": "Gallagher",
-"team": "TOT",
+"c243016": {
+"name": "Mac Allister",
+"team": "LIV",
 "pos": "MID",
-"price": 5.3
+"price": 5.4
 },
-"c432422": {
-"name": "Tonali",
-"team": "TOT",
+"c243298": {
+"name": "Gakpo",
+"team": "LIV",
 "pos": "MID",
-"price": 5.3
+"price": 7.1
+},
+"c424876": {
+"name": "Szoboszlai",
+"team": "LIV",
+"pos": "MID",
+"price": 6.7
+},
+"c432987": {
+"name": "Jaros",
+"team": "LIV",
+"pos": "GK",
+"price": 4.0
 },
 "c434399": {
 "name": "Reinildo",
@@ -6353,18 +5888,6 @@
 "name": "Isidor",
 "team": "SUN",
 "pos": "FWD",
-"price": 5.4
-},
-"c438234": {
-"name": "Marmoush",
-"team": "TOT",
-"pos": "FWD",
-"price": 7.0
-},
-"c441164": {
-"name": "Pedro Porro",
-"team": "TOT",
-"pos": "DEF",
 "price": 5.3
 },
 "c441264": {
@@ -6373,17 +5896,23 @@
 "pos": "FWD",
 "price": 5.6
 },
-"c445044": {
-"name": "Kulusevski",
-"team": "TOT",
+"c441266": {
+"name": "Gravenberch",
+"team": "LIV",
 "pos": "MID",
-"price": 6.5
+"price": 5.8
 },
-"c460842": {
-"name": "Kudus",
-"team": "TOT",
-"pos": "MID",
-"price": 6.6
+"c445087": {
+"name": "Araujo",
+"team": "LIV",
+"pos": "DEF",
+"price": 5.5
+},
+"c449027": {
+"name": "Mamardashvili",
+"team": "LIV",
+"pos": "GK",
+"price": 4.8
 },
 "c461199": {
 "name": "Mundle",
@@ -6391,17 +5920,17 @@
 "pos": "MID",
 "price": 4.8
 },
-"c465920": {
-"name": "Mudryk",
-"team": "TOT",
-"pos": "MID",
-"price": 5.3
+"c464353": {
+"name": "Davies",
+"team": "LIV",
+"pos": "GK",
+"price": 4.0
 },
-"c469142": {
-"name": "Van Hecke",
-"team": "TOT",
-"pos": "DEF",
-"price": 5.2
+"c482616": {
+"name": "Barcola",
+"team": "LIV",
+"pos": "MID",
+"price": 8.1
 },
 "c484420": {
 "name": "E.Le Fée",
@@ -6409,35 +5938,29 @@
 "pos": "MID",
 "price": 5.7
 },
-"c485055": {
-"name": "Kinsky",
-"team": "TOT",
-"pos": "GK",
-"price": 4.5
-},
-"c487053": {
-"name": "Udogie",
-"team": "TOT",
-"pos": "DEF",
-"price": 4.4
-},
 "c487676": {
 "name": "Hume",
 "team": "SUN",
 "pos": "DEF",
 "price": 4.1
 },
-"c491279": {
-"name": "Van de Ven",
-"team": "TOT",
-"pos": "DEF",
-"price": 5.0
-},
-"c493362": {
-"name": "Xavi",
-"team": "TOT",
+"c491501": {
+"name": "McConnell",
+"team": "LIV",
 "pos": "MID",
-"price": 5.9
+"price": 4.3
+},
+"c492777": {
+"name": "Bradley",
+"team": "LIV",
+"pos": "DEF",
+"price": 4.9
+},
+"c494595": {
+"name": "Wirtz",
+"team": "LIV",
+"pos": "MID",
+"price": 7.6
 },
 "c498016": {
 "name": "Roefs",
@@ -6445,29 +5968,23 @@
 "pos": "GK",
 "price": 4.8
 },
-"c499716": {
-"name": "Rowswell",
-"team": "TOT",
-"pos": "DEF",
-"price": 4.0
+"c500058": {
+"name": "Danns",
+"team": "LIV",
+"pos": "FWD",
+"price": 4.5
 },
-"c499726": {
-"name": "Olusesi",
-"team": "TOT",
-"pos": "MID",
-"price": 4.4
+"c510663": {
+"name": "Ekitiké",
+"team": "LIV",
+"pos": "FWD",
+"price": 7.4
 },
-"c510281": {
-"name": "Sávio",
-"team": "TOT",
+"c514514": {
+"name": "Koumas",
+"team": "LIV",
 "pos": "MID",
-"price": 6.4
-},
-"c511499": {
-"name": "Tel",
-"team": "TOT",
-"pos": "MID",
-"price": 5.6
+"price": 5.0
 },
 "c515046": {
 "name": "Ellborg",
@@ -6475,11 +5992,11 @@
 "pos": "GK",
 "price": 4.4
 },
-"c536108": {
-"name": "Gunter",
-"team": "TOT",
-"pos": "GK",
-"price": 4.0
+"c519440": {
+"name": "Lucky",
+"team": "LIV",
+"pos": "DEF",
+"price": 3.9
 },
 "c536661": {
 "name": "N.Angulo",
@@ -6487,17 +6004,17 @@
 "pos": "MID",
 "price": 5.0
 },
+"c544877": {
+"name": "Kerkez",
+"team": "LIV",
+"pos": "DEF",
+"price": 5.2
+},
 "c547027": {
 "name": "Diarra",
 "team": "SUN",
 "pos": "MID",
 "price": 5.3
-},
-"c547701": {
-"name": "Gray",
-"team": "TOT",
-"pos": "MID",
-"price": 4.9
 },
 "c549912": {
 "name": "Talbi",
@@ -6509,19 +6026,13 @@
 "name": "Fofana",
 "team": "SUN",
 "pos": "MID",
-"price": 5.4
+"price": 5.3
 },
-"c550839": {
-"name": "Odobert",
-"team": "TOT",
+"c551499": {
+"name": "Munoz",
+"team": "LIV",
 "pos": "MID",
-"price": 5.5
-},
-"c551226": {
-"name": "Fernandes",
-"team": "TOT",
-"pos": "MID",
-"price": 5.6
+"price": 6.5
 },
 "c554197": {
 "name": "Rigg",
@@ -6529,15 +6040,15 @@
 "pos": "MID",
 "price": 4.8
 },
-"c570526": {
-"name": "Bergvall",
-"team": "TOT",
-"pos": "MID",
-"price": 5.3
-},
 "c577669": {
 "name": "Sadiki",
 "team": "SUN",
+"pos": "MID",
+"price": 4.8
+},
+"c591386": {
+"name": "Nyoni",
+"team": "LIV",
 "pos": "MID",
 "price": 4.8
 },
@@ -6545,13 +6056,19 @@
 "name": "Tutierov",
 "team": "SUN",
 "pos": "MID",
-"price": 4.8
+"price": 4.7
 },
-"c611917": {
-"name": "Williams-Barnett",
-"team": "TOT",
+"c606702": {
+"name": "Jacquet",
+"team": "LIV",
+"pos": "DEF",
+"price": 5.1
+},
+"c611922": {
+"name": "Ngumoha",
+"team": "LIV",
 "pos": "MID",
-"price": 4.4
+"price": 5.7
 },
 "c638411": {
 "name": "Methalie",
@@ -6559,23 +6076,17 @@
 "pos": "DEF",
 "price": 4.5
 },
-"c640419": {
-"name": "Byfield",
-"team": "TOT",
+"c647681": {
+"name": "Leoni",
+"team": "LIV",
 "pos": "DEF",
-"price": 4.0
+"price": 3.9
 },
 "c661313": {
 "name": "J.Angulo",
 "team": "SUN",
 "pos": "FWD",
-"price": 4.5
-},
-"c67089": {
-"name": "Dubravka",
-"team": "TOT",
-"pos": "GK",
-"price": 3.9
+"price": 4.4
 },
 "c696104": {
 "name": "Ahoka",
@@ -6600,6 +6111,1038 @@
 "team": "SUN",
 "pos": "DEF",
 "price": 4.4
+},
+"c97032": {
+"name": "Virgil",
+"team": "LIV",
+"pos": "DEF",
+"price": 6.4
+},
+"c106921": {
+"name": "Rulli",
+"team": "MCI",
+"pos": "GK",
+"price": 4.9
+},
+"c122074": {
+"name": "Bettinelli",
+"team": "MCI",
+"pos": "GK",
+"price": 4.4
+},
+"c153682": {
+"name": "Wilson",
+"team": "LEE",
+"pos": "MID",
+"price": 6.1
+},
+"c155465": {
+"name": "Zetterer",
+"team": "LEE",
+"pos": "GK",
+"price": 4.0
+},
+"c171314": {
+"name": "Rúben",
+"team": "MCI",
+"pos": "DEF",
+"price": 5.5
+},
+"c173774": {
+"name": "Elvedi",
+"team": "LEE",
+"pos": "DEF",
+"price": 4.5
+},
+"c174594": {
+"name": "Nmecha",
+"team": "LEE",
+"pos": "FWD",
+"price": 5.2
+},
+"c177815": {
+"name": "Calvert-Lewin",
+"team": "LEE",
+"pos": "FWD",
+"price": 6.1
+},
+"c180135": {
+"name": "Longstaff",
+"team": "LEE",
+"pos": "MID",
+"price": 4.8
+},
+"c199598": {
+"name": "Ampadu",
+"team": "LEE",
+"pos": "MID",
+"price": 5.3
+},
+"c200617": {
+"name": "James",
+"team": "LEE",
+"pos": "MID",
+"price": 4.9
+},
+"c204936": {
+"name": "Donnarumma",
+"team": "MCI",
+"pos": "GK",
+"price": 5.4
+},
+"c209036": {
+"name": "Guéhi",
+"team": "MCI",
+"pos": "DEF",
+"price": 5.9
+},
+"c209244": {
+"name": "Foden",
+"team": "MCI",
+"pos": "MID",
+"price": 6.8
+},
+"c214225": {
+"name": "Rodon",
+"team": "LEE",
+"pos": "DEF",
+"price": 4.2
+},
+"c215379": {
+"name": "Anderson",
+"team": "MCI",
+"pos": "MID",
+"price": 6.2
+},
+"c220627": {
+"name": "Justin",
+"team": "LEE",
+"pos": "DEF",
+"price": 4.6
+},
+"c223094": {
+"name": "Haaland",
+"team": "MCI",
+"pos": "FWD",
+"price": 15.7
+},
+"c226182": {
+"name": "Bogle",
+"team": "LEE",
+"pos": "DEF",
+"price": 4.9
+},
+"c243526": {
+"name": "Gudmundsson",
+"team": "LEE",
+"pos": "DEF",
+"price": 4.5
+},
+"c248056": {
+"name": "Tanaka",
+"team": "LEE",
+"pos": "MID",
+"price": 4.9
+},
+"c248875": {
+"name": "Doku",
+"team": "MCI",
+"pos": "MID",
+"price": 7.5
+},
+"c427637": {
+"name": "Aaronson",
+"team": "LEE",
+"pos": "MID",
+"price": 5.2
+},
+"c432720": {
+"name": "Trafford",
+"team": "LEE",
+"pos": "GK",
+"price": 5.1
+},
+"c434752": {
+"name": "Bijol",
+"team": "LEE",
+"pos": "DEF",
+"price": 5.0
+},
+"c435997": {
+"name": "Okafor",
+"team": "LEE",
+"pos": "MID",
+"price": 5.8
+},
+"c437497": {
+"name": "Bard",
+"team": "LEE",
+"pos": "DEF",
+"price": 4.5
+},
+"c437730": {
+"name": "Semenyo",
+"team": "MCI",
+"pos": "MID",
+"price": 8.1
+},
+"c440993": {
+"name": "Ndiaye",
+"team": "MCI",
+"pos": "MID",
+"price": 5.7
+},
+"c448047": {
+"name": "Enzo",
+"team": "MCI",
+"pos": "MID",
+"price": 6.9
+},
+"c448514": {
+"name": "Aït-Nouri",
+"team": "MCI",
+"pos": "DEF",
+"price": 5.1
+},
+"c465351": {
+"name": "Matheus N.",
+"team": "MCI",
+"pos": "DEF",
+"price": 5.9
+},
+"c466052": {
+"name": "Cherki",
+"team": "MCI",
+"pos": "MID",
+"price": 7.8
+},
+"c466525": {
+"name": "Stach",
+"team": "LEE",
+"pos": "MID",
+"price": 6.0
+},
+"c472769": {
+"name": "O'Reilly",
+"team": "MCI",
+"pos": "DEF",
+"price": 6.2
+},
+"c477064": {
+"name": "Lewis",
+"team": "MCI",
+"pos": "DEF",
+"price": 4.3
+},
+"c477424": {
+"name": "Gvardiol",
+"team": "MCI",
+"pos": "DEF",
+"price": 5.5
+},
+"c486520": {
+"name": "Gruev",
+"team": "LEE",
+"pos": "MID",
+"price": 5.0
+},
+"c522047": {
+"name": "Muharemović",
+"team": "LEE",
+"pos": "DEF",
+"price": 5.2
+},
+"c554054": {
+"name": "Braithwaite",
+"team": "MCI",
+"pos": "DEF",
+"price": 3.9
+},
+"c565297": {
+"name": "Mateo Joseph",
+"team": "LEE",
+"pos": "FWD",
+"price": 4.4
+},
+"c578153": {
+"name": "Khusanov",
+"team": "MCI",
+"pos": "DEF",
+"price": 5.3
+},
+"c587982": {
+"name": "Bahoya",
+"team": "LEE",
+"pos": "MID",
+"price": 4.8
+},
+"c592740": {
+"name": "Cresswell",
+"team": "LEE",
+"pos": "MID",
+"price": 4.5
+},
+"c595480": {
+"name": "Samba",
+"team": "MCI",
+"pos": "MID",
+"price": 4.4
+},
+"c616222": {
+"name": "Vitor Reis",
+"team": "MCI",
+"pos": "DEF",
+"price": 4.4
+},
+"c616288": {
+"name": "McAidoo",
+"team": "MCI",
+"pos": "MID",
+"price": 4.4
+},
+"c624777": {
+"name": "Allan",
+"team": "MCI",
+"pos": "MID",
+"price": 6.0
+},
+"c637238": {
+"name": "Bouaddi",
+"team": "MCI",
+"pos": "MID",
+"price": 5.5
+},
+"c643970": {
+"name": "Lienou",
+"team": "LEE",
+"pos": "DEF",
+"price": 4.0
+},
+"c91651": {
+"name": "Kovačić",
+"team": "MCI",
+"pos": "MID",
+"price": 5.3
+},
+"c97846": {
+"name": "Cairns",
+"team": "LEE",
+"pos": "GK",
+"price": 4.0
+},
+"c106760": {
+"name": "Shaw",
+"team": "MUN",
+"pos": "DEF",
+"price": 4.2
+},
+"c114243": {
+"name": "J.Murphy",
+"team": "NEW",
+"pos": "MID",
+"price": 5.9
+},
+"c119471": {
+"name": "Schär",
+"team": "NEW",
+"pos": "DEF",
+"price": 4.9
+},
+"c141746": {
+"name": "B.Fernandes",
+"team": "MUN",
+"pos": "MID",
+"price": 11.6
+},
+"c166989": {
+"name": "Tielemans",
+"team": "MUN",
+"pos": "MID",
+"price": 5.6
+},
+"c176297": {
+"name": "Rashford",
+"team": "MUN",
+"pos": "MID",
+"price": 6.8
+},
+"c180974": {
+"name": "Joelinton",
+"team": "NEW",
+"pos": "MID",
+"price": 5.4
+},
+"c184341": {
+"name": "Mount",
+"team": "MUN",
+"pos": "MID",
+"price": 5.4
+},
+"c200089": {
+"name": "Willock",
+"team": "NEW",
+"pos": "MID",
+"price": 5.0
+},
+"c201666": {
+"name": "Barnes",
+"team": "NEW",
+"pos": "MID",
+"price": 6.0
+},
+"c209365": {
+"name": "De Ligt",
+"team": "MUN",
+"pos": "DEF",
+"price": 4.9
+},
+"c21205": {
+"name": "Heaton",
+"team": "MUN",
+"pos": "GK",
+"price": 4.0
+},
+"c216051": {
+"name": "Dalot",
+"team": "MUN",
+"pos": "DEF",
+"price": 4.7
+},
+"c216646": {
+"name": "Wissa",
+"team": "NEW",
+"pos": "FWD",
+"price": 5.8
+},
+"c220237": {
+"name": "Botman",
+"team": "NEW",
+"pos": "DEF",
+"price": 5.0
+},
+"c221820": {
+"name": "Martinez",
+"team": "MUN",
+"pos": "DEF",
+"price": 4.8
+},
+"c230001": {
+"name": "Mazraoui",
+"team": "MUN",
+"pos": "DEF",
+"price": 4.3
+},
+"c232112": {
+"name": "Ugarte",
+"team": "MUN",
+"pos": "MID",
+"price": 5.0
+},
+"c232653": {
+"name": "J.Ramsey",
+"team": "NEW",
+"pos": "MID",
+"price": 4.8
+},
+"c430871": {
+"name": "Cunha",
+"team": "MUN",
+"pos": "MID",
+"price": 7.8
+},
+"c441191": {
+"name": "Livramento",
+"team": "NEW",
+"pos": "DEF",
+"price": 4.8
+},
+"c446008": {
+"name": "Mbeumo",
+"team": "MUN",
+"pos": "MID",
+"price": 7.8
+},
+"c449434": {
+"name": "Elanga",
+"team": "NEW",
+"pos": "MID",
+"price": 6.0
+},
+"c458249": {
+"name": "Zirkzee",
+"team": "MUN",
+"pos": "FWD",
+"price": 5.3
+},
+"c463726": {
+"name": "Dedić",
+"team": "NEW",
+"pos": "DEF",
+"price": 4.4
+},
+"c465247": {
+"name": "Lammens",
+"team": "MUN",
+"pos": "GK",
+"price": 4.8
+},
+"c465642": {
+"name": "Thiaw",
+"team": "NEW",
+"pos": "DEF",
+"price": 4.9
+},
+"c465694": {
+"name": "N.Gonzalez",
+"team": "NEW",
+"pos": "MID",
+"price": 5.5
+},
+"c470551": {
+"name": "Horníček",
+"team": "NEW",
+"pos": "GK",
+"price": 5.0
+},
+"c485711": {
+"name": "Šeško",
+"team": "MUN",
+"pos": "FWD",
+"price": 6.9
+},
+"c487838": {
+"name": "Hall",
+"team": "NEW",
+"pos": "DEF",
+"price": 5.1
+},
+"c493250": {
+"name": "Amad",
+"team": "MUN",
+"pos": "MID",
+"price": 5.7
+},
+"c516895": {
+"name": "Mainoo",
+"team": "MUN",
+"pos": "MID",
+"price": 5.5
+},
+"c519913": {
+"name": "Fletcher",
+"team": "MUN",
+"pos": "MID",
+"price": 4.3
+},
+"c532605": {
+"name": "Andrey Santos",
+"team": "MUN",
+"pos": "MID",
+"price": 4.6
+},
+"c535301": {
+"name": "Baleba",
+"team": "MUN",
+"pos": "MID",
+"price": 4.9
+},
+"c538207": {
+"name": "Osula",
+"team": "NEW",
+"pos": "FWD",
+"price": 5.8
+},
+"c547037": {
+"name": "J.Fletcher",
+"team": "MUN",
+"pos": "MID",
+"price": 4.8
+},
+"c547719": {
+"name": "L.Miley",
+"team": "NEW",
+"pos": "MID",
+"price": 5.5
+},
+"c550864": {
+"name": "Yoro",
+"team": "MUN",
+"pos": "DEF",
+"price": 4.8
+},
+"c554578": {
+"name": "Jaouen",
+"team": "NEW",
+"pos": "GK",
+"price": 4.4
+},
+"c576620": {
+"name": "Bendito Mantato",
+"team": "MUN",
+"pos": "MID",
+"price": 4.4
+},
+"c576628": {
+"name": "Lacey",
+"team": "MUN",
+"pos": "MID",
+"price": 4.9
+},
+"c577974": {
+"name": "Amass",
+"team": "MUN",
+"pos": "DEF",
+"price": 3.9
+},
+"c578512": {
+"name": "Pivas",
+"team": "NEW",
+"pos": "DEF",
+"price": 4.0
+},
+"c596777": {
+"name": "Dorgu",
+"team": "MUN",
+"pos": "MID",
+"price": 5.7
+},
+"c59735": {
+"name": "Darlow",
+"team": "MUN",
+"pos": "GK",
+"price": 4.4
+},
+"c601767": {
+"name": "Salia",
+"team": "NEW",
+"pos": "FWD",
+"price": 4.5
+},
+"c606745": {
+"name": "Heaven",
+"team": "MUN",
+"pos": "DEF",
+"price": 4.2
+},
+"c611665": {
+"name": "Touré",
+"team": "NEW",
+"pos": "MID",
+"price": 5.7
+},
+"c613221": {
+"name": "Fernandez-Pardo",
+"team": "NEW",
+"pos": "FWD",
+"price": 5.8
+},
+"c632794": {
+"name": "Bamba",
+"team": "NEW",
+"pos": "MID",
+"price": 4.7
+},
+"c636852": {
+"name": "Steur",
+"team": "NEW",
+"pos": "MID",
+"price": 4.7
+},
+"c655585": {
+"name": "Mills",
+"team": "NEW",
+"pos": "MID",
+"price": 4.5
+},
+"c665243": {
+"name": "Miley",
+"team": "NEW",
+"pos": "MID",
+"price": 4.5
+},
+"c671875": {
+"name": "Thompson",
+"team": "NEW",
+"pos": "MID",
+"price": 4.5
+},
+"c78916": {
+"name": "Burn",
+"team": "NEW",
+"pos": "DEF",
+"price": 4.8
+},
+"c81441": {
+"name": "Gillespie",
+"team": "NEW",
+"pos": "GK",
+"price": 4.4
+},
+"c95658": {
+"name": "Maguire",
+"team": "MUN",
+"pos": "DEF",
+"price": 4.5
+},
+"c98747": {
+"name": "Pope",
+"team": "NEW",
+"pos": "GK",
+"price": 4.8
+},
+"c109646": {
+"name": "Tosin",
+"team": "TOT",
+"pos": "DEF",
+"price": 4.3
+},
+"c115556": {
+"name": "Davies",
+"team": "TOT",
+"pos": "DEF",
+"price": 3.9
+},
+"c122798": {
+"name": "Robertson",
+"team": "TOT",
+"pos": "DEF",
+"price": 4.3
+},
+"c153133": {
+"name": "Iwobi",
+"team": "FUL",
+"pos": "MID",
+"price": 5.4
+},
+"c153366": {
+"name": "Reed",
+"team": "FUL",
+"pos": "MID",
+"price": 4.3
+},
+"c154566": {
+"name": "Solanke",
+"team": "TOT",
+"pos": "FWD",
+"price": 5.8
+},
+"c166477": {
+"name": "Castagne",
+"team": "FUL",
+"pos": "DEF",
+"price": 4.5
+},
+"c167074": {
+"name": "Tete",
+"team": "FUL",
+"pos": "DEF",
+"price": 4.4
+},
+"c169528": {
+"name": "Robinson",
+"team": "FUL",
+"pos": "DEF",
+"price": 4.4
+},
+"c172780": {
+"name": "Maddison",
+"team": "TOT",
+"pos": "MID",
+"price": 6.2
+},
+"c174874": {
+"name": "Andersen",
+"team": "FUL",
+"pos": "DEF",
+"price": 5.0
+},
+"c184349": {
+"name": "Sessegnon",
+"team": "FUL",
+"pos": "DEF",
+"price": 4.3
+},
+"c202993": {
+"name": "Bentancur",
+"team": "TOT",
+"pos": "MID",
+"price": 5.4
+},
+"c207189": {
+"name": "Berge",
+"team": "FUL",
+"pos": "MID",
+"price": 4.8
+},
+"c209289": {
+"name": "Smith Rowe",
+"team": "FUL",
+"pos": "MID",
+"price": 5.2
+},
+"c214572": {
+"name": "Austin",
+"team": "TOT",
+"pos": "GK",
+"price": 4.0
+},
+"c221466": {
+"name": "Senesi",
+"team": "TOT",
+"pos": "DEF",
+"price": 5.7
+},
+"c232787": {
+"name": "Gallagher",
+"team": "TOT",
+"pos": "MID",
+"price": 5.3
+},
+"c232892": {
+"name": "Bassey",
+"team": "FUL",
+"pos": "DEF",
+"price": 4.5
+},
+"c244042": {
+"name": "Muniz",
+"team": "FUL",
+"pos": "FWD",
+"price": 5.3
+},
+"c246301": {
+"name": "J.Cuenca",
+"team": "FUL",
+"pos": "DEF",
+"price": 4.4
+},
+"c432422": {
+"name": "Tonali",
+"team": "TOT",
+"pos": "MID",
+"price": 5.3
+},
+"c438234": {
+"name": "Marmoush",
+"team": "TOT",
+"pos": "FWD",
+"price": 7.0
+},
+"c441164": {
+"name": "Pedro Porro",
+"team": "TOT",
+"pos": "DEF",
+"price": 5.3
+},
+"c442299": {
+"name": "Affengruber",
+"team": "FUL",
+"pos": "DEF",
+"price": 4.5
+},
+"c445044": {
+"name": "Kulusevski",
+"team": "TOT",
+"pos": "MID",
+"price": 6.5
+},
+"c460842": {
+"name": "Kudus",
+"team": "TOT",
+"pos": "MID",
+"price": 6.6
+},
+"c463210": {
+"name": "Charles",
+"team": "FUL",
+"pos": "MID",
+"price": 5.0
+},
+"c465920": {
+"name": "Mudryk",
+"team": "TOT",
+"pos": "MID",
+"price": 5.3
+},
+"c469142": {
+"name": "Van Hecke",
+"team": "TOT",
+"pos": "DEF",
+"price": 5.2
+},
+"c477555": {
+"name": "Bobb",
+"team": "FUL",
+"pos": "MID",
+"price": 5.5
+},
+"c485055": {
+"name": "Kinsky",
+"team": "TOT",
+"pos": "GK",
+"price": 4.5
+},
+"c487053": {
+"name": "Udogie",
+"team": "TOT",
+"pos": "DEF",
+"price": 4.4
+},
+"c491279": {
+"name": "Van de Ven",
+"team": "TOT",
+"pos": "DEF",
+"price": 5.0
+},
+"c493362": {
+"name": "Xavi",
+"team": "TOT",
+"pos": "MID",
+"price": 5.9
+},
+"c499716": {
+"name": "Rowswell",
+"team": "TOT",
+"pos": "DEF",
+"price": 4.0
+},
+"c499726": {
+"name": "Olusesi",
+"team": "TOT",
+"pos": "MID",
+"price": 4.4
+},
+"c500033": {
+"name": "Ángel",
+"team": "FUL",
+"pos": "MID",
+"price": 5.0
+},
+"c510281": {
+"name": "Sávio",
+"team": "TOT",
+"pos": "MID",
+"price": 6.4
+},
+"c511499": {
+"name": "Tel",
+"team": "TOT",
+"pos": "MID",
+"price": 5.6
+},
+"c536108": {
+"name": "Gunter",
+"team": "TOT",
+"pos": "GK",
+"price": 4.0
+},
+"c547701": {
+"name": "Gray",
+"team": "TOT",
+"pos": "MID",
+"price": 4.9
+},
+"c550839": {
+"name": "Odobert",
+"team": "TOT",
+"pos": "MID",
+"price": 5.5
+},
+"c551050": {
+"name": "Larsson",
+"team": "FUL",
+"pos": "MID",
+"price": 5.0
+},
+"c551226": {
+"name": "Fernandes",
+"team": "TOT",
+"pos": "MID",
+"price": 5.6
+},
+"c551466": {
+"name": "Gonzalo",
+"team": "FUL",
+"pos": "FWD",
+"price": 5.7
+},
+"c560552": {
+"name": "Kevin",
+"team": "FUL",
+"pos": "MID",
+"price": 5.2
+},
+"c570526": {
+"name": "Bergvall",
+"team": "TOT",
+"pos": "MID",
+"price": 5.3
+},
+"c571779": {
+"name": "Palacios",
+"team": "FUL",
+"pos": "MID",
+"price": 5.2
+},
+"c577725": {
+"name": "King",
+"team": "FUL",
+"pos": "MID",
+"price": 5.3
+},
+"c605845": {
+"name": "Kaiser",
+"team": "FUL",
+"pos": "GK",
+"price": 4.0
+},
+"c611917": {
+"name": "Williams-Barnett",
+"team": "TOT",
+"pos": "MID",
+"price": 4.4
+},
+"c616069": {
+"name": "Zepa",
+"team": "FUL",
+"pos": "MID",
+"price": 4.4
+},
+"c631786": {
+"name": "Kusi-Asare",
+"team": "FUL",
+"pos": "FWD",
+"price": 4.3
+},
+"c640419": {
+"name": "Byfield",
+"team": "TOT",
+"pos": "DEF",
+"price": 4.0
+},
+"c67089": {
+"name": "Dubravka",
+"team": "TOT",
+"pos": "GK",
+"price": 3.9
+},
+"c76357": {
+"name": "Cairney",
+"team": "FUL",
+"pos": "MID",
+"price": 4.9
+},
+"c80201": {
+"name": "Leno",
+"team": "FUL",
+"pos": "GK",
+"price": 4.5
+},
+"c86873": {
+"name": "Lecomte",
+"team": "FUL",
+"pos": "GK",
+"price": 4.0
 }
 }
 }
